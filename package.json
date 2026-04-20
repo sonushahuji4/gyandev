@@ -9,9 +9,27 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "validate": "astro check",
+    "validate:content": "node scripts/validate-content.mjs",
+    "check": "npm run validate && npm run build",
+    "format": "prettier --write .",
+    "lint": "eslint src --ext .ts,.astro"
   },
   "dependencies": {
-    "astro": "^6.1.8"
+    "@astrojs/check": "^0.9.8",
+    "@astrojs/mdx": "^5.0.3",
+    "@astrojs/sitemap": "^3.7.2",
+    "@tailwindcss/vite": "^4.2.2",
+    "astro": "^6.1.8",
+    "astro-mermaid": "^2.0.1",
+    "katex": "^0.16.45",
+    "pagefind": "^1.5.2",
+    "rehype-katex": "^7.0.1",
+    "rehype-pretty-code": "^0.14.3",
+    "remark-math": "^6.0.0",
+    "shiki": "^4.0.2",
+    "tailwindcss": "^4.2.2",
+    "typescript": "^5.9.3"
   }
 }
