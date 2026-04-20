@@ -11,7 +11,7 @@ Technical education site. Every chapter has three synchronized views: Full Notes
 - Mermaid + KaTeX for diagrams
 - Cloudflare Pages for hosting
 - No backend, no database (Phase 1)
-- Content stored as MDX in `content/courses/`
+- Content stored as MDX in `src/content/courses/`
 
 ## Code Standards
 - TypeScript strict mode
