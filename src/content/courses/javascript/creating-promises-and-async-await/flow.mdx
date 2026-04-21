@@ -1,0 +1,52 @@
+---
+title: "Creating Promises, Chaining, Error Handling & async/await"
+description: Flow diagram — what happens when JS hits await.
+course: javascript/course
+view: flow
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  `await` does not block the engine — it suspends the current async
+  function, pops it off the call stack, and lets the rest of the
+  program run. When the awaited promise settles, the function is
+  pushed back onto the stack and resumes exactly where it left off.
+  The diagram below traces that journey, from synchronous start to
+  microtask-driven resumption.
+</Callout>
+
+## await — what the call stack actually does
+
+```mermaid
+flowchart TD
+    A["<b>i · handle() pushed</b><br/>call stack runs sync code"]
+      --> B["<b>ii · logs 'Hi'</b><br/>synchronous"]
+    B --> C["<b>iii · hits `await p`</b>"]
+    C --> D["<b>iv · handle() SUSPENDED</b><br/>popped off the call stack"]
+    D --> E["<b>v · stack is free</b><br/>other code runs — UI, events, timers"]
+    E --> F["<b>vi · p settles</b><br/>resolve(value) or reject(error)"]
+    F --> G["<b>vii · microtask scheduled</b><br/>resume handle()"]
+    G --> H["<b>viii · handle() pushed back</b><br/>resumes after the await"]
+    H --> I["continues line by line<br/>until next await or return"]
+
+    classDef head   fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef sync   fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef pause  fill:#e3e8f5,stroke:#4a5a8a,stroke-width:2px,color:#1a1915;
+    classDef resume fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class A head
+    class B,C sync
+    class D,E,F,G pause
+    class H,I resume
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'handle() pushed',       description: 'The async function is called; its frame goes onto the call stack just like any function.' },
+  { numeral: 'ii',   name: "logs 'Hi'",             description: 'The synchronous part of the function runs normally until the first await.' },
+  { numeral: 'iii',  name: 'Hits `await p`',        description: 'Engine sees await — it will not block. It prepares to suspend the function.' },
+  { numeral: 'iv',   name: 'Function SUSPENDED',    description: 'The frame is popped off the stack. The function is paused mid-execution, state preserved.' },
+  { numeral: 'v',    name: 'Stack is free',         description: 'Other synchronous code, timers, event handlers, and microtasks run without blocking.' },
+  { numeral: 'vi',   name: 'p settles',             description: 'The awaited promise resolves or rejects — settlement is permanent and one-shot.' },
+  { numeral: 'vii',  name: 'Microtask scheduled',   description: 'The engine queues a microtask to resume the suspended function with the settled value.' },
+  { numeral: 'viii', name: 'handle() resumes',      description: 'The frame is pushed back onto the stack. Execution continues after the await with the value.' },
+]} />

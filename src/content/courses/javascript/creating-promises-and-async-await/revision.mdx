@@ -1,0 +1,57 @@
+---
+title: "Creating Promises, Chaining, Error Handling & async/await"
+description: Quick revision — executor anatomy, chaining rules, async semantics, and the timing trap.
+course: javascript/course
+view: revision
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Creating a promise" subtitle="Producer side.">
+- `new Promise((resolve, reject) => { ... })` — constructor takes an **executor function**.
+- Executor runs **synchronously** — immediately when the promise is created.
+- Call `resolve(value)` on success, `reject(error)` on failure — state changes from pending.
+- **Return the promise** to the consumer, otherwise they can't attach handlers.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Chaining rules" subtitle="Data flows via return.">
+- Each `.then()` returns a NEW promise → keep chaining top-to-bottom.
+- **Whatever you return becomes the next .then's input.** Forget to return → next .then gets `undefined`.
+- Return a value → next .then gets the value. Return a promise → chain waits for it.
+- `resolve()` does NOT stop the executor — always `return` after reject to prevent fallthrough.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Error handling patterns" subtitle=".catch placement matters.">
+- A `.catch()` catches errors from all steps **above** it — not below.
+- `.then` AFTER `.catch` still runs — catch returns a resolved promise with `undefined`.
+- Multiple `.catch` blocks = selective error handling at different chain levels.
+- Always add at least one `.catch` — unhandled rejections can crash Node or warn in browsers.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="async function" subtitle="Always returns a promise.">
+- Plain return value → auto-wrapped in `Promise.resolve(value)`.
+- Already a promise → returned as-is (no double-wrapping).
+- Enables `await` inside the function body — normal functions cannot use `await`.
+- Since async functions return promises, you can `.then()` or `.catch()` their result.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="await — what actually happens" subtitle="Suspends the function, not the engine.">
+- `await` pauses the async function and pops it off the call stack — stack is NEVER blocked.
+- Other code, event handlers, and UI continue running freely while the function is suspended.
+- When the awaited promise settles, the event loop pushes the function back; it resumes exactly where it left off.
+- `await "value"` (non-promise) still creates a microtask pause — the line after await runs as a microtask.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="The timing trap" subtitle="Promises start at creation, not await.">
+- `const p1 = new Promise(...)` starts the timer/work immediately — even before any await.
+- Two promises created upfront with different delays both tick in parallel.
+- To get truly sequential execution, create promises inside the async function via factory calls.
+- `fetch()` needs **two awaits** — one for the Response headers, one for `.json()` body parsing.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **C.R.A.W.L.** — **C**reate with executor, **R**eturn the promise,
+  **A**lways return inside .then, **W**ait on await (function only,
+  not engine), **L**ock errors with try/catch. Async code that
+  CRAWLs reads top-to-bottom.
+</Callout>

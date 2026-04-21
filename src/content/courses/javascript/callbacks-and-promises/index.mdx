@@ -1,0 +1,742 @@
+---
+title: "Callbacks & Promises — From Problem to Solution"
+description: Understanding why callbacks break, how promises fix it, and how to explain it in an interview with confidence. Callback Hell, Inversion of Control, Promise states, chaining, and the "passing vs attaching" distinction.
+excerpt: Why callbacks break and how promises fix both Callback Hell and Inversion of Control.
+course: javascript/course
+order: 14
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 14
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - callbacks
+  - promises
+  - callback-hell
+  - inversion-of-control
+  - promise-chaining
+---
+
+## Episode 20 — Callbacks: The Good, The Bad & The Ugly
+
+### First, remember: JavaScript waits for nobody
+
+JavaScript is a **synchronous, single-threaded** language. It has one
+call stack and executes one thing at a time. It runs through your code
+line by line and does NOT wait for anything.
+
+```js title="JS runs top to bottom without waiting"
+console.log("Namaste");
+console.log("JavaScript");
+console.log("Season 2");
+// Namaste → JavaScript → Season 2  (instantly, no delay)
+```
+
+<Callout type="insight" title="Why this matters">
+  Since JS doesn't wait, how do we handle things that take time — like
+  API calls, file reads, or database queries? We can't just pause the
+  engine. The answer is **callbacks** — we give JS a function to call
+  *later*, when the async work is done. This is the fundamental reason
+  callbacks exist.
+</Callout>
+
+### The Good Part — Callbacks Enable Async Programming
+
+Without callbacks, we couldn't do anything asynchronous in JavaScript.
+Callbacks are the foundation that everything else (Promises,
+async/await) is built on.
+
+```js title="Callback delays execution until later"
+console.log("Namaste");
+
+setTimeout(function() {
+  console.log("JavaScript"); // runs AFTER 5 seconds
+}, 5000);
+
+console.log("Season 2");
+// Namaste → Season 2 → (5 sec later) → JavaScript
+```
+
+JS doesn't wait for setTimeout. It registers the callback with the Web
+API timer and moves to the next line. After 5 seconds, the callback is
+pushed to the call stack via the event loop.
+
+<Callout type="tip" title="Key insight">
+  Async programming in JavaScript exists *because* callbacks exist.
+  Every setTimeout, every event listener, every API call uses
+  callbacks. They are the mechanism that bridges synchronous JS with
+  the asynchronous browser world.
+</Callout>
+
+## The Bad Part 1 — Callback Hell (Pyramid of Doom)
+
+### The E-Commerce Scenario
+
+Imagine building an e-commerce checkout. The steps are:
+
+**Create Order → Proceed to Payment → Show Summary → Update Wallet**
+
+Each step **depends on the previous one**. You can't pay before the
+order exists. You can't show summary before payment is done. These are
+**sequential async dependencies**.
+
+### How it looks with callbacks — the pyramid grows
+
+```js title="❌ Callback Hell — each dependency nests deeper"
+const cart = ["shoes", "pants", "kurta"];
+
+api.createOrder(cart, function(orderId) {
+  api.proceedToPayment(orderId, function(paymentInfo) {
+    api.showOrderSummary(paymentInfo, function(balance) {
+      api.updateWallet(balance, function() {
+        console.log("All done!");
+        // ... and what if there are more steps?
+      });
+    });
+  });
+});
+```
+
+<Callout type="insight" title="Why this is a problem">
+  The code grows **horizontally** — each new dependency adds another
+  level of nesting. With 4 steps it's already hard to read. Imagine 10
+  steps. This is called the **Pyramid of Doom** because the code looks
+  like a triangle/pyramid when you look at the indentation. It's nearly
+  impossible to debug, maintain, or add error handling to each step.
+</Callout>
+
+```text title="What Callback Hell looks like — the pyramid shape"
+createOrder(cart, function(orderId) {
+    proceedToPayment(orderId, function(paymentInfo) {
+        showOrderSummary(paymentInfo, function(balance) {
+            updateWallet(balance, function() {
+                sendConfirmation(function() {
+                    logAnalytics(function() {
+                        // 😵 6 levels deep...
+                    });
+                });
+            });
+        });
+    });
+});
+```
+
+See how it expands to the right? Each new step adds indentation. This
+is why it's called Pyramid of Doom.
+
+## The Bad Part 2 — Inversion of Control
+
+### This is the BIGGER problem — and most people miss it
+
+Callback hell is ugly, but the *real* danger is something deeper:
+**Inversion of Control**.
+
+```js title="Look at this carefully"
+api.createOrder(cart, function() {
+  api.proceedToPayment();  // 💰 THIS HANDLES REAL MONEY
+});
+```
+
+We are **giving** the `proceedToPayment` function to `createOrder` and
+**blindly trusting** that:
+
+- createOrder will actually call it
+- createOrder will call it **only once** (not twice — double charge!)
+- createOrder will call it at the **right time**
+- createOrder will pass the **correct data**
+- createOrder won't silently fail and **never call it**
+
+<Callout type="warning" title="Why this is dangerous">
+  We've handed the *control* of our critical code (payment!) to
+  someone else's function. If `createOrder` was written by another
+  developer, or is from a third-party library — we have ZERO guarantee
+  about how or when our callback will be called. The control has been
+  **inverted**: instead of us controlling when payment happens, we're
+  depending on someone else to trigger it. This is called **Inversion
+  of Control**.
+</Callout>
+
+**❌ With Callbacks — We PASS our function:** "Hey `createOrder`,
+here's my payment function. Please call it when you're done. I'm
+trusting you completely." We've GIVEN AWAY control. What if it calls
+twice? Never? With wrong data?
+
+**✅ With Promises — We ATTACH our function:** "Hey `createOrder`,
+give me a promise. I'll decide what to do when the result is ready. I
+keep the control." WE control the flow. Promise guarantees: called
+once, immutable result.
+
+<Callout type="insight" title="The key difference — 'passing' vs 'attaching'">
+  With callbacks, we *pass* our function INTO another function (giving
+  away control). With promises, the other function gives us back an
+  object (the promise), and WE *attach* our function to it. We never
+  lose control. This subtle difference is what makes promises
+  fundamentally better, and it's what interviewers want you to explain.
+</Callout>
+
+## Episode 21 — Promises: The Solution
+
+How promises solve both callback hell AND inversion of control.
+
+## What is a Promise? — 3 Definitions (Use These in Interviews)
+
+### Definition 1 — The Simple Version
+
+A Promise is a **placeholder object for a future value**. It represents
+a value that we don't have yet, but will have eventually (or will know
+that we can't get it).
+
+### Definition 2 — The Technical Version
+
+A Promise is an **object representing the eventual completion or
+failure** of an asynchronous operation.
+
+### Definition 3 — The Akshay Saini Version
+
+A Promise object is a **placeholder for a certain period of time**
+until we receive a value from an asynchronous operation. It's a
+**container for a future value**.
+
+<Callout type="insight" title="Why all 3 definitions?">
+  Different interviewers expect different levels. The simple version
+  shows you get the concept. The technical version shows you know the
+  spec. The third version shows you understand the practical
+  behavior — the promise starts empty and gets filled later.
+</Callout>
+
+## How Promises Work — Step by Step
+
+### Before: Callback Approach
+
+```js title="❌ We PASS the callback — losing control"
+const cart = ["shoes", "pants", "kurta"];
+
+createOrder(cart, function(orderId) {
+  proceedToPayment(orderId);
+});
+// We're TRUSTING createOrder to call our callback correctly
+// Inversion of Control — we've given away control 😰
+```
+
+### After: Promise Approach
+
+```js title="✅ createOrder RETURNS a promise — we keep control"
+const cart = ["shoes", "pants", "kurta"];
+
+const promiseRef = createOrder(cart);
+// promiseRef = { data: undefined }  ← immediately returned
+// JS doesn't wait — continues executing other code
+
+// After some time... createOrder finishes, orderId is ready
+// promiseRef = { data: "order_123" }  ← automatically filled!
+
+// We ATTACH our callback — we decide what happens next:
+promiseRef.then(function(orderId) {
+  proceedToPayment(orderId);
+});
+// ✅ WE control the flow. Promise guarantees it calls .then ONCE.
+```
+
+<Callout type="insight" title="What changed fundamentally?">
+  The control is now in OUR hands. We're not handing our function to
+  someone else. Instead, `createOrder` gives us back an object (the
+  promise), and WE attach our function to it. The promise guarantees:
+  (1) `.then` will be called only **once**, (2) the data inside is
+  **immutable** once set — nobody can tamper with it, (3) the callback
+  WILL run when data is ready. These guarantees are what callbacks
+  couldn't provide.
+</Callout>
+
+### Promise Lifecycle — Visual Flow
+
+**`createOrder(cart)` called → Promise returned (`{data: undefined}`)
+→ JS continues (doesn't wait) → ...time passes... (async work
+happens) → Promise fulfilled (`{data: "order_123"}`) → `.then()`
+fires (our callback runs)**
+
+## Seeing a Real Promise — fetch() API
+
+### fetch() returns a Promise — let's inspect it
+
+```js title="Real API call with fetch"
+const URL = "https://api.github.com/users/alok722";
+const user = fetch(URL);
+
+console.log(user); // Promise {<pending>}
+```
+
+### What's inside a Promise object?
+
+If you inspect a promise in Chrome DevTools, you'll see 3 properties:
+
+- **`[[Prototype]]`** — the Promise prototype (has .then, .catch,
+  .finally methods)
+- **`[[PromiseState]]`** — current state: `"pending"`, `"fulfilled"`,
+  or `"rejected"`
+- **`[[PromiseResult]]`** — the result data. Initially `undefined`,
+  later filled with the actual value (or error reason)
+
+<Callout type="insight" title='Why console.log(user) shows "pending"'>
+  When `fetch()` is called, it immediately returns a Promise in the
+  **pending** state. JS doesn't wait for the API response — it moves
+  to the next line and logs the promise. At that point, the HTTP
+  request is still in flight. Later, when the response arrives, the
+  PromiseState changes to "fulfilled" and PromiseResult gets the
+  Response object. Chrome DevTools has a quirk: if you expand the
+  logged promise, it might show "fulfilled" because Chrome updates the
+  log retroactively.
+</Callout>
+
+### Consuming the Promise with .then
+
+```js title="Attaching a callback to handle the result"
+const URL = "https://api.github.com/users/alok722";
+const user = fetch(URL);
+
+user.then(function(data) {
+  console.log(data);
+});
+// When the API response arrives, our function is automatically called
+// with the Response object as 'data'
+```
+
+## Promise States — The 3 Stages
+
+- **Pending** — Initial state. PromiseResult: `undefined`.
+- **Fulfilled** — Operation succeeded. PromiseResult: value.
+- **Rejected** — Operation failed. PromiseResult: error.
+
+### Key Properties of Promises
+
+- **Immutable once settled:** Once a promise is fulfilled or rejected,
+  it CANNOT change state. Calling `resolve()` twice has no effect.
+  This is the guarantee callbacks couldn't give us — no double calling.
+- **.then() is called exactly once:** When the promise settles, each
+  attached `.then` handler is called once. Not zero times, not twice.
+  Exactly once.
+- **Result is immutable:** Once the PromiseResult has data, it can't
+  be changed or tampered with. You can pass the promise around safely
+  — nobody can mutate the result.
+
+<Callout type="insight" title="Why immutability solves Inversion of Control">
+  With callbacks, we worried the callback might be called twice (double
+  payment!), never called (order stuck), or called with wrong data.
+  Promises make all these impossible: settled once (no double call),
+  .then guaranteed to fire (always called), result locked (no
+  tampering). Every fear we had with callbacks is addressed by these
+  guarantees.
+</Callout>
+
+## Promise Chaining — Solving Callback Hell
+
+### Before: Callback Hell (horizontal growth)
+
+```js title="❌ Pyramid of Doom"
+createOrder(cart, function(orderId) {
+  proceedToPayment(orderId, function(paymentInfo) {
+    showOrderSummary(paymentInfo, function(balance) {
+      updateWallet(balance);
+    });
+  });
+});
+```
+
+### After: Promise Chaining (vertical, readable flow)
+
+```js title="✅ Flat, readable chain"
+createOrder(cart)
+  .then(function(orderId) {
+    return proceedToPayment(orderId);
+  })
+  .then(function(paymentInfo) {
+    return showOrderSummary(paymentInfo);
+  })
+  .then(function(balance) {
+    return updateWallet(balance);
+  })
+  .catch(function(err) {
+    console.log("Error at any step:", err);
+  });
+```
+
+<Callout type="warning" title="Common Pitfall — ALWAYS return in .then()!">
+  If you forget to `return` the promise from each `.then`, the next
+  `.then` receives `undefined` instead of the actual data. The chain
+  breaks silently. The rule: **whatever you return from one .then
+  becomes the input to the next .then.**
+</Callout>
+
+### Cleaner with arrow functions
+
+```js title="✅ Even cleaner — arrow functions auto-return"
+createOrder(cart)
+  .then(orderId => proceedToPayment(orderId))
+  .then(paymentInfo => showOrderSummary(paymentInfo))
+  .then(balance => updateWallet(balance))
+  .catch(err => console.log("Error:", err));
+```
+
+<Callout type="insight" title="Why chaining works">
+  Each `.then()` returns a **new promise**. If your callback returns a
+  value, the next `.then` gets that value. If your callback returns a
+  promise, the chain *waits* for it to settle before moving to the
+  next `.then`. This is why the code flows top-to-bottom instead of
+  nesting — each step is at the same indentation level.
+</Callout>
+
+### Data Flow Through the Chain
+
+**`createOrder(cart)` returns orderId → `proceedToPayment` receives
+orderId, returns paymentInfo → `showSummary` receives paymentInfo,
+returns balance → `updateWallet` receives balance**
+
+Each step's output becomes the next step's input. If any step fails →
+jumps directly to .catch()
+
+### Error Handling — .catch() catches errors from ANY step above it
+
+```js title="One catch handles everything"
+createOrder(cart)
+  .then(orderId => proceedToPayment(orderId))
+  .then(paymentInfo => showOrderSummary(paymentInfo))
+  .then(balance => updateWallet(balance))
+  .catch(err => {
+    // If createOrder fails → caught here
+    // If proceedToPayment fails → caught here
+    // If showOrderSummary fails → caught here
+    // If updateWallet fails → caught here
+    console.log("Something went wrong:", err.message);
+  })
+  .finally(() => {
+    console.log("Cleanup — runs regardless of success/failure");
+  });
+```
+
+<Callout type="insight" title="Why one catch works for everything">
+  When any `.then` in the chain throws an error or returns a rejected
+  promise, the chain **skips all remaining .then handlers** and jumps
+  straight to the nearest `.catch`. It's like a try/catch block
+  wrapped around the entire chain. With callbacks, you'd need separate
+  error handling at EVERY nesting level — with promises, one `.catch`
+  at the end handles all failures.
+</Callout>
+
+## Creating Your Own Promise
+
+### Building the createOrder function that returns a promise
+
+```js title="Full implementation"
+function createOrder(cart) {
+  // Return a new promise
+  return new Promise(function(resolve, reject) {
+    // Validate cart
+    if (!cart.length) {
+      const err = new Error("Cart is empty!");
+      reject(err); // ← rejects the promise (failure path)
+      return;
+    }
+
+    // Simulate async order creation (e.g., API call)
+    setTimeout(function() {
+      const orderId = "ORDER_" + Math.floor(Math.random() * 10000);
+      resolve(orderId); // ← fulfills the promise (success path)
+    }, 2000);
+  });
+}
+
+// Using it:
+const cart = ["shoes", "pants"];
+
+createOrder(cart)
+  .then(orderId => {
+    console.log("Order created:", orderId);
+    return orderId;
+  })
+  .catch(err => console.log(err.message));
+
+// After 2 seconds: "Order created: ORDER_7342"
+```
+
+<Callout type="insight" title="The anatomy explained">
+  `new Promise` takes an **executor function** with two parameters:
+  `resolve` (call when success) and `reject` (call when failure). The
+  executor runs **immediately** (synchronously!). Inside, you do your
+  async work. When it's done, call `resolve(value)` to fulfill the
+  promise, or `reject(error)` to reject it. The consumers then use
+  `.then` for success and `.catch` for failure.
+</Callout>
+
+## Interview Questions & Answers
+
+**Q1. What is a callback function?**
+
+A callback function is a function passed as an argument to another
+function, to be executed at a later point. It's how JavaScript handles
+asynchronous operations — since JS is single-threaded and can't wait,
+it registers a callback with the environment (Web API, timer, etc.)
+and continues executing. When the async work is done, the callback is
+placed in the queue and eventually pushed to the call stack by the
+event loop. Callbacks are the foundation of async JS — setTimeout,
+event listeners, and API calls all use them.
+
+**Q2. What is Callback Hell? Why is it a problem?**
+
+Callback Hell (or Pyramid of Doom) is a pattern where callbacks are
+nested inside callbacks, creating deeply indented,
+horizontally-growing code. It happens when multiple async operations
+depend on each other sequentially. It's a problem because: (1) the
+code is very hard to **read** — the logic is buried in nesting, (2)
+it's hard to **maintain** — adding/removing a step requires
+restructuring the entire nesting, (3) **error handling** is extremely
+difficult — you need try/catch at every level, and (4) it becomes
+nearly impossible to **debug** — you can't tell which callback threw
+an error.
+
+**Q3. What is Inversion of Control? Why is it dangerous?**
+
+Inversion of Control happens when we pass a callback to another
+function and **lose control** over when, how, and how many times our
+callback is executed. The control of our critical code is now in
+someone else's hands. It's dangerous because: the callback might be
+called **twice** (double payment), **never** (order stuck), with
+**wrong data**, at the **wrong time**, or the parent function might
+**swallow errors** silently. We're blindly trusting external code with
+our critical business logic. Promises solve this by inverting the
+control back to us — we attach our callback to a promise object that
+WE own.
+
+**Q4. What is a Promise in JavaScript?**
+
+A Promise is an object representing the **eventual completion or
+failure** of an asynchronous operation. It's a placeholder for a
+future value — initially in a "pending" state with no data, and
+eventually settling to either "fulfilled" (with a result value) or
+"rejected" (with an error reason). Promises solve two problems of
+callbacks: (1) **Inversion of Control** — instead of passing our
+function to someone else, the async function returns a promise and we
+attach our handler to it (we keep control), (2) **Callback Hell** —
+promise chaining with `.then()` keeps code flat and readable instead
+of deeply nested.
+
+**Q5. What is the difference between "passing" a callback and "attaching" a callback?**
+
+**Passing a callback** (callbacks approach): We give our function TO
+another function. The other function decides when/how to call it.
+We've given away control. Example: `createOrder(cart, myCallback)` —
+createOrder has full power over myCallback.
+
+**Attaching a callback** (promises approach): The other function
+returns a promise to US. We then attach our callback to that promise
+using `.then()`. WE decide what happens with the result. The promise
+guarantees it calls our handler exactly once. Example:
+`createOrder(cart).then(myCallback)` — we keep control.
+
+**Q6. Why are Promise objects immutable?**
+
+Once a promise is settled (fulfilled or rejected), its state and
+result **cannot be changed**. This is by design for trust and safety.
+With callbacks, there was no guarantee that our callback wouldn't be
+called with different data or called multiple times. Promise
+immutability guarantees: (1) `resolve()`/`reject()` can only settle
+the promise **once** — a second call is ignored, (2) the result value
+can't be mutated after settlement, (3) we can pass the promise around
+(to other functions, components) without worrying that someone will
+tamper with the data inside. This is crucial for building reliable
+async systems.
+
+**Q7. What is Promise Chaining? What's the common mistake?**
+
+**Promise Chaining** is connecting multiple `.then()` calls where each
+step's output becomes the next step's input. Each `.then()` returns a
+new promise, so you can keep chaining. It solves callback hell by
+keeping code flat (vertical) instead of nested (horizontal).
+
+**The common mistake:** Forgetting to `return` from inside `.then()`.
+If you don't return, the next `.then` receives `undefined` instead of
+the data. Always return the value or promise from each `.then` to
+maintain the data flow through the chain.
+
+**Q8. What are the three states of a Promise?**
+
+**Pending:** Initial state. The async operation hasn't completed yet.
+`PromiseResult` is `undefined`.
+
+**Fulfilled:** The operation succeeded. `PromiseResult` contains the
+resolved value. `.then()` handlers are triggered.
+
+**Rejected:** The operation failed. `PromiseResult` contains the
+error/reason. `.catch()` handlers are triggered.
+
+A promise is "settled" once it's fulfilled or rejected. Settlement is
+**permanent** — it can never go back to pending or change to the
+other settled state.
+
+**Q9. How does error handling work with promises vs callbacks?**
+
+**Callbacks:** Error handling is manual and per-level. Every nested
+callback needs its own error check. There's no standard pattern —
+some libraries use error-first callbacks (`function(err, data)`),
+others don't. Missing error handling at any level means silent
+failures.
+
+**Promises:** A single `.catch()` at the end of the chain catches
+errors from *any* step above it. When any `.then` throws or returns a
+rejected promise, the chain skips all remaining `.then`s and jumps to
+`.catch()`. `.finally()` runs regardless — for cleanup. This is
+similar to try/catch/finally but for async code.
+
+**Q10. Does the Promise constructor run synchronously or asynchronously?**
+
+The executor function inside `new Promise((resolve, reject) => { ... })`
+runs **synchronously**! It executes immediately when the Promise is
+created. Only the `.then()`/`.catch()`/`.finally()` callbacks are
+asynchronous — they go to the microtask queue and run after the
+current synchronous code finishes. Also, calling `resolve()` does NOT
+stop execution of the remaining code inside the executor — code after
+`resolve()` still runs.
+
+## Output-Based Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+console.log("Start");
+
+const p = new Promise((resolve) => {
+  console.log("Inside Promise");
+  resolve("Done");
+  console.log("After resolve");
+});
+
+p.then(val => console.log(val));
+
+console.log("End");
+```
+
+**Output:** `"Start" → "Inside Promise" → "After resolve" → "End" → "Done"`
+
+**Why:** Constructor runs synchronously (Start, Inside Promise).
+`resolve()` doesn't stop execution (After resolve). "End" is sync.
+"Done" is microtask (.then callback).
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+console.log("A");
+
+setTimeout(() => console.log("B"), 0);
+
+Promise.resolve("C").then(val => console.log(val));
+
+console.log("D");
+```
+
+**Output:** `"A" → "D" → "C" → "B"`
+
+**Why:** Sync first (A, D). Then microtask queue (Promise: C). Then
+macrotask queue (setTimeout: B). Promises always have higher priority
+than setTimeout.
+
+**I/O 3. What will be the output? (Promise chain without return)**
+
+```js title="JavaScript — spot the bug"
+Promise.resolve(1)
+  .then(val => {
+    console.log(val);
+    val + 1;  // ← FORGOT to return!
+  })
+  .then(val => {
+    console.log(val);
+  });
+```
+
+**Output:** `1 → undefined`
+
+**Why:** First .then logs 1 correctly. But `val + 1` is computed but
+NOT returned. Without `return`, the .then handler returns `undefined`.
+The next .then receives `undefined`. This is the most common promise
+chaining mistake.
+
+**I/O 4. What will be the output? (Error propagation)**
+
+```js title="JavaScript"
+Promise.resolve(1)
+  .then(val => {
+    console.log(val);
+    throw new Error("Oops!");
+  })
+  .then(val => {
+    console.log("This won't run");
+  })
+  .catch(err => {
+    console.log("Caught:", err.message);
+  })
+  .then(() => {
+    console.log("After catch");
+  });
+```
+
+**Output:** `1 → "Caught: Oops!" → "After catch"`
+
+**Why:** First .then logs 1 and throws. Second .then is SKIPPED (chain
+jumps to catch). Catch handles the error. IMPORTANT: .then AFTER
+.catch still runs! Catch returns a resolved promise (with undefined),
+so the chain continues.
+
+**I/O 5. What will be the output? (Double resolve)**
+
+```js title="JavaScript"
+const p = new Promise((resolve, reject) => {
+  resolve("First");
+  resolve("Second");  // ← ignored?
+  reject("Error");    // ← ignored?
+});
+
+p.then(val => console.log(val));
+p.catch(err => console.log(err));
+```
+
+**Output:** `"First"`
+
+**Why:** A promise can only be settled ONCE. The first
+`resolve("First")` fulfills it. The second `resolve` and the `reject`
+are silently ignored — the promise is already settled. This is the
+immutability guarantee.
+
+## Quick Revision — Cheat Sheet
+
+### Callbacks
+
+- **Good:** Callbacks enable async programming in synchronous JS.
+  Foundation of everything.
+- **Bad 1 — Callback Hell:** Nested callbacks → horizontal pyramid →
+  unreadable, unmaintainable.
+- **Bad 2 — Inversion of Control:** Passing function to another
+  function → lose control → no guarantee about when/how/how many times
+  it runs.
+- Understanding these two problems is **essential** to understand why
+  promises were created.
+
+### Promises
+
+- **What:** Object representing eventual completion/failure of async
+  operation. Placeholder for future value.
+- **Solves Inversion of Control:** Instead of PASSING callback → async
+  function RETURNS promise → we ATTACH callback. Control stays with us.
+- **Solves Callback Hell:** Promise chaining with `.then()` keeps code
+  flat, readable, top-to-bottom.
+- **3 states:** Pending → Fulfilled (success) / Rejected (failure).
+  Settlement is permanent.
+- **Immutability:** Once settled, can't change state. .then called
+  exactly once. Result can't be tampered.
+- **Constructor runs synchronously.** .then/.catch/.finally are
+  microtasks (async).
+- **resolve() doesn't stop execution** — code after it in the
+  constructor still runs.
+- **Always return** from .then() — otherwise next .then gets undefined.
+- **One .catch()** at the end catches errors from any step above.
+- **.then after .catch** still runs — catch returns a resolved promise.
+- "Passing" vs "Attaching" — the fundamental difference between
+  callbacks and promises.

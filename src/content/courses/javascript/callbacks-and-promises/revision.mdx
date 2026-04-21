@@ -1,0 +1,56 @@
+---
+title: "Callbacks & Promises — From Problem to Solution"
+description: Quick revision — Callback Hell, Inversion of Control, Promise states, chaining, immutability.
+course: javascript/course
+view: revision
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Callbacks — the good" subtitle="Async programming's foundation.">
+- JavaScript is synchronous and single-threaded — it does not wait for anything.
+- Callbacks let us hand JS a function to run *later*, when async work completes.
+- setTimeout, event listeners, fetch, I/O — all use callbacks under the hood.
+- Without callbacks, there is no async programming in JS.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Callback Hell" subtitle="Pyramid of Doom.">
+- Nested callbacks for sequential dependencies → code grows horizontally.
+- Each dependency adds indentation — 6 levels deep is unreadable, undebuggable.
+- Error handling requires try/catch at every nesting level.
+- Called "Pyramid of Doom" because of the triangular indentation shape.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Inversion of Control" subtitle="The deeper, worse problem.">
+- We hand our critical code (payment!) to someone else's function — blindly trusting.
+- Callback might be called twice (double payment), never (order stuck), with wrong data, or at the wrong time.
+- Third-party code controls our business logic — zero guarantees.
+- This is why promises were invented — to give control BACK to us.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Promise — what & why" subtitle="Placeholder for a future value.">
+- Object representing the eventual completion or failure of an async operation.
+- **Passing vs attaching:** callbacks PASS our function (lose control); promises let us ATTACH our function to a returned promise (keep control).
+- Three states: **Pending** → **Fulfilled** (resolve called) / **Rejected** (reject called).
+- Settlement is permanent — no going back, no changing state again.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Promise guarantees" subtitle="The fixes for Inversion of Control.">
+- `.then` is called **exactly once** — no double-firing.
+- Result is **immutable** once settled — nobody can tamper with the data.
+- Callback is **guaranteed to run** when data is ready.
+- Errors propagate to `.catch` automatically — no manual plumbing.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Chaining & error handling" subtitle="Flat code, one catch.">
+- `.then()` returns a NEW promise → chain top-to-bottom, no nesting.
+- **Always `return` from .then** — otherwise the next .then gets `undefined`.
+- One `.catch` at the end catches errors from any step above (try/catch around the chain).
+- `.then` AFTER `.catch` still runs — catch returns a resolved promise with `undefined`.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **PASS vs ATTACH** — callbacks PASS our function away (we lose
+  control); promises let us ATTACH our function to a returned object
+  (we keep control). That single-word flip is the whole story.
+</Callout>

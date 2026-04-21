@@ -1,0 +1,49 @@
+---
+title: "call/apply/bind, Currying & Promises — The Complete Guide"
+description: Flow diagram — the 5 rules of `this` in priority order.
+course: javascript/course
+view: flow
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  When JS resolves `this`, it walks five rules in priority order and
+  stops at the first match. `new` wins over everything; explicit
+  binding beats implicit; default binding is the fallback. Arrow
+  functions sidestep the whole ladder — they have no own `this` and
+  inherit from the enclosing scope. The diagram below traces a call
+  site through the ladder.
+</Callout>
+
+## The five rules of `this` — priority order
+
+```mermaid
+flowchart TD
+    A["<b>i · Call site</b><br/>how is the function invoked?"]
+      --> N{"<b>ii · new Foo()?</b>"}
+    N -- yes --> NO["<b>this</b> = fresh object<br/>(constructor binding)"]
+    N -- no --> E{"<b>iii · call / apply / bind?</b>"}
+    E -- yes --> EO["<b>this</b> = the explicit context"]
+    E -- no --> I{"<b>iv · obj.fn() ?</b>"}
+    I -- yes --> IO["<b>this</b> = obj<br/>(implicit binding)"]
+    I -- no --> D{"<b>v · arrow function?</b>"}
+    D -- yes --> DO["<b>this</b> = enclosing lexical this<br/>(cannot override)"]
+    D -- no --> DB["<b>vi · default binding</b><br/>window (non-strict) / undefined (strict)"]
+
+    classDef head   fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef branch fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef leaf   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class A head
+    class N,E,I,D branch
+    class NO,EO,IO,DO,DB leaf
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Call site',          description: 'The exact way the function is invoked decides this — not where the function was declared.' },
+  { numeral: 'ii',   name: 'new Foo()',          description: 'Highest priority. Constructor binds this to a brand-new empty object.' },
+  { numeral: 'iii',  name: 'call / apply / bind', description: 'Explicit binding: you pass the context directly. bind returns a new function with this locked.' },
+  { numeral: 'iv',   name: 'obj.fn()',           description: 'Implicit binding: this = the object before the dot. Lose the dot → lose the binding.' },
+  { numeral: 'v',    name: 'Arrow function',     description: 'No own this. Inherits from the enclosing lexical scope. call/apply/bind cannot change it.' },
+  { numeral: 'vi',   name: 'Default binding',    description: 'Fallback when none of the above match. window in non-strict mode, undefined in strict mode.' },
+]} />

@@ -1,0 +1,58 @@
+---
+title: "JavaScript Complete Revision Guide"
+description: The revision of the revision — the core mental models from all 25 episodes in 6 cards.
+course: javascript/course
+view: revision
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Execution model" subtitle="How JS actually runs your code.">
+- Every script runs inside an **Execution Context** = Memory (variable environment) + Code (thread of execution).
+- Two phases: **Memory Phase** allocates — `var` → `undefined`, function → full code, `let`/`const` → TDZ.
+- **Code Phase** executes line by line. Call stack is LIFO — functions push a new FEC, pop on return.
+- Lexical scope — where the code is WRITTEN decides the scope chain; the chain walks up until a name is found or hits null.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Variables & closures" subtitle="var, let, const, TDZ, and the memory trap.">
+- `var` = function-scoped, hoisted as undefined, attaches to window. `let`/`const` = block-scoped, in TDZ until initialized.
+- **TDZ error** says "Cannot access before initialization" — proof that hoisting happens; access just isn't allowed yet.
+- **Closure** = function + its lexical environment. Captures references, not copies — changes are visible.
+- Classic trap: `for (var i ...) setTimeout(() => log(i))` prints the final value; `let` gives a fresh binding per iteration.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Async & event loop" subtitle="Microtasks beat macrotasks, always.">
+- JS is single-threaded. Async work runs in Web APIs, callbacks queue up, event loop pushes them back when the stack is empty.
+- **Order:** sync → ALL microtasks (promises, queueMicrotask) → ONE macrotask (setTimeout, I/O) → repeat.
+- `new Promise(...)` executor runs **synchronously**. `.then/.catch` are microtasks. `resolve()` does not stop the executor.
+- `await` suspends the async function, frees the stack, resumes via microtask — the engine is never blocked.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Promises & promise APIs" subtitle="Four static methods, four behaviours.">
+- **Promise.all** — ALL succeed → results in input order. First reject → fail fast.
+- **Promise.allSettled** — wait for ALL to finish. Never rejects. Returns `{status, value/reason}` per promise.
+- **Promise.race** — first to SETTLE wins (success OR failure).
+- **Promise.any** — first to SUCCEED wins. Rejects only if all fail (AggregateError).
+</RevisionCard>
+
+<RevisionCard numeral="v" title="this & explicit binding" subtitle="The 5 rules in priority order.">
+- **new** > **call/apply/bind** > **obj.fn()** > **default (window/undefined)** > **arrow (inherits)**.
+- `call(ctx, a, b)` invokes now with comma args. `apply(ctx, [a, b])` invokes now with array args. `bind(ctx, a)` returns a locked function.
+- **bind is permanent** — call/apply/second bind can't override. Only `new` beats bind.
+- Arrow functions have no own `this` — they inherit from the enclosing lexical scope and cannot be re-bound.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Types, coercion & traps" subtitle="The gotchas interviewers love.">
+- 7 primitives + object. `typeof null` → `"object"` (bug). `typeof NaN` → `"number"`. `typeof typeof 1` → `"string"`.
+- `+` with any string → concatenation. `-`/`*`/`/` → numeric coercion. `null + 1 = 1`, `undefined + 1 = NaN`.
+- 8 falsy values: `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`. Everything else (including `[]`, `{}`, `"0"`) is truthy.
+- Always use `===`. `NaN === NaN` is false — use `Number.isNaN`. `0.1 + 0.2 === 0.3` is false — IEEE-754 reality.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **EVACATS** — **E**xecution context, **V**ariables &amp; TDZ,
+  **A**sync &amp; event loop, **C**losures, **A**PIs (Promise),
+  **T**his binding, **S**ugar &amp; types. Seven pillars. If you can
+  riff on each for two minutes, you can riff through most JS
+  interviews.
+</Callout>

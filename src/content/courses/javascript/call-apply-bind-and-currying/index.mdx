@@ -1,0 +1,960 @@
+---
+title: "call/apply/bind, Currying & Promises — The Complete Guide"
+description: Not just what — but why each concept exists, when to use it, and how interviewers test it. The deep dive on explicit this binding, currying as partial application, and the full Promise surface (states, chaining, 4 static methods, async/await).
+excerpt: call/apply/bind with intent, currying as partial application, and the complete Promise surface.
+course: javascript/course
+order: 13
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 24
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - call-apply-bind
+  - this
+  - currying
+  - promises
+  - async-await
+  - promise-all
+---
+
+## Part 1 — Understanding `this` First (The Foundation)
+
+### Why does `this` exist?
+
+JavaScript functions are **not attached to any object by default**. Unlike
+Java or C++ where methods always belong to a class, a JS function is a
+standalone value — you can assign it to any variable, pass it anywhere,
+call it from any context. This creates a problem: **how does a function
+know which object's data to work with?**
+
+That's what `this` solves. It's a dynamic reference that tells the
+function: "here's the object you're working on *right now*." The same
+function can work with different objects just by changing `this`.
+
+<Callout type="insight" title="Why this matters for interviews">
+  Interviewers don't just want you to recite "`this` depends on how the
+  function is called." They want you to understand that `this` exists
+  because JS functions are first-class values that aren't inherently
+  bound to objects. That's the design decision that makes
+  `call`/`apply`/`bind` necessary.
+</Callout>
+
+### The 5 Rules of `this` — In Priority Order
+
+When JS determines `this`, it checks these rules **top to bottom**. The
+first match wins:
+
+1. **`new` keyword** — `new Foo()` → `this` = a brand new empty object.
+   *Why: the constructor needs a fresh object to set up.*
+2. **Explicit binding** — `fn.call(obj)` / `fn.apply(obj)` /
+   `fn.bind(obj)` → `this` = `obj`. *Why: you're explicitly telling JS
+   "use THIS object." It overrides the default behavior.*
+3. **Implicit binding** — `obj.fn()` → `this` = `obj` (the object before
+   the dot). *Why: when you call a method on an object, JS assumes you
+   want that object's data.*
+4. **Default binding** — `fn()` → `this` = `window` (non-strict) or
+   `undefined` (strict). *Why: no object context, so JS falls back to
+   the global object. Strict mode makes this safer by using undefined.*
+5. **Arrow function** — no own `this`, inherits from enclosing scope.
+   *Why: arrow functions were created specifically to solve the "lost
+   this" problem in callbacks and nested functions.*
+
+### The "Lost `this`" Problem — Why call/apply/bind Were Created
+
+```js title="The problem that started everything"
+const user = {
+  name: "Akshay",
+  greet: function() {
+    console.log("Hello, " + this.name);
+  }
+};
+
+user.greet();  // "Hello, Akshay" ✓ — called as method, this = user
+
+// Now extract the function and pass it somewhere else:
+const fn = user.greet;
+fn();          // "Hello, undefined" ✗ — standalone call, this = window!
+
+// Same problem with setTimeout:
+setTimeout(user.greet, 1000); // "Hello, undefined" ✗
+```
+
+<Callout type="insight" title="Why does this happen?">
+  When you write `const fn = user.greet`, you're copying the *function
+  reference* — not the object. It's like photocopying a recipe without
+  remembering which kitchen it came from. The function no longer knows
+  it belonged to `user`. When called as `fn()`, there's no object before
+  the dot, so `this` defaults to `window`. This is THE reason `call`,
+  `apply`, and `bind` exist — they let you explicitly say "use THIS
+  kitchen."
+</Callout>
+
+## call() — "Call this function right now, with this context"
+
+### What it does & why it exists
+
+`fn.call(context, arg1, arg2)` — calls the function **immediately** with
+`this` set to `context`, and passes arguments one by one.
+
+**Why it exists:** Sometimes you have a function that uses `this`, and
+you want to run it with a *specific* object as `this` — right now, not
+later. Maybe you're borrowing a method from one object for another.
+Maybe you're calling a parent constructor. `call` is the direct way to
+say "execute this function, and when it looks at `this`, it should see
+this object."
+
+### Example 1: Method Borrowing — The #1 Interview Use Case
+
+```js title="One function, reused across different objects"
+const person1 = {
+  name: "Akshay",
+  printDetails: function(city, country) {
+    console.log(this.name + " from " + city + ", " + country);
+  }
+};
+
+const person2 = { name: "Alok" };
+const person3 = { name: "Pranav" };
+
+// person2 and person3 don't have printDetails, but we BORROW it:
+person1.printDetails.call(person2, "Delhi", "India");
+// "Alok from Delhi, India"
+
+person1.printDetails.call(person3, "Pune", "India");
+// "Pranav from Pune, India"
+```
+
+<Callout type="insight" title="Why is this useful?">
+  Without `call`, you'd have to copy `printDetails` into every object —
+  duplicating code. With `call`, you write the function once and reuse
+  it with any object. This is the DRY principle in action. In large
+  codebases, method borrowing saves hundreds of lines.
+</Callout>
+
+### Example 2: Calling Parent Constructor — Inheritance Pattern
+
+```js title="Constructor chaining"
+function Animal(name, sound) {
+  this.name = name;
+  this.sound = sound;
+}
+
+function Dog(name) {
+  Animal.call(this, name, "Woof");
+  // ^ We're saying: "Run the Animal constructor,
+  //   but set 'this' to the new Dog object."
+  //   This gives Dog all of Animal's properties.
+  this.type = "Dog";
+}
+
+const buddy = new Dog("Buddy");
+console.log(buddy);
+// { name: "Buddy", sound: "Woof", type: "Dog" }
+```
+
+<Callout type="insight" title="Why this matters">
+  Before ES6 classes, this was THE way to do inheritance in JavaScript.
+  `Animal.call(this, ...)` runs the parent constructor but sets `this`
+  to the child object — so the child gets all parent properties. Even
+  with modern `class` syntax, `super()` does exactly this internally.
+</Callout>
+
+### Example 3: Borrowing Array Methods for Array-Like Objects
+
+```js title="The classic arguments trick"
+function listArgs() {
+  // 'arguments' looks like an array but ISN'T one.
+  // It has .length and indexes but NO .map, .filter, .forEach
+
+  // Borrow Array's slice to convert it to a real array:
+  const realArray = Array.prototype.slice.call(arguments);
+  console.log(realArray);
+}
+
+listArgs(1, 2, 3); // [1, 2, 3] — a real array now!
+
+// Modern equivalents (ES6+):
+// Array.from(arguments)
+// [...arguments]
+// Or just use rest params: function listArgs(...args) {}
+```
+
+<Callout type="insight" title="Why interviewers ask this">
+  It tests whether you understand that `call` isn't just for your own
+  functions — you can borrow *any* method from *any* prototype.
+  `Array.prototype.slice.call(arguments)` says "run Array's slice
+  method, but pretend `arguments` is the array." This works because
+  `slice` only needs `.length` and numeric indexes — which `arguments`
+  has.
+</Callout>
+
+## apply() — Same as call, but arguments in an array
+
+### Why does apply exist if we already have call?
+
+`fn.apply(context, [arg1, arg2])` — identical to `call` except arguments
+are passed as an **array**.
+
+**Why it exists:** Sometimes your arguments are already in an array.
+Before ES6's spread operator (`...`), there was NO way to "unpack" an
+array into individual arguments. `apply` was invented to solve this.
+Today, `...spread` does the same thing, so `apply` is less commonly
+needed — but interviewers still test it.
+
+### The Classic Use Case: Math.max with an Array
+
+```js title="The problem apply was made for"
+const numbers = [5, 2, 8, 1, 9];
+
+// Math.max expects individual args: Math.max(5, 2, 8, 1, 9)
+// But we have an array! We can't do Math.max([5,2,8,1,9]) — that gives NaN.
+
+// BEFORE ES6 — apply was the ONLY solution:
+Math.max.apply(null, numbers);  // 9
+// null because Math.max doesn't use 'this' — we don't care about context
+
+// AFTER ES6 — spread operator replaced this pattern:
+Math.max(...numbers);  // 9 — cleaner and easier to read
+```
+
+<Callout type="insight" title="Why null as context?">
+  When the function doesn't use `this` at all (like `Math.max`), you
+  still have to pass *something* as the first argument to `apply`.
+  `null` is the convention — it says "I don't care about `this`, I'm
+  only using `apply` for the argument-spreading feature." In non-strict
+  mode, `null` becomes `window` internally, but it doesn't matter since
+  the function ignores `this`.
+</Callout>
+
+<Callout type="tip" title="call vs apply — one-line summary">
+  Use `call` when you know the arguments individually. Use `apply` when
+  they're already in an array. Memory trick: **C**all =
+  **C**omma-separated. **A**pply = **A**rray.
+</Callout>
+
+## bind() — "Give me a copy with `this` locked forever"
+
+### Why bind is fundamentally different from call/apply
+
+`const newFn = fn.bind(context, arg1, arg2)` — does **NOT call** the
+function. Returns a **new function** with `this` permanently set.
+
+**Why it exists:** `call` and `apply` are for *immediate* execution.
+But what if you need to fix `this` for *later*? When you pass a method
+as a callback to `setTimeout`, `addEventListener`, or `Array.map`, you
+can't use `call` because you're not calling the function — you're
+*giving it to someone else* to call later. `bind` creates a version of
+the function where `this` is baked in permanently.
+
+### The Problem bind Solves — setTimeout losing `this`
+
+```js title="The problem → the fix"
+const user = {
+  name: "Akshay",
+  greet: function() {
+    console.log("Hello, " + this.name);
+  }
+};
+
+// ❌ PROBLEM: setTimeout extracts the function, loses this
+setTimeout(user.greet, 1000);
+// "Hello, undefined" — this = window, not user
+
+// ✅ FIX 1: bind — locks this to user permanently
+setTimeout(user.greet.bind(user), 1000);
+// "Hello, Akshay"
+
+// ✅ FIX 2: arrow function — captures this from surrounding scope
+setTimeout(() => user.greet(), 1000);
+// "Hello, Akshay"
+```
+
+<Callout type="insight" title="Why does setTimeout break this?">
+  When you write `setTimeout(user.greet, 1000)`, you're NOT calling
+  `user.greet()`. You're extracting the function reference and handing
+  it to the browser's timer. The browser stores it and calls it later
+  as a *standalone function* — no object before the dot. So `this`
+  falls to the default rule (window). `bind` solves this by returning a
+  NEW function where `this` is hardcoded. Even when the browser calls
+  it standalone, `this` is still `user`.
+</Callout>
+
+### Partial Application with bind
+
+```js title="Pre-filling arguments — creating specialized functions"
+function multiply(a, b) {
+  return a * b;
+}
+
+// Pre-fill the first argument. The bound function only needs the second:
+const double = multiply.bind(null, 2);  // a is always 2
+const triple = multiply.bind(null, 3);  // a is always 3
+
+double(5);  // 10 (2 * 5)
+triple(5);  // 15 (3 * 5)
+double(100); // 200 (2 * 100)
+```
+
+<Callout type="insight" title="Why partial application matters">
+  It lets you create *specialized* functions from *general* ones.
+  Instead of writing separate `double()` and `triple()` functions, you
+  configure them from one `multiply`. This is a core pattern in
+  functional programming. React's event handlers use this:
+  `onClick={handleDelete.bind(null, itemId)}` pre-fills the ID.
+</Callout>
+
+### Critical Rule: bind Cannot Be Overridden
+
+```js title="Once bound, forever bound"
+function sayName() { console.log(this.name); }
+
+const bound = sayName.bind({ name: "Akshay" });
+
+bound();                              // "Akshay"
+bound.call({ name: "Alok" });         // "Akshay" ← call can't override!
+bound.bind({ name: "Pranav" })();     // "Akshay" ← second bind ignored!
+
+// Exception: new CAN override bind (new has highest priority)
+function Person(name) { this.name = name; }
+const BoundPerson = Person.bind({ name: "Ignored" });
+const p = new BoundPerson("Akshay");
+p.name; // "Akshay" — new wins over bind!
+```
+
+<Callout type="insight" title="Why is bind permanent?">
+  It was designed to be a guarantee — once you bind, you can safely
+  pass the function anywhere knowing `this` will never change. If
+  `call`/`apply` could override it, bind would be unreliable for
+  callbacks and event handlers. The one exception is `new` — because
+  the whole point of `new` is to create a fresh object, which requires
+  a fresh `this`.
+</Callout>
+
+### Polyfill of bind — Most Asked Polyfill in Interviews
+
+```js title="myBind — understand every line"
+Function.prototype.myBind = function(context, ...boundArgs) {
+  // 'this' here = the function being bound (e.g., greet in greet.myBind(obj))
+  const originalFn = this;
+
+  // Return a NEW function (bind doesn't call, it returns)
+  return function(...calledArgs) {
+    // When this new function is eventually called:
+    // - Use apply to set 'this' to context
+    // - Merge pre-filled args (boundArgs) with new args (calledArgs)
+    return originalFn.apply(context, [...boundArgs, ...calledArgs]);
+  };
+};
+
+// Test:
+function greet(greeting, punct) {
+  console.log(greeting + ", " + this.name + punct);
+}
+
+const bound = greet.myBind({ name: "Akshay" }, "Hello");
+bound("!"); // "Hello, Akshay!"
+```
+
+<Callout type="insight" title="Why this polyfill works">
+  The key insight is that `this` inside `myBind` refers to the function
+  being bound (because `myBind` is called as a method on the function:
+  `greet.myBind(...)`). We store it, then return a closure. When the
+  closure is eventually called, it uses `apply` to invoke the original
+  function with the fixed context and merged arguments.
+</Callout>
+
+## Part 2 — Currying In Depth
+
+### What is Currying & Why Does It Exist?
+
+**Currying** transforms a function that takes multiple arguments into a
+sequence of functions that each take a **single argument**:
+
+`f(a, b, c)` becomes `f(a)(b)(c)`
+
+**Why it exists:** Currying enables *partial application* — you can
+provide some arguments now and the rest later. This creates
+**specialized, reusable functions** from general ones. It's the backbone
+of functional programming and is used heavily in libraries like Lodash,
+Ramda, and Redux.
+
+### Basic Currying — Manual Approach
+
+```js title="Normal function → curried function"
+// Normal: all args at once
+function add(a, b, c) {
+  return a + b + c;
+}
+add(1, 2, 3); // 6
+
+// Curried: one arg at a time, each returns a new function
+function addCurried(a) {
+  return function(b) {       // returns a function waiting for b
+    return function(c) {     // returns a function waiting for c
+      return a + b + c;      // finally computes the result
+    };
+  };
+}
+addCurried(1)(2)(3); // 6
+
+// The magic — partial application:
+const addOne = addCurried(1);       // a is locked to 1
+const addOneAndTwo = addOne(2);     // b is locked to 2
+addOneAndTwo(10);                   // 13 (1 + 2 + 10)
+addOneAndTwo(20);                   // 23 (1 + 2 + 20) — reusable!
+```
+
+<Callout type="insight" title="Why this is powerful">
+  Each intermediate function is a *specialized tool*. `addOne` is a
+  function that adds 1 to something. `addOneAndTwo` adds 3 to something.
+  You've created configurable, reusable building blocks from one general
+  function. In real codebases: `createLogger("ERROR")` returns an
+  error-logging function, `createValidator("email")` returns an email
+  validator, etc.
+</Callout>
+
+### Real-World Currying Examples
+
+```js title="Example 1: Configurable discount calculator"
+function discount(rate) {
+  return function(price) {
+    return price - (price * rate / 100);
+  };
+}
+
+const tenOff = discount(10);    // 10% discount function
+const twentyOff = discount(20);  // 20% discount function
+
+tenOff(500);     // 450
+tenOff(1000);    // 900
+twentyOff(500);  // 400
+```
+
+```js title="Example 2: API URL builder"
+const buildUrl = (baseUrl) => (endpoint) => (id) =>
+  `${baseUrl}/${endpoint}/${id}`;
+
+const api = buildUrl("https://api.example.com");
+const usersApi = api("users");
+const postsApi = api("posts");
+
+usersApi(42);  // "https://api.example.com/users/42"
+postsApi(7);   // "https://api.example.com/posts/7"
+```
+
+```js title="Example 3: Event handler configuration"
+const handleEvent = (eventType) => (element) => (callback) => {
+  element.addEventListener(eventType, callback);
+};
+
+const onClick = handleEvent("click");
+const onClickButton = onClick(document.getElementById("btn"));
+onClickButton(() => console.log("Clicked!"));
+```
+
+### Generic `curry()` Function — Works for Any Number of Args
+
+```js title="The interview-ready implementation"
+function curry(fn) {
+  // fn.length = number of parameters the original function expects
+  return function curried(...args) {
+    if (args.length >= fn.length) {
+      // We have enough arguments — call the original function
+      return fn.apply(this, args);
+    } else {
+      // Not enough args yet — return a function that collects more
+      return function(...moreArgs) {
+        return curried.apply(this, [...args, ...moreArgs]);
+      };
+    }
+  };
+}
+
+function sum(a, b, c) { return a + b + c; }
+const curriedSum = curry(sum);
+
+curriedSum(1)(2)(3);   // 6
+curriedSum(1, 2)(3);  // 6 — can pass multiple args at once too!
+curriedSum(1)(2, 3);  // 6
+curriedSum(1, 2, 3); // 6 — works like the original too
+```
+
+<Callout type="insight" title="How it works">
+  `fn.length` tells us how many parameters the function was defined
+  with. Each time `curried` is called, it checks: "do I have enough
+  arguments to satisfy the original function?" If yes, call it. If no,
+  return a new function that remembers what we have so far and waits
+  for more. It's recursion + closures working together.
+</Callout>
+
+### The Famous Infinite Currying: `sum(1)(2)(3)...(n)()`
+
+```js title="Sum any number of chained calls, terminate with ()"
+function sum(a) {
+  return function(b) {
+    if (b !== undefined) {
+      return sum(a + b);   // keep accumulating
+    }
+    return a;              // no arg = return total
+  };
+}
+
+sum(1)(2)();            // 3
+sum(1)(2)(3)();          // 6
+sum(5)(10)(15)(20)();    // 50
+```
+
+<Callout type="insight" title="Why interviewers love this">
+  It tests closures (each call remembers the running total), recursion
+  (sum calls itself), and functional thinking. The `()` at the end
+  acts as a "stop collecting and give me the answer" signal.
+</Callout>
+
+## Part 3 — Promises In Depth
+
+### Why Do Promises Exist?
+
+#### The Problem: Callback Hell
+
+Before promises, async code used nested callbacks. When multiple async
+operations depended on each other, the code became deeply nested, hard
+to read, and hard to debug. This was called **Callback Hell** or the
+**Pyramid of Doom**:
+
+```js title="❌ Callback hell — ugly, fragile, hard to follow"
+getData(userId, function(user) {
+  getOrders(user.id, function(orders) {
+    getItems(orders[0].id, function(items) {
+      getPrice(items[0].id, function(price) {
+        console.log(price);
+        // 4 levels deep... and error handling makes it worse
+      });
+    });
+  });
+});
+```
+
+```js title="✅ With promises — flat, readable, manageable"
+getData(userId)
+  .then(user => getOrders(user.id))
+  .then(orders => getItems(orders[0].id))
+  .then(items => getPrice(items[0].id))
+  .then(price => console.log(price))
+  .catch(err => console.log("Error:", err));
+```
+
+<Callout type="insight" title="Why promises were invented">
+  Callbacks had three problems: (1) **Inversion of control** — you hand
+  your callback to someone else's function and HOPE they call it
+  correctly. (2) **No standard error handling** — every callback needs
+  its own error checks. (3) **Readability** — deeply nested code is
+  impossible to maintain. Promises solve all three: you control the
+  flow, errors propagate automatically, and the code reads
+  top-to-bottom.
+</Callout>
+
+### Promise States & Lifecycle
+
+#### The Three States
+
+A promise is an object that represents the **eventual result** of an
+async operation. It has exactly three states:
+
+- **Pending** — initial state. The operation hasn't completed yet.
+  *Why: the async task is still running (e.g., HTTP request in
+  flight).*
+- **Fulfilled** — the operation succeeded. The promise has a **result
+  value**. `.then()` handlers run. *Why: the data arrived successfully.*
+- **Rejected** — the operation failed. The promise has a **reason
+  (error)**. `.catch()` handlers run. *Why: something went wrong
+  (network error, bad response, etc.).*
+
+Once a promise moves from Pending to Fulfilled or Rejected, it is
+**settled** — it cannot change state again. This is called
+**immutability of settlement**.
+
+<Callout type="insight" title="Why immutability matters">
+  A promise can only be resolved or rejected ONCE. If `resolve()` is
+  called twice, the second call is ignored. This guarantees that your
+  `.then` handler runs exactly once — unlike callbacks where a buggy
+  library could call your callback multiple times.
+</Callout>
+
+### Creating a Promise
+
+```js title="The anatomy of a promise"
+const myPromise = new Promise((resolve, reject) => {
+  // This function runs IMMEDIATELY (synchronously!)
+  // It receives two functions from JS engine:
+  //   resolve(value) — call this when the operation succeeds
+  //   reject(error)  — call this when the operation fails
+
+  const success = true; // simulate some condition
+
+  if (success) {
+    resolve("Data loaded!");  // fulfills the promise
+  } else {
+    reject("Something failed"); // rejects the promise
+  }
+});
+
+// Consuming the promise:
+myPromise
+  .then(value => console.log(value))    // runs if fulfilled
+  .catch(error => console.log(error))   // runs if rejected
+  .finally(() => console.log("Done"));  // runs regardless
+```
+
+<Callout type="warning" title="Critical trap interviewers test">
+  The function inside `new Promise((resolve, reject) => { ... })` runs
+  **synchronously**! Only `.then`/`.catch`/`.finally` callbacks are
+  async (microtasks). And `resolve()` does NOT stop execution — code
+  after `resolve()` still runs!
+</Callout>
+
+### Promise Chaining — The Power of `.then`
+
+```js title="Each .then returns a NEW promise"
+// .then() always returns a new promise, so you can chain:
+fetch("/api/user")
+  .then(response => response.json())     // returns a promise
+  .then(user => fetch(`/api/posts/${user.id}`)) // returns a promise
+  .then(response => response.json())
+  .then(posts => console.log(posts))
+  .catch(err => console.log("Error anywhere in the chain:", err));
+  // ^ One catch handles errors from ANY step above!
+```
+
+<Callout type="insight" title="Why chaining works">
+  Every `.then()` returns a new promise. If you return a value, the
+  next `.then` gets that value. If you return a promise, the chain
+  waits for it to settle. If any step throws or rejects, the chain
+  skips to the nearest `.catch()`. This is why one `.catch` at the end
+  handles all errors — it's like a try/catch around the entire chain.
+</Callout>
+
+## The 4 Promise Static Methods — All of Them
+
+### Why do these exist?
+
+Sometimes you have **multiple promises running at the same time**
+(parallel async operations) and need to combine their results. The four
+static methods handle different combinations:
+
+- **`Promise.all()`** — *Wait for ALL to succeed.* Resolves with array
+  of all results. Rejects on FIRST failure. Use when: all results are
+  needed, one failure means the whole operation fails.
+- **`Promise.allSettled()`** — *Wait for ALL to finish.* Never rejects.
+  Returns status + value/reason for each. Use when: you want results
+  of all, even if some fail.
+- **`Promise.race()`** — *First to SETTLE wins.* Returns result of the
+  fastest promise (success or failure). Use when: you want the fastest
+  response (e.g., timeout pattern).
+- **`Promise.any()`** — *First to SUCCEED wins.* Ignores rejections
+  until one succeeds. Rejects only if ALL fail (AggregateError). Use
+  when: you have fallbacks (try multiple servers).
+
+### Promise.all() — In Depth
+
+```js title="All must succeed, or everything fails"
+const p1 = Promise.resolve(1);
+const p2 = Promise.resolve(2);
+const p3 = Promise.resolve(3);
+
+Promise.all([p1, p2, p3]).then(results => {
+  console.log(results); // [1, 2, 3] — all results, in ORDER (not speed)
+});
+
+// If ANY one rejects:
+const p4 = Promise.reject("Fail!");
+Promise.all([p1, p2, p4]).catch(err => {
+  console.log(err); // "Fail!" — first rejection kills everything
+});
+```
+
+<Callout type="insight" title="When to use Promise.all">
+  Loading a dashboard that needs user data, notifications, AND settings
+  simultaneously. If any one fails, the dashboard can't render
+  properly — so you want to know about the first failure immediately.
+  Results are returned in the same order as the input array, regardless
+  of which resolved first.
+</Callout>
+
+### Promise.allSettled() — In Depth
+
+```js title="Get every result, success or failure"
+const p1 = Promise.resolve("Success");
+const p2 = Promise.reject("Failed");
+const p3 = Promise.resolve("Also success");
+
+Promise.allSettled([p1, p2, p3]).then(results => {
+  console.log(results);
+  // [
+  //   { status: "fulfilled", value: "Success" },
+  //   { status: "rejected", reason: "Failed" },
+  //   { status: "fulfilled", value: "Also success" }
+  // ]
+});
+```
+
+<Callout type="insight" title="When to use Promise.allSettled">
+  Sending emails to 100 users. Some might fail, but you still want to
+  know which succeeded. Unlike `Promise.all`, it NEVER rejects — you
+  always get results for every promise. Added in ES2020.
+</Callout>
+
+### Promise.race() — In Depth
+
+```js title="Fastest settles the race — win or lose"
+const fast = new Promise(res => setTimeout(() => res("Fast!"), 100));
+const slow = new Promise(res => setTimeout(() => res("Slow!"), 500));
+
+Promise.race([fast, slow]).then(result => {
+  console.log(result); // "Fast!" — first to settle wins
+});
+
+// Classic pattern: timeout for a fetch
+const timeout = new Promise((_, reject) =>
+  setTimeout(() => reject("Timeout!"), 3000)
+);
+const fetchData = fetch("/api/data");
+
+Promise.race([fetchData, timeout])
+  .then(res => console.log("Got data!"))
+  .catch(err => console.log(err)); // "Timeout!" if fetch takes > 3s
+```
+
+<Callout type="insight" title="When to use Promise.race">
+  Implementing timeouts, selecting the fastest server, or any scenario
+  where you want the first result regardless of whether it's success
+  or failure. The timeout pattern above is a classic interview
+  question.
+</Callout>
+
+### Promise.any() — In Depth
+
+```js title="First SUCCESS wins — failures are ignored"
+const p1 = Promise.reject("Error 1");
+const p2 = new Promise(res => setTimeout(() => res("Server 2"), 200));
+const p3 = new Promise(res => setTimeout(() => res("Server 3"), 100));
+
+Promise.any([p1, p2, p3]).then(result => {
+  console.log(result); // "Server 3" — first SUCCESS (p1 failed, ignored)
+});
+
+// Only rejects if ALL fail:
+Promise.any([
+  Promise.reject("Fail 1"),
+  Promise.reject("Fail 2")
+]).catch(err => {
+  console.log(err); // AggregateError: All promises were rejected
+  console.log(err.errors); // ["Fail 1", "Fail 2"]
+});
+```
+
+<Callout type="insight" title="When to use Promise.any">
+  Trying multiple CDN servers for a resource — you want the first one
+  that works. Failures are expected (servers go down). Only if ALL fail
+  do you want an error. The `AggregateError` contains all individual
+  rejection reasons. Added in ES2021.
+</Callout>
+
+## async/await — Syntactic Sugar over Promises
+
+### Why async/await exists
+
+Promises with `.then` chains are better than callbacks, but they still
+don't read like normal synchronous code. `async/await` (ES2017) lets
+you write async code that *looks* synchronous:
+
+```js title="Same operation — three styles"
+// Style 1: Callbacks
+getUser(id, (user) => {
+  getPosts(user.id, (posts) => {
+    console.log(posts);
+  });
+});
+
+// Style 2: Promises
+getUser(id)
+  .then(user => getPosts(user.id))
+  .then(posts => console.log(posts));
+
+// Style 3: async/await — reads like synchronous code!
+async function loadPosts(id) {
+  const user = await getUser(id);       // pauses here until resolved
+  const posts = await getPosts(user.id); // pauses here until resolved
+  console.log(posts);
+}
+```
+
+<Callout type="insight" title="What await actually does">
+  `await` pauses the `async` function (not the whole program!) and
+  waits for the promise to settle. If fulfilled, it returns the value.
+  If rejected, it throws — which you can catch with try/catch. The
+  paused function is resumed by the event loop's microtask queue.
+  That's why code after `await` runs as a microtask.
+</Callout>
+
+### Error Handling with async/await
+
+```js title="try/catch replaces .catch()"
+async function fetchData() {
+  try {
+    const response = await fetch("/api/data");
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log(data);
+  } catch (err) {
+    console.log("Error:", err.message);
+    // Catches: network errors, HTTP errors, JSON parse errors
+  } finally {
+    console.log("Cleanup"); // runs regardless
+  }
+}
+```
+
+## Tricky Promise Output Questions
+
+**I/O 1. What will be the output? (Constructor is synchronous!)**
+
+```js title="JavaScript"
+console.log(1);
+
+new Promise((resolve) => {
+  console.log(2);
+  resolve();
+  console.log(3);  // ← does this run?
+}).then(() => console.log(4));
+
+console.log(5);
+```
+
+**Output:** `1 → 2 → 3 → 5 → 4`
+
+**Sync:** 1, 2, 3 (yes! resolve() doesn't stop execution!), 5.
+**Microtask:** 4 (.then callback).
+
+**I/O 2. What will be the output? (The ultimate event loop question)**
+
+```js title="JavaScript"
+console.log("A");
+setTimeout(() => console.log("B"), 0);
+Promise.resolve().then(() => console.log("C"));
+Promise.resolve().then(() => setTimeout(() => console.log("D"), 0));
+Promise.resolve().then(() => console.log("E"));
+console.log("F");
+```
+
+**Output:** `A → F → C → E → B → D`
+
+**Sync:** A, F. **Microtasks (all):** C, then the second .then runs
+(schedules D as macrotask), E. **Macrotasks:** B (queued first), D
+(queued by microtask).
+
+**I/O 3. What will be the output? (async/await ordering)**
+
+```js title="JavaScript"
+async function foo() {
+  console.log("1");
+  const x = await "hello";
+  console.log("2");
+}
+
+console.log("3");
+foo();
+console.log("4");
+```
+
+**Output:** `3 → 1 → 4 → 2`
+
+3 (sync). foo() starts → 1 (sync part). `await` pauses foo. 4 (sync
+continues). Microtask: 2 (foo resumes after await). Even
+`await "hello"` (a non-promise) creates a microtask pause.
+
+**I/O 4. What will Promise.all return here?**
+
+```js title="JavaScript"
+const p1 = new Promise(res => setTimeout(() => res("A"), 300));
+const p2 = new Promise(res => setTimeout(() => res("B"), 100));
+const p3 = new Promise(res => setTimeout(() => res("C"), 200));
+
+Promise.all([p1, p2, p3]).then(console.log);
+```
+
+**Output:** `["A", "B", "C"]`
+
+Even though p2 resolves first (100ms), results are in **input order**,
+not resolution order. Promise.all waits for the slowest (p1 at 300ms)
+then returns all results in the same order as the input array.
+
+**I/O 5. What will Promise.race return here?**
+
+```js title="JavaScript"
+const p1 = new Promise((_, rej) => setTimeout(() => rej("Error!"), 50));
+const p2 = new Promise(res => setTimeout(() => res("Success!"), 100));
+
+Promise.race([p1, p2])
+  .then(v => console.log("Resolved:", v))
+  .catch(e => console.log("Rejected:", e));
+```
+
+**Output:** `"Rejected: Error!"`
+
+p1 settles first (50ms) — but it's a **rejection**. race returns the
+first to settle regardless of outcome. So the catch runs. This is the
+difference from `Promise.any`, which would wait for p2's success.
+
+## Quick Revision — Everything You Need
+
+### call / apply / bind
+
+- `call(ctx, a, b)` = invoke NOW, comma args. `apply(ctx, [a,b])` =
+  invoke NOW, array args. `bind(ctx, a)` = returns new function for
+  LATER.
+- **Why they exist:** To explicitly set `this` when functions lose
+  their object context (callbacks, extraction, borrowing).
+- bind is permanent — call/apply/second bind can't override it. Only
+  `new` can.
+- Arrow functions ignore call/apply/bind for `this` — their this is
+  always from the enclosing scope.
+- Polyfill trick: temporarily attach fn to context object, call as
+  method, delete.
+
+### Currying
+
+- Transforms `f(a,b,c)` → `f(a)(b)(c)`. Each call returns a new
+  function waiting for the next arg.
+- **Why it exists:** Creates specialized reusable functions from
+  general ones (partial application).
+- Generic curry: check `args.length >= fn.length` → call or return
+  collecting function.
+- Infinite currying: `sum(1)(2)...()` — use recursive closure, empty
+  call terminates.
+- Uses closures at every level to remember accumulated arguments.
+
+### Promises
+
+- **Why they exist:** Solve callback hell, inversion of control, and
+  error handling.
+- 3 states: Pending → Fulfilled / Rejected. Settlement is permanent.
+- Constructor runs **synchronously**. `.then`/`.catch` are microtasks.
+- `resolve()` does NOT stop execution inside the constructor!
+- **Promise.all** — all must succeed, first rejection fails all.
+  Results in input order.
+- **Promise.allSettled** — wait for all, never rejects. Returns
+  \{status, value/reason\}.
+- **Promise.race** — first to SETTLE (success or failure) wins.
+- **Promise.any** — first to SUCCEED wins. Rejects only if ALL fail
+  (AggregateError).
+- async/await is sugar over promises. `await` pauses function (not
+  program), creates microtask.
+- Execution order: Sync → Microtasks (all promises) → Macrotasks
+  (setTimeout).

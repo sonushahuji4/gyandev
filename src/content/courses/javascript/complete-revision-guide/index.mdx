@@ -1,0 +1,611 @@
+---
+title: "JavaScript Complete Revision Guide"
+description: All 25 episodes plus bonus — one-look revision. Execution Context through Promises, this-binding, types, coercion, polyfills, and 50 rapid-fire output questions. The pre-interview cheat sheet.
+excerpt: All 25 episodes plus bonus — one-look pre-interview revision with 50 rapid-fire output questions.
+course: javascript/course
+order: 16
+season: 1
+difficulty: intermediate
+type: reference
+readingMinutes: 18
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - revision
+  - cheat-sheet
+  - interview-prep
+  - output-questions
+  - rapid-fire
+---
+
+<Callout type="insight" title="How to use this guide">
+  All 25 episodes plus bonus in one place — one look = full revision.
+  Skim sections to refresh, or cover the answers in the rapid-fire
+  tables and predict. If wrong, re-read before moving on.
+</Callout>
+
+## Ep 1-2 — Execution Context & Call Stack
+
+**Everything in JS runs inside an Execution Context.** It has 2
+components: `Memory` (Variable Environment — stores variables/functions
+as key:value) and `Code` (Thread of Execution — runs code line by
+line).
+
+### Two Phases of Execution
+
+- **Phase 1: Memory** — Allocate memory. `var` → `undefined`,
+  `function` → full code.
+- **Phase 2: Code** — Execute line by line. Assign values. Call
+  functions.
+
+**Call Stack** = LIFO stack that manages execution contexts. GEC
+pushed first. Each function call pushes a new FEC. When function
+returns, its FEC is popped. When program ends, GEC is popped.
+
+Flow: `GEC → a() called → push → b() called → push → b() returns →
+pop → a() returns → pop → GEC pops`.
+
+**Stack Overflow** = when call stack exceeds its limit (e.g.,
+infinite recursion). Each recursive call creates a new execution
+context.
+
+## Ep 3-4 — Hoisting & Variable Environments
+
+**Hoisting** = variables and functions are accessible before their
+declaration because memory is allocated in Phase 1. It's not "moving
+code to the top" — it's the memory phase running first.
+
+| Declaration | Hoisting |
+|---|---|
+| `var x = 10;` | hoisted as undefined |
+| `let x = 10;` | hoisted but in TDZ |
+| `const x = 10;` | hoisted but in TDZ |
+| `function foo() {}` | hoisted FULLY |
+| `var foo = function() {}` | hoisted as undefined |
+| `var foo = () => {}` | hoisted as undefined |
+
+**Variable Environment:** Each execution context has its own memory
+space. Variables in one function can't access variables in another
+unless through scope chain. Parameters create local variables in the
+function's execution context.
+
+```js title="Hoisting behaviour"
+console.log(x); // undefined (var hoisted)
+console.log(y); // ReferenceError (let in TDZ)
+foo();          // "works!" (function fully hoisted)
+bar();          // TypeError: bar is not a function (var = undefined)
+var x = 10; let y = 20;
+function foo() { console.log("works!"); }
+var bar = function() { console.log("bar"); };
+```
+
+## Ep 5-6 — window, this & undefined vs not defined
+
+**window** = the global object in browsers. At the global level,
+`this === window`. All `var` declarations and function declarations
+become properties of `window`. `let`/`const` do NOT attach to window.
+
+**undefined** = a value JS assigns to variables during memory phase
+(Phase 1). It means "memory allocated but no value assigned yet." It's
+a *type* AND a *value*. **not defined** = variable doesn't exist in
+memory at all → ReferenceError.
+
+| Expression | Result |
+|---|---|
+| `var a; console.log(a);` | undefined |
+| `console.log(b);` | ReferenceError: b is not defined |
+| `typeof undefined` | `"undefined"` |
+| `typeof null` | `"object"` (bug) |
+| `undefined == null` | true |
+| `undefined === null` | false |
+
+**Never do** `var a = undefined;` — let JS handle it. If you want
+"empty," use `null` (intentional absence of value).
+
+### this substitution
+
+If `this` is `null`/`undefined` inside a function in **non-strict
+mode**, JS replaces it with `window`. In **strict mode**, it stays
+`undefined`. That's why `this` in a standalone function call =
+`window` (non-strict) or `undefined` (strict).
+
+## Ep 7 — Scope Chain & Lexical Environment
+
+**Lexical Environment** = local memory + reference to parent's lexical
+environment. "Lexical" means "where the code is physically written." A
+function's lexical parent is the function/scope that encloses it in
+the source code.
+
+Chain: `inner() memory → outer() memory → Global memory → null (end)`
+
+**Scope Chain** = the chain of lexical environments. When JS can't
+find a variable in current scope, it walks up the chain until it
+finds it or reaches null (ReferenceError).
+
+```js title="Scope chain via lexical environment"
+function outer() {
+  let a = 10;
+  function inner() {
+    console.log(a); // 10 → found in outer's scope via chain
+  }
+  inner();
+}
+outer();
+```
+
+**JS uses lexical (static) scoping**, not dynamic scoping. Scope is
+determined by WHERE the function is written, not where it's called
+from.
+
+## Ep 8-9 — let/const, TDZ, Block Scope & Shadowing
+
+- **var** — Function-scoped. Hoisted as undefined. Attaches to window.
+  Re-declarable. No TDZ.
+- **let** — Block-scoped. Hoisted but in TDZ. Script memory. No
+  re-declare. Can reassign.
+- **const** — Block-scoped. Hoisted but in TDZ. Script memory. No
+  re-declare. No reassign. Must init at declaration.
+
+**TDZ (Temporal Dead Zone)** = time between hoisting and
+initialization. Accessing let/const in TDZ →
+`ReferenceError: Cannot access before initialization`. Even `typeof`
+throws in TDZ! Proof of hoisting: error says "before initialization"
+not "not defined."
+
+**Block Scope:** `let`/`const` inside `{ }` exist ONLY in that block
+(separate Block memory). `var` ignores blocks, leaks to
+function/global scope.
+
+### Shadowing & Illegal Shadowing
+
+**var shadowing** in a block = modifies the outer var (same memory!).
+**let shadowing** = creates new independent variable. **Illegal:**
+Can't shadow `let` with `var` in same scope → SyntaxError. But `var`
+inside a *function* is legal (different scope boundary).
+
+- **SyntaxError** — Code doesn't run at all. Duplicate let/const,
+  missing const init, illegal shadowing.
+- **ReferenceError** — Variable in TDZ or not declared. Runtime error.
+
+```js title="The classic: var vs let in setTimeout loop"
+for(var i=0;i<3;i++) setTimeout(()=>console.log(i),100); // 3,3,3
+for(let i=0;i<3;i++) setTimeout(()=>console.log(i),100); // 0,1,2
+```
+
+## Ep 10-12 — Closures: The Complete Picture
+
+**Closure** = a function bundled with its lexical environment. The
+function remembers variables from its outer scope even after the
+outer function has returned and its execution context is destroyed.
+
+```js title="Closure basics"
+function outer() {
+  var a = 10;
+  return function inner() { console.log(a); };
+}
+outer()(); // 10 — inner still has access to a!
+```
+
+**Key rules:** Closures store **references**, not copies (if variable
+changes, closure sees updated value). Works with var/let/const and
+parameters. Declaration order doesn't matter. Multiple closures from
+same parent share the same variables. Separate calls to factory
+function → independent closures.
+
+### The Famous setTimeout + var Loop
+
+```js title="Problem and fixes"
+// Problem: var + loop + setTimeout = all print 6
+for(var i=1;i<=5;i++) setTimeout(()=>console.log(i), i*1000);
+// Fix 1: let (new i per iteration)
+// Fix 2: IIFE — (function(j){setTimeout(()=>log(j),j*1000)})(i)
+// Fix 3: Wrapper function — close(i) { setTimeout(()=>log(i)) }
+```
+
+### Uses of Closures
+
+Data hiding/encapsulation, module pattern, currying, memoization,
+setTimeout/setInterval, event handlers, iterators, function
+factories, React hooks (useState).
+
+**Disadvantage:** Closed-over variables aren't garbage collected →
+memory leaks. V8 is smart: only retains variables actually referenced.
+Always remove event listeners when done.
+
+## Ep 13-17 — Functions, Callbacks, Event Loop, Engine & setTimeout
+
+**First-class functions:** Functions can be assigned to variables,
+passed as arguments, returned from functions, stored in data
+structures. This enables HOFs, callbacks, closures, currying.
+
+**Function Statement** (declaration) = fully hoisted. **Function
+Expression** = hoisted as undefined (var) or TDZ (let/const). Only
+difference is hoisting. **Named Function Expression:** name only
+accessible inside the function body.
+
+### Event Loop Architecture
+
+- **Call Stack** — executes code
+- **Web APIs** — setTimeout, fetch, DOM, console
+- **Microtask Queue** — Promises, queueMicrotask, MutationObserver
+- **Callback Queue** — setTimeout, setInterval, events, I/O
+- **Event Loop** — checks stack empty? pushes from queues
+
+**Execution order:** Sync code → ALL microtasks (promises) → ONE
+macrotask (setTimeout) → ALL microtasks → ONE macrotask → repeat.
+**Microtasks ALWAYS have priority.**
+
+```js title="Event loop ordering"
+console.log("Start");                         // 1. sync
+setTimeout(() => console.log("Timeout"), 0);  // 4. macrotask
+Promise.resolve().then(() => console.log("Promise")); // 3. microtask
+console.log("End");                           // 2. sync
+// Start → End → Promise → Timeout
+```
+
+### JS Engine (V8)
+
+`Code → Parsing (tokens → AST) → Ignition (interpreter → bytecode)
+↔ TurboFan (compiler → machine code) + Orinoco (garbage collector,
+mark & sweep)`.
+
+**setTimeout trust issue:** `setTimeout(fn, 5000)` guarantees a
+**minimum** delay of 5s, not exact. If call stack is busy, callback
+waits. `setTimeout(fn, 0)` → still runs AFTER all sync code (goes
+through queue + event loop).
+
+## Ep 18-19 — Higher-Order Functions, map, filter & reduce
+
+**HOF** = a function that takes a function as argument OR returns a
+function. Enables functional programming, DRY code, abstraction.
+
+- **map(cb)** — Transforms every element. Returns new array of **same
+  length**. Chainable.
+- **filter(cb)** — Tests elements. Returns new array of elements
+  where cb returns **truthy**. ≤ original length.
+- **reduce(cb, init)** — Accumulates to **single value** (any type).
+  Most flexible. Can replace map + filter.
+
+**map vs forEach:** map returns new array (chainable). forEach returns
+undefined (for side effects). Neither mutates original.
+
+**Polyfill pattern:**
+`Array.prototype.myMap = function(cb) { const r=[]; for(let i=0;i<this.length;i++) r.push(cb(this[i],i,this)); return r; }`
+
+```js title="Classic gotcha"
+["1","2","3"].map(parseInt); // [1, NaN, NaN]
+// Because: parseInt("1",0)=1, parseInt("2",1)=NaN, parseInt("3",2)=NaN
+// Fix: .map(x => parseInt(x)) or .map(Number)
+```
+
+**Always provide initial value to reduce!** Without it: first element
+= initial acc, starts from index 1. Empty array without init →
+TypeError.
+
+## Ep 20-21 — Callbacks & Promises
+
+**Callback Good:** Enables async programming in synchronous JS.
+Foundation of everything.
+
+**Callback Bad:** (1) **Callback Hell** — nested callbacks → pyramid
+of doom → unreadable. (2) **Inversion of Control** — passing function
+to another function → lose control → might be called twice, never, or
+with wrong data.
+
+- **❌ Callback: PASSING** — "Here's my function, I trust you to call
+  it correctly." We give away control.
+- **✅ Promise: ATTACHING** — "Give me a promise, I'll attach my
+  function." We keep control. Called once. Immutable.
+
+**Promise** = object representing eventual completion/failure of
+async operation. Placeholder for future value. 3 states: **Pending**
+→ **Fulfilled** (resolve called) / **Rejected** (reject called).
+Settlement is permanent. Result is immutable.
+
+**Promise guarantees** that fix Inversion of Control: (1) .then
+called exactly **once**. (2) Result is **immutable**. (3) Callback
+WILL run when data is ready. (4) Errors propagate to .catch
+automatically.
+
+**Promise Chaining** solves callback hell: `.then()` returns new
+promise → flat, readable code. **Always return from .then!**
+(otherwise next .then gets undefined). One `.catch` at end catches
+errors from any step above.
+
+## Ep 22-23 — Creating Promises & async/await
+
+**Creating:** `new Promise((resolve, reject) => { ... })`. Executor
+runs **synchronously**. Call `resolve(value)` for success,
+`reject(error)` for failure. Return the promise to the consumer.
+`resolve()` does NOT stop execution — code after it still runs!
+
+**.catch placement matters:** A .catch only handles errors from steps
+**above** it. Steps below .catch still run. Multiple .catch blocks =
+selective error handling. .then AFTER .catch runs because catch
+returns a resolved promise.
+
+### async/await
+
+**async** keyword: function always returns a promise. Plain values
+auto-wrapped. Existing promises returned as-is (no double-wrap).
+
+**await**: pauses the function (NOT the engine). Function is
+suspended, popped off stack. Other code runs freely. When promise
+resolves, function pushed back and resumes where it left off. **Call
+stack is NEVER blocked.**
+
+**Timing trap:** Promises start at **creation**, not at await.
+`await` doesn't start a promise — it waits for an already-running
+one. Two promises created upfront with different timers both start
+ticking immediately.
+
+**Error handling:** `try/catch` inside async function (recommended)
+or `.catch()` on the function call. fetch needs **two awaits**: one
+for Response, one for .json() (body parsing).
+
+```js title="async/await ordering"
+console.log("C");
+async function foo() { console.log("A"); await "x"; console.log("B"); }
+foo(); console.log("D");
+// C → A → D → B  (await suspends, D runs, then B as microtask)
+```
+
+## Ep 24-25 — Promise APIs & this keyword
+
+### 4 Promise Static Methods
+
+- **Promise.all([p1,p2,p3])** — Waits for **ALL to succeed**. Returns
+  [val1,val2,val3]. **Fail-fast:** first rejection → rejects
+  immediately, ignores rest. Results in input order.
+  **Use:** Dashboard needing all data — one failure = can't render.
+- **Promise.allSettled([p1,p2,p3])** — Waits for **ALL to finish**
+  (success or failure). Never rejects. Returns `[{status,
+  value/reason},...]`. **Safest API.**
+  **Use:** Bulk emails — want results of all, even if some fail.
+- **Promise.race([p1,p2,p3])** — First to **SETTLE wins** (success OR
+  failure). Returns that single result.
+  **Use:** Timeout pattern — race fetch vs setTimeout rejection.
+- **Promise.any([p1,p2,p3])** — First to **SUCCEED wins**. Ignores
+  rejections. Only rejects if ALL fail (AggregateError with
+  err.errors array).
+  **Use:** Multiple CDN fallback — want first working server.
+
+```js title="Behaviour with p1=3s, p2=1s(fail), p3=2s"
+Promise.all([p1,p2,p3])       // ❌ rejects at 1s (p2 fail-fast)
+Promise.allSettled([p1,p2,p3]) // ✅ waits 3s → [{fulfilled},{rejected},{fulfilled}]
+Promise.race([p1,p2,p3])      // ❌ p2 settles first → rejected at 1s
+Promise.any([p1,p2,p3])       // ✅ skips p2 failure → p3 succeeds at 2s
+```
+
+### this keyword — 5 Rules (Priority Order)
+
+| Call form | this |
+|---|---|
+| 1. `new Foo()` | this = new object |
+| 2. `fn.call(obj)` / apply / bind | this = obj |
+| 3. `obj.fn()` | this = obj |
+| 4. `fn()` standalone | window (non-strict) / undefined (strict) |
+| 5. `() => {}` arrow | parent's this (can't override) |
+
+**Arrow functions** don't have own `this`. They inherit from
+enclosing lexical scope. `call/apply/bind` can't change arrow's this.
+That's why arrow inside `obj.method()` gets `obj` as this (inherits
+from the method), but arrow directly in object literal gets `window`
+(enclosing scope is global).
+
+## Bonus 1 — Data Types, Type Coercion & Equality
+
+**8 data types:** 7 primitives (`number`, `string`, `boolean`,
+`undefined`, `null`, `symbol`, `bigint`) + 1 reference (`object` —
+includes arrays, functions, Date, Map, Set, etc.).
+
+### typeof surprises
+
+| Expression | Result |
+|---|---|
+| `typeof null` | `"object"` (bug!) |
+| `typeof []` | `"object"` (use Array.isArray) |
+| `typeof NaN` | `"number"` (!) |
+| `typeof function(){}` | `"function"` |
+| `typeof typeof 1` | `"string"` |
+
+### Type coercion with +
+
+`+` with any string → **string concatenation** (string wins). `-`
+`*` `/` `%` → **numeric conversion** (number wins).
+
+| Expression | Result |
+|---|---|
+| `"5" + 5` | `"55"` |
+| `"5" - 3` | `2` |
+| `"5" + 3 + 2` | `"532"` |
+| `3 + 2 + "5"` | `"55"` |
+| `true + 1` | `2` |
+| `null + 1` | `1` |
+| `undefined + 1` | `NaN` |
+
+### == vs === (Loose vs Strict)
+
+`==` coerces types then compares. `===` no coercion — type AND value
+must match. **Always use ===**.
+
+| Expression | Result |
+|---|---|
+| `5 == "5"` | true |
+| `5 === "5"` | false |
+| `null == undefined` | true |
+| `null === undefined` | false |
+| `NaN === NaN` | false (!) |
+| `[] == false` | true |
+| `[] == ![]` | true (!!) |
+
+### 8 Falsy Values (memorize!)
+
+`false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`. Everything
+else is truthy — including `"0"`, `"false"`, `[]`, `{}`!
+
+`||` returns first **truthy**. `&&` returns first **falsy**. `??`
+returns first non-null/undefined (keeps 0 and "").
+
+## Bonus 2 — Polyfills & Coding Challenges
+
+### Polyfills to memorize
+
+- **myMap** — Loop, push `cb(this[i],i,this)`, return new array.
+- **myFilter** — Loop, if `cb()` truthy → push element.
+- **myReduce** — Handle init value, loop,
+  `acc = cb(acc,curr,i,arr)`.
+- **myBind** — Store `this` (original fn), return closure using
+  `apply(context, [...boundArgs,...newArgs])`.
+- **myCall** — Attach fn to context with Symbol key, call as method,
+  delete, return result.
+- **Promise.all** — Counter + results array.
+  `results[index]=value`. First reject → reject all.
+
+### Coding patterns to know
+
+- **Debounce** — clearTimeout + setTimeout in closure. Wait for user
+  to STOP. Use: search input.
+- **Throttle** — Boolean flag + setTimeout in closure. Max once per
+  interval. Use: scroll events.
+- **Curry** — Check `args.length >= fn.length` → call or return
+  collecting function.
+- **Deep Clone** — Recursive. Handle null, Date, RegExp, Array,
+  Object. `hasOwnProperty` check.
+- **Flatten Array** — Recursive reduce with Array.isArray check. Or
+  iterative stack.
+- **Memoize** — Map cache in closure. `JSON.stringify(args)` as key.
+
+```js title="Infinite currying — sum(1)(2)(3)...(n)()"
+function sum(a) {
+  return function(b) {
+    if (b !== undefined) return sum(a + b);
+    return a;
+  };
+}
+sum(1)(2)(3)(); // 6
+```
+
+## Bonus 3 — call/apply/bind Deep Patterns
+
+- **call(ctx, a, b)** — Invoke NOW. Comma args. Returns result.
+- **apply(ctx, [a,b])** — Invoke NOW. Array args. Returns result.
+- **bind(ctx, a)** — Returns NEW function. Partial application. Does
+  NOT call.
+
+**bind is permanent** — call/apply/second bind can't override it.
+Only `new` overrides bind. Arrow functions ignore call/apply/bind for
+`this`. Primitives as context → auto-boxed to objects (non-strict).
+
+**Method borrowing:** `person1.greet.call(person2)`. **Constructor
+chaining:** `Animal.call(this, name)`. **Array-like conversion:**
+`Array.prototype.slice.call(arguments)`. **Math trick:**
+`Math.max.apply(null, arr)`.
+
+**setTimeout loses this:** `setTimeout(obj.fn, 1000)` →
+`this=window`. Fix: `setTimeout(obj.fn.bind(obj), 1000)` or arrow
+function.
+
+```js title="The nested function trap"
+const obj = { x: 200, getX() {
+  console.log(this.x);        // 200 (method call)
+  function inner() { console.log(this.x); } // undefined! (standalone)
+  inner();
+  const arrow = () => console.log(this.x); // 200 (inherits from getX)
+  arrow();
+}};
+obj.getX();
+```
+
+## 50 Rapid-Fire Output Questions
+
+<Callout type="tip" title="How to use">
+  Cover the answer column. Predict the output. Check. If wrong,
+  understand why before moving on.
+</Callout>
+
+### Hoisting & Scope
+
+| Code | Answer |
+|---|---|
+| `console.log(a); var a = 5;` | undefined |
+| `console.log(a); let a = 5;` | ReferenceError (TDZ) |
+| `foo(); function foo(){console.log("hi")}` | `"hi"` |
+| `foo(); var foo = function(){console.log("hi")}` | TypeError |
+| `let a=1; {let a=2; console.log(a)} console.log(a)` | 2 → 1 |
+| `var a=100; {var a=10;} console.log(a)` | 10 (var leaks!) |
+
+### Closures & setTimeout
+
+| Code | Answer |
+|---|---|
+| `for(var i=0;i<3;i++) setTimeout(()=>log(i),100)` | 3, 3, 3 |
+| `for(let i=0;i<3;i++) setTimeout(()=>log(i),100)` | 0, 1, 2 |
+| `function a(){var x=10; return ()=>x;} a()()` | 10 |
+| `function a(){var x=10; function b(){log(x)} x=100; return b} a()()` | 100 (reference!) |
+
+### Type Coercion & Equality
+
+| Code | Answer |
+|---|---|
+| `"5" + 5` | `"55"` |
+| `"5" - 3` | `2` |
+| `"5" + 3 + 2` | `"532"` |
+| `3 + 2 + "5"` | `"55"` |
+| `+""` | `0` |
+| `+true` | `1` |
+| `+null` | `0` |
+| `+undefined` | `NaN` |
+| `5 == "5"` | true |
+| `5 === "5"` | false |
+| `null == undefined` | true |
+| `null == 0` | false |
+| `null >= 0` | true (!) |
+| `NaN === NaN` | false |
+| `0.1 + 0.2 === 0.3` | false |
+| `[] == false` | true |
+| `[] == ![]` | true |
+| `"10" > "9"` | false (lexicographic) |
+
+### Event Loop & Promises
+
+| Code | Answer |
+|---|---|
+| `log("A"); setTimeout(()=>log("B"),0); Promise.resolve().then(()=>log("C")); log("D")` | A→D→C→B |
+| `new Promise(r=>{log(1);r();log(2)}).then(()=>log(3)); log(4)` | 1→2→4→3 |
+| `async function f(){log("A"); await "x"; log("B")} log("C"); f(); log("D")` | C→A→D→B |
+| `setTimeout(()=>log(1),0); queueMicrotask(()=>log(2)); Promise.resolve().then(()=>log(3))` | 2→3→1 |
+
+### this & call/apply/bind
+
+| Code | Answer |
+|---|---|
+| `function f(){log(this)} f()` | window (non-strict) |
+| `"use strict"; function f(){log(this)} f()` | undefined |
+| `const o={a:5,f(){return this.a}}; o.f()` | 5 |
+| `const o={a:5,f(){return this.a}}; const g=o.f; g()` | undefined (lost this!) |
+| `const bound=f.bind({x:1}); bound.call({x:2}); log(bound())` | bind wins (x=1) |
+| `const o={x:10,f:()=>this.x}; o.f()` | undefined (arrow=global) |
+
+### map/filter/reduce Gotchas
+
+| Code | Answer |
+|---|---|
+| `["1","2","3"].map(parseInt)` | `[1, NaN, NaN]` |
+| `[1,2,3].map(x=>x*2)` | `[2, 4, 6]` |
+| `const a=[1,2,3].forEach(x=>x*2); log(a)` | undefined |
+| `[0,1,"",null,42,"0",false].filter(Boolean)` | `[1, 42, "0"]` |
+| `[1,2,3].reduce((a,c)=>a+c)` | 6 (no init → first el) |
+
+### Miscellaneous Traps
+
+| Code | Answer |
+|---|---|
+| `let a={};let b={key:"b"};let c={key:"c"};a[b]=123;a[c]=456;a[b]` | 456 (both keys = `"[object Object]"`) |
+| `typeof typeof 1` | `"string"` |
+| `[] + []` | `""` (empty string) |
+| `[] + {}` | `"[object Object]"` |
+| `!![]` | true (arrays are truthy) |
+| `console.log(1 && 2 && 3)` | 3 (last truthy) |
+| `console.log(0 || "" || "hi" || 0)` | `"hi"` (first truthy) |

@@ -1,0 +1,57 @@
+---
+title: "call/apply/bind, Currying & Promises — The Complete Guide"
+description: Quick revision — explicit this binding, currying, and the full Promise surface.
+course: javascript/course
+view: revision
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="The 5 rules of this" subtitle="Priority order — first match wins.">
+- **`new`** — `this` = fresh object. Highest priority.
+- **Explicit binding** — `fn.call/apply/bind(obj)` → `this` = `obj`.
+- **Implicit binding** — `obj.fn()` → `this` = `obj` (object before the dot).
+- **Default binding** — standalone `fn()` → `window` (non-strict) or `undefined` (strict).
+- **Arrow function** — no own `this`; inherits from enclosing lexical scope; cannot be overridden.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="call / apply / bind" subtitle="Solve the 'lost this' problem.">
+- **call:** `fn.call(ctx, a, b)` — invoke NOW with comma-separated args.
+- **apply:** `fn.apply(ctx, [a, b])` — invoke NOW with args in an array. Pre-ES6 workaround for spreading.
+- **bind:** `fn.bind(ctx, a)` — returns a NEW function with `this` locked forever. Supports partial application.
+- **bind is permanent** — call/apply/second bind cannot override. Only `new` wins over bind.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Currying" subtitle="f(a,b,c) becomes f(a)(b)(c).">
+- Transforms multi-arg functions into a sequence of single-arg functions.
+- Enables **partial application** — lock some args now, supply the rest later. Creates specialized tools from general ones.
+- **Generic curry:** collect args; when `args.length >= fn.length`, call the original; otherwise return a collector.
+- **Infinite currying:** `sum(a)` returns a function; if called with a value, recurse with `sum(a + b)`; empty call returns accumulated total.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Promise states & chaining" subtitle="Three states, one settlement.">
+- States: **Pending** → **Fulfilled** (resolve) or **Rejected** (reject). Settlement is permanent and immutable.
+- Executor runs **synchronously**. `resolve()` does NOT stop executor code — lines after it still run.
+- `.then` returns a **new promise** → chainable. Return a value → next .then gets it. Return a promise → chain waits.
+- One `.catch` at the end catches errors from any step above — like try/catch wrapped around the chain.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="The 4 static methods" subtitle="Combine multiple promises.">
+- **Promise.all** — ALL succeed → array of results in input order. First reject → fails immediately.
+- **Promise.allSettled** — wait for ALL to finish. Never rejects. Returns `{status, value/reason}` per promise.
+- **Promise.race** — first to SETTLE wins (success OR failure). Used for timeout patterns.
+- **Promise.any** — first to SUCCEED wins. Rejects only if ALL fail (AggregateError with `.errors`).
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="async / await" subtitle="Sugar over promises.">
+- `async` function always returns a promise (plain values auto-wrapped; existing promises returned as-is).
+- `await` pauses the **function** (not the engine); function is suspended, popped off stack, resumed via microtask.
+- Promises start at **creation**, not at await — creating two timers upfront means both tick in parallel.
+- Errors: `try/catch` inside async (recommended) or `.catch()` on the function call.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **C.A.B. — Currying, All-settled, Bind.** Call = Comma, Apply =
+  Array, Bind = Bake in. And the Promise combinators spell
+  **A.S.R.A.** — All, allSettled, Race, Any.
+</Callout>

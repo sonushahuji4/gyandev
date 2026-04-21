@@ -1,0 +1,52 @@
+---
+title: "JavaScript Complete Revision Guide"
+description: Flow diagram — the event loop tying every async concept together.
+course: javascript/course
+view: flow
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  Every async concept in the course — setTimeout, promises, fetch,
+  `await` — routes through the same plumbing: call stack, Web APIs,
+  microtask queue, callback queue, and the event loop that ties them
+  together. Microtasks always drain before the next macrotask. The
+  diagram below is the architecture you should be able to redraw in
+  an interview.
+</Callout>
+
+## The event loop — the architecture behind every async concept
+
+```mermaid
+flowchart TD
+    Code["<b>i · Your code</b><br/>sync statements"]
+      --> Stack["<b>ii · Call Stack</b><br/>executes frame by frame (LIFO)"]
+    Stack --> Web["<b>iii · Web APIs</b><br/>setTimeout, fetch, DOM, I/O"]
+    Web --> MQ["<b>v · Microtask Queue</b><br/>promise .then, queueMicrotask"]
+    Web --> CQ["<b>iv · Callback Queue</b><br/>setTimeout, setInterval, events"]
+    MQ --> Loop
+    CQ --> Loop
+    Loop{"<b>vi · Event Loop</b><br/>stack empty?"} -- drain microtasks first --> Stack
+    Loop -- then one macrotask --> Stack
+
+    classDef head   fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef sync   fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef micro  fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef macro  fill:#e3e8f5,stroke:#4a5a8a,stroke-width:2px,color:#1a1915;
+    classDef hub    fill:#f5e1e1,stroke:#8a4f4f,stroke-width:2px,color:#1a1915;
+    class Code head
+    class Stack sync
+    class Web,CQ macro
+    class MQ micro
+    class Loop hub
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Your code',       description: 'The source you wrote — synchronous statements, function declarations, and calls that kick off async work.' },
+  { numeral: 'ii',  name: 'Call Stack',      description: 'LIFO frame stack. Pushes on call, pops on return. Never blocked by async — await suspends and pops the frame.' },
+  { numeral: 'iii', name: 'Web APIs',        description: 'Browser/Node APIs that run outside the stack — timers, fetch, DOM listeners, I/O. When they complete, they queue a callback.' },
+  { numeral: 'iv',  name: 'Callback Queue',  description: 'Macrotask queue — setTimeout, setInterval, events, I/O. One macrotask per event-loop tick.' },
+  { numeral: 'v',   name: 'Microtask Queue', description: 'Promise .then/.catch/.finally, queueMicrotask, MutationObserver. ALL drained before the next macrotask.' },
+  { numeral: 'vi',  name: 'Event Loop',      description: 'The referee. When the stack is empty: drain every microtask, then take one macrotask. Repeat forever.' },
+]} />
