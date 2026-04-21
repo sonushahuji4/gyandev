@@ -1,0 +1,56 @@
+# Post-deploy HTTP smoke test (PR-6.2 / PHASE-1-ROADMAP §4 Sprint 6).
+#
+# Separate from ci.yml on purpose: ci.yml is a pre-merge gate, this job is a
+# post-deploy verification run against the live Cloudflare Pages site after
+# every push to main. It MUST NOT block deploys — hence `continue-on-error`
+# on the smoke step. Failures surface as a red check on the commit, which
+# the operator investigates out-of-band.
+#
+# Waiting strategy: Cloudflare Pages redeploys `main` on every push. We don't
+# have a deploy webhook wired up (Phase 1.5 ops task), so the workflow simply
+# waits 90s — enough for a clean static build + edge propagation on the
+# current site size. If that turns flaky, swap `sleep` for a poll loop that
+# fetches `/` and matches the commit SHA embedded in a meta tag.
+name: deploy-smoke
+
+on:
+  push:
+    branches: [main]
+  # Manual re-run knob: "Run workflow" in the Actions tab, optionally
+  # targeting a different BASE_URL (e.g. a preview deployment).
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'BASE_URL to smoke-test (defaults to production site)'
+        required: false
+        default: 'https://gyandev.org'
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    # Non-blocking: a smoke failure is a signal, not a gate. Deploys already
+    # happen on Cloudflare Pages independently of GitHub Actions.
+    continue-on-error: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # Zero npm install — smoke-deploy.mjs has no dependencies beyond the
+      # Node 22 built-in `fetch`. Checkout is only needed so the script can
+      # read `public/_headers` as a fallback (the local-mode branch).
+
+      - name: Wait for Cloudflare Pages deploy
+        # Simple fixed delay. Revisit once CF deploy webhooks are wired
+        # (PHASE-1-ROADMAP §11.5 deferred item).
+        run: sleep 90
+
+      - name: Run smoke tests
+        env:
+          BASE_URL: ${{ github.event.inputs.base_url || 'https://gyandev.org' }}
+        run: node scripts/smoke-deploy.mjs

@@ -23,6 +23,7 @@ import type { CollectionEntry } from 'astro:content';
 import { ClientRouter } from 'astro:transitions';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TopNav from './TopNav.astro';
+import Footer from './Footer.astro';
 import LeftSidebar, { type SidebarChapterRef } from './LeftSidebar.astro';
 import RightTOC from './RightTOC.astro';
 import BottomSheet from './BottomSheet.astro';
@@ -168,7 +169,9 @@ const a = availability ?? { full: true, revision: true, flow: true };
     <RightTOC headings={headings} ariaLabel="On this page (mobile)" showProgress={false} />
   </BottomSheet>
 
-  <slot name="footer" slot="footer" />
+  <Fragment slot="footer">
+    <slot name="footer"><Footer /></slot>
+  </Fragment>
 </BaseLayout>
 
 <style>

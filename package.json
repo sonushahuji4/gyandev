@@ -21,6 +21,8 @@
     "check:legal": "node scripts/check-legal-freshness.mjs",
     "check:lhci": "lhci autorun --config=.lighthouserc.cjs",
     "check": "npm run validate && npm run validate:slugs && npm run check:contrast && npm run check:csp && npm run check:content && npm run check:legal && npm run build && npm run check:bundle && npm run check:schema",
+    "smoke": "node scripts/smoke-deploy.mjs",
+    "smoke:local": "BASE_URL=http://localhost:4321 node scripts/smoke-deploy.mjs",
     "format": "prettier --write .",
     "lint": "eslint src --ext .ts,.astro"
   },

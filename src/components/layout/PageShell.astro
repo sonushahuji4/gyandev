@@ -2,8 +2,11 @@
 /**
  * Generic page shell used by home, all-courses, about, privacy, terms, 404.
  *
- * Composition: BaseLayout → TopNav → main (constrained column) → footer slot.
- * The footer itself is added by PR-6.1 (global footer).
+ * Composition: BaseLayout → TopNav → main (constrained column) → Footer.
+ * The global Footer (PR-6.1) is mounted here — not in `BaseLayout` — so the
+ * layout file stays minimal per PHASE-1-ROADMAP §7. ChapterShell mounts
+ * its own copy for the chapter routes. A page may still pass `slot="footer"`
+ * to replace it; when absent the default Footer renders.
  *
  * `includeSerif` is forwarded to BaseLayout per PHASE-1-ROADMAP §2.R2. Only
  * `home.astro` sets it true so the display serif preload cost doesn't hit
@@ -16,6 +19,7 @@
 
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import TopNav from './TopNav.astro';
+import Footer from './Footer.astro';
 import type { ArticleMeta } from '../../lib/seo/meta';
 
 interface Props {
@@ -76,7 +80,9 @@ const currentPath = Astro.url.pathname;
     <slot />
   </div>
 
-  <slot name="footer" slot="footer" />
+  <Fragment slot="footer">
+    <slot name="footer"><Footer /></slot>
+  </Fragment>
 </BaseLayout>
 
 <style>
