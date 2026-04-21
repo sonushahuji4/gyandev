@@ -3,7 +3,7 @@
  *
  * Kept component-scoped (not in `global.css`) so non-prose pages — e.g. the
  * catalog, home hero — are free of `.prose` resets. Imported explicitly by
- * ChapterShell and any page that renders Markdown body.
+ * ChapterContent and any page that renders Markdown body.
  */
 
 .prose {
@@ -30,10 +30,21 @@
   margin: 0 0 0.75em;
 }
 .prose h2 {
+  position: relative;
   font-size: var(--text-h2);
-  margin: 2em 0 0.75em;
+  margin: 2em 0 0.6em;
   padding-bottom: 0.3em;
   border-bottom: 1px solid var(--color-border);
+  padding-left: 0;
+}
+/* Serif § prefix in front of every H2 inside prose — prototype mark. */
+.prose h2::before {
+  content: '§';
+  margin-right: 0.45em;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--color-accent);
 }
 .prose h3 {
   font-size: var(--text-h3);
@@ -81,16 +92,22 @@
 .prose li > ul,
 .prose li > ol { margin-block: 0.35em; }
 
-/* Blockquotes */
+/* Blockquotes — warm-tinted, italic serif. */
 .prose blockquote {
-  margin: 1.25em 0;
-  padding: 0.5em 1em;
-  border-left: 3px solid var(--color-accent);
+  margin: 1.5em 0;
+  padding: 1rem 1.25rem;
+  border-left: 3px solid var(--color-border-strong);
   background: var(--color-surface-muted);
-  color: var(--color-text-muted);
-  border-radius: 0 6px 6px 0;
+  color: var(--color-text);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  border-radius: 0 8px 8px 0;
 }
 .prose blockquote p { margin-block: 0.5em; }
+.prose blockquote p:first-child { margin-top: 0; }
+.prose blockquote p:last-child { margin-bottom: 0; }
 
 /* Horizontal rule */
 .prose hr {
@@ -139,15 +156,21 @@
 .prose th {
   font-weight: 600;
   background: var(--color-surface-muted);
+  font-family: var(--font-mono);
+  font-size: 0.825em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-accent);
 }
 
-/* Inline code inside prose */
+/* Inline code inside prose — subtle warm pill. */
 .prose :not(pre) > code {
-  padding: 0.1em 0.35em;
-  background: var(--color-surface-muted);
-  border: 1px solid var(--color-border);
-  border-radius: 4px;
+  padding: 0.12em 0.4em;
+  background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface-muted));
+  border: 1px solid color-mix(in srgb, var(--color-accent) 20%, var(--color-border));
+  border-radius: 5px;
   font-size: 0.875em;
+  color: var(--color-text);
 }
 
 /* KaTeX-rendered math blocks — keep them from overflowing on mobile. */
@@ -155,4 +178,22 @@
   overflow-x: auto;
   overscroll-behavior-x: contain;
   padding: 0.25em 0;
+}
+
+/* Revision view — cards flow without a prose `max-width` cap so the ▸ markers
+   breathe, and don't need the § prefix on their bordered titles. */
+.prose--revision .revision-card h2::before { content: none; }
+.prose--revision > h2:not(:first-child) { margin-top: 2.5em; }
+
+/* Flow view — center the legend grid and pad the mermaid container. */
+.prose--flow { max-width: 56rem; }
+.prose--flow pre.mermaid,
+.prose--flow .mermaid {
+  display: flex;
+  justify-content: center;
+  padding: 1.5rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  margin: 1.5em 0;
 }

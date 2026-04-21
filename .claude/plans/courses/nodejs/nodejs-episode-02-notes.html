@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js Episode 02 — JS on Server</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --bg-card: #161920;
+    --bg-card-alt: #1a1e28;
+    --accent: #68d391;
+    --accent-dim: #38a169;
+    --accent-glow: rgba(104, 211, 145, 0.15);
+    --orange: #ed8936;
+    --orange-dim: #c05621;
+    --orange-glow: rgba(237,137,54,0.12);
+    --blue: #63b3ed;
+    --blue-dim: #3182ce;
+    --purple: #b794f4;
+    --text: #e2e8f0;
+    --text-dim: #a0aec0;
+    --text-muted: #718096;
+    --border: #2d3748;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 400;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 50% 45% at 30% 20%, rgba(99,179,237,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 45% 40% at 75% 75%, rgba(237,137,54,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-block;
+    padding: 0.4rem 1.2rem;
+    border: 1px solid var(--blue-dim);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 2rem;
+    animation: fadeDown 0.8s ease;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    animation: fadeUp 1s ease;
+  }
+  .hero h1 .hl-blue { color: var(--blue); }
+  .hero h1 .hl-orange { color: var(--orange); }
+  .hero-sub {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    color: var(--text-dim);
+    max-width: 620px;
+    margin-bottom: 3rem;
+    animation: fadeUp 1.2s ease;
+  }
+  .hero-link {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    animation: fadeUp 1.4s ease;
+  }
+  .hero-link a { color: var(--accent); text-decoration: none; }
+  .scroll-cue { animation: bounce 2s infinite; color: var(--text-muted); font-size: 1.5rem; margin-top: 1.5rem; }
+
+  /* ===== CONTAINER ===== */
+  .container { max-width: 860px; margin: 0 auto; padding: 0 1.5rem 6rem; }
+
+  /* ===== CHAPTERS ===== */
+  .chapter { margin-top: 5rem; margin-bottom: 3rem; position: relative; padding-left: 2rem; }
+  .chapter::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; border-radius: 3px; }
+  .chapter.ch-blue::before { background: linear-gradient(to bottom, var(--blue), transparent); }
+  .chapter.ch-orange::before { background: linear-gradient(to bottom, var(--orange), transparent); }
+  .chapter.ch-green::before { background: linear-gradient(to bottom, var(--accent), transparent); }
+  .chapter.ch-purple::before { background: linear-gradient(to bottom, var(--purple), transparent); }
+  .chapter-num { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 0.5rem; }
+  .chapter.ch-blue .chapter-num { color: var(--blue); }
+  .chapter.ch-orange .chapter-num { color: var(--orange); }
+  .chapter.ch-green .chapter-num { color: var(--accent); }
+  .chapter.ch-purple .chapter-num { color: var(--purple); }
+  .chapter h2 { font-family: 'Playfair Display', serif; font-size: clamp(1.8rem, 4vw, 2.5rem); font-weight: 700; line-height: 1.2; }
+
+  /* ===== STORY ===== */
+  .story { font-size: 1.1rem; color: var(--text-dim); margin-bottom: 1.5rem; }
+  .story strong { color: var(--text); font-weight: 600; }
+  .story em { color: var(--accent); font-style: normal; font-weight: 600; }
+  .story .hl { color: var(--orange); font-style: normal; font-weight: 600; }
+  .story code { font-family: 'JetBrains Mono', monospace; font-size: 0.9em; background: var(--bg-card); padding: 0.15em 0.45em; border-radius: 4px; color: var(--orange); }
+
+  /* ===== DEFINITION BOX ===== */
+  .def-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem 1.8rem; margin: 2rem 0; }
+  .def-box.b-blue { border-left: 3px solid var(--blue); }
+  .def-box.b-orange { border-left: 3px solid var(--orange); }
+  .def-box.b-green { border-left: 3px solid var(--accent); }
+  .def-box.b-purple { border-left: 3px solid var(--purple); }
+  .def-box .label { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .def-box.b-blue .label { color: var(--blue); }
+  .def-box.b-orange .label { color: var(--orange); }
+  .def-box.b-green .label { color: var(--accent); }
+  .def-box.b-purple .label { color: var(--purple); }
+  .def-box p { font-size: 1.05rem; color: var(--text); line-height: 1.7; }
+
+  /* ===== CALLOUT ===== */
+  .callout { display: flex; gap: 1rem; align-items: flex-start; border-radius: 10px; padding: 1.3rem 1.5rem; margin: 2rem 0; }
+  .callout.c-green { background: var(--accent-glow); border: 1px solid rgba(104,211,145,0.2); }
+  .callout.c-orange { background: var(--orange-glow); border: 1px solid rgba(237,137,54,0.2); }
+  .callout.c-blue { background: rgba(99,179,237,0.1); border: 1px solid rgba(99,179,237,0.2); }
+  .callout .callout-icon { font-size: 1.4rem; flex-shrink: 0; margin-top: 0.15rem; }
+  .callout p { font-size: 0.95rem; color: var(--text); line-height: 1.6; }
+
+  /* ===== DIAGRAM WRAPPER ===== */
+  .diagram-wrapper { margin: 2.5rem 0; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 2rem; overflow-x: auto; }
+  .diagram-wrapper .diagram-title { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--blue); margin-bottom: 1.2rem; }
+  .diagram-wrapper svg { display: block; margin: 0 auto; width: 100%; }
+
+  /* ===== COMPARISON TABLE ===== */
+  .compare-table { width: 100%; border-collapse: collapse; margin: 2rem 0; font-size: 0.95rem; }
+  .compare-table th { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); text-align: left; padding: 0.8rem 1rem; border-bottom: 2px solid var(--border); }
+  .compare-table td { padding: 0.8rem 1rem; border-bottom: 1px solid var(--border); color: var(--text-dim); vertical-align: top; }
+  .compare-table tr:hover td { background: var(--bg-card); }
+  .compare-table .tag-yes { color: var(--accent); font-weight: 600; }
+  .compare-table .tag-no { color: #fc8181; font-weight: 600; }
+
+  /* ===== INFO GRID ===== */
+  .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.2rem; margin: 2rem 0; }
+  .info-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; transition: border-color 0.3s, transform 0.3s; }
+  .info-card:hover { border-color: var(--blue-dim); transform: translateY(-2px); }
+  .info-card .icon { font-size: 1.6rem; margin-bottom: 0.8rem; }
+  .info-card h4 { font-family: 'Playfair Display', serif; font-size: 1.1rem; margin-bottom: 0.5rem; }
+  .info-card p { font-size: 0.9rem; color: var(--text-muted); line-height: 1.5; }
+
+  /* ===== QUOTE BOX ===== */
+  .quote-box { position: relative; margin: 3rem 0; padding: 2rem 2.5rem; background: linear-gradient(135deg, var(--bg-card), var(--bg-card-alt)); border-radius: 12px; border: 1px solid var(--border); }
+  .quote-box::before { content: '\201C'; position: absolute; top: -0.2rem; left: 1rem; font-family: 'Playfair Display', serif; font-size: 5rem; color: var(--blue-dim); opacity: 0.3; line-height: 1; }
+  .quote-box blockquote { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-style: italic; line-height: 1.6; color: var(--text); margin-bottom: 0.8rem; }
+  .quote-box .attribution { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-muted); }
+
+  /* ===== STEP FLOW ===== */
+  .step-flow { margin: 2.5rem 0; }
+  .step { display: flex; gap: 1.2rem; align-items: flex-start; margin-bottom: 1.5rem; }
+  .step-num { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.85rem; }
+  .step-num.sn-blue { background: rgba(99,179,237,0.15); color: var(--blue); border: 1px solid rgba(99,179,237,0.3); }
+  .step-num.sn-orange { background: var(--orange-glow); color: var(--orange); border: 1px solid rgba(237,137,54,0.3); }
+  .step-num.sn-green { background: var(--accent-glow); color: var(--accent); border: 1px solid rgba(104,211,145,0.3); }
+  .step-num.sn-purple { background: rgba(183,148,244,0.1); color: var(--purple); border: 1px solid rgba(183,148,244,0.3); }
+  .step-body h4 { font-size: 1.05rem; margin-bottom: 0.25rem; }
+  .step-body p { font-size: 0.95rem; color: var(--text-dim); line-height: 1.6; }
+
+  /* ===== FOOTER ===== */
+  .footer { text-align: center; padding: 3rem 1rem; color: var(--text-muted); font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 4rem; }
+
+  /* ===== NAV LINK ===== */
+  .ep-nav { display: flex; justify-content: space-between; align-items: center; padding: 1rem 0; margin-top: 3rem; border-top: 1px solid var(--border); font-size: 0.9rem; }
+  .ep-nav a { color: var(--blue); text-decoration: none; }
+  .ep-nav .muted { color: var(--text-muted); }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(8px); } }
+
+  @media (max-width: 600px) {
+    .container { padding: 0 1rem 4rem; }
+    .chapter { padding-left: 1.2rem; }
+    .quote-box { padding: 1.5rem; }
+    .def-box { padding: 1.2rem; }
+    .step { gap: 0.8rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-badge">Episode 02</div>
+  <h1><span class="hl-blue">JavaScript</span> on the <span class="hl-orange">Server</span></h1>
+  <p class="hero-sub">The journey of how JavaScript escaped the browser, what a server really is, and the secret sauce that makes V8 turn your code into lightning-fast machine instructions.</p>
+  <p class="hero-link">Continues from <a href="#">Episode 01 — The Origin Story</a></p>
+  <div class="scroll-cue">&#8595;</div>
+</section>
+
+<!-- ==================== MAIN ==================== -->
+<div class="container">
+
+  <!-- ===== CHAPTER 1 — WHAT IS A SERVER ===== -->
+  <div class="chapter ch-blue">
+    <div class="chapter-num">Chapter 01</div>
+    <h2>What Is a Server, Really?</h2>
+  </div>
+
+  <p class="story">
+    Before we talk about JavaScript running on a server, let's clear up what a <strong>server</strong> actually is — because the word gets thrown around a lot and it can feel abstract.
+  </p>
+
+  <p class="story">
+    Imagine you're at home, browsing Instagram on your phone. Every photo, every story, every reel — none of that data lives on your phone. It lives on a <strong>remote computer</strong> sitting in a data center somewhere, maybe thousands of kilometers away. When you open the app, your phone sends a <em>request</em> to that remote computer, and it <span class="hl">responds</span> with the data you asked for.
+  </p>
+
+  <p class="story">
+    That remote computer? That's a <strong>server</strong>.
+  </p>
+
+  <div class="def-box b-blue">
+    <div class="label">Definition</div>
+    <p>A <strong>server</strong> is a computer or system that provides data, services, resources, or programs to other computers — known as <strong>clients</strong> — over a network. It's essentially a remote computer whose CPU works for other machines.</p>
+  </div>
+
+  <p class="story">
+    The way communication works is straightforward: your device (the client) knows the server's <strong>IP address</strong> — a unique numerical label assigned to every device connected to the internet — and sends a request to that address. The server processes the request and sends back a response.
+  </p>
+
+  <div class="def-box b-orange">
+    <div class="label">What is an IP Address?</div>
+    <p>An <strong>IP address</strong> (Internet Protocol address) is a unique number that identifies every device connected to the internet. Think of it as a phone number for computers. When your browser visits <code>google.com</code>, your computer is actually connecting to an IP address like <code>142.250.193.206</code>.</p>
+  </div>
+
+  <!-- Client-Server Diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">The Client-Server Model</div>
+    <svg viewBox="0 0 750 280" xmlns="http://www.w3.org/2000/svg">
+      <!-- Client -->
+      <rect x="30" y="60" width="220" height="160" rx="12" fill="#1a1e28" stroke="#3182ce"/>
+      <text x="140" y="50" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="0.1em">CLIENT (Your Device)</text>
+      <rect x="65" y="90" width="150" height="36" rx="6" fill="rgba(99,179,237,0.1)" stroke="rgba(99,179,237,0.3)"/>
+      <text x="140" y="113" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="11">Browser / App</text>
+      <rect x="65" y="140" width="150" height="36" rx="6" fill="rgba(99,179,237,0.1)" stroke="rgba(99,179,237,0.3)"/>
+      <text x="140" y="163" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="12">Sends Requests</text>
+      <rect x="65" y="185" width="150" height="24" rx="4" fill="#2d3748"/>
+      <text x="140" y="201" text-anchor="middle" fill="#718096" font-family="JetBrains Mono, monospace" font-size="10">IP: 192.168.1.5</text>
+
+      <!-- Arrows -->
+      <defs>
+        <marker id="arr-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#68d391"/></marker>
+        <marker id="arr-l" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><polygon points="8 0, 0 3, 8 6" fill="#ed8936"/></marker>
+      </defs>
+      <line x1="265" y1="120" x2="485" y2="120" stroke="#68d391" stroke-width="2" marker-end="url(#arr-r)"/>
+      <text x="375" y="112" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="10">REQUEST (via IP address)</text>
+      <line x1="485" y1="165" x2="265" y2="165" stroke="#ed8936" stroke-width="2" marker-end="url(#arr-l)"/>
+      <text x="375" y="185" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="10">RESPONSE (data, HTML, JSON)</text>
+
+      <!-- Server -->
+      <rect x="500" y="60" width="220" height="160" rx="12" fill="#1a1e28" stroke="#ed8936"/>
+      <text x="610" y="50" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="0.1em">SERVER (Remote Computer)</text>
+      <rect x="535" y="90" width="150" height="36" rx="6" fill="rgba(237,137,54,0.1)" stroke="rgba(237,137,54,0.3)"/>
+      <text x="610" y="113" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="11">Node.js / PHP / etc.</text>
+      <rect x="535" y="140" width="150" height="36" rx="6" fill="rgba(237,137,54,0.1)" stroke="rgba(237,137,54,0.3)"/>
+      <text x="610" y="163" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="12">Processes & Responds</text>
+      <rect x="535" y="185" width="150" height="24" rx="4" fill="#2d3748"/>
+      <text x="610" y="201" text-anchor="middle" fill="#718096" font-family="JetBrains Mono, monospace" font-size="10">IP: 142.250.193.206</text>
+
+      <!-- Internet cloud -->
+      <text x="375" y="145" text-anchor="middle" fill="#4a5568" font-family="Source Sans 3, sans-serif" font-size="11">~ Internet ~</text>
+    </svg>
+  </div>
+
+
+  <!-- ===== CHAPTER 2 — THE GREAT ESCAPE ===== -->
+  <div class="chapter ch-orange">
+    <div class="chapter-num">Chapter 02</div>
+    <h2>The Great Escape — JS Breaks Free</h2>
+  </div>
+
+  <p class="story">
+    For years, JavaScript lived inside a cage called the <strong>web browser</strong>. It could make websites interactive — animate menus, validate forms, handle clicks — but that was it. The moment you closed the browser tab, JavaScript ceased to exist. It had zero access to the file system, no ability to talk to databases, no power to listen for network connections.
+  </p>
+
+  <p class="story">
+    Meanwhile, on the server side, languages like <strong>PHP, Ruby, Python, and Java</strong> ruled supreme. If you wanted to build a web application, you had to learn <em>at least two languages</em>: JavaScript for the frontend and something else for the backend.
+  </p>
+
+  <p class="story">
+    Then <strong>Node.js</strong> arrived and changed everything. By taking Google's V8 engine out of Chrome and wrapping it with server-side capabilities, Node.js let developers use <span class="hl">one language — JavaScript — for both the frontend and the backend</span>. One language, one mental model, one ecosystem.
+  </p>
+
+  <div class="quote-box">
+    <blockquote>Now, developers only need to learn one language to write both frontend and backend — thanks to Node.js!</blockquote>
+    <div class="attribution">— The promise that made Node.js irresistible</div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="icon">&#127912;</div>
+      <h4>Frontend (Client)</h4>
+      <p>JavaScript runs in the browser. Handles UI, animations, user interactions, DOM manipulation. Powered by V8 (Chrome), SpiderMonkey (Firefox), etc.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#9881;&#65039;</div>
+      <h4>Backend (Server)</h4>
+      <p>JavaScript runs on the server via Node.js. Handles HTTP requests, database queries, file I/O, authentication, API endpoints, and business logic.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128279;</div>
+      <h4>Same Language, Full Stack</h4>
+      <p>Share code, utilities, and validation logic between frontend and backend. One team, one language, faster development and fewer context switches.</p>
+    </div>
+  </div>
+
+
+  <!-- ===== CHAPTER 3 — DEEP DIVE INTO V8 ===== -->
+  <div class="chapter ch-green">
+    <div class="chapter-num">Chapter 03</div>
+    <h2>The Engine Room — Understanding V8</h2>
+  </div>
+
+  <p class="story">
+    At the heart of Node.js lies the <strong>V8 engine</strong> — the same engine that powers Google Chrome. But what exactly is V8, and why does it matter?
+  </p>
+
+  <div class="def-box b-green">
+    <div class="label">What is V8?</div>
+    <p><strong>V8</strong> is Google's open-source, high-performance JavaScript and WebAssembly engine. It is <strong>written in C++</strong>. V8 implements the ECMAScript standard and runs on Windows, macOS, and Linux on x64, IA-32, and ARM processors. A key feature: V8 can be <strong>embedded into any C++ application</strong>.</p>
+  </div>
+
+  <p class="story">
+    Here's the part that makes V8 special: it doesn't <em>interpret</em> JavaScript the way older engines did. Instead, V8 <strong>compiles JavaScript directly into machine code</strong> — the binary instructions that your CPU can execute natively. This is why Chrome (and Node.js) are so fast.
+  </p>
+
+  <p class="story">
+    Think of it like a translator. Old JS engines were like someone translating a book word by word as you read it (slow). V8 is like someone who translates the <em>entire book</em> upfront into your native language, so you can read it at full speed.
+  </p>
+
+  <!-- Code Compilation Flow Diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">How V8 Transforms Your JavaScript</div>
+    <svg viewBox="0 0 750 180" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="a1" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#63b3ed"/></marker>
+        <marker id="a2" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ed8936"/></marker>
+        <marker id="a3" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#68d391"/></marker>
+        <marker id="a4" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#b794f4"/></marker>
+      </defs>
+
+      <!-- Step 1: JS Code -->
+      <rect x="10" y="40" width="130" height="100" rx="10" fill="rgba(99,179,237,0.1)" stroke="#3182ce"/>
+      <text x="75" y="30" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.1em">YOU WRITE</text>
+      <text x="75" y="78" text-anchor="middle" fill="#63b3ed" font-family="Playfair Display, serif" font-size="15" font-weight="700">JavaScript</text>
+      <text x="75" y="100" text-anchor="middle" fill="#718096" font-family="JetBrains Mono, monospace" font-size="9">High-Level Code</text>
+      <text x="75" y="122" text-anchor="middle" fill="#4a5568" font-family="JetBrains Mono, monospace" font-size="9">let x = 42;</text>
+
+      <line x1="145" y1="90" x2="190" y2="90" stroke="#63b3ed" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <!-- Step 2: V8 Engine -->
+      <rect x="195" y="40" width="150" height="100" rx="10" fill="rgba(237,137,54,0.1)" stroke="#c05621"/>
+      <text x="270" y="30" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.1em">V8 ENGINE (C++)</text>
+      <text x="270" y="75" text-anchor="middle" fill="#ed8936" font-family="Playfair Display, serif" font-size="15" font-weight="700">Compiles</text>
+      <text x="270" y="97" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="10">Parses → Optimizes</text>
+      <text x="270" y="115" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="10">→ Generates code</text>
+
+      <line x1="350" y1="90" x2="395" y2="90" stroke="#ed8936" stroke-width="1.5" marker-end="url(#a2)"/>
+
+      <!-- Step 3: Assembly / Machine Code -->
+      <rect x="400" y="40" width="150" height="100" rx="10" fill="rgba(104,211,145,0.08)" stroke="#38a169"/>
+      <text x="475" y="30" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.1em">OUTPUT</text>
+      <text x="475" y="72" text-anchor="middle" fill="#68d391" font-family="Playfair Display, serif" font-size="14" font-weight="700">Machine Code</text>
+      <text x="475" y="95" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="10">Assembly / Binary</text>
+      <text x="475" y="115" text-anchor="middle" fill="#4a5568" font-family="JetBrains Mono, monospace" font-size="9">0110 1010 1111…</text>
+
+      <line x1="555" y1="90" x2="600" y2="90" stroke="#68d391" stroke-width="1.5" marker-end="url(#a3)"/>
+
+      <!-- Step 4: CPU -->
+      <rect x="605" y="40" width="130" height="100" rx="10" fill="rgba(183,148,244,0.08)" stroke="#9f7aea"/>
+      <text x="670" y="30" text-anchor="middle" fill="#b794f4" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="0.1em">HARDWARE</text>
+      <text x="670" y="78" text-anchor="middle" fill="#b794f4" font-family="Playfair Display, serif" font-size="15" font-weight="700">CPU</text>
+      <text x="670" y="100" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="10">Executes natively</text>
+      <text x="670" y="118" text-anchor="middle" fill="#4a5568" font-family="Source Sans 3, sans-serif" font-size="9">x64 / ARM / IA-32</text>
+    </svg>
+  </div>
+
+  <div class="callout c-blue">
+    <div class="callout-icon">&#128218;</div>
+    <p><strong>Key Insight:</strong> V8 is written in C++, and it can be embedded into <em>any</em> C++ program. This is exactly what Node.js does — <strong>Node.js is a C++ application with V8 embedded inside it</strong>. That's how JavaScript gets to run outside the browser.</p>
+  </div>
+
+
+  <!-- ===== CHAPTER 4 — ECMAScript & SUPERPOWERS ===== -->
+  <div class="chapter ch-purple">
+    <div class="chapter-num">Chapter 04</div>
+    <h2>ECMAScript & Node's Superpowers</h2>
+  </div>
+
+  <p class="story">
+    Here's a question: if V8 can run JavaScript, why do we need Node.js at all? Why not just use V8 directly?
+  </p>
+
+  <p class="story">
+    The answer lies in <strong>ECMAScript</strong>. ECMAScript is the <em>official standard</em> that defines what JavaScript is — what syntax is valid, how variables work, how functions behave. Every JS engine (V8, SpiderMonkey, Chakra) follows this standard to ensure your code behaves the same everywhere.
+  </p>
+
+  <div class="def-box b-purple">
+    <div class="label">What is ECMAScript?</div>
+    <p><strong>ECMAScript</strong> is a standard for scripting languages, including JavaScript, JScript, and ActionScript. It defines the core language features — variables, functions, loops, promises, classes, etc. All JS engines must follow ECMAScript standards to ensure consistent behavior across different environments.</p>
+  </div>
+
+  <p class="story">
+    But here's the thing: ECMAScript doesn't define <em>anything</em> about file systems, databases, network sockets, or HTTP servers. V8 follows ECMAScript, so V8 alone <strong>cannot</strong> read files, connect to databases, or handle HTTP requests. It only knows how to execute JavaScript logic.
+  </p>
+
+  <p class="story">
+    This is where Node.js adds its <strong>superpowers</strong>. Node.js wraps V8 and adds a layer of APIs — written in C++ and JavaScript — that give you access to the operating system's capabilities. These are the things that turn JavaScript from a browser toy into a full-blown server-side language.
+  </p>
+
+  <!-- V8 vs Node.js Comparison -->
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Capability</th>
+        <th>V8 Engine Alone</th>
+        <th>Node.js (V8 + APIs)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Execute JS logic</strong></td><td class="tag-yes">Yes</td><td class="tag-yes">Yes</td></tr>
+      <tr><td><strong>Read / write files</strong></td><td class="tag-no">No</td><td class="tag-yes">Yes (fs module)</td></tr>
+      <tr><td><strong>Create HTTP server</strong></td><td class="tag-no">No</td><td class="tag-yes">Yes (http module)</td></tr>
+      <tr><td><strong>Connect to databases</strong></td><td class="tag-no">No</td><td class="tag-yes">Yes (via npm packages)</td></tr>
+      <tr><td><strong>Handle network sockets</strong></td><td class="tag-no">No</td><td class="tag-yes">Yes (net module)</td></tr>
+      <tr><td><strong>Access OS info</strong></td><td class="tag-no">No</td><td class="tag-yes">Yes (os module)</td></tr>
+      <tr><td><strong>Run child processes</strong></td><td class="tag-no">No</td><td class="tag-yes">Yes (child_process)</td></tr>
+      <tr><td><strong>Follow ECMAScript</strong></td><td class="tag-yes">Yes</td><td class="tag-yes">Yes (inherits from V8)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- Architecture Diagram: V8 inside Node.js -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Node.js = V8 Engine + Superpowers</div>
+    <svg viewBox="0 0 750 310" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer Node.js box -->
+      <rect x="60" y="20" width="630" height="270" rx="14" fill="#1a1e28" stroke="#38a169" stroke-width="1.5"/>
+      <text x="375" y="50" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="12" letter-spacing="0.12em" font-weight="600">NODE.JS RUNTIME (C++ Application)</text>
+
+      <!-- V8 box inside -->
+      <rect x="100" y="70" width="240" height="200" rx="10" fill="rgba(237,137,54,0.06)" stroke="#ed8936"/>
+      <text x="220" y="95" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="0.1em">V8 ENGINE (C++)</text>
+      <text x="220" y="130" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="600">ECMAScript Only</text>
+      <rect x="130" y="148" width="180" height="26" rx="5" fill="#2d3748"/>
+      <text x="220" y="166" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono, monospace" font-size="10">Variables, Functions</text>
+      <rect x="130" y="182" width="180" height="26" rx="5" fill="#2d3748"/>
+      <text x="220" y="200" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono, monospace" font-size="10">Promises, Classes</text>
+      <rect x="130" y="216" width="180" height="26" rx="5" fill="#2d3748"/>
+      <text x="220" y="234" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono, monospace" font-size="10">Loops, Math, JSON</text>
+
+      <!-- Plus sign -->
+      <text x="370" y="175" text-anchor="middle" fill="#4a5568" font-family="Playfair Display, serif" font-size="32" font-weight="700">+</text>
+
+      <!-- Node APIs box -->
+      <rect x="410" y="70" width="250" height="200" rx="10" fill="rgba(99,179,237,0.06)" stroke="#3182ce"/>
+      <text x="535" y="95" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="0.1em">NODE.JS SUPERPOWERS</text>
+      <text x="535" y="130" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="600">Beyond ECMAScript</text>
+      <rect x="440" y="148" width="190" height="26" rx="5" fill="rgba(99,179,237,0.08)" stroke="rgba(99,179,237,0.2)"/>
+      <text x="535" y="166" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="10">fs · http · path · os</text>
+      <rect x="440" y="182" width="190" height="26" rx="5" fill="rgba(99,179,237,0.08)" stroke="rgba(99,179,237,0.2)"/>
+      <text x="535" y="200" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="10">net · crypto · stream</text>
+      <rect x="440" y="216" width="190" height="26" rx="5" fill="rgba(99,179,237,0.08)" stroke="rgba(99,179,237,0.2)"/>
+      <text x="535" y="234" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono, monospace" font-size="10">Database · API · Events</text>
+    </svg>
+  </div>
+
+  <div class="callout c-green">
+    <div class="callout-icon">&#128161;</div>
+    <p><strong>The Big Picture:</strong> Node.js is a <strong>C++ application with V8 embedded into it</strong>, plus extra APIs that go beyond what ECMAScript defines. V8 handles the JavaScript execution; Node.js adds the system-level superpowers. Together, they form what we call a <strong>JavaScript Runtime</strong>.</p>
+  </div>
+
+
+  <!-- ===== CHAPTER 5 — CODE LEVELS ===== -->
+  <div class="chapter ch-orange">
+    <div class="chapter-num">Chapter 05</div>
+    <h2>From High-Level to Machine Code</h2>
+  </div>
+
+  <p class="story">
+    When you write <code>const greeting = "Hello"</code>, that looks perfectly readable to you. But your CPU has no idea what "const" or "Hello" means. The CPU only understands <strong>binary</strong> — sequences of 0s and 1s. So how does your beautiful JavaScript become something a machine can execute?
+  </p>
+
+  <p class="story">
+    This is V8's job. It takes your high-level JavaScript and compiles it down through several levels until it reaches the raw machine instructions your processor can run.
+  </p>
+
+  <div class="step-flow">
+    <div class="step">
+      <div class="step-num sn-blue">1</div>
+      <div class="step-body">
+        <h4>JavaScript (High-Level Code)</h4>
+        <p>The code you write. Human-readable, expressive, and abstract. Example: <code>let sum = a + b;</code> — This is what developers see and work with every day.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-orange">2</div>
+      <div class="step-body">
+        <h4>V8 Engine Processes It (C++)</h4>
+        <p>V8 parses your JS into an Abstract Syntax Tree (AST), then uses its <strong>Ignition</strong> interpreter and <strong>TurboFan</strong> optimizing compiler to generate highly optimized code. Hot paths get compiled to native machine code.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-green">3</div>
+      <div class="step-body">
+        <h4>Assembly Code (Low-Level)</h4>
+        <p>A step above raw binary. Uses mnemonics like <code>MOV</code>, <code>ADD</code>, <code>JMP</code> that correspond to specific CPU instructions. Still human-readable (barely), but maps directly to machine operations.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-purple">4</div>
+      <div class="step-body">
+        <h4>Machine Code / Binary (0s and 1s)</h4>
+        <p>The final form. Pure binary that the CPU executes directly. <code>01101010 11110001</code> — This is the language your hardware speaks. Every instruction is an electrical signal pattern.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="def-box b-orange">
+    <div class="label">Low-Level Code</div>
+    <p><strong>Low-level code</strong> refers to programming languages or code that is close to the hardware. It provides very little abstraction from the computer's architecture. There are two main types: <strong>Machine Language</strong> — pure binary (0s and 1s) that the CPU executes directly, and <strong>Assembly Language</strong> — a symbolic representation using mnemonics like MOV, ADD, that maps 1-to-1 to machine instructions. Both give fine-grained control over system resources but are extremely hard for humans to write and maintain.</p>
+  </div>
+
+
+  <!-- ===== QUICK REFERENCE ===== -->
+  <div class="chapter ch-blue">
+    <div class="chapter-num">Quick Reference</div>
+    <h2>Episode 02 — At a Glance</h2>
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Concept</th>
+        <th>Key Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Server</strong></td><td>A remote computer that provides data/services to clients over a network</td></tr>
+      <tr><td><strong>IP Address</strong></td><td>A unique number identifying every device on the internet</td></tr>
+      <tr><td><strong>V8 Engine</strong></td><td>Google's open-source JS engine, written in C++, compiles JS to machine code</td></tr>
+      <tr><td><strong>V8 Embeddability</strong></td><td>V8 can be embedded into any C++ application — this is how Node.js works</td></tr>
+      <tr><td><strong>ECMAScript</strong></td><td>The official standard that defines JavaScript's core language features</td></tr>
+      <tr><td><strong>Node.js =</strong></td><td>C++ application + V8 engine + system APIs (fs, http, net, etc.)</td></tr>
+      <tr><td><strong>Node.js superpowers</strong></td><td>File I/O, HTTP servers, database connections, networking — things V8 alone can't do</td></tr>
+      <tr><td><strong>JS Runtime</strong></td><td>V8 (engine) + Node APIs (superpowers) = JavaScript Runtime</td></tr>
+      <tr><td><strong>Code compilation</strong></td><td>JS → V8 (C++) → Assembly → Machine Code (binary) → CPU executes</td></tr>
+      <tr><td><strong>Full-stack JS</strong></td><td>Thanks to Node.js, one language (JS) works for both frontend and backend</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ep-nav">
+    <span class="muted">&#8592; Episode 01 — The Origin Story</span>
+    <span class="muted">Episode 03 — Coming Soon &#8594;</span>
+  </div>
+
+  <div class="footer">
+    Node.js Episode 02 — JS on Server &nbsp;|&nbsp; Story-format notes for deep learning &nbsp;|&nbsp; Series continues...
+  </div>
+
+</div>
+</body>
+</html>

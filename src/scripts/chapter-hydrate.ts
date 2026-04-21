@@ -196,6 +196,45 @@ function hydrateActiveTabPref(): void {
   }
 }
 
+/**
+ * Sync visible active-tab state to the current URL.
+ *
+ * The chapter shell (tab bar, breadcrumbs, TopNav) is wrapped in
+ * `transition:persist="chapter-shell"`, so Astro reuses the PRIOR page's
+ * tab DOM after a view-transition swap. That means aria-selected, the
+ * `tab--active` class, and roving `tabindex` all stay frozen on whichever
+ * tab rendered on first paint. We have to reapply them from the URL on
+ * every `astro:page-load`.
+ */
+function hydrateActiveTabState(): void {
+  const tabs = document.querySelectorAll<HTMLAnchorElement>('[data-tablist] a[role="tab"]');
+  if (tabs.length === 0) return;
+
+  const pathname = window.location.pathname;
+  const isRevision = pathname.endsWith('/revision') || pathname.endsWith('/revision/');
+  const isFlow = pathname.endsWith('/flow') || pathname.endsWith('/flow/');
+  const current: ActiveTabPref = isRevision ? 'revision' : isFlow ? 'flow' : 'full';
+
+  for (const tab of tabs) {
+    const href = tab.getAttribute('href') ?? '';
+    const matches =
+      (current === 'revision' && href.endsWith('/revision')) ||
+      (current === 'flow' && href.endsWith('/flow')) ||
+      (current === 'full' && !href.endsWith('/revision') && !href.endsWith('/flow'));
+
+    tab.setAttribute('aria-selected', String(matches));
+    if (matches) {
+      tab.setAttribute('aria-current', 'page');
+      tab.classList.add('tab--active');
+      tab.setAttribute('tabindex', '0');
+    } else {
+      tab.removeAttribute('aria-current');
+      tab.classList.remove('tab--active');
+      tab.setAttribute('tabindex', '-1');
+    }
+  }
+}
+
 function rewritePrevNext(): void {
   const stored = get<ActiveTabPref>(prefsKey('activeTab'));
   const pref: ActiveTabPref = isTab(stored) ? stored : 'full';
@@ -277,6 +316,7 @@ function run(): void {
   hydrateMarkRead(main);
   hydrateBookmark(main);
   hydrateActiveTabPref();
+  hydrateActiveTabState();
   rewritePrevNext();
   hydrateSidebarStatus(main);
   writeLastRead(main);

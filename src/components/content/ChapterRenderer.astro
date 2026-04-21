@@ -14,6 +14,9 @@
  * Custom components authors can use without importing in every MDX:
  *   - `<Figure>` — pass-through to FigureDescribed for accessible diagrams
  *   - `<MermaidCaption>` — Flow-only Mermaid wrapper (chapter component)
+ *   - `<Callout>` — tip/warning/insight/quote/mnemonic accent block
+ *   - `<RevisionCard>` — bordered card used on Quick Revision view
+ *   - `<FlowLegendGrid>` — legend grid below a Mermaid flowchart
  *
  * Authors still need an explicit `import` for components that take
  * non-trivial props or live outside the chapter scope; the map handles
@@ -21,6 +24,9 @@
  */
 import FigureDescribed from '../a11y/FigureDescribed.astro';
 import MermaidCaption from '../pages/chapter/MermaidCaption.astro';
+import Callout from './Callout.astro';
+import RevisionCard from './RevisionCard.astro';
+import FlowLegendGrid from './FlowLegendGrid.astro';
 
 interface Props {
   /** The MDX `<Content />` factory returned by `await render(entry)`. */
@@ -34,6 +40,9 @@ const { Content, components = {} } = Astro.props;
 const defaultMap: Record<string, any> = {
   Figure: FigureDescribed,
   MermaidCaption,
+  Callout,
+  RevisionCard,
+  FlowLegendGrid,
 };
 
 const merged = { ...defaultMap, ...components };

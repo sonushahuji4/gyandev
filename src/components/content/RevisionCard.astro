@@ -1,0 +1,134 @@
+---
+/**
+ * RevisionCard — bordered card used on the Quick Revision view.
+ *
+ * Each card has a serif-italic title on the left, an Instrument-Serif italic
+ * roman numeral on the right, a hairline underline, an optional serif-italic
+ * subtitle, and a body slot that typically contains a bullet list. The list
+ * markers are replaced with warm arrow glyphs (▸) via prose-level CSS — the
+ * `<RevisionCard>` body markup stays plain `<ul>` so authors don't need to
+ * learn a custom bullet component.
+ *
+ * Registered in `ChapterRenderer.astro` so authors can use `<RevisionCard>`
+ * without importing. Used primarily inside `revision.mdx`; may appear in
+ * `index.mdx` as a callout-style summary block too.
+ *
+ * Authoring example:
+ *
+ *   <RevisionCard numeral="i" title="Core identity" subtitle="What Node is (and is not)">
+ *     - Runtime, not a framework — wraps V8 + libuv.
+ *     - Lets JavaScript run outside the browser.
+ *     - Maintained by the OpenJS Foundation.
+ *   </RevisionCard>
+ */
+interface Props {
+  /** Serif-italic roman numeral in the top-right (e.g. `"i"`, `"ii"`, `"iii"`). Optional. */
+  numeral?: string;
+  /** Card title rendered in serif italic on the top-left. */
+  title: string;
+  /** Optional italic subtitle rendered beneath the underline. */
+  subtitle?: string;
+  class?: string;
+}
+
+const { numeral, title, subtitle, class: className } = Astro.props;
+---
+
+<section class:list={['revision-card', className]} data-revision-card>
+  <header class="revision-card__header">
+    <h2 class="revision-card__title">{title}</h2>
+    {numeral && (
+      <span class="revision-card__numeral" aria-hidden="true">{numeral}</span>
+    )}
+  </header>
+  <div class="revision-card__rule" aria-hidden="true"></div>
+  {subtitle && <p class="revision-card__subtitle">{subtitle}</p>}
+  <div class="revision-card__body">
+    <slot />
+  </div>
+</section>
+
+<style>
+  .revision-card {
+    margin: 1.5rem 0;
+    padding: 1.5rem 1.5rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface);
+  }
+  .revision-card__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .revision-card__title {
+    margin: 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-weight: 400;
+    font-size: clamp(1.25rem, 1.4vw + 0.9rem, 1.6rem);
+    line-height: 1.2;
+    color: var(--color-text);
+    /* Cancel the prose H2 '§' prefix and border when this card lives inside
+       `.prose` (inherits .prose styles otherwise). */
+    padding: 0;
+    border-bottom: 0;
+  }
+  .revision-card__title::before { content: none !important; }
+
+  .revision-card__numeral {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.75rem;
+    line-height: 1;
+    color: var(--color-text-muted);
+  }
+  .revision-card__rule {
+    height: 1px;
+    margin: 0.65rem 0 0;
+    background: var(--color-border);
+  }
+  .revision-card__subtitle {
+    margin: 0.75rem 0 0.5rem;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.02rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+  }
+  .revision-card__body {
+    margin-top: 0.35rem;
+  }
+
+  /* Swap the disc bullet for a warm arrow glyph inside cards. */
+  .revision-card__body :global(ul) {
+    list-style: none;
+    padding-left: 0;
+    margin-block: 0.25rem;
+  }
+  .revision-card__body :global(ul > li) {
+    position: relative;
+    padding-left: 1.4em;
+    margin-block: 0.4em;
+    line-height: 1.55;
+  }
+  .revision-card__body :global(ul > li::before) {
+    content: '▸';
+    position: absolute;
+    left: 0;
+    top: 0;
+    color: #c2410c;
+    font-size: 0.95em;
+    line-height: 1.55;
+  }
+  :global(html.dark) .revision-card__body :global(ul > li::before) {
+    color: #fb923c;
+  }
+
+  .revision-card__body :global(p) {
+    margin-block: 0.45em;
+  }
+  .revision-card__body :global(p:first-child) { margin-top: 0.25em; }
+  .revision-card__body :global(p:last-child) { margin-bottom: 0; }
+</style>

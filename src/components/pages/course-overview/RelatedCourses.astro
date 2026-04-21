@@ -1,0 +1,118 @@
+---
+/**
+ * Related courses sidebar card (DevNotes revamp).
+ *
+ * Renders `course.related` as `↳ Course Name` rows. Published courses are
+ * linked; coming-soon courses render grayed with a `(coming soon)` suffix.
+ * Hidden when the list is empty.
+ */
+import type { CollectionEntry } from 'astro:content';
+import { courseUrl } from '../../../lib/routes';
+
+export interface Props {
+  related: CollectionEntry<'courses'>[];
+}
+
+const { related } = Astro.props;
+const hasItems = related.length > 0;
+
+interface Row {
+  title: string;
+  href?: string;
+  isPublished: boolean;
+}
+
+const rows: Row[] = related.map((c) => {
+  const slug = c.id.split('/')[0] ?? c.id;
+  const isPublished = c.data.status === 'published';
+  return {
+    title: c.data.title,
+    href: isPublished ? courseUrl(slug) : undefined,
+    isPublished,
+  };
+});
+---
+
+{hasItems && (
+  <section class="related-card" aria-labelledby="related-card-heading">
+    <h3 id="related-card-heading" class="related-card__heading">RELATED</h3>
+    <ul class="related-card__list">
+      {rows.map((row) => (
+        <li class="related-card__item">
+          <span class="related-card__arrow" aria-hidden="true">↳</span>
+          {row.href ? (
+            <a class="related-card__link" href={row.href}>{row.title}</a>
+          ) : (
+            <span class="related-card__muted">
+              {row.title}
+              <span class="related-card__suffix"> (coming soon)</span>
+            </span>
+          )}
+        </li>
+      ))}
+    </ul>
+  </section>
+)}
+
+<style>
+  .related-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0 0 0 1rem;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .related-card__heading {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+
+  .related-card__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .related-card__item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+  }
+
+  .related-card__arrow {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .related-card__link {
+    color: var(--color-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .related-card__link:hover,
+  .related-card__link:focus-visible {
+    color: var(--color-accent);
+    border-bottom-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+
+  .related-card__muted {
+    color: var(--color-text-muted);
+  }
+  .related-card__suffix {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-size: 0.8125rem;
+    opacity: 0.85;
+  }
+</style>

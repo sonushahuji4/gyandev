@@ -1,29 +1,25 @@
 ---
 /**
- * Course hero — right column (PR-4.1).
+ * Course hero — right column (DevNotes revamp).
  *
- * Renders two CTAs:
- *   1. **Resume CTA**: points to `chapterUrl(course, firstChapterSlug)` at
- *      first paint. The hydration script (`course-overview-hydrate.ts`)
- *      rewrites `href` to the first unread chapter and flips `hidden` based
- *      on per-course localStorage state (per spec §3.4):
- *        - no progress  → hidden
- *        - in progress  → visible, href = next unread chapter
- *        - 100% read    → hidden, completion banner revealed by `#complete-banner`
- *   2. **Start CTA**: always rendered; hidden at 100% completion.
+ * Two stacked CTAs:
+ *   1. **Resume CTA** — hidden on first paint; the hydration script reveals it
+ *      when the course has progress and rewrites its label + href to point at
+ *      the "current" chapter. Shown as a solid green button that reads
+ *      `"Resume: <chapterTitle> →"`. Uses the same `data-cta="resume"`
+ *      contract as the prior design so `course-overview-hydrate.ts` still
+ *      drives it — but the label hydrates from `lastRead.chapterTitle` now.
+ *   2. **Start CTA** — always visible until the course is 100% complete.
+ *      Outline button styled in the DevNotes palette. Reads `"Start from Ch. 1"`.
  *
- * Both CTAs are real `<a href>` so the page is functional without JS. `hidden`
- * starts true on Resume so there's no flash between SSR and hydration at
- * zero-progress — the common case.
- *
- * `data-cta`, `data-course-slug`, `data-url-base` are the hydration contract;
- * keep them in sync with `course-overview-hydrate.ts`.
+ * Both CTAs are real `<a href>` so the page works without JS. Hiding Resume
+ * on SSR avoids a flash at zero-progress — the common case.
  */
 import { chapterUrl, courseUrl } from '../../../lib/routes';
 
 export interface Props {
   courseSlug: string;
-  /** Published first-chapter slug. When undefined, both CTAs render hidden. */
+  /** Slug of the first published chapter. When absent, both CTAs hide. */
   firstChapterSlug?: string;
 }
 
@@ -45,8 +41,11 @@ const hasChapters = Boolean(firstChapterSlug);
       href={resumeHref}
       hidden
     >
-      <span class="course-hero-right__btn-label" data-cta-label>Resume</span>
-      <span aria-hidden="true">→</span>
+      <span class="course-hero-right__btn-label">
+        <span class="course-hero-right__btn-prefix">Resume:</span>
+        <span data-cta-label>Event Loop</span>
+      </span>
+      <span aria-hidden="true" class="course-hero-right__btn-arrow">→</span>
     </a>
 
     <a
@@ -55,7 +54,7 @@ const hasChapters = Boolean(firstChapterSlug);
       href={startHref}
       hidden={!hasChapters}
     >
-      Start Chapter 1
+      Start from Ch. 1
     </a>
   </div>
 
@@ -75,58 +74,87 @@ const hasChapters = Boolean(firstChapterSlug);
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
-    align-items: flex-start;
+    align-items: stretch;
     width: 100%;
   }
   @media (min-width: 64rem) {
     .course-hero-right {
       align-items: flex-end;
+      width: auto;
+      min-width: 16rem;
     }
   }
 
   .course-hero-right__ctas {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 0.5rem;
+    width: 100%;
+  }
+  @media (min-width: 64rem) {
+    .course-hero-right__ctas {
+      min-width: 14rem;
+    }
   }
 
   .course-hero-right__btn {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.625rem 1rem;
-    border-radius: 0.5rem;
-    font-size: 0.9375rem;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.6875rem 1rem;
+    border-radius: 0.375rem;
+    font-size: 0.875rem;
     font-weight: 500;
     text-decoration: none;
     border: 1px solid transparent;
-    min-height: 2.75rem;
-    transition: background-color 150ms ease, border-color 150ms ease;
+    min-height: 2.5rem;
+    transition: background-color 150ms ease, border-color 150ms ease, color 150ms ease;
+    white-space: nowrap;
   }
   .course-hero-right__btn[hidden] {
     display: none;
   }
 
   .course-hero-right__btn--primary {
-    background: var(--color-accent, #17150f);
-    color: var(--color-surface, #fafaf7);
-    border-color: var(--color-accent, #17150f);
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-color: var(--color-accent);
   }
   .course-hero-right__btn--primary:hover,
   .course-hero-right__btn--primary:focus-visible {
-    background: var(--color-accent-hover, #000);
-    border-color: var(--color-accent-hover, #000);
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    color: var(--color-accent-fg);
   }
 
   .course-hero-right__btn--secondary {
     background: transparent;
     color: var(--color-text);
-    border-color: var(--color-border);
+    border-color: var(--color-border-strong);
+    justify-content: center;
   }
   .course-hero-right__btn--secondary:hover,
   .course-hero-right__btn--secondary:focus-visible {
-    border-color: var(--color-border-strong);
     background: var(--color-surface-muted);
+    border-color: var(--color-border-strong);
+  }
+
+  .course-hero-right__btn-label {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.375rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+  .course-hero-right__btn-prefix {
+    font-weight: 500;
+    opacity: 0.9;
+  }
+  .course-hero-right__btn-arrow {
+    flex-shrink: 0;
   }
 
   .course-hero-right__banner {

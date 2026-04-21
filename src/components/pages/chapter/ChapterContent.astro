@@ -20,6 +20,8 @@ interface Props {
 }
 
 import ChapterRenderer from '../../content/ChapterRenderer.astro';
+import '../../../styles/prose.css';
+import '../../../styles/code.css';
 
 const { Content, tab, courseTitle } = Astro.props;
 const isFull = tab === 'full';

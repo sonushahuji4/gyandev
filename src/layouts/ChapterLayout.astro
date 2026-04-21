@@ -50,6 +50,10 @@ interface Props {
   displayedReadingMinutes: number;
   /** Per-view updated date (Revision/Flow can override). */
   displayedUpdated: Date;
+  /** Revision reading minutes for the header meta strip (undefined if not authored). */
+  revisionMinutes?: number;
+  /** Flow reading minutes for the header meta strip (undefined if not authored). */
+  flowMinutes?: number;
   /** TechArticle + Breadcrumb factories (Full Notes only). */
   jsonLd?: object[];
   /** Article OG meta — Full Notes only. */
@@ -72,6 +76,8 @@ const {
   ogImage,
   displayedReadingMinutes,
   displayedUpdated,
+  revisionMinutes,
+  flowMinutes,
   jsonLd,
   article,
 } = Astro.props;
@@ -109,6 +115,11 @@ const fullTitle = `${titleSuffix} — ${course.data.title}`;
   article={isFull ? article : undefined}
   jsonLd={isFull ? jsonLd : undefined}
   robotsExtra={isFull ? 'max-image-preview:large' : undefined}
+  tabMinutes={{
+    full: chapter.data.readingMinutes,
+    revision: revisionMinutes,
+    flow: flowMinutes,
+  }}
   pageData={{
     course: courseSlug,
     chapter: chapterSlug,
@@ -125,6 +136,9 @@ const fullTitle = `${titleSuffix} — ${course.data.title}`;
     editUrl={editUrl}
     displayedReadingMinutes={displayedReadingMinutes}
     displayedUpdated={displayedUpdated}
+    revisionMinutes={revisionMinutes}
+    flowMinutes={flowMinutes}
+    shareUrl={canonical}
   />
 
   <slot />

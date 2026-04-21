@@ -50,10 +50,20 @@ void variant;
       <span aria-hidden="true">☰</span>
     </button>
 
-    {/* Logo (all breakpoints) */}
+    {/* Logo (all breakpoints). Logomark image + italic serif wordmark. */}
     <a href="/" class="top-nav__logo" aria-label="GyanDev home">
-      <span class="top-nav__logo-mark" aria-hidden="true">G</span>
-      <span class="top-nav__logo-word">GyanDev</span>
+      <img
+        src="/brand/logomark-64.png"
+        alt=""
+        width="28"
+        height="28"
+        class="top-nav__logo-mark"
+        decoding="async"
+      />
+      <span class="top-nav__logo-word"
+        ><span class="top-nav__logo-word-text">GyanDev</span><span
+          class="top-nav__logo-word-dot">.</span
+        ></span>
     </a>
 
     {/* Desktop primary nav */}
@@ -176,19 +186,24 @@ void variant;
   }
   .top-nav__logo:hover { color: var(--color-accent); }
   .top-nav__logo-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    display: block;
     width: 1.75rem;
     height: 1.75rem;
-    background: var(--color-accent);
-    color: var(--color-accent-fg);
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-weight: 700;
-    font-size: 0.9rem;
+    flex: 0 0 auto;
+    object-fit: contain;
   }
-  .top-nav__logo-word { font-size: 1rem; }
+  .top-nav__logo-word {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-size: 1.125rem;
+    line-height: 1;
+  }
+  .top-nav__logo-word-dot { color: var(--color-accent); }
+  /* Hide wordmark on very narrow viewports so the logomark carries the brand alone. */
+  @media (max-width: 374px) {
+    .top-nav__logo-word { display: none; }
+  }
 
   .top-nav__primary {
     align-items: center;

@@ -1,0 +1,39 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  A single thirty-second glance at the Node timeline. Six hinge moments
+  between 2009 and 2019 that turned a one-person frustration into the
+  default backend runtime. The legend below decodes each phase.
+</Callout>
+
+## Node.js — from frustration to OpenJS
+
+```mermaid
+flowchart TD
+    A["<b>i · 2009</b><br/>Ryan Dahl frustrated<br/>by Apache blocking I/O"]
+      --> B["<b>ii · 2009</b><br/>Node.js unveiled at JSConf EU<br/>V8 + libuv + event loop"]
+    B --> C["<b>iii · 2010</b><br/>NPM ships<br/>(Isaac Z. Schlueter)"]
+    C --> D["<b>iv · 2011</b><br/>Windows support lands<br/>enterprise adoption begins"]
+    D --> E["<b>v · 2014</b><br/>io.js fork<br/>(Fedor Indutny)"]
+    E --> F["<b>vi · Sep 2015</b><br/>Node + io.js reunite<br/>Node.js Foundation"]
+    F --> G["<b>2019</b><br/>OpenJS Foundation<br/>current stewardship"]
+
+    classDef milestone fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef fork fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef reunite fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class A,B,C,D milestone
+    class E fork
+    class F,G reunite
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Frustration (2009)', description: 'Apache blocks a thread per request — it breaks at 10K connections.' },
+  { numeral: 'ii',  name: 'Unveil (2009)',      description: 'Ryan Dahl presents Node.js: V8 + libuv + a single-threaded event loop.' },
+  { numeral: 'iii', name: 'NPM (2010)',         description: 'Isaac Z. Schlueter ships the registry that becomes the ecosystem.' },
+  { numeral: 'iv',  name: 'Windows (2011)',     description: 'Official Windows support unlocks enterprise + Microsoft developer adoption.' },
+  { numeral: 'v',   name: 'Fork (2014)',        description: 'io.js splits over governance + slow releases — fragmentation risk peaks.' },
+  { numeral: 'vi',  name: 'Reunion (2015+)',    description: 'Merge under Node.js Foundation → OpenJS Foundation in 2019.' },
+]} />

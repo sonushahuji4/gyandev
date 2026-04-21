@@ -1,0 +1,247 @@
+---
+title: The Origin Story
+description: How Ryan Dahl's frustration with Apache servers in 2009 birthed the JavaScript runtime that would reshape backend development.
+excerpt: Ryan Dahl's 2009 talk and why non-blocking I/O was radical.
+course: nodejs/course
+order: 1
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 25
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - history
+  - runtime
+  - v8
+  - libuv
+---
+
+<Callout type="quote" title="">
+  Before 2009, JavaScript lived in a cage. It could make buttons glow and forms
+  validate, but it could never touch a file, talk to a database, or run a
+  server. Then Node.js arrived — and shattered that cage.
+</Callout>
+
+## What Exactly Is Node.js?
+
+Node.js is a cross-platform, open-source JavaScript **runtime environment**
+built on Chrome's V8 engine. It lets you execute JavaScript *outside* the
+browser — on servers, desktops, IoT devices, CLI tools — and it's maintained
+today by the **OpenJS Foundation**.
+
+The one phrase to hold onto: **"Run JavaScript everywhere."** Before Node,
+you needed one language for the browser (JavaScript) and another for the
+server (PHP, Ruby, Java, C#). Node unified both sides under a single
+language, and in doing so, reshaped what a "full-stack" engineer meant.
+
+<Callout type="insight" title="Four properties that matter">
+  - **Event-driven.** Node doesn't wait. It reacts to events as they arrive
+    rather than processing one thing at a time.
+  - **Non-blocking I/O.** File reads, queries, and network calls happen
+    asynchronously; the server keeps working while I/O is in flight.
+  - **V8-powered.** The same engine that makes Chrome fast. V8 compiles JS
+    straight to machine code — no interpreter middleman.
+  - **Cross-platform.** Windows, macOS, Linux, BSD. Write once, ship to any
+    server or device.
+</Callout>
+
+## The Hero — Ryan Dahl (2009)
+
+Our story begins with **Ryan Dahl**, a developer frustrated by a very specific
+problem: web servers in 2008 were *terrible* at handling many simultaneous
+connections. The dominant player — Apache HTTP Server — was a blocking
+server. Every incoming request occupied a thread, and threads are expensive.
+Handle ten thousand users at once? Good luck.
+
+Ryan had an idea: build a server that *never blocks*. One that uses a single
+thread, an event loop, and callbacks to juggle thousands of connections
+without breaking a sweat. He picked JavaScript — not because he loved the
+language, but because it had *no existing I/O model*. That meant he could
+design one from scratch, without fighting decades of blocking-API muscle
+memory.
+
+<Callout type="tip" title="Fun fact">
+  Ryan initially experimented with Firefox's **SpiderMonkey** engine, but
+  within two days he switched to Google's **V8** and never looked back. V8's
+  raw speed made the entire project feel inevitable.
+</Callout>
+
+A detail most people forget: Node.js was originally called **Web.js**. Ryan
+renamed it to *Node* because he realized it could do far more than serve web
+pages — it could be a general-purpose runtime for any kind of networked
+application.
+
+Three JavaScript engines have mattered in the post-2008 landscape; Node
+picked the fastest of them and never reconsidered.
+
+| Engine           | Vendor   | Used by    | Notes                                 |
+| ---------------- | -------- | ---------- | ------------------------------------- |
+| **V8**           | Google   | Chrome     | Compiles JS straight to machine code. Used by Node.js. |
+| **SpiderMonkey** | Mozilla  | Firefox    | Ryan's first choice — abandoned within two days for V8. |
+| **JavaScriptCore** | Apple  | Safari     | Also known as Nitro. Used by Bun.     |
+
+## The Big Problem — Blocking vs Non-Blocking
+
+To understand *why* Node mattered, you need to understand the problem it
+solved. Picture a restaurant. The Apache model was like hiring one waiter
+per table — with ten tables you needed ten waiters; with ten thousand, the
+math fell apart.
+
+Node works like a single, ruthlessly efficient waiter: take the order, send
+it to the kitchen, and immediately move to the next table. When the food is
+ready the kitchen rings a bell (an *event*), and the waiter delivers it. No
+standing around.
+
+| Feature              | Apache (blocking)              | Node.js (non-blocking)           |
+| -------------------- | ------------------------------ | -------------------------------- |
+| Thread model         | One thread per request         | Single thread + event loop       |
+| 10,000 connections   | ~10K threads — heavy           | Handled by one thread            |
+| I/O waits            | Thread sits idle, blocked      | Moves on; callback fires later   |
+| Memory usage         | High (per-thread overhead)     | Low (single-threaded)            |
+| Best for             | CPU-heavy tasks                | I/O-heavy, real-time apps        |
+
+A tiny example. Read the same file two ways:
+
+```js title="blocking.js"
+import { readFileSync } from 'node:fs';
+
+const bytes = readFileSync('big.log');     // thread stops here
+console.log('read', bytes.length);         // until file is fully loaded
+```
+
+```js title="non-blocking.js"
+import { readFile } from 'node:fs/promises';
+
+readFile('big.log').then((bytes) => {      // registers a callback
+  console.log('read', bytes.length);       // fires when the read completes
+});
+console.log('meanwhile, other work');      // runs first
+```
+
+In the blocking version, nothing else can happen on that thread until the
+file finishes loading. In the non-blocking version, the event loop hands
+the work to libuv and gets on with life.
+
+## The Rise — Joyent, NPM & Windows
+
+Ryan was building Node independently when a company called **Joyent** noticed
+his work. Joyent was already exploring similar ideas, so they hired Ryan and
+funded the project. That corporate backing turned a hobby into something
+durable.
+
+Then, in 2010, came the pivotal moment: **NPM** (Node Package Manager)
+shipped, built by Isaac Z. Schlueter. Think of NPM as an app store for code.
+Need to send email? `npm install nodemailer`. Need a web framework? `npm
+install express`. NPM made sharing and reusing code trivially easy, and it
+became the single biggest reason for Node's explosive growth.
+
+<Callout type="insight" title="Without NPM, Node might not exist">
+  NPM gave developers a shared ecosystem — a way to stand on each other's
+  shoulders. Today it hosts over two million packages, making it the largest
+  software registry in the world. Language adoption follows ecosystem size,
+  and nothing else came close.
+</Callout>
+
+In 2011 Windows support landed, opening Node to the massive Windows
+developer community. Before that point it only worked on macOS and Linux,
+which put a low ceiling on adoption at most companies.
+
+## The Drama — io.js Fork & Reunion
+
+In 2012, Ryan stepped back from the project and **Isaac Z. Schlueter** — the
+creator of NPM — took over as lead maintainer. But storm clouds were
+gathering.
+
+By 2014, parts of the community felt that Joyent was holding Node back:
+slow release cycles, resistance to adopting new V8 features, a lack of
+transparent governance. A developer named **Fedor Indutny** created a fork
+called *io.js*. Several core contributors joined him.
+
+<Callout type="warning" title="The split">
+  Forks are dangerous. They can fragment an ecosystem in ways that take
+  years to heal. For a moment in 2014, Node looked like it might become two
+  incompatible runtimes — and developers would have to pick a side.
+</Callout>
+
+It was dramatic, but it had a happy ending. In **September 2015**, Node.js
+and io.js merged back together under a new community-driven governance
+model: the **Node.js Foundation**. The fork had forced the project to
+become more open and democratic — arguably, it emerged stronger.
+
+Finally, in 2019, the JS Foundation and the Node.js Foundation merged to
+form the **OpenJS Foundation**, which oversees Node to this day.
+
+## The Complete Journey
+
+<Callout type="tip" title="Timeline at a glance">
+  - **2009** — Ryan Dahl unveils Node.js (originally "Web.js") at JSConf EU to a standing ovation. Built on V8 after a brief flirtation with SpiderMonkey.
+  - **2009** — Joyent hires Ryan and funds the project.
+  - **2010** — NPM ships. Isaac Z. Schlueter writes the registry that becomes the backbone of the ecosystem.
+  - **2011** — Windows support lands.
+  - **2012** — Ryan steps back; Isaac takes the lead.
+  - **2014** — Fedor Indutny forks Node into io.js over governance disputes.
+  - **Sep 2015** — Node.js and io.js merge under the Node.js Foundation.
+  - **2019** — OpenJS Foundation formed; stewardship continues there today.
+</Callout>
+
+## Key Concepts to Remember
+
+**JS Engine.** Every environment that runs JavaScript needs an engine to
+parse and execute code. Chrome uses V8; Firefox uses SpiderMonkey; Safari
+uses JavaScriptCore. Node took V8 *out of the browser* and made it
+standalone.
+
+**Runtime vs engine.** V8 alone only knows how to execute JavaScript. The
+Node runtime wraps V8 and adds system-level capabilities: reading files,
+networking, spawning processes. Think of V8 as the engine of a car and
+Node as the entire vehicle — chassis, wheels, steering, dashboard.
+
+**Event-driven architecture.** Instead of processing tasks sequentially,
+Node registers callbacks for operations and moves on. When an operation
+completes, it fires an event and the callback runs. The mechanics of this
+— phases, microtasks, nextTick — are the subject of the Event Loop
+chapter.
+
+### The runtime in layers
+
+Reading top-down, this is what happens the moment you run `node app.js`:
+
+- **Your JavaScript code** — whatever you wrote.
+- **Node.js runtime** — the wrapper that gives your code superpowers.
+  - **V8 engine** — parses and executes JS, compiling it to machine code.
+  - **libuv** — the event loop and the cross-platform async I/O layer.
+  - **Node APIs** — `fs`, `http`, `path`, `stream`, and the rest of the standard library.
+- **Operating system** — file system, network, timers, threads. Windows, macOS, Linux.
+
+V8 alone can't open a file or listen on a port. libuv alone can't run JS.
+Node.js is the glue that makes both sides useful to an application
+programmer.
+
+<Callout type="quote" title="">
+Any application that can be written in JavaScript, will eventually be
+written in JavaScript.
+
+— Jeff Atwood (Atwood's Law)
+</Callout>
+
+Node is the strongest proof of Atwood's Law. What started as a runtime for
+building web servers now powers desktop apps (Electron, VS Code), mobile
+apps (React Native), serverless functions, build tools, and CLIs.
+JavaScript, genuinely, runs everywhere.
+
+## Episode 01 — At a Glance
+
+| Topic                | Key detail                                                |
+| -------------------- | --------------------------------------------------------- |
+| What is Node.js?     | A JS runtime built on V8 — runs JS outside the browser.   |
+| Creator              | Ryan Dahl (2009).                                         |
+| Original name        | Web.js → renamed to Node.js.                              |
+| Engine               | Chrome's V8 (switched from SpiderMonkey in two days).     |
+| Key feature          | Non-blocking, event-driven I/O.                           |
+| Corporate backer     | Joyent (hired Ryan Dahl in 2009).                         |
+| NPM                  | Introduced 2010; created by Isaac Z. Schlueter.           |
+| Windows support      | Added in 2011.                                            |
+| io.js fork           | 2014 by Fedor Indutny — merged back in September 2015.    |
+| Current governance   | OpenJS Foundation (since 2019).                           |

@@ -58,6 +58,12 @@ const courses = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
+    /**
+     * Optional serif-italic phrase appended to the H1 in the course hero
+     * (e.g. `"from first principles"`). Only rendered by the new DevNotes
+     * hero layout; older cards ignore it.
+     */
+    heroItalic: z.string().optional(),
     order: z.number().int().nonnegative(),
     status: z.enum(COURSE_STATUS).default('draft'),
     difficulty: z.enum(DIFFICULTY),
@@ -75,8 +81,43 @@ const courses = defineCollection({
      * aggregate.ts; `estimatedHours` is a fallback / sanity label.
      */
     estimatedHours: z.number().positive().optional(),
+    /**
+     * Optional curator estimate of total revision-pack reading minutes for
+     * the Quick Revision track. Surfaced in the hero "62m REVISION" stat
+     * until PR-5.1's `chapterViews` collection makes this computable.
+     */
+    revisionMinutes: z.number().positive().optional(),
     learningObjectives: z.array(z.string()).default([]),
+    /**
+     * Free-text prerequisites rendered as bullet points in the "Before You
+     * Start" block. Kept for backward compatibility alongside the newer
+     * structured `prerequisiteChapters` field.
+     */
     prerequisites: z.array(z.string()).default([]),
+    /**
+     * Structured prerequisite chapters rendered as `↳ Course · Chapter`
+     * links in the Prerequisites sidebar card. Each entry points at a
+     * specific chapter in (usually) another course. When the referenced
+     * course is coming-soon, the UI renders it grayed and non-linked.
+     */
+    prerequisiteChapters: z.array(
+      z.object({
+        courseSlug: z.string(),
+        chapterSlug: z.string(),
+        title: z.string(),
+      }),
+    ).default([]),
+    /**
+     * Optional download URLs for the three artifact types surfaced in the
+     * "Download" sidebar card. When a URL is missing, the UI renders the
+     * row disabled with a "(coming soon)" suffix. Phase 2 replaces these
+     * with real PDF/ZIP assets.
+     */
+    downloads: z.object({
+      full: z.string().optional(),
+      revision: z.string().optional(),
+      flow: z.string().optional(),
+    }).optional(),
     related: z.array(reference('courses')).default([]),
     updated: z.date(),
   }),
@@ -114,6 +155,13 @@ const chapters = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
+    /**
+     * Short (≤ 140 char) subtitle shown beneath the chapter title in the
+     * course-overview list. Falls back to `description` when omitted. The
+     * distinction exists because `description` doubles as the SEO meta
+     * description and may run longer than the row layout wants.
+     */
+    excerpt: z.string().optional(),
     course: reference('courses'),
     order: z.number().int().nonnegative(),
     season: z.number().int().positive().default(1),

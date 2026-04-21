@@ -3,19 +3,45 @@ readingMinutes: 2
 updated: 2026-04-21
 ---
 
-## The compile path
+<Callout type="insight" title="One-picture recall">
+  Two journeys in one frame. Left column: how a request crosses the
+  network and reaches your Node process. Right column: how V8 turns the
+  JavaScript inside that process into something the CPU can run. The
+  legend below decodes each phase.
+</Callout>
+
+## JavaScript on the Server — from request to CPU
 
 ```mermaid
 flowchart TD
-    A[JS source] --> B[Parser → AST]
-    B --> C[Ignition → bytecode]
-    C --> D{hot function?}
-    D -->|no| E[interpret bytecode]
-    D -->|yes| F[TurboFan → optimized code]
-    F --> G{assumption still holds?}
-    G -->|yes| H[fast native code]
-    G -->|no| I[Deopt → back to bytecode]
-    I --> C
+    subgraph NET [Network loop]
+        C["<b>i · Client</b><br/>Browser / app<br/>knows server IP"]
+          -->|"REQUEST"| S["<b>ii · Server</b><br/>Node.js process<br/>on a remote host"]
+        S -->|"RESPONSE<br/>HTML · JSON · bytes"| C
+    end
+
+    S --> RT["<b>iii · Runtime</b><br/>Node.js = C++ app<br/>with V8 embedded"]
+    RT --> V8["<b>iv · V8 engine</b><br/>Parses JS → AST<br/>Ignition + TurboFan"]
+    RT --> API["<b>v · Node APIs</b><br/>fs · http · net · os<br/>the 'superpowers'"]
+    V8 --> MC["<b>vi · Machine code</b><br/>Assembly / binary<br/>0110 1010 1111…"]
+    MC --> CPU["<b>vii · CPU</b><br/>Executes natively<br/>x64 · IA-32 · ARM"]
+
+    classDef net fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef core fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef v8 fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef hw fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    class C,S net
+    class RT,API core
+    class V8,MC v8
+    class CPU hw
 ```
 
-The deopt loop is the hidden tax — it's why shape-unstable code can suddenly run 10x slower.
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Client (device)',  description: 'Browser or app. Holds the server IP and initiates the request.' },
+  { numeral: 'ii',  name: 'Server',           description: 'Remote computer running a Node.js process that answers on a port.' },
+  { numeral: 'iii', name: 'Node.js runtime',  description: 'C++ application with V8 embedded — provides the JS runtime the process uses.' },
+  { numeral: 'iv',  name: 'V8 engine',        description: 'Parses JS into an AST, then compiles hot paths via Ignition + TurboFan.' },
+  { numeral: 'v',   name: 'Node APIs',        description: 'The "superpowers" V8 lacks: fs, http, net, os, crypto, stream, child_process.' },
+  { numeral: 'vi',  name: 'Machine code',     description: 'Assembly mnemonics (MOV, ADD, JMP) lowered to raw binary the CPU can execute.' },
+  { numeral: 'vii', name: 'CPU',              description: 'Your processor runs the machine code natively on x64, IA-32, or ARM.' },
+]} />

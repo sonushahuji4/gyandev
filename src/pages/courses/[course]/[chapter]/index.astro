@@ -19,7 +19,10 @@ export { getChapterPaths as getStaticPaths };
 
 const { chapter } = Astro.props;
 const ctx = await getChapterContext(chapter);
-const { course, courseSlug, chapterSlug, availability, bundle } = ctx;
+const { course, courseSlug, chapterSlug, revision, flow, availability, bundle } = ctx;
+
+const revisionMinutes = revision?.data.readingMinutes;
+const flowMinutes = flow?.data.readingMinutes;
 
 const { Content, headings } = await render(chapter);
 const { prev, next } = await prevNext(courseSlug, chapterSlug);
@@ -82,6 +85,8 @@ const article = {
   ogImage={ogImage}
   displayedReadingMinutes={chapter.data.readingMinutes}
   displayedUpdated={chapter.data.updated}
+  revisionMinutes={revisionMinutes}
+  flowMinutes={flowMinutes}
   jsonLd={jsonLd}
   article={article}
 >

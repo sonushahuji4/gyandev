@@ -21,6 +21,8 @@ export interface CourseChapterRef {
   order: number;
   /** `chapter.data.season` surfaced for convenience (defaults to 1 via Zod). */
   season: number;
+  /** `chapter.data.status` surfaced so list rows can render `coming-soon` differently. */
+  status: 'published' | 'coming-soon' | 'draft';
 }
 
 export interface CourseStatsSummary {
@@ -30,6 +32,12 @@ export interface CourseStatsSummary {
   publishedChapters: number;
   /** Sum of `readingMinutes` across published chapters only. */
   totalReadingMinutes: number;
+  /**
+   * Sum of `readingMinutes` across published + coming-soon chapters — used
+   * by the hero stats row to surface the full course arc, not just what's
+   * currently readable.
+   */
+  totalScopedReadingMinutes: number;
   /** Slug of the lowest-order published chapter — target of "Start Chapter 1". */
   firstChapterSlug?: string;
 }
@@ -83,9 +91,12 @@ export async function getCourseBySlug(slug: string): Promise<CourseBundle | null
 
   // Chapter `course:` references resolve to the full course entry id
   // (`"javascript/course"`), so compare against `course.id` rather than the
-  // URL slug to filter chapters belonging to this course.
+  // URL slug to filter chapters belonging to this course. We surface
+  // `coming-soon` rows to the UI (grayed out), but continue to hide drafts.
   const forCourse = chapters.filter(
-    (ch) => ch.data.course.id === course.id && ch.data.status === 'published',
+    (ch) =>
+      ch.data.course.id === course.id &&
+      (ch.data.status === 'published' || ch.data.status === 'coming-soon'),
   );
 
   const sorted = [...forCourse].sort(
@@ -97,18 +108,25 @@ export async function getCourseBySlug(slug: string): Promise<CourseBundle | null
     slug: chapterSlugOf(chapter),
     order: chapter.data.order,
     season: chapter.data.season,
+    status: chapter.data.status,
   }));
 
-  const totalReadingMinutes = refs.reduce(
+  const published = refs.filter((ref) => ref.status === 'published');
+  const totalReadingMinutes = published.reduce(
+    (sum, ref) => sum + ref.chapter.data.readingMinutes,
+    0,
+  );
+  const totalScopedReadingMinutes = refs.reduce(
     (sum, ref) => sum + ref.chapter.data.readingMinutes,
     0,
   );
 
   const stats: CourseStatsSummary = {
     chapterCount: refs.length,
-    publishedChapters: refs.length,
+    publishedChapters: published.length,
     totalReadingMinutes,
-    firstChapterSlug: refs[0]?.slug,
+    totalScopedReadingMinutes,
+    firstChapterSlug: published[0]?.slug,
   };
 
   return { course, slug, chapters: refs, stats };

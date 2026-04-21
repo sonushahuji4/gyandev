@@ -1,0 +1,45 @@
+---
+readingMinutes: 5
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Core identity" subtitle="What Node is — and isn't.">
+- **Runtime, not a framework.** Wraps V8 + libuv plus a small standard library.
+- **Runs JavaScript outside the browser.** Servers, CLIs, IoT, desktop apps.
+- Maintained by the **OpenJS Foundation** (since 2019).
+- Cross-platform: Windows, macOS, Linux, BSD.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="The problem solved" subtitle="Why non-blocking mattered.">
+- **Apache model:** one thread per request. Falls apart at 10K concurrent connections.
+- **Node model:** single thread + event loop. One "waiter" serves every table.
+- Non-blocking I/O means threads don't sit idle while files or sockets wait.
+- Best for I/O-heavy, real-time workloads. CPU-bound work still wants threads.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="The breakthrough" subtitle="Ryan Dahl + V8 + libuv, 2009.">
+- **Ryan Dahl** picked JavaScript precisely because it had *no* existing I/O model.
+- Originally named **Web.js**; renamed once Ryan realized it was a general-purpose runtime.
+- Briefly prototyped on SpiderMonkey, switched to **V8** within two days.
+- **V8** compiles JS to machine code; **libuv** provides the event loop and async I/O.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="The ecosystem" subtitle="NPM is why Node won.">
+- **NPM** shipped in 2010, written by Isaac Z. Schlueter.
+- Turned code-sharing into one command: `npm install`.
+- Over 2M packages today — largest software registry in the world.
+- **Joyent** bankrolled Node from 2009 and hired Ryan.
+- **Windows support** landed in 2011, unlocking enterprise adoption.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="The fork" subtitle="io.js split and reunion.">
+- 2012: Ryan steps back; **Isaac Z. Schlueter** takes the lead.
+- 2014: **Fedor Indutny** forks Node into **io.js** over slow releases + governance.
+- **Sep 2015:** io.js and Node merge under the **Node.js Foundation** — open governance.
+- 2019: JS Foundation + Node.js Foundation → **OpenJS Foundation**.
+- Lesson: a fork forced the project to become more transparent, not less.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  Ryan Dared Node Past Apache — **R**untime · **D**ahl · **N**PM · **P**ort (Windows) · **A**tomic reunion (io.js).
+</Callout>

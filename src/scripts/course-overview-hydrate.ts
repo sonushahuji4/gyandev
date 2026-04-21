@@ -127,8 +127,23 @@ export function hydrateCourseOverview(): void {
     if (hasProgress && !isComplete && currentSlug && urlBase) {
       resumeLink.href = `${urlBase}/${currentSlug}`;
       resumeLink.hidden = false;
+      // Prefer the denormalized `lastRead.chapterTitle` (R8) when it points at
+      // the resume target; fall back to the row's visible title so the label
+      // still looks right if the user read past the last-read pointer.
       const label = resumeLink.querySelector<HTMLElement>('[data-cta-label]');
-      if (label) label.textContent = 'Resume';
+      if (label) {
+        let resolvedTitle: string | null = null;
+        if (lastReadSlug === currentSlug && lastRead?.chapterTitle) {
+          resolvedTitle = lastRead.chapterTitle;
+        } else {
+          const targetRow = document.querySelector<HTMLElement>(
+            `.chapter-row[data-chapter-slug="${CSS.escape(currentSlug)}"]`,
+          );
+          const titleEl = targetRow?.querySelector<HTMLElement>('.chapter-row__title');
+          resolvedTitle = titleEl?.textContent?.trim() ?? null;
+        }
+        if (resolvedTitle) label.textContent = resolvedTitle;
+      }
     } else {
       resumeLink.hidden = true;
     }

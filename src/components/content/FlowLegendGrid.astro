@@ -1,0 +1,89 @@
+---
+/**
+ * FlowLegendGrid — compact legend grid rendered below a Mermaid flowchart in
+ * `flow.mdx`. Each cell shows a serif roman numeral, the phase name, and a
+ * one-line description. Two-column grid at `md+`, single column on mobile.
+ *
+ * Registered in `ChapterRenderer.astro` so authors can use `<FlowLegendGrid>`
+ * from MDX without an import. Pass the `items` prop as a JSON array:
+ *
+ *   <FlowLegendGrid items={[
+ *     { numeral: 'i',   name: 'Origin',      description: 'JS locked in the browser (pre-2009).' },
+ *     { numeral: 'ii',  name: 'Breakthrough', description: 'Ryan Dahl + V8 + libuv → Node.js.' },
+ *   ]} />
+ *
+ * Each item's `numeral` renders via Instrument Serif italic; `name` is bold
+ * sans; `description` is muted prose.
+ */
+export interface FlowLegendItem {
+  /** Instrument Serif italic marker (e.g. `"i"`, `"ii"`, `"iii"`). */
+  numeral: string;
+  /** Phase / step name (bold). */
+  name: string;
+  /** One-line explanation (muted body text). */
+  description: string;
+}
+
+interface Props {
+  items: FlowLegendItem[];
+  class?: string;
+}
+
+const { items, class: className } = Astro.props;
+---
+
+<ul class:list={['flow-legend', className]} data-flow-legend>
+  {items.map((item) => (
+    <li class="flow-legend__item">
+      <span class="flow-legend__numeral" aria-hidden="true">{item.numeral}</span>
+      <div class="flow-legend__text">
+        <p class="flow-legend__name">{item.name}</p>
+        <p class="flow-legend__desc">{item.description}</p>
+      </div>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .flow-legend {
+    list-style: none;
+    padding: 0;
+    margin: 2rem 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  @media (min-width: 40rem) {
+    .flow-legend { grid-template-columns: 1fr 1fr; gap: 1rem; }
+  }
+  .flow-legend__item {
+    display: flex;
+    gap: 0.9rem;
+    padding: 0.85rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    background: var(--color-surface);
+  }
+  .flow-legend__numeral {
+    flex: 0 0 auto;
+    min-width: 1.6rem;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--color-accent);
+  }
+  .flow-legend__text { min-width: 0; }
+  .flow-legend__name {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .flow-legend__desc {
+    margin: 0.25rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    line-height: 1.45;
+  }
+</style>

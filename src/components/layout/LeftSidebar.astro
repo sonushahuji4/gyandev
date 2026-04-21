@@ -48,6 +48,7 @@ for (const ref of chapters) {
 const sortedSeasons = [...seasons.entries()].sort(([a], [b]) => a - b);
 
 const courseHref = currentCourseSlug ? `/courses/${currentCourseSlug}` : undefined;
+const chapterCountLabel = chapters.length === 1 ? '1 CHAPTER' : `${chapters.length} CHAPTERS`;
 ---
 
 <aside
@@ -60,10 +61,10 @@ const courseHref = currentCourseSlug ? `/courses/${currentCourseSlug}` : undefin
   <div class="left-sidebar__inner">
     {course && (
       <header class="left-sidebar__header">
-        <span class="left-sidebar__eyebrow">Course</span>
         <h2 class="left-sidebar__title">
           {courseHref ? <a href={courseHref}>{course.data.title}</a> : course.data.title}
         </h2>
+        <span class="left-sidebar__eyebrow">{chapterCountLabel}</span>
       </header>
     )}
 
@@ -135,21 +136,26 @@ const courseHref = currentCourseSlug ? `/courses/${currentCourseSlug}` : undefin
   }
   .left-sidebar__inner { padding: 1.25rem 1rem; }
   .left-sidebar__header {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.9rem;
     border-bottom: 1px solid var(--color-border);
   }
   .left-sidebar__eyebrow {
     display: block;
+    margin-top: 0.35rem;
+    font-family: var(--font-mono);
     font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.12em;
     color: var(--color-text-muted);
   }
   .left-sidebar__title {
-    margin: 0.25rem 0 0;
-    font-size: 1rem;
-    font-weight: 600;
+    margin: 0;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 1.35rem;
+    line-height: 1.15;
+    color: var(--color-text);
   }
   .left-sidebar__title a {
     color: inherit;
@@ -180,21 +186,24 @@ const courseHref = currentCourseSlug ? `/courses/${currentCourseSlug}` : undefin
     gap: 0.125rem;
   }
   .left-sidebar__row {
+    position: relative;
     display: grid;
     grid-template-columns: 1.25rem 1.75rem 1fr;
     align-items: baseline;
     gap: 0.25rem;
-    padding: 0.5rem 0.5rem;
+    padding: 0.5rem 0.5rem 0.5rem 0.75rem;
     color: var(--color-text);
     text-decoration: none;
-    border-radius: 6px;
+    border-radius: 0 6px 6px 0;
     font-size: 0.875rem;
     line-height: 1.35;
+    border-left: 2px solid transparent;
   }
   .left-sidebar__row:hover { background: var(--color-surface-muted); }
   .left-sidebar__row--current {
-    background: var(--color-surface-muted);
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
     color: var(--color-accent);
+    border-left-color: var(--color-accent);
     font-weight: 500;
   }
   .left-sidebar__status {

@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js Episode 01 — The Origin Story</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --bg-card: #161920;
+    --bg-card-alt: #1a1e28;
+    --accent: #68d391;
+    --accent-dim: #38a169;
+    --accent-glow: rgba(104, 211, 145, 0.15);
+    --orange: #ed8936;
+    --orange-dim: #c05621;
+    --text: #e2e8f0;
+    --text-dim: #a0aec0;
+    --text-muted: #718096;
+    --border: #2d3748;
+    --chapter-line: #2d3748;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 400;
+    line-height: 1.75;
+    overflow-x: hidden;
+  }
+
+  /* ===== HERO ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 50% 0%, rgba(104,211,145,0.08) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 80% 80%, rgba(237,137,54,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-badge {
+    display: inline-block;
+    padding: 0.4rem 1.2rem;
+    border: 1px solid var(--accent-dim);
+    border-radius: 999px;
+    font-size: 0.8rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 2rem;
+    animation: fadeDown 0.8s ease;
+  }
+
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    animation: fadeUp 1s ease;
+  }
+
+  .hero h1 .node-green { color: var(--accent); }
+  .hero h1 .node-orange { color: var(--orange); }
+
+  .hero-sub {
+    font-size: clamp(1rem, 2.5vw, 1.3rem);
+    color: var(--text-dim);
+    max-width: 600px;
+    margin-bottom: 3rem;
+    animation: fadeUp 1.2s ease;
+  }
+
+  .scroll-cue {
+    animation: bounce 2s infinite;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+  }
+
+  /* ===== MAIN CONTAINER ===== */
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 1.5rem 6rem;
+  }
+
+  /* ===== CHAPTER MARKERS ===== */
+  .chapter {
+    margin-top: 5rem;
+    margin-bottom: 3rem;
+    position: relative;
+    padding-left: 2rem;
+  }
+
+  .chapter::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    border-radius: 3px;
+  }
+
+  .chapter-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+
+  .chapter h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  /* ===== STORY PARAGRAPHS ===== */
+  .story {
+    font-size: 1.1rem;
+    color: var(--text-dim);
+    margin-bottom: 1.5rem;
+  }
+
+  .story strong {
+    color: var(--text);
+    font-weight: 600;
+  }
+
+  .story em {
+    color: var(--accent);
+    font-style: normal;
+    font-weight: 600;
+  }
+
+  /* ===== KEY DEFINITION BOX ===== */
+  .def-box {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 1.5rem 1.8rem;
+    margin: 2rem 0;
+  }
+
+  .def-box .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.6rem;
+  }
+
+  .def-box p {
+    font-size: 1.05rem;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ===== TIMELINE ===== */
+  .timeline {
+    position: relative;
+    margin: 3rem 0;
+    padding-left: 2.5rem;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--chapter-line);
+  }
+
+  .tl-item {
+    position: relative;
+    margin-bottom: 2.5rem;
+    padding-left: 1rem;
+  }
+
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -2.5rem;
+    top: 0.45rem;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    background: var(--bg);
+    z-index: 1;
+  }
+
+  .tl-item.highlight::before {
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+
+  .tl-year {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+  }
+
+  .tl-text {
+    font-size: 1rem;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  .tl-text strong {
+    color: var(--text);
+  }
+
+  /* ===== COMPARISON TABLE ===== */
+  .compare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 2rem 0;
+    font-size: 0.95rem;
+  }
+
+  .compare-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-align: left;
+    padding: 0.8rem 1rem;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .compare-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-dim);
+    vertical-align: top;
+  }
+
+  .compare-table tr:hover td {
+    background: var(--bg-card);
+  }
+
+  .compare-table .tag-yes {
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .compare-table .tag-no {
+    color: #fc8181;
+    font-weight: 600;
+  }
+
+  /* ===== INFO GRID ===== */
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.2rem;
+    margin: 2rem 0;
+  }
+
+  .info-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: border-color 0.3s, transform 0.3s;
+  }
+
+  .info-card:hover {
+    border-color: var(--accent-dim);
+    transform: translateY(-2px);
+  }
+
+  .info-card .icon {
+    font-size: 1.6rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .info-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .info-card p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ===== QUOTE BOX ===== */
+  .quote-box {
+    position: relative;
+    margin: 3rem 0;
+    padding: 2rem 2.5rem;
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-card-alt));
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+
+  .quote-box::before {
+    content: '\201C';
+    position: absolute;
+    top: -0.2rem;
+    left: 1rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 5rem;
+    color: var(--accent-dim);
+    opacity: 0.3;
+    line-height: 1;
+  }
+
+  .quote-box blockquote {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-style: italic;
+    line-height: 1.6;
+    color: var(--text);
+    margin-bottom: 0.8rem;
+  }
+
+  .quote-box .attribution {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+  }
+
+  /* ===== DIAGRAM (SVG INLINE) ===== */
+  .diagram-wrapper {
+    margin: 2.5rem 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    overflow-x: auto;
+  }
+
+  .diagram-wrapper .diagram-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.2rem;
+  }
+
+  .diagram-wrapper svg {
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    max-width: 750px;
+  }
+
+  /* ===== CALLOUT ===== */
+  .callout {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    background: var(--accent-glow);
+    border: 1px solid rgba(104,211,145,0.2);
+    border-radius: 10px;
+    padding: 1.3rem 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .callout .callout-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 0.15rem;
+  }
+
+  .callout p {
+    font-size: 0.95rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+
+  /* ===== FOOTER ===== */
+  .footer {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+    margin-top: 4rem;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 600px) {
+    .container { padding: 0 1rem 4rem; }
+    .chapter { padding-left: 1.2rem; }
+    .timeline { padding-left: 2rem; }
+    .tl-item { padding-left: 0.5rem; }
+    .tl-item::before { left: -2rem; width: 14px; height: 14px; }
+    .quote-box { padding: 1.5rem; }
+    .def-box { padding: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== HERO ==================== -->
+<section class="hero">
+  <div class="hero-badge">Episode 01</div>
+  <h1>The <span class="node-green">Node.js</span><br>Origin <span class="node-orange">Story</span></h1>
+  <p class="hero-sub">How a frustrated developer, a powerful engine, and an open-source dream changed the way we write JavaScript forever.</p>
+  <div class="scroll-cue">&#8595;</div>
+</section>
+
+<!-- ==================== MAIN ==================== -->
+<div class="container">
+
+  <!-- ===== CHAPTER 1 — WHAT IS NODE.JS ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Chapter 01</div>
+    <h2>What Exactly Is Node.js?</h2>
+  </div>
+
+  <p class="story">
+    Imagine a world where JavaScript — the language born to make web pages interactive — was locked inside the browser. It could make buttons glow and forms validate, but it could never touch a file on your hard drive, never talk to a database, never run a server. That was reality before 2009.
+  </p>
+
+  <p class="story">
+    Then <em>Node.js</em> arrived and shattered that cage.
+  </p>
+
+  <div class="def-box">
+    <div class="label">Definition</div>
+    <p>
+      <strong>Node.js</strong> is a cross-platform, open-source JavaScript runtime environment built on Chrome's <strong>V8 engine</strong>. It lets you execute JavaScript <em>outside</em> the browser — on servers, desktops, IoT devices, and more. It's maintained by the <strong>OpenJS Foundation</strong>.
+    </p>
+  </div>
+
+  <p class="story">
+    The key phrase to remember: <strong>"Run JavaScript Everywhere."</strong> Before Node.js, you needed one language for the browser (JavaScript) and another for the server (PHP, Ruby, Java, etc.). Node.js unified both sides under a single language.
+  </p>
+
+  <!-- Diagram: What Node.js enables -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">How Node.js Changed the Game</div>
+    <svg viewBox="0 0 750 300" xmlns="http://www.w3.org/2000/svg">
+      <!-- Before box -->
+      <rect x="20" y="30" width="310" height="240" rx="12" fill="#1a1e28" stroke="#2d3748"/>
+      <text x="175" y="22" text-anchor="middle" fill="#fc8181" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="0.1em">BEFORE NODE.JS</text>
+      <text x="175" y="75" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="14" font-weight="600">Browser</text>
+      <rect x="100" y="88" width="150" height="32" rx="6" fill="#2d3748"/>
+      <text x="175" y="109" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="12">JavaScript</text>
+      <text x="175" y="155" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="14" font-weight="600">Server</text>
+      <rect x="70" y="168" width="90" height="28" rx="6" fill="#2d3748"/>
+      <text x="115" y="187" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono, monospace" font-size="11">PHP</text>
+      <rect x="170" y="168" width="90" height="28" rx="6" fill="#2d3748"/>
+      <text x="215" y="187" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono, monospace" font-size="11">Ruby</text>
+      <rect x="120" y="210" width="110" height="28" rx="6" fill="#2d3748"/>
+      <text x="175" y="229" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono, monospace" font-size="11">Java / C#</text>
+
+      <!-- Arrow -->
+      <path d="M 350 150 L 410 150" stroke="#68d391" stroke-width="2" fill="none" marker-end="url(#arrowhead)"/>
+      <defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#68d391"/></marker></defs>
+
+      <!-- After box -->
+      <rect x="420" y="30" width="310" height="240" rx="12" fill="#1a1e28" stroke="#38a169"/>
+      <text x="575" y="22" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="0.1em">WITH NODE.JS</text>
+      <text x="575" y="75" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="14" font-weight="600">Browser</text>
+      <rect x="500" y="88" width="150" height="32" rx="6" fill="rgba(104,211,145,0.12)" stroke="#38a169"/>
+      <text x="575" y="109" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="12">JavaScript</text>
+      <text x="575" y="155" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="14" font-weight="600">Server</text>
+      <rect x="500" y="168" width="150" height="32" rx="6" fill="rgba(104,211,145,0.12)" stroke="#38a169"/>
+      <text x="575" y="189" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="12">JavaScript</text>
+      <text x="575" y="235" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3, sans-serif" font-size="14" font-weight="600">IoT / Desktop / CLI</text>
+      <rect x="500" y="245" width="150" height="28" rx="6" fill="rgba(104,211,145,0.12)" stroke="#38a169"/>
+      <text x="575" y="264" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="12">JavaScript</text>
+    </svg>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="icon">&#9889;</div>
+      <h4>Event-Driven</h4>
+      <p>Node.js doesn't wait around. It uses an event loop to handle operations, responding to events as they come in rather than processing one thing at a time.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128260;</div>
+      <h4>Non-Blocking I/O</h4>
+      <p>File reads, database queries, and network calls happen asynchronously. The server keeps working while waiting for results, making it incredibly efficient.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128640;</div>
+      <h4>V8 Powered</h4>
+      <p>The same engine that makes Chrome's JavaScript blazingly fast. V8 compiles JS directly to machine code — no interpreter middleman.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#127760;</div>
+      <h4>Cross-Platform</h4>
+      <p>Runs on Windows, macOS, Linux, and more. Write once, deploy anywhere your server or device lives.</p>
+    </div>
+  </div>
+
+  <!-- ===== CHAPTER 2 — THE HERO: RYAN DAHL ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Chapter 02</div>
+    <h2>The Hero — Ryan Dahl (2009)</h2>
+  </div>
+
+  <p class="story">
+    Our story begins with <strong>Ryan Dahl</strong>, a developer who was frustrated with a very specific problem: web servers in 2008 were <em>terrible</em> at handling many simultaneous connections. The dominant player — <strong>Apache HTTP Server</strong> — was a blocking server. Every incoming request would occupy a thread, and threads are expensive. Handle 10,000 users at once? Good luck.
+  </p>
+
+  <p class="story">
+    Ryan had an idea: what if you could build a server that <strong>never blocks</strong>? One that uses a single thread, an event loop, and callbacks to juggle thousands of connections without breaking a sweat? He picked JavaScript — not because he loved the language, but because it had <em>no existing I/O model</em>, which meant he could design one from scratch.
+  </p>
+
+  <div class="callout">
+    <div class="callout-icon">&#128161;</div>
+    <p><strong>Fun Fact:</strong> Ryan initially experimented with Firefox's <strong>SpiderMonkey</strong> engine, but within just two days he switched to Google's <strong>V8</strong> engine and never looked back. V8's raw speed made all the difference.</p>
+  </div>
+
+  <p class="story">
+    And here's a detail most people forget: Node.js was originally called <strong>Web.js</strong>. Ryan renamed it to <em>Node.js</em> because he realized it could do far more than just serve web pages — it could be a general-purpose runtime for building any kind of networked application.
+  </p>
+
+  <!-- Diagram: JS Engine Comparison -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">JavaScript Engine Landscape</div>
+    <svg viewBox="0 0 750 200" xmlns="http://www.w3.org/2000/svg">
+      <!-- V8 -->
+      <rect x="30" y="30" width="200" height="140" rx="10" fill="rgba(104,211,145,0.08)" stroke="#38a169"/>
+      <text x="130" y="65" text-anchor="middle" fill="#68d391" font-family="Playfair Display, serif" font-size="18" font-weight="700">V8</text>
+      <text x="130" y="90" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="13">Google · Chrome</text>
+      <text x="130" y="115" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="12">Compiles to machine code</text>
+      <rect x="70" y="130" width="120" height="24" rx="12" fill="#38a169"/>
+      <text x="130" y="147" text-anchor="middle" fill="#0d0f12" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">USED BY NODE.JS</text>
+
+      <!-- SpiderMonkey -->
+      <rect x="275" y="30" width="200" height="140" rx="10" fill="#1a1e28" stroke="#2d3748"/>
+      <text x="375" y="65" text-anchor="middle" fill="#ed8936" font-family="Playfair Display, serif" font-size="18" font-weight="700">SpiderMonkey</text>
+      <text x="375" y="90" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="13">Mozilla · Firefox</text>
+      <text x="375" y="115" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="12">Ryan's first choice</text>
+      <rect x="305" y="130" width="140" height="24" rx="12" fill="#2d3748"/>
+      <text x="375" y="147" text-anchor="middle" fill="#718096" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">ABANDONED IN 2 DAYS</text>
+
+      <!-- JavaScriptCore -->
+      <rect x="520" y="30" width="200" height="140" rx="10" fill="#1a1e28" stroke="#2d3748"/>
+      <text x="620" y="65" text-anchor="middle" fill="#a0aec0" font-family="Playfair Display, serif" font-size="18" font-weight="700">JavaScriptCore</text>
+      <text x="620" y="90" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="13">Apple · Safari</text>
+      <text x="620" y="115" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="12">Also known as Nitro</text>
+      <rect x="555" y="130" width="130" height="24" rx="12" fill="#2d3748"/>
+      <text x="620" y="147" text-anchor="middle" fill="#718096" font-family="JetBrains Mono, monospace" font-size="10" font-weight="600">USED BY BUN</text>
+    </svg>
+  </div>
+
+  <!-- ===== CHAPTER 3 — BLOCKING vs NON-BLOCKING ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Chapter 03</div>
+    <h2>The Big Problem — Blocking vs Non-Blocking</h2>
+  </div>
+
+  <p class="story">
+    To understand <em>why</em> Node.js mattered, you need to understand the problem it solved. Picture a restaurant. The <strong>Apache model</strong> was like hiring one waiter per table. With 10 tables, you needed 10 waiters. With 10,000 tables? Impossible.
+  </p>
+
+  <p class="story">
+    Node.js works like a single, incredibly efficient waiter who takes an order, sends it to the kitchen, and immediately moves to the next table — never standing around waiting for food to be cooked. When the food is ready, the kitchen sends a signal (an <em>event</em>), and the waiter delivers it.
+  </p>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>Apache (Blocking)</th>
+        <th>Node.js (Non-Blocking)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Thread model</strong></td>
+        <td>One thread per request</td>
+        <td>Single thread + event loop</td>
+      </tr>
+      <tr>
+        <td><strong>10,000 connections</strong></td>
+        <td class="tag-no">Needs ~10K threads (heavy)</td>
+        <td class="tag-yes">Handled by 1 thread</td>
+      </tr>
+      <tr>
+        <td><strong>I/O waits</strong></td>
+        <td>Thread sits idle, blocked</td>
+        <td>Moves on, callback fires later</td>
+      </tr>
+      <tr>
+        <td><strong>Memory usage</strong></td>
+        <td>High (each thread has overhead)</td>
+        <td>Low (single-threaded)</td>
+      </tr>
+      <tr>
+        <td><strong>Best for</strong></td>
+        <td>CPU-heavy tasks</td>
+        <td>I/O-heavy, real-time apps</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ===== CHAPTER 4 — JOYENT & NPM ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Chapter 04</div>
+    <h2>The Rise — Joyent, NPM & Windows</h2>
+  </div>
+
+  <p class="story">
+    Ryan Dahl was building Node.js independently when a company called <strong>Joyent</strong> noticed his work. Joyent was already exploring similar ideas, so they hired Ryan and funded the project. This gave Node.js the corporate backing it needed to grow from a hobby project into something serious.
+  </p>
+
+  <p class="story">
+    Then in <strong>2010</strong>, a pivotal moment: <em>NPM</em> (Node Package Manager) was introduced. Think of NPM as an app store for code. Need a library to send emails? <code>npm install nodemailer</code>. Need a web framework? <code>npm install express</code>. NPM made sharing and reusing code trivially easy, and it became the single biggest reason for Node.js's explosive growth.
+  </p>
+
+  <div class="callout">
+    <div class="callout-icon">&#128230;</div>
+    <p><strong>Without NPM, Node.js might not have become what it is today.</strong> NPM gave developers a shared ecosystem — a way to stand on each other's shoulders. Today it hosts over 2 million packages, making it the largest software registry in the world.</p>
+  </div>
+
+  <p class="story">
+    Initially, Node.js only worked on <strong>macOS and Linux</strong>. But in <strong>2011</strong>, Windows support arrived, opening the floodgates to the massive Windows developer community.
+  </p>
+
+  <!-- ===== CHAPTER 5 — THE FORK & REUNION ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Chapter 05</div>
+    <h2>The Drama — io.js Fork & Reunion</h2>
+  </div>
+
+  <p class="story">
+    In <strong>2012</strong>, Ryan Dahl stepped back from the project, and <strong>Isaac Z. Schlueter</strong> — the creator of NPM — took over as the lead maintainer. But storm clouds were gathering.
+  </p>
+
+  <p class="story">
+    By <strong>2014</strong>, parts of the community felt that Joyent was holding Node.js back — slow release cycles, resistance to adopting new V8 features, and a lack of transparent governance. A developer named <strong>Fedor Indutny</strong> created a fork called <em>io.js</em>. Several core contributors joined him.
+  </p>
+
+  <p class="story">
+    It was a dramatic split, but it had a happy ending. In <strong>September 2015</strong>, Node.js and io.js merged back together under a new, community-driven governance model: the <strong>Node.js Foundation</strong>. The fork forced the project to become more open and democratic — arguably making it stronger.
+  </p>
+
+  <p class="story">
+    Finally, in <strong>2019</strong>, the JS Foundation and the Node.js Foundation merged to form the <strong>OpenJS Foundation</strong>, which oversees Node.js to this day.
+  </p>
+
+  <!-- ===== FULL TIMELINE ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Timeline</div>
+    <h2>The Complete Journey</h2>
+  </div>
+
+  <div class="timeline">
+    <div class="tl-item highlight">
+      <div class="tl-year">2009</div>
+      <div class="tl-text"><strong>Ryan Dahl creates Node.js</strong> — originally called Web.js. Built on Chrome's V8 engine after briefly trying SpiderMonkey. Presented at JSConf EU to a standing ovation.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-year">2009</div>
+      <div class="tl-text"><strong>Joyent hires Ryan Dahl</strong> and funds the Node.js project, providing corporate backing and infrastructure.</div>
+    </div>
+    <div class="tl-item highlight">
+      <div class="tl-year">2010</div>
+      <div class="tl-text"><strong>NPM is introduced</strong> — the package manager that becomes the backbone of the Node.js ecosystem. Created by Isaac Z. Schlueter.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-year">2011</div>
+      <div class="tl-text"><strong>Windows support arrives</strong> — Node.js was initially only available on macOS and Linux. This opens Node.js to a vastly larger developer base.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-year">2012</div>
+      <div class="tl-text"><strong>Isaac Z. Schlueter</strong> takes over as the lead maintainer of Node.js. Ryan Dahl steps away from the project.</div>
+    </div>
+    <div class="tl-item">
+      <div class="tl-year">2014</div>
+      <div class="tl-text"><strong>Fedor Indutny forks Node.js</strong> into <strong>io.js</strong> due to disagreements over governance and release pace. Several core developers join the fork.</div>
+    </div>
+    <div class="tl-item highlight">
+      <div class="tl-year">Sep 2015</div>
+      <div class="tl-text"><strong>Node.js and io.js merge</strong> under the <strong>Node.js Foundation</strong> with open governance. The community reunites, stronger than before.</div>
+    </div>
+    <div class="tl-item highlight">
+      <div class="tl-year">2019</div>
+      <div class="tl-text"><strong>OpenJS Foundation</strong> is formed by merging the JS Foundation and Node.js Foundation. It maintains Node.js to this day.</div>
+    </div>
+  </div>
+
+  <!-- ===== CHAPTER 6 — KEY CONCEPTS ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Chapter 06</div>
+    <h2>Key Concepts to Remember</h2>
+  </div>
+
+  <div class="def-box">
+    <div class="label">JS Engine</div>
+    <p>Every environment that runs JavaScript needs a <strong>JavaScript engine</strong> to parse and execute the code. Browsers each have their own: Chrome uses V8, Firefox uses SpiderMonkey, Safari uses JavaScriptCore. Node.js took V8 <em>out of the browser</em> and made it standalone.</p>
+  </div>
+
+  <div class="def-box">
+    <div class="label">Runtime vs Engine</div>
+    <p>The <strong>V8 engine</strong> only knows how to execute JavaScript. The <strong>Node.js runtime</strong> wraps V8 and adds system-level capabilities: reading files, networking, spawning processes, and more. Think of V8 as the engine of a car and Node.js as the entire vehicle.</p>
+  </div>
+
+  <div class="def-box">
+    <div class="label">Event-Driven Architecture</div>
+    <p>Instead of processing tasks sequentially (line by line, waiting for each to finish), Node.js <strong>registers callbacks</strong> for operations and moves on. When an operation completes, it fires an event, and the callback runs. This is covered in depth in Episode 06.</p>
+  </div>
+
+  <!-- Architecture Diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Node.js Architecture — Simplified</div>
+    <svg viewBox="0 0 750 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- Your JS Code -->
+      <rect x="275" y="10" width="200" height="44" rx="8" fill="rgba(237,137,54,0.15)" stroke="#ed8936"/>
+      <text x="375" y="38" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono, monospace" font-size="13" font-weight="600">Your JavaScript Code</text>
+
+      <line x1="375" y1="54" x2="375" y2="80" stroke="#2d3748" stroke-width="1.5" stroke-dasharray="4"/>
+
+      <!-- Node.js Runtime -->
+      <rect x="100" y="80" width="550" height="220" rx="12" fill="#1a1e28" stroke="#38a169"/>
+      <text x="375" y="105" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono, monospace" font-size="11" letter-spacing="0.12em">NODE.JS RUNTIME</text>
+
+      <!-- V8 -->
+      <rect x="130" y="125" width="170" height="65" rx="8" fill="rgba(104,211,145,0.08)" stroke="#38a169"/>
+      <text x="215" y="153" text-anchor="middle" fill="#68d391" font-family="Playfair Display, serif" font-size="16" font-weight="700">V8 Engine</text>
+      <text x="215" y="175" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="11">Executes JS → Machine Code</text>
+
+      <!-- libuv -->
+      <rect x="330" y="125" width="170" height="65" rx="8" fill="rgba(237,137,54,0.08)" stroke="#ed8936"/>
+      <text x="415" y="153" text-anchor="middle" fill="#ed8936" font-family="Playfair Display, serif" font-size="16" font-weight="700">libuv</text>
+      <text x="415" y="175" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="11">Event Loop &amp; Async I/O</text>
+
+      <!-- Node APIs -->
+      <rect x="530" y="125" width="100" height="65" rx="8" fill="#1a1e28" stroke="#2d3748"/>
+      <text x="580" y="153" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3, sans-serif" font-size="13" font-weight="600">Node APIs</text>
+      <text x="580" y="175" text-anchor="middle" fill="#718096" font-family="Source Sans 3, sans-serif" font-size="10">fs, http, path…</text>
+
+      <!-- OS layer -->
+      <rect x="130" y="215" width="500" height="65" rx="8" fill="#0d0f12" stroke="#2d3748"/>
+      <text x="380" y="243" text-anchor="middle" fill="#718096" font-family="JetBrains Mono, monospace" font-size="12">Operating System (File System · Network · Timers · Threads)</text>
+      <text x="380" y="265" text-anchor="middle" fill="#4a5568" font-family="Source Sans 3, sans-serif" font-size="11">Windows · macOS · Linux</text>
+
+      <!-- Arrows -->
+      <line x1="215" y1="190" x2="215" y2="215" stroke="#38a169" stroke-width="1.5" marker-end="url(#arrowhead)"/>
+      <line x1="415" y1="190" x2="415" y2="215" stroke="#ed8936" stroke-width="1.5" marker-end="url(#arrowO)"/>
+      <defs><marker id="arrowO" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#ed8936"/></marker></defs>
+    </svg>
+  </div>
+
+  <!-- ===== QUOTE ===== -->
+  <div class="quote-box">
+    <blockquote>Any application that can be written in JavaScript, will eventually be written in JavaScript.</blockquote>
+    <div class="attribution">— Jeff Atwood (Atwood's Law)</div>
+  </div>
+
+  <p class="story">
+    Node.js is the strongest proof of Atwood's Law. What started as a runtime for building web servers now powers everything from desktop apps (Electron/VS Code) to mobile apps (React Native) to serverless functions to command-line tools. JavaScript truly runs everywhere.
+  </p>
+
+  <!-- ===== QUICK REFERENCE ===== -->
+  <div class="chapter">
+    <div class="chapter-num">Quick Reference</div>
+    <h2>Episode 01 — At a Glance</h2>
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Topic</th>
+        <th>Key Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>What is Node.js?</strong></td><td>A JS runtime built on V8, runs JS outside the browser</td></tr>
+      <tr><td><strong>Creator</strong></td><td>Ryan Dahl (2009)</td></tr>
+      <tr><td><strong>Original name</strong></td><td>Web.js → renamed to Node.js</td></tr>
+      <tr><td><strong>Engine</strong></td><td>Chrome's V8 (switched from SpiderMonkey)</td></tr>
+      <tr><td><strong>Key feature</strong></td><td>Non-blocking, event-driven I/O</td></tr>
+      <tr><td><strong>Corporate backer</strong></td><td>Joyent (hired Ryan Dahl)</td></tr>
+      <tr><td><strong>NPM</strong></td><td>Introduced 2010, created by Isaac Z. Schlueter</td></tr>
+      <tr><td><strong>Windows support</strong></td><td>Added in 2011</td></tr>
+      <tr><td><strong>io.js fork</strong></td><td>2014, by Fedor Indutny — merged back Sep 2015</td></tr>
+      <tr><td><strong>Current governance</strong></td><td>OpenJS Foundation (since 2019)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer">
+    Node.js Episode 01 — Introduction &amp; History &nbsp;|&nbsp; Story-format notes for deep learning &nbsp;|&nbsp; Next up: Episode 02
+  </div>
+
+</div>
+</body>
+</html>

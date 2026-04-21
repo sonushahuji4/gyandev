@@ -1,27 +1,45 @@
 ---
-readingMinutes: 4
+readingMinutes: 5
 updated: 2026-04-21
 ---
 
-## The pipeline
+<RevisionCard numeral="i" title="Client, server, request, response" subtitle="The loop every backend app sits inside.">
+- **Server** = remote computer that serves clients over a network.
+- Client knows the server's **IP address** (e.g. `142.250.193.206` for google.com).
+- Loop: client sends request → server processes → server returns response.
+- Response can be HTML, JSON, bytes, a stream — doesn't matter, same shape.
+</RevisionCard>
 
-- **Parser** → AST
-- **Ignition** → bytecode + interpret
-- **TurboFan** → optimized machine code for hot functions
-- **Deopt** → back to bytecode when assumptions break
+<RevisionCard numeral="ii" title="JS breaks out of the browser" subtitle="Why Node.js mattered culturally, not just technically.">
+- Before Node, JS was **browser-only**: no file system, no sockets, no DB.
+- Backend required a second language (PHP, Ruby, Python, Java).
+- Node took **V8 out of Chrome** and wrapped it with server-side capability.
+- Result: one language for frontend *and* backend — full-stack JavaScript.
+</RevisionCard>
 
-## Hidden classes
+<RevisionCard numeral="iii" title="V8 is a C++ app you can embed" subtitle="The engine, not the runtime.">
+- **V8** = Google's open-source JS + WASM engine, written in **C++**.
+- Implements the **ECMAScript** standard; runs on Windows, macOS, Linux; x64 / IA-32 / ARM.
+- **Embeddable** — any C++ program can include V8. Node.js is one such program.
+- Doesn't *interpret* JS — **compiles** it to machine code.
+</RevisionCard>
 
-- Every object has a hidden "shape" describing its property layout.
-- Adding properties in a different order → different shape → slower property access.
-- Prefer stable shapes — initialize all fields in the constructor.
+<RevisionCard numeral="iv" title="ECMAScript vs superpowers" subtitle="What V8 can't do that Node.js can.">
+- ECMAScript defines the *language*: variables, functions, loops, promises, classes.
+- ECMAScript says **nothing** about files, sockets, HTTP, databases.
+- V8 alone: executes JS logic. Can't open a file.
+- Node.js adds **`fs`, `http`, `net`, `os`, `crypto`, `stream`, `child_process`** — the "superpowers".
+- **Runtime = V8 + Node APIs.** That's the formula.
+</RevisionCard>
 
-## Inline caches
+<RevisionCard numeral="v" title="From `let x = 42` to binary" subtitle="The four levels your code passes through.">
+- **(1) JavaScript** — the source you write.
+- **(2) V8 (C++)** — parses to AST, runs through **Ignition** + **TurboFan**.
+- **(3) Assembly** — mnemonics like `MOV`, `ADD`, `JMP`.
+- **(4) Machine code** — pure binary `0110 1010 …` your CPU executes.
+- Both assembly and machine code are **low-level**: close to hardware, 1:1 with instructions.
+</RevisionCard>
 
-- V8 remembers the shape at each property-access site.
-- Same shape every call → fast monomorphic path.
-- Many shapes → megamorphic, falls back to a slow lookup.
-
-## If you remember nothing else
-
-> V8 loves code whose shapes don't change. Churn shapes, lose speed.
+<Callout type="mnemonic" title="Mnemonic">
+  Servers Eat Vanilla Engines, Chefs Ship — **S**erver · **E**CMAScript · **V**8 · **E**mbedded (in Node) · **C**ompile · **S**uperpowers.
+</Callout>

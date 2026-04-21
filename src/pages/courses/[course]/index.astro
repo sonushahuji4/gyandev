@@ -1,25 +1,23 @@
 ---
 /**
- * /courses/[course] — Course overview page (PR-4.1).
+ * /courses/[course] — Course overview page (DevNotes revamp).
  *
  * Build-time composition:
- *   - `getStaticPaths()` emits one route per `courses` entry that is NOT a
- *     draft. `coming-soon` courses render the `ComingSoonHero` variant with
- *     `noindex` so crawlers ignore the stub until the course ships.
- *   - `getCourseBySlug()` resolves the course + published chapters + stats;
- *     `getChaptersGroupedBySeason()` buckets for the season-grouped list.
- *   - `courseSchema()` (from PR-1.5) emits the `Course` JSON-LD. The matching
- *     `BreadcrumbList` is owned by `<Breadcrumbs>` so the page never emits a
- *     duplicate block.
- *   - Related courses are pre-filtered to exclude the current course in case
- *     `related:` accidentally self-references.
+ *   - `getStaticPaths()` emits one route per non-draft course. Coming-soon
+ *     courses render the `ComingSoonHero` variant with `noindex`.
+ *   - `getCourseBySlug()` resolves the course + its chapters (published and
+ *     coming-soon, sorted) + aggregate stats; coming-soon rows surface in
+ *     the UI grayed out so readers see the full arc of the course.
+ *   - `coursePosition` / `totalCourses` are derived from the non-draft
+ *     catalog so the hero overline reads `"COURSE · N OF M"` without adding
+ *     a per-course frontmatter field.
+ *   - `PageShell` is mounted with `includeSerif={true}` per PHASE-1-ROADMAP
+ *     §2.R2 because the page leans on Instrument Serif for the hero italic,
+ *     roman numerals, and order numerals.
+ *   - `courseSchema()` + `<Breadcrumbs>` keep the PR-1.5 JSON-LD contract.
  *
- * Client-side:
- *   - `src/scripts/course-overview-hydrate.ts` self-attaches on
- *     `DOMContentLoaded` + `astro:page-load` to paint chapter completion
- *     icons, update the progress widget, and swap Resume/Start CTAs. All
- *     localStorage access goes through `progressKey()` / `lastReadKey()`
- *     builders per roadmap §2.R1.
+ * Client-side: `src/scripts/course-overview-hydrate.ts` self-attaches and
+ * paints completion icons, the progress widget, and the Resume/Start CTAs.
  */
 import { getCollection, getEntries, render, type CollectionEntry } from 'astro:content';
 
@@ -28,7 +26,6 @@ import Breadcrumbs from '../../../components/seo/Breadcrumbs.astro';
 import CourseHeroLeft from '../../../components/pages/course-overview/CourseHeroLeft.astro';
 import CourseHeroRight from '../../../components/pages/course-overview/CourseHeroRight.astro';
 import WhatYoullLearn from '../../../components/pages/course-overview/WhatYoullLearn.astro';
-import Prerequisites from '../../../components/pages/course-overview/Prerequisites.astro';
 import ChapterList from '../../../components/pages/course-overview/ChapterList.astro';
 import CourseSidebar from '../../../components/pages/course-overview/CourseSidebar.astro';
 import ComingSoonHero from '../../../components/pages/course-overview/ComingSoonHero.astro';
@@ -39,25 +36,43 @@ import { canonicalFor, courseUrl } from '../../../lib/routes';
 
 export async function getStaticPaths() {
   const courses = await getCollection('courses');
-  return courses
-    // Skip drafts so they never ship a static page. Coming-soon courses DO
-    // get a page, but it's `noindex` + minimal per spec §11.
-    .filter((course) => course.data.status !== 'draft')
-    .map((course) => ({
-      params: { course: course.id.split('/')[0] },
-      props: { course },
-    }));
+
+  // Non-draft courses form the visible catalog. Keep the order determined
+  // by `course.data.order` so the hero `"COURSE · N OF M"` stays stable.
+  const catalog = courses
+    .filter((c) => c.data.status !== 'draft')
+    .sort((a, b) => a.data.order - b.data.order);
+
+  const totalCourses = catalog.length;
+
+  return catalog.map((course, i) => ({
+    params: { course: course.id.split('/')[0] },
+    props: {
+      course,
+      coursePosition: i + 1,
+      totalCourses,
+    },
+  }));
 }
 
 interface Props {
   course: CollectionEntry<'courses'>;
+  coursePosition: number;
+  totalCourses: number;
 }
 
-const { course } = Astro.props as Props;
+const { course, coursePosition, totalCourses } = Astro.props as Props;
 const slug = course.id.split('/')[0]!;
 const canonical = canonicalFor(courseUrl(slug));
 const isComingSoon = course.data.status === 'coming-soon';
 const pageTitle = `${course.data.title} — GyanDev`;
+
+// Meta description trims the course description to <= 155 chars so crawlers
+// don't truncate unpredictably.
+const metaDescription =
+  course.data.description.length > 155
+    ? `${course.data.description.slice(0, 152).trimEnd()}…`
+    : course.data.description;
 
 const breadcrumbItems = [
   { name: 'Home',    url: canonicalFor('/') },
@@ -67,12 +82,12 @@ const breadcrumbItems = [
 
 const bundle = !isComingSoon ? await getCourseBySlug(slug) : null;
 
-// Derived view data — only computed when we're rendering the full layout.
 const chapters = bundle?.chapters ?? [];
 const stats = bundle?.stats ?? {
   chapterCount: 0,
   publishedChapters: 0,
   totalReadingMinutes: 0,
+  totalScopedReadingMinutes: 0,
   firstChapterSlug: undefined,
 };
 const groups = getChaptersGroupedBySeason(chapters);
@@ -92,8 +107,7 @@ const hours = Math.max(1, Math.round(stats.totalReadingMinutes / 60));
 const timeRequired = stats.totalReadingMinutes > 0 ? `PT${hours}H` : undefined;
 
 // Coming-soon pages are `noindex` and carry no Course schema — nothing to
-// describe honestly yet. Published pages emit `Course`; the paired
-// `BreadcrumbList` is owned by the `<Breadcrumbs>` component below.
+// describe honestly yet. Breadcrumbs JSON-LD comes from `<Breadcrumbs>`.
 const jsonLd = isComingSoon
   ? undefined
   : [
@@ -113,11 +127,12 @@ const courseContentPath = `${slug}/course.mdx`;
 
 <PageShell
   title={pageTitle}
-  description={course.data.description}
+  description={metaDescription}
   canonical={canonical}
   noindex={isComingSoon}
   jsonLd={jsonLd}
   mainMaxWidth="full"
+  includeSerif={true}
 >
   {isComingSoon ? (
     <ComingSoonHero course={course} />
@@ -126,25 +141,34 @@ const courseContentPath = `${slug}/course.mdx`;
       <Breadcrumbs items={breadcrumbItems} />
 
       <header class="course-overview__hero">
-        <CourseHeroLeft
-          course={course}
-          publishedChapters={stats.publishedChapters}
-          totalReadingMinutes={stats.totalReadingMinutes}
-        />
-        <CourseHeroRight
-          courseSlug={slug}
-          firstChapterSlug={stats.firstChapterSlug}
-        />
+        <div class="course-overview__hero-left">
+          <CourseHeroLeft
+            course={course}
+            coursePosition={coursePosition}
+            totalCourses={totalCourses}
+            totalChapters={stats.chapterCount}
+            totalReadingMinutes={stats.totalScopedReadingMinutes}
+            revisionMinutes={course.data.revisionMinutes}
+          />
+        </div>
+        <div class="course-overview__hero-right">
+          <CourseHeroRight
+            courseSlug={slug}
+            firstChapterSlug={stats.firstChapterSlug}
+          />
+        </div>
       </header>
+
+      <hr class="course-overview__divider" />
+
+      <div class="course-overview__objectives">
+        <WhatYoullLearn objectives={course.data.learningObjectives}>
+          <Content />
+        </WhatYoullLearn>
+      </div>
 
       <div class="course-overview__body">
         <div class="course-overview__main">
-          <WhatYoullLearn objectives={course.data.learningObjectives}>
-            <Content />
-          </WhatYoullLearn>
-
-          <Prerequisites prerequisites={course.data.prerequisites} />
-
           <ChapterList groups={groups} courseSlug={slug} />
         </div>
 
@@ -152,6 +176,8 @@ const courseContentPath = `${slug}/course.mdx`;
           courseSlug={slug}
           total={stats.publishedChapters}
           related={related}
+          prerequisiteChapters={course.data.prerequisiteChapters}
+          downloads={course.data.downloads}
           courseContentPath={courseContentPath}
         />
       </div>
@@ -169,7 +195,7 @@ const courseContentPath = `${slug}/course.mdx`;
   .course-overview {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 2rem;
   }
 
   .course-overview__hero {
@@ -177,27 +203,48 @@ const courseContentPath = `${slug}/course.mdx`;
     flex-direction: column;
     gap: 1.5rem;
     padding: 1rem 0 0.5rem;
+    align-items: stretch;
   }
   @media (min-width: 64rem) {
     .course-overview__hero {
       flex-direction: row;
       justify-content: space-between;
-      align-items: flex-start;
-      gap: 2rem;
-      padding: 1.5rem 0 1rem;
+      align-items: flex-end;
+      gap: 2.5rem;
+      padding: 2rem 0 1rem;
     }
+  }
+
+  .course-overview__hero-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .course-overview__hero-right {
+    flex-shrink: 0;
+  }
+
+  .course-overview__divider {
+    border: 0;
+    border-top: 1px solid var(--color-border);
+    margin: 0;
+  }
+
+  .course-overview__objectives {
+    margin-top: -0.5rem;
   }
 
   .course-overview__body {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 2.5rem;
+    margin-top: 0.5rem;
   }
   @media (min-width: 64rem) {
     .course-overview__body {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 18rem;
-      gap: 2.5rem;
+      gap: 3rem;
       align-items: start;
     }
   }

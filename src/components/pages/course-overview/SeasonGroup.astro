@@ -66,13 +66,13 @@ const headingId = `season-${season}-heading`;
     {chapters.map((ref, i) => (
       <ChapterRow
         title={ref.chapter.data.title}
-        description={ref.chapter.data.description}
+        excerpt={ref.chapter.data.excerpt ?? ref.chapter.data.description}
         readingMinutes={ref.chapter.data.readingMinutes}
-        difficulty={ref.chapter.data.difficulty}
         courseSlug={courseSlug}
         chapterSlug={ref.slug}
         orderLabel={startOrder + i}
         availability={getChapterAvailability(ref.chapter)}
+        status={ref.status}
       />
     ))}
   </ol>
@@ -80,7 +80,10 @@ const headingId = `season-${season}-heading`;
 
 <style>
   .season-group {
-    margin: 2rem 0 0;
+    margin: 0;
+  }
+  .season-group + .season-group {
+    margin-top: 2rem;
   }
   .season-group__header {
     display: flex;

@@ -1,14 +1,9 @@
 ---
 /**
- * ChapterList — wraps one or more `SeasonGroup`s (PR-4.1).
- *
- * Falls back to a flat, unadorned list when the course has no season
- * grouping (per roadmap Q#23 — single-season courses should not show a
- * decorative "Season 1" header). This keeps the page quiet for small courses.
- *
- * The `<section>` carries `aria-label="Chapters"` for screen readers so
- * landing-on-list navigation announces the list purpose even when no season
- * headers are rendered.
+ * ChapterList — wraps the ordered chapter rows with a `CHAPTERS` overline
+ * (DevNotes revamp). Delegates season bucketing to `SeasonGroup`; when a
+ * course has a single (default) season the season header is suppressed for
+ * a flat list layout.
  */
 import SeasonGroup from './SeasonGroup.astro';
 import type { CourseChapterRef } from '../../../lib/courses/bySlug';
@@ -20,17 +15,16 @@ export interface Props {
 
 const { groups, courseSlug } = Astro.props;
 
-// When there is exactly one group AND it's the default "Season 1" bucket,
-// suppress the season header to render a flat list. Authors who intentionally
-// label chapters `season: 1` get the same treatment because the effect is
-// identical visually — the course is single-seasoned.
 const entries = [...groups.entries()];
 const isFlat = entries.length <= 1;
 
 let runningOrder = 1;
 ---
 
-<section class="chapter-list" aria-label="Chapters">
+<section class="chapter-list" aria-labelledby="chapter-list-heading">
+  <p class="chapter-list__overline">CHAPTERS</p>
+  <h2 id="chapter-list-heading" class="sr-only">Chapters</h2>
+
   {entries.map(([season, chapters]) => {
     const startOrder = runningOrder;
     runningOrder += chapters.length;
@@ -54,6 +48,16 @@ let runningOrder = 1;
   .chapter-list {
     margin: 0;
   }
+
+  .chapter-list__overline {
+    margin: 0 0 1rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+
   .chapter-list__empty {
     margin: 1rem 0 0;
     padding: 1rem;

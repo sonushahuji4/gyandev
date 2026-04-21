@@ -1,21 +1,42 @@
 ---
 title: Node.js
-description: Server-side JavaScript from V8 internals up through production patterns, observability, and scaling.
+heroItalic: from first principles
+description: Server-side JavaScript from V8 internals up through production patterns. Designed for engineers who already know JavaScript and want the depth that interviews and incidents demand.
 order: 1
 status: published
 difficulty: intermediate
 icon: N
 estimatedHours: 12
+revisionMinutes: 62
 learningObjectives:
-  - V8 internals and the JS runtime
-  - Event loop, microtasks, and macrotasks
-  - Streams, buffers, and the filesystem
-  - HTTP server patterns and performance
-  - Observability — logging, metrics, tracing
-  - Clustering, worker threads, and scaling
+  - The Node runtime and its relationship to V8 and libuv.
+  - Event-loop internals — phases, microtasks, and the order operations really run in.
+  - Streams, buffers, and backpressure — the things that make or break file and network I/O.
+  - When to reach for cluster, worker_threads, or child_process — and when none of them is the answer.
+  - 'Production observability: structured logging, metrics, and distributed tracing in Node.'
+  - Common interview questions with the right mental models ready to deploy.
 prerequisites:
   - Comfortable writing modern JavaScript (promises, modules)
   - Basic command-line fluency — running scripts, reading logs
+prerequisiteChapters:
+  - courseSlug: javascript
+    chapterSlug: closures
+    title: JavaScript · Closures
+  - courseSlug: javascript
+    chapterSlug: promises
+    title: JavaScript · Promises
+  - courseSlug: javascript
+    chapterSlug: async-await
+    title: JavaScript · Async/Await
+related:
+  - javascript/course
+  - typescript/course
+# TODO(downloads): swap placeholders for real artifact URLs when the PDF + ZIP
+# generation pipeline lands (Phase 2).
+downloads:
+  full: '#'
+  revision: '#'
+  flow: '#'
 updated: 2026-04-21
 ---
 

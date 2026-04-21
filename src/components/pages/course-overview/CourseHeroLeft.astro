@@ -1,46 +1,69 @@
 ---
 /**
- * Course hero — left column (PR-4.1).
+ * Course hero — left column (DevNotes revamp).
  *
- * Owns the course identity: icon, H1 (course name), full description, and a
- * compact stats line summarizing chapter count, total estimated hours, and
- * difficulty. The single `<h1>` on the page lives here per spec §10.
+ * Owns the course identity for the course-overview page:
+ *   - Green-tinted letter badge
+ *   - `COURSE · N OF M` overline
+ *   - H1 (course name) with an optional serif-italic suffix pulled from
+ *     `course.data.heroItalic` (e.g. `"from first principles"`)
+ *   - Description paragraph
+ *   - Stats row: chapters count, total hours, revision minutes, difficulty
+ *     gradient
  *
- * Icon is rendered as a raw `<img>` because course icons live under
- * `public/images/courses/` (served as-is, not run through Astro's image
- * pipeline) and are already authored as small SVG/PNG assets. The stats line
- * doubles as an accessible label.
+ * The H1 is the single `<h1>` on the page per spec §10. Numerals render in
+ * Inter; unit letters (`h`, `m`) switch to Instrument Serif italic so the
+ * stats match the home hero's typographic language.
  */
 import type { CollectionEntry } from 'astro:content';
 
 export interface Props {
   course: CollectionEntry<'courses'>;
-  publishedChapters: number;
+  /** 1-based position of this course in the published+coming-soon catalog. */
+  coursePosition: number;
+  /** Total courses in the catalog (published + coming-soon, excluding drafts). */
+  totalCourses: number;
+  /** Total chapter count (published + coming-soon) — drives `"N CHAPTERS"`. */
+  totalChapters: number;
+  /** Full-notes total minutes across all scoped chapters. */
   totalReadingMinutes: number;
+  /** Optional revision-track minutes override (from course frontmatter). */
+  revisionMinutes?: number;
 }
 
-const { course, publishedChapters, totalReadingMinutes } = Astro.props;
-const { title, description, difficulty, icon } = course.data;
+const {
+  course,
+  coursePosition,
+  totalCourses,
+  totalChapters,
+  totalReadingMinutes,
+  revisionMinutes,
+} = Astro.props;
+
+const { title, heroItalic, description, difficulty, icon } = course.data;
 
 const isLegacyImageIcon = typeof icon === 'string' && icon.startsWith('/');
-const badgeText = !isLegacyImageIcon ? (icon ?? title.slice(0, 2).toUpperCase()) : '';
+const badgeLetter = !isLegacyImageIcon
+  ? (icon ?? title.slice(0, 1).toUpperCase())
+  : '';
 
-const chapterLabel =
-  publishedChapters === 1 ? '1 chapter' : `${publishedChapters} chapters`;
-
-const hours = Math.round((totalReadingMinutes / 60) * 10) / 10;
-const hoursLabel =
-  totalReadingMinutes <= 0
+const hoursRaw = totalReadingMinutes / 60;
+const hoursDisplay =
+  hoursRaw <= 0
     ? null
-    : hours < 1
-      ? `~${totalReadingMinutes} min`
-      : `~${hours} hr${hours === 1 ? '' : 's'}`;
+    : hoursRaw < 1
+      ? `${Math.round(totalReadingMinutes)}`
+      : `${Math.round(hoursRaw)}`;
+const hoursUnit = hoursRaw > 0 && hoursRaw < 1 ? 'm' : 'h';
 
-const statsAriaLabel = [
-  chapterLabel,
-  hoursLabel,
-  `${difficulty} difficulty`,
-].filter(Boolean).join(', ');
+const revisionDisplay = revisionMinutes ? `${revisionMinutes}` : null;
+
+const difficultyGradient =
+  difficulty === 'beginner'
+    ? 'BEGINNER'
+    : difficulty === 'advanced'
+      ? 'ADVANCED'
+      : 'BEGINNER → ADVANCED';
 ---
 
 <div class="course-hero-left">
@@ -57,118 +80,232 @@ const statsAriaLabel = [
       aria-hidden="true"
     />
   ) : (
-    badgeText && <span class="course-hero-left__badge" aria-hidden="true">{badgeText}</span>
+    <span class="course-hero-left__badge" aria-hidden="true">{badgeLetter}</span>
   )}
 
-  <div class="course-hero-left__body">
-    <h1 class="course-hero-left__title">{title}</h1>
-    <p class="course-hero-left__desc">{description}</p>
+  <p class="course-hero-left__overline">
+    COURSE · {coursePosition} <span class="course-hero-left__of">OF</span> {totalCourses}
+  </p>
 
-    <p class="course-hero-left__stats" aria-label={statsAriaLabel}>
-      <span>{chapterLabel}</span>
-      {hoursLabel && (
-        <>
-          <span aria-hidden="true">·</span>
-          <span>{hoursLabel}</span>
-        </>
-      )}
-      <span aria-hidden="true">·</span>
-      <span class="course-hero-left__difficulty">{difficulty}</span>
-    </p>
-  </div>
+  <h1 class="course-hero-left__title">
+    <span class="course-hero-left__title-main">{title}</span>
+    {heroItalic && (
+      <em class="course-hero-left__title-italic">{heroItalic}</em>
+    )}
+  </h1>
+
+  <p class="course-hero-left__desc">{description}</p>
+
+  <dl class="course-hero-left__stats" aria-label="Course stats">
+    <div class="course-hero-left__stat">
+      <dt class="course-hero-left__stat-label">CHAPTERS</dt>
+      <dd class="course-hero-left__stat-value">
+        <span class="course-hero-left__stat-num">{totalChapters}</span>
+      </dd>
+    </div>
+
+    {hoursDisplay && (
+      <div class="course-hero-left__stat">
+        <dt class="course-hero-left__stat-label">FULL NOTES</dt>
+        <dd class="course-hero-left__stat-value">
+          <span class="course-hero-left__stat-num">{hoursDisplay}</span>
+          <em class="course-hero-left__stat-unit">{hoursUnit}</em>
+        </dd>
+      </div>
+    )}
+
+    {revisionDisplay && (
+      <div class="course-hero-left__stat">
+        <dt class="course-hero-left__stat-label">REVISION</dt>
+        <dd class="course-hero-left__stat-value">
+          <span class="course-hero-left__stat-num">{revisionDisplay}</span>
+          <em class="course-hero-left__stat-unit">m</em>
+        </dd>
+      </div>
+    )}
+
+    <div class="course-hero-left__stat course-hero-left__stat--difficulty">
+      <dt class="course-hero-left__stat-label">DIFFICULTY</dt>
+      <dd class="course-hero-left__stat-value">
+        <span class="course-hero-left__gradient" aria-hidden="true">
+          <span class="course-hero-left__dot course-hero-left__dot--beginner"></span>
+          <span class="course-hero-left__gradient-arrow">→</span>
+          <span class="course-hero-left__dot course-hero-left__dot--advanced"></span>
+        </span>
+        <span class="course-hero-left__gradient-label">{difficultyGradient}</span>
+      </dd>
+    </div>
+  </dl>
 </div>
 
 <style>
   .course-hero-left {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
     align-items: flex-start;
-  }
-  @media (min-width: 40rem) {
-    .course-hero-left {
-      flex-direction: row;
-      gap: 1.25rem;
-      align-items: flex-start;
-    }
+    gap: 1rem;
+    min-width: 0;
   }
 
-  .course-hero-left__icon {
-    width: 4rem;
-    height: 4rem;
+  /* Letter badge: green-tinted rounded square. */
+  .course-hero-left__icon,
+  .course-hero-left__badge {
+    width: 3.25rem;
+    height: 3.25rem;
     border-radius: 0.75rem;
-    background: var(--color-surface-muted);
-    padding: 0.375rem;
     flex-shrink: 0;
   }
-  @media (min-width: 40rem) {
-    .course-hero-left__icon {
-      width: 5rem;
-      height: 5rem;
-    }
+  .course-hero-left__icon {
+    object-fit: contain;
+    padding: 0.375rem;
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
   }
-
   .course-hero-left__badge {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 3rem;
-    height: 3rem;
-    padding: 0 0.625rem;
-    border-radius: 0.625rem;
-    background: var(--color-surface-muted);
-    border: 1px solid var(--color-border);
-    font-family: var(--font-mono);
-    font-size: 1.0625rem;
-    font-weight: 600;
-    color: var(--color-text);
-    letter-spacing: 0.01em;
-    flex-shrink: 0;
-  }
-  @media (min-width: 40rem) {
-    .course-hero-left__badge {
-      min-width: 3.75rem;
-      height: 3.75rem;
-      font-size: 1.25rem;
-    }
+    background: color-mix(in srgb, var(--color-accent) 18%, transparent);
+    color: var(--color-accent);
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
   }
 
-  .course-hero-left__body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    min-width: 0;
+  .course-hero-left__overline {
+    margin: 0.25rem 0 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+  .course-hero-left__of {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 0.8125rem;
+    padding: 0 0.25rem;
+    color: var(--color-text-muted);
   }
 
   .course-hero-left__title {
-    font-size: var(--text-h1);
-    font-weight: 600;
     margin: 0;
-    line-height: 1.15;
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    line-height: 1.02;
+    letter-spacing: -0.015em;
     color: var(--color-text);
+  }
+  .course-hero-left__title-main {
+    /* Display serif for the course name matches the home hero aesthetic. */
+  }
+  .course-hero-left__title-italic {
+    font-style: italic;
+    color: var(--color-accent);
+    margin-left: 0.5rem;
   }
 
   .course-hero-left__desc {
     margin: 0;
+    max-width: 36rem;
     color: var(--color-text-muted);
-    font-size: 1.0625rem;
-    line-height: 1.55;
-    max-width: 42rem;
+    font-size: 1rem;
+    line-height: 1.6;
   }
 
   .course-hero-left__stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: center;
-    margin: 0.25rem 0 0;
-    font-size: 0.9375rem;
+    gap: 1.75rem 2rem;
+    margin: 0.75rem 0 0;
+    padding: 0;
+    align-items: flex-start;
+  }
+  .course-hero-left__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .course-hero-left__stat-label {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    order: 2;
+  }
+  .course-hero-left__stat-value {
+    margin: 0;
+    font-size: 1.375rem;
+    font-weight: 500;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+    line-height: 1.1;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.125rem;
+    order: 1;
+  }
+  .course-hero-left__stat-num {
+    font-variant-numeric: tabular-nums;
+  }
+  .course-hero-left__stat-unit {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-size: 0.85em;
+    font-weight: 400;
     color: var(--color-text-muted);
   }
-  .course-hero-left__stats span[aria-hidden="true"] {
-    opacity: 0.55;
+
+  .course-hero-left__stat--difficulty .course-hero-left__stat-value {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    color: var(--color-text);
+    text-transform: uppercase;
+    gap: 0.5rem;
   }
-  .course-hero-left__difficulty {
-    text-transform: capitalize;
+  .course-hero-left__gradient {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .course-hero-left__dot {
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 999px;
+    display: inline-block;
+  }
+  .course-hero-left__dot--beginner {
+    background: var(--color-accent);
+  }
+  .course-hero-left__dot--advanced {
+    background: color-mix(in srgb, var(--color-danger) 85%, var(--color-accent));
+  }
+  .course-hero-left__gradient-arrow {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+  }
+  .course-hero-left__gradient-label {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (min-width: 40rem) {
+    .course-hero-left__icon,
+    .course-hero-left__badge {
+      width: 3.75rem;
+      height: 3.75rem;
+    }
+    .course-hero-left__badge {
+      font-size: 1.75rem;
+    }
+    .course-hero-left__desc {
+      font-size: 1.0625rem;
+    }
   }
 </style>

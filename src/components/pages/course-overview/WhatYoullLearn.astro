@@ -1,12 +1,14 @@
 ---
 /**
- * "What You'll Learn" section (PR-4.1).
+ * "What You'll Learn" section (DevNotes revamp).
  *
- * Spec §3 Section 3: a numbered list of learning outcomes pulled from
- * `course.data.learningObjectives`. When the frontmatter array is empty and
- * the MDX body has prose (passed via the default slot), fall back to the
- * prose. When both are empty, renders nothing so the page has no dangling
- * header.
+ * 2-column responsive grid (1-col on mobile) where each objective is prefixed
+ * with a roman numeral (i., ii., iii., ...) set in Instrument Serif italic.
+ * Falls back to the MDX body prose when no structured objectives are
+ * authored, and renders nothing when both are empty.
+ *
+ * The numerals are decorative (aria-hidden) per spec §15 so screen readers
+ * announce the bullet text only — no "i, ii, iii" chatter.
  */
 
 export interface Props {
@@ -17,16 +19,27 @@ const { objectives } = Astro.props;
 const hasObjectives = objectives.length > 0;
 const hasSlotProse = Astro.slots.has('default');
 const visible = hasObjectives || hasSlotProse;
+
+const ROMAN = [
+  'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii', 'viii', 'ix', 'x',
+  'xi', 'xii', 'xiii', 'xiv', 'xv', 'xvi', 'xvii', 'xviii', 'xix', 'xx',
+];
 ---
 
 {visible && (
   <section class="what-youll-learn" aria-labelledby="what-youll-learn-heading">
-    <h2 id="what-youll-learn-heading">What You&apos;ll Learn</h2>
+    <p class="what-youll-learn__overline">WHAT YOU&rsquo;LL LEARN</p>
+    <h2 id="what-youll-learn-heading" class="sr-only">What you&rsquo;ll learn</h2>
 
     {hasObjectives ? (
-      <ol class="what-youll-learn__list">
-        {objectives.map((item) => (
-          <li>{item}</li>
+      <ol class="what-youll-learn__list" role="list">
+        {objectives.map((item, i) => (
+          <li class="what-youll-learn__item">
+            <span class="what-youll-learn__numeral" aria-hidden="true">
+              {ROMAN[i] ?? String(i + 1)}.
+            </span>
+            <span class="what-youll-learn__text">{item}</span>
+          </li>
         ))}
       </ol>
     ) : (
@@ -39,28 +52,58 @@ const visible = hasObjectives || hasSlotProse;
 
 <style>
   .what-youll-learn {
-    margin: 2rem 0 0;
+    margin: 3rem 0 0;
   }
-  .what-youll-learn h2 {
-    font-size: var(--text-h2);
-    font-weight: 600;
-    margin: 0 0 0.75rem;
-    color: var(--color-text);
+
+  .what-youll-learn__overline {
+    margin: 0 0 1.25rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
   }
+
   .what-youll-learn__list {
     margin: 0;
-    padding-left: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem 3rem;
+    max-width: 58rem;
+  }
+  @media (min-width: 48rem) {
+    .what-youll-learn__list {
+      grid-template-columns: 1fr 1fr;
+      gap: 1.75rem 3rem;
+    }
+  }
+
+  .what-youll-learn__item {
+    display: grid;
+    grid-template-columns: 2.25rem 1fr;
+    align-items: baseline;
+    gap: 0.375rem;
     color: var(--color-text);
     line-height: 1.55;
-    max-width: 44rem;
+    font-size: 1rem;
   }
-  .what-youll-learn__list li::marker {
+
+  .what-youll-learn__numeral {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
     color: var(--color-text-muted);
+    font-size: 1.0625rem;
+    text-align: left;
     font-variant-numeric: tabular-nums;
   }
+
+  .what-youll-learn__text {
+    color: var(--color-text);
+  }
+
   .what-youll-learn__prose {
     color: var(--color-text);
     line-height: 1.65;

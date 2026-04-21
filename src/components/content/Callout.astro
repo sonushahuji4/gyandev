@@ -1,0 +1,137 @@
+---
+/**
+ * Callout — authoring primitive for emphasized blocks inside chapter MDX.
+ *
+ * Registered in `ChapterRenderer.astro` so authors can use `<Callout>` without
+ * importing. Five variants map to the DevNotes-style blocks in the Phase-1
+ * prototype: tip (tan), warning (amber), insight (blue), quote (gray),
+ * mnemonic (orange accent — used on Quick Revision cards). Each variant gets
+ * a coloured 3px left border + an overline label in small caps.
+ *
+ * Authoring example (no import needed inside chapter MDX):
+ *
+ *   <Callout type="tip" title="Fun fact">
+ *     Ryan Dahl initially picked SpiderMonkey, then switched to V8 within 2 days.
+ *   </Callout>
+ *
+ * `title` is optional; when absent, the variant's default label is shown
+ * (`TIP`, `WARNING`, `INSIGHT`, `QUOTE`, `MNEMONIC`). Pass `title=""` to hide
+ * the overline entirely — useful for bare quote blocks.
+ */
+export type CalloutType = 'tip' | 'warning' | 'insight' | 'quote' | 'mnemonic';
+
+interface Props {
+  type?: CalloutType;
+  title?: string;
+  class?: string;
+}
+
+const { type = 'tip', title, class: className } = Astro.props;
+
+const DEFAULT_LABEL: Record<CalloutType, string> = {
+  tip: 'Tip',
+  warning: 'Warning',
+  insight: 'Insight',
+  quote: 'Quote',
+  mnemonic: 'Mnemonic',
+};
+const overline = title === '' ? null : (title ?? DEFAULT_LABEL[type]);
+---
+
+<aside class:list={['callout', `callout--${type}`, className]} data-callout={type}>
+  {overline && <p class="callout__label">{overline}</p>}
+  <div class="callout__body">
+    <slot />
+  </div>
+</aside>
+
+<style>
+  .callout {
+    --callout-accent: var(--color-border-strong);
+    --callout-bg: var(--color-surface-muted);
+    --callout-fg: var(--color-text);
+    margin: 1.75em 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--color-border);
+    border-left: 3px solid var(--callout-accent);
+    background: var(--callout-bg);
+    color: var(--callout-fg);
+    border-radius: 0 8px 8px 0;
+  }
+  .callout__label {
+    margin: 0 0 0.35em;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--callout-accent);
+    font-weight: 600;
+  }
+  .callout__body :global(p) { margin-block: 0.4em; }
+  .callout__body :global(p:first-child) { margin-top: 0; }
+  .callout__body :global(p:last-child) { margin-bottom: 0; }
+  .callout__body :global(ul),
+  .callout__body :global(ol) { margin-block: 0.4em; }
+
+  /* tip — warm olive (matches accent) */
+  .callout--tip {
+    --callout-accent: var(--color-accent);
+    --callout-bg: color-mix(in srgb, var(--color-accent) 8%, var(--color-surface));
+  }
+
+  /* warning — amber */
+  .callout--warning {
+    --callout-accent: #b45309;
+    --callout-bg: color-mix(in srgb, #b45309 10%, var(--color-surface));
+  }
+  :global(html.dark) .callout--warning {
+    --callout-accent: #f59e0b;
+    --callout-bg: color-mix(in srgb, #f59e0b 12%, transparent);
+  }
+
+  /* insight — cool blue */
+  .callout--insight {
+    --callout-accent: #2563eb;
+    --callout-bg: color-mix(in srgb, #2563eb 8%, var(--color-surface));
+  }
+  :global(html.dark) .callout--insight {
+    --callout-accent: #60a5fa;
+    --callout-bg: color-mix(in srgb, #60a5fa 10%, transparent);
+  }
+
+  /* quote — gray, italic serif body */
+  .callout--quote {
+    --callout-accent: var(--color-border-strong);
+    --callout-bg: var(--color-surface-muted);
+    padding: 1.25rem 1.5rem;
+  }
+  .callout--quote .callout__body {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--color-text);
+  }
+
+  /* mnemonic — orange accent, used on Quick Revision */
+  .callout--mnemonic {
+    --callout-accent: #c2410c;
+    --callout-bg: color-mix(in srgb, #c2410c 10%, var(--color-surface));
+    text-align: center;
+    padding: 1.5rem;
+  }
+  :global(html.dark) .callout--mnemonic {
+    --callout-accent: #fb923c;
+    --callout-bg: color-mix(in srgb, #fb923c 14%, transparent);
+  }
+  .callout--mnemonic .callout__body {
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.35rem;
+    line-height: 1.4;
+    color: var(--color-text);
+  }
+  .callout--mnemonic .callout__label {
+    text-align: center;
+  }
+</style>

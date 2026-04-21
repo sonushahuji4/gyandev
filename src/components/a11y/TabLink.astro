@@ -10,12 +10,20 @@
  * but make it non-focusable so keyboard users can skip it without a dead
  * click. Phase-1.5 may revisit if screen-reader feedback suggests the
  * tab should still be focusable-but-disabled.
+ *
+ * Optional `icon` + `duration` props round out the DevNotes-style chapter
+ * tab bar (icon · label · "45m"). They're opt-in so non-chapter tablists
+ * keep their existing label-only rendering.
  */
 
 interface Props {
   href: string;
   active: boolean;
   label: string;
+  /** Optional glyph/emoji rendered before the label. */
+  icon?: string;
+  /** Optional duration suffix rendered in muted mono (e.g. `"45m"`). */
+  duration?: string;
   disabled?: boolean;
   class?: string;
 }
@@ -24,6 +32,8 @@ const {
   href,
   active,
   label,
+  icon,
+  duration,
   disabled = false,
   class: className,
 } = Astro.props;
@@ -40,7 +50,9 @@ const tabindex = disabled ? undefined : active ? 0 : -1;
     aria-disabled="true"
     class:list={['tab', 'tab--disabled', className]}
   >
-    {label}
+    {icon && <span class="tab__icon" aria-hidden="true">{icon}</span>}
+    <span class="tab__label">{label}</span>
+    {duration && <span class="tab__duration" aria-hidden="true">{duration}</span>}
   </span>
 ) : (
   <a
@@ -51,7 +63,9 @@ const tabindex = disabled ? undefined : active ? 0 : -1;
     tabindex={tabindex}
     class:list={['tab', { 'tab--active': active }, className]}
   >
-    {label}
+    {icon && <span class="tab__icon" aria-hidden="true">{icon}</span>}
+    <span class="tab__label">{label}</span>
+    {duration && <span class="tab__duration" aria-hidden="true">{duration}</span>}
   </a>
 )}
 
@@ -59,23 +73,37 @@ const tabindex = disabled ? undefined : active ? 0 : -1;
   .tab {
     display: inline-flex;
     align-items: center;
+    gap: 0.4rem;
     min-height: 2.75rem;
-    padding: 0 1rem;
+    padding: 0 0.9rem;
     color: var(--color-text-muted);
     text-decoration: none;
+    border: 1px solid transparent;
+    border-radius: 8px 8px 0 0;
     border-bottom: 2px solid transparent;
-    font-size: 0.95rem;
+    font-size: 0.925rem;
     white-space: nowrap;
   }
-  .tab:hover { color: var(--color-text); }
+  .tab:hover { color: var(--color-text); background: var(--color-surface-muted); }
   .tab--active {
     color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
     border-bottom-color: var(--color-accent);
     font-weight: 500;
   }
   .tab--disabled {
     color: var(--color-text-muted);
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
   }
+  .tab__icon { font-size: 0.95em; line-height: 1; }
+  .tab__label { line-height: 1.2; }
+  .tab__duration {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    padding-left: 0.2rem;
+  }
+  .tab--active .tab__duration { color: var(--color-accent); }
 </style>

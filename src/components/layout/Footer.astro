@@ -58,6 +58,15 @@ const currentYear = new Date().getFullYear();
     <div class="site-footer__grid">
       <section class="site-footer__col site-footer__col--brand" aria-labelledby="footer-brand-heading">
         <h2 id="footer-brand-heading" class="site-footer__wordmark">
+          <img
+            src="/brand/logomark-64.png"
+            alt=""
+            width="32"
+            height="32"
+            class="site-footer__wordmark-logo"
+            decoding="async"
+            loading="lazy"
+          />
           <span class="site-footer__wordmark-text">GyanDev</span><span class="site-footer__wordmark-dot">.</span>
         </h2>
         <p class="site-footer__tagline">
@@ -159,6 +168,9 @@ const currentYear = new Date().getFullYear();
   /* ---------- Brand column ---------- */
   .site-footer__wordmark {
     margin: 0 0 0.75rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
     font-family: var(--font-serif), Georgia, serif;
     font-weight: 400;
     font-style: italic;
@@ -166,6 +178,13 @@ const currentYear = new Date().getFullYear();
     color: var(--color-text);
     letter-spacing: -0.01em;
     line-height: 1;
+  }
+  .site-footer__wordmark-logo {
+    display: block;
+    width: 2rem;
+    height: 2rem;
+    flex: 0 0 auto;
+    object-fit: contain;
   }
   .site-footer__wordmark-dot {
     color: var(--color-accent);

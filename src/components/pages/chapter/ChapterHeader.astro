@@ -1,6 +1,7 @@
 ---
 /**
- * Chapter header — H1 (chapter title), badges, subtitle, meta line, actions.
+ * Chapter header — type badges, meta line, H1, italic serif lede, reading-time
+ * row, action icons.
  *
  * Per PHASE-1-ROADMAP §2.R3 the H1 lives INSIDE the swapped content (this
  * component) — `view-transition-a11y.ts` lands focus on it after every
@@ -9,9 +10,9 @@
  * `tab` is informational only — the H1 is always the chapter title (per
  * spec §12). The Revision/Flow tabs do not retitle the page.
  *
- * `displayedReadingMinutes` lets the per-view MDX override the chapter's
- * `readingMinutes` (Quick Revision is typically much shorter than Full
- * Notes). The route resolves the value before passing in.
+ * Reading-time row shows the three view durations (Full / Revision / Flow).
+ * The active view is highlighted in the accent colour; missing views render
+ * as "—" so the reader sees the shape of what's available at a glance.
  */
 import type { CollectionEntry } from 'astro:content';
 
@@ -27,13 +28,27 @@ interface Props {
   displayedReadingMinutes: number;
   /** ISO date used for the visible "Updated" text. */
   displayedUpdated: Date;
+  /** Quick Revision reading minutes, if that view exists. */
+  revisionMinutes?: number;
+  /** Flow Diagram reading minutes, if that view exists. */
+  flowMinutes?: number;
+  /** Absolute share URL (canonical Full Notes URL). */
+  shareUrl: string;
 }
 
-const { chapter, tab, editUrl, displayedReadingMinutes, displayedUpdated } = Astro.props;
+const {
+  chapter,
+  tab,
+  editUrl,
+  displayedUpdated,
+  revisionMinutes,
+  flowMinutes,
+  shareUrl,
+} = Astro.props;
 
 const dateFmt = new Intl.DateTimeFormat('en-US', {
   year: 'numeric',
-  month: 'short',
+  month: 'long',
   day: 'numeric',
 });
 const updatedLabel = dateFmt.format(displayedUpdated);
@@ -49,9 +64,17 @@ const DIFFICULTY_LABEL: Record<string, string> = {
   intermediate: 'Intermediate',
   advanced: 'Advanced',
 };
+
+const lede = chapter.data.excerpt ?? chapter.data.description;
+
+// Reading-time row — always shows Full; Revision/Flow fall back to em-dash
+// when the sibling MDX isn't authored yet.
+const fullMin = chapter.data.readingMinutes;
+const revMin = revisionMinutes;
+const flowMin = flowMinutes;
 ---
 
-<header class="chapter-header" data-pagefind-meta="title:{chapter.data.title}">
+<header class="chapter-header" data-pagefind-meta={`title:${chapter.data.title}`}>
   <div class="chapter-header__badges">
     <span class={`badge badge--type badge--type-${chapter.data.type}`}>
       {TYPE_LABEL[chapter.data.type] ?? chapter.data.type}
@@ -59,25 +82,38 @@ const DIFFICULTY_LABEL: Record<string, string> = {
     <span class={`badge badge--difficulty badge--diff-${chapter.data.difficulty}`}>
       {DIFFICULTY_LABEL[chapter.data.difficulty] ?? chapter.data.difficulty}
     </span>
-    {tab !== 'full' && (
-      <span class="badge badge--view">
-        {tab === 'revision' ? 'Quick Revision' : 'Flow Diagram'}
-      </span>
-    )}
   </div>
+
+  <p class="chapter-header__eyebrow">
+    <span class="chapter-header__chapter-num">Chapter {chapter.data.order}</span>
+    <span class="chapter-header__dot" aria-hidden="true">·</span>
+    <span>Updated <time datetime={displayedUpdated.toISOString()}>{updatedLabel}</time></span>
+  </p>
 
   {/* H1 swaps with content per R3 — focus lands here after every ClientRouter swap. */}
   <h1 class="chapter-header__title">{chapter.data.title}</h1>
 
-  <p class="chapter-header__subtitle">{chapter.data.description}</p>
+  <p class="chapter-header__lede">{lede}</p>
 
-  <p class="chapter-header__meta">
-    <span>{displayedReadingMinutes} min read</span>
-    <span aria-hidden="true">·</span>
-    <span>Updated <time datetime={displayedUpdated.toISOString()}>{updatedLabel}</time></span>
-  </p>
+  <ul class="chapter-header__meta" aria-label="Reading times across the three views">
+    <li class:list={['chapter-header__meta-item', { 'is-active': tab === 'full' }]}>
+      <span class="chapter-header__meta-icon" aria-hidden="true">⏱</span>
+      <span class="chapter-header__meta-label">Full</span>
+      <span class="chapter-header__meta-value">{fullMin}m</span>
+    </li>
+    <li class:list={['chapter-header__meta-item', { 'is-active': tab === 'revision' }]}>
+      <span class="chapter-header__meta-icon" aria-hidden="true">●</span>
+      <span class="chapter-header__meta-label">Revision</span>
+      <span class="chapter-header__meta-value">{revMin ? `${revMin}m` : '—'}</span>
+    </li>
+    <li class:list={['chapter-header__meta-item', { 'is-active': tab === 'flow' }]}>
+      <span class="chapter-header__meta-icon" aria-hidden="true">◇</span>
+      <span class="chapter-header__meta-label">Flow</span>
+      <span class="chapter-header__meta-value">{flowMin ? `${flowMin}m` : '—'}</span>
+    </li>
+  </ul>
 
-  <ChapterActions editUrl={editUrl} />
+  <ChapterActions editUrl={editUrl} shareUrl={shareUrl} shareTitle={chapter.data.title} />
 </header>
 
 <style>
@@ -95,41 +131,115 @@ const DIFFICULTY_LABEL: Record<string, string> = {
   .badge {
     display: inline-flex;
     align-items: center;
-    padding: 0.15rem 0.55rem;
+    padding: 0.2rem 0.65rem;
     border-radius: 999px;
     font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
     font-weight: 600;
+    font-family: var(--font-mono);
     background: var(--color-surface-muted);
     color: var(--color-text-muted);
   }
-  .badge--type-tutorial { background: color-mix(in srgb, var(--color-accent) 12%, transparent); color: var(--color-accent); }
-  .badge--diff-advanced { background: color-mix(in srgb, #c2410c 18%, transparent); color: #c2410c; }
-  .badge--diff-intermediate { background: color-mix(in srgb, #b45309 14%, transparent); color: #b45309; }
-  .badge--diff-beginner { background: color-mix(in srgb, #15803d 14%, transparent); color: #15803d; }
-  .badge--view { background: color-mix(in srgb, var(--color-accent) 16%, transparent); color: var(--color-accent); }
+  .badge--type-explanation,
+  .badge--type-tutorial,
+  .badge--type-howto,
+  .badge--type-reference {
+    background: color-mix(in srgb, #c2410c 14%, transparent);
+    color: #c2410c;
+  }
+  :global(html.dark) .badge--type-explanation,
+  :global(html.dark) .badge--type-tutorial,
+  :global(html.dark) .badge--type-howto,
+  :global(html.dark) .badge--type-reference {
+    background: color-mix(in srgb, #fb923c 18%, transparent);
+    color: #fb923c;
+  }
+  .badge--diff-advanced {
+    background: color-mix(in srgb, #c2410c 18%, transparent);
+    color: #c2410c;
+  }
+  .badge--diff-intermediate {
+    background: color-mix(in srgb, #b45309 16%, transparent);
+    color: #b45309;
+  }
+  .badge--diff-beginner {
+    background: color-mix(in srgb, #15803d 14%, transparent);
+    color: #15803d;
+  }
+  :global(html.dark) .badge--diff-advanced {
+    background: color-mix(in srgb, #fb923c 18%, transparent);
+    color: #fb923c;
+  }
+  :global(html.dark) .badge--diff-intermediate {
+    background: color-mix(in srgb, #f59e0b 18%, transparent);
+    color: #f59e0b;
+  }
+  :global(html.dark) .badge--diff-beginner {
+    background: color-mix(in srgb, #86efac 18%, transparent);
+    color: #86efac;
+  }
+
+  .chapter-header__eyebrow {
+    margin: 0 0 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .chapter-header__chapter-num {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+  .chapter-header__dot { color: var(--color-border-strong); }
 
   .chapter-header__title {
     margin: 0;
-    font-size: clamp(1.625rem, 2.25vw + 1rem, 2.25rem);
-    line-height: 1.2;
+    font-family: var(--font-sans);
+    font-size: clamp(1.75rem, 3vw + 1rem, 2.75rem);
+    line-height: 1.12;
+    letter-spacing: -0.01em;
     font-weight: 700;
+    color: var(--color-text);
   }
-  .chapter-header__subtitle {
-    margin: 0.5rem 0 0;
+  .chapter-header__lede {
+    margin: 0.65rem 0 0;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: clamp(1.05rem, 0.8vw + 0.9rem, 1.3rem);
+    line-height: 1.4;
     color: var(--color-text-muted);
-    font-size: 1.05rem;
-    line-height: 1.5;
   }
+
   .chapter-header__meta {
-    margin: 0.875rem 0 0;
-    color: var(--color-text-muted);
-    font-size: 0.875rem;
+    list-style: none;
+    padding: 0;
+    margin: 1.1rem 0 0;
     display: flex;
     flex-wrap: wrap;
-    gap: 0.4rem;
+    gap: 0.5rem 1.25rem;
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
   }
+  .chapter-header__meta-item {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+  }
+  .chapter-header__meta-item.is-active { color: var(--color-accent); font-weight: 500; }
+  .chapter-header__meta-icon { font-size: 0.9em; }
+  .chapter-header__meta-label { text-transform: uppercase; letter-spacing: 0.06em; font-size: 0.7rem; }
+  .chapter-header__meta-value {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text);
+  }
+  .chapter-header__meta-item.is-active .chapter-header__meta-value { color: var(--color-accent); }
 
   /* Focus ring for H1 after view-transition-a11y lands focus. */
   .chapter-header__title:focus {

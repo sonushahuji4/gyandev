@@ -1,0 +1,145 @@
+---
+/**
+ * Downloads sidebar card (DevNotes revamp).
+ *
+ * Three artifact types — Full Notes PDF, Revision pack PDF, Flow diagrams ZIP.
+ * Rows render disabled with `(coming soon)` suffix when the matching URL is
+ * absent or still the `"#"` placeholder. Real URLs land in Phase 2 when the
+ * PDF/ZIP generation pipeline ships — the `downloads` frontmatter shape is
+ * already set up to hold them (see `src/content.config.ts`).
+ *
+ * Per PR-6.x the card is always rendered (even when everything's disabled)
+ * so the information architecture stays stable; users know downloads are a
+ * planned feature.
+ */
+export interface Props {
+  downloads?: {
+    full?: string;
+    revision?: string;
+    flow?: string;
+  };
+}
+
+const { downloads } = Astro.props;
+
+interface Row {
+  icon: string;
+  iconLabel: string;
+  label: string;
+  href?: string;
+  enabled: boolean;
+}
+
+function isUsable(url?: string): boolean {
+  return typeof url === 'string' && url.length > 0 && url !== '#';
+}
+
+const rows: Row[] = [
+  {
+    icon: '\u{1F4D7}',
+    iconLabel: 'Full notes PDF',
+    label: 'Full course (PDF)',
+    href: downloads?.full,
+    enabled: isUsable(downloads?.full),
+  },
+  {
+    icon: '\u{1F7E2}',
+    iconLabel: 'Revision pack PDF',
+    label: 'Revision pack (PDF)',
+    href: downloads?.revision,
+    enabled: isUsable(downloads?.revision),
+  },
+  {
+    icon: '\u{1F4CA}',
+    iconLabel: 'Flow diagrams ZIP',
+    label: 'Flow diagrams (ZIP)',
+    href: downloads?.flow,
+    enabled: isUsable(downloads?.flow),
+  },
+];
+---
+
+<section class="downloads-card" aria-labelledby="downloads-card-heading">
+  <h3 id="downloads-card-heading" class="downloads-card__heading">DOWNLOAD</h3>
+  <ul class="downloads-card__list">
+    {rows.map((row) => (
+      <li class="downloads-card__item">
+        <span class="downloads-card__icon" aria-label={row.iconLabel} role="img">
+          {row.icon}
+        </span>
+        {row.enabled && row.href ? (
+          <a class="downloads-card__link" href={row.href}>{row.label}</a>
+        ) : (
+          <span class="downloads-card__muted" aria-disabled="true">
+            {row.label}
+            <span class="downloads-card__suffix"> (coming soon)</span>
+          </span>
+        )}
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .downloads-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 0 0 0 1rem;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .downloads-card__heading {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+
+  .downloads-card__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .downloads-card__item {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+
+  .downloads-card__icon {
+    font-size: 0.9375rem;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+
+  .downloads-card__link {
+    color: var(--color-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .downloads-card__link:hover,
+  .downloads-card__link:focus-visible {
+    color: var(--color-accent);
+    border-bottom-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+
+  .downloads-card__muted {
+    color: var(--color-text-muted);
+  }
+  .downloads-card__suffix {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-size: 0.8125rem;
+    opacity: 0.85;
+  }
+</style>

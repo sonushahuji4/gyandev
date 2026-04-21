@@ -85,9 +85,13 @@ code[data-line-numbers] > [data-line]::before {
   user-select: none;
 }
 
-/* Title bar (`// title="file.ts"` directive). */
+/* Title bar (`// title="file.ts"` directive) — terminal-window chrome.
+   Three traffic-light dots render via a flex layout before the filename. */
 [data-rehype-pretty-code-title] {
-  padding: 0.4em 1em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.9rem;
   font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--color-text-muted);
@@ -95,6 +99,18 @@ code[data-line-numbers] > [data-line]::before {
   border: 1px solid var(--color-border);
   border-bottom: 0;
   border-radius: 8px 8px 0 0;
+}
+[data-rehype-pretty-code-title]::before {
+  content: '';
+  flex: 0 0 auto;
+  display: inline-block;
+  width: 2.5rem;
+  height: 0.6rem;
+  background-image:
+    radial-gradient(circle at 0.3rem 50%, #ff5f57 0 0.3rem, transparent 0.31rem),
+    radial-gradient(circle at 1.25rem 50%, #febc2e 0 0.3rem, transparent 0.31rem),
+    radial-gradient(circle at 2.2rem 50%, #28c840 0 0.3rem, transparent 0.31rem);
+  background-repeat: no-repeat;
 }
 [data-rehype-pretty-code-title] + pre {
   border-radius: 0 0 8px 8px;

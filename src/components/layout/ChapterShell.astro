@@ -62,6 +62,8 @@ interface Props {
   activeTab: ChapterTab;
   /** Per-view availability flags — disables Revision/Flow tabs when missing. */
   availability?: ViewAvailability;
+  /** Reading minutes per view — surfaces as the tab-bar duration suffix. */
+  tabMinutes?: { full?: number; revision?: number; flow?: number };
   headings?: MarkdownHeading[];
   /** Extra data attrs spread onto `<main>` — chapter title, course label, etc. */
   pageData?: Record<string, string>;
@@ -87,9 +89,16 @@ const {
   chapterSlug,
   activeTab,
   availability,
+  tabMinutes,
   headings = [],
   pageData,
 } = Astro.props;
+
+const durFmt = (m: number | undefined): string | undefined =>
+  typeof m === 'number' && m > 0 ? `${m}m` : undefined;
+const fullDur = durFmt(tabMinutes?.full);
+const revDur = durFmt(tabMinutes?.revision);
+const flowDur = durFmt(tabMinutes?.flow);
 
 const resolvedCourseSlug = courseSlug ?? (course ? course.id.split('/')[0] : '');
 const resolvedChapterSlug =
@@ -131,6 +140,7 @@ const a = availability ?? { full: true, revision: true, flow: true };
     {course && chapter && (
       <nav class="chapter-breadcrumbs" aria-label="Breadcrumb" data-pagefind-ignore="all">
         <ol>
+          <li><a href="/">Home</a></li>
           <li><a href="/courses">Courses</a></li>
           <li><a href={`/courses/${resolvedCourseSlug}`}>{course.data.title}</a></li>
           <li aria-current="page">{chapter.data.title}</li>
@@ -141,9 +151,29 @@ const a = availability ?? { full: true, revision: true, flow: true };
     {hasChapter && (
       <div class="chapter-tabs-wrap" data-pagefind-ignore="all">
         <TabList label="Chapter views" class="chapter-tabs">
-          <TabLink href={fullHref} active={activeTab === 'full'} label="Full Notes" />
-          <TabLink href={revisionHref} active={activeTab === 'revision'} label="Quick Revision" disabled={!a.revision} />
-          <TabLink href={flowHref} active={activeTab === 'flow'} label="Flow Diagram" disabled={!a.flow} />
+          <TabLink
+            href={fullHref}
+            active={activeTab === 'full'}
+            label="Full Notes"
+            icon="📖"
+            duration={fullDur}
+          />
+          <TabLink
+            href={revisionHref}
+            active={activeTab === 'revision'}
+            label="Quick Revision"
+            icon="⚡"
+            duration={revDur}
+            disabled={!a.revision}
+          />
+          <TabLink
+            href={flowHref}
+            active={activeTab === 'flow'}
+            label="Flow Diagram"
+            icon="◇"
+            duration={flowDur}
+            disabled={!a.flow}
+          />
         </TabList>
       </div>
     )}
@@ -211,13 +241,14 @@ const a = availability ?? { full: true, revision: true, flow: true };
   .chapter-tabs-wrap {
     max-width: 80rem;
     margin: 0 auto;
-    padding: 0.25rem 1rem;
+    padding: 0.5rem 1rem 0;
     overflow-x: auto;
     border-bottom: 1px solid var(--color-border);
     background: var(--color-bg);
   }
-  @media (min-width: 48rem) { .chapter-tabs-wrap { padding: 0.25rem 1.5rem; } }
-  @media (min-width: 64rem) { .chapter-tabs-wrap { padding: 0.25rem 2rem; } }
+  @media (min-width: 48rem) { .chapter-tabs-wrap { padding: 0.5rem 1.5rem 0; } }
+  @media (min-width: 64rem) { .chapter-tabs-wrap { padding: 0.5rem 2rem 0; } }
+  .chapter-tabs-wrap :global(.tablist) { gap: 0.25rem; }
 
   .chapter-shell {
     display: grid;

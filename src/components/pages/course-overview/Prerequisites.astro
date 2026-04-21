@@ -1,94 +1,136 @@
 ---
 /**
- * "Before You Start" prerequisites (PR-4.1).
+ * Prerequisites sidebar card (DevNotes revamp).
  *
- * Spec §3 Section 4: free-text prerequisites from `course.data.prerequisites`.
- * `prerequisiteCourses` is an optional array of sibling course entries that
- * render as "See our <Course name>" links beneath the list. Automatic
- * text-to-course matching is a Phase 2 item per course-overview.md §13.
+ * Renders the structured `prerequisiteChapters` list from course frontmatter
+ * as `↳ Course · Chapter` rows. When the target course is published we link
+ * to the chapter; when it's coming-soon we render grayed text with a
+ * `(coming soon)` suffix — users learn what's expected without clicking
+ * into a stub page.
  *
- * Hidden when there are no prerequisites.
+ * Hidden when the list is empty.
  */
 import type { CollectionEntry } from 'astro:content';
-import { courseUrl } from '../../../lib/routes';
+import { getCollection } from 'astro:content';
+import { chapterUrl } from '../../../lib/routes';
 
 export interface Props {
-  prerequisites: string[];
-  /** Optional curated list of sibling courses to link to. */
-  prerequisiteCourses?: CollectionEntry<'courses'>[];
+  prerequisiteChapters: {
+    courseSlug: string;
+    chapterSlug: string;
+    title: string;
+  }[];
 }
 
-const { prerequisites, prerequisiteCourses = [] } = Astro.props;
-const hasItems = prerequisites.length > 0;
-const hasLinks = prerequisiteCourses.length > 0;
+const { prerequisiteChapters } = Astro.props;
+const hasItems = prerequisiteChapters.length > 0;
+
+/**
+ * Resolve each prereq's target course status so we can downgrade coming-soon
+ * references to plain text instead of broken links. The lookup is a single
+ * collection read per render — course catalog is small (< 10 entries).
+ */
+const courses: CollectionEntry<'courses'>[] = hasItems ? await getCollection('courses') : [];
+const courseStatusBySlug = new Map<string, CollectionEntry<'courses'>['data']['status']>();
+for (const c of courses) {
+  const slug = c.id.split('/')[0] ?? c.id;
+  courseStatusBySlug.set(slug, c.data.status);
+}
+
+const items = prerequisiteChapters.map((p) => {
+  const status = courseStatusBySlug.get(p.courseSlug);
+  const isPublished = status === 'published';
+  return {
+    ...p,
+    isPublished,
+    href: isPublished ? chapterUrl(p.courseSlug, p.chapterSlug) : undefined,
+  };
+});
 ---
 
 {hasItems && (
-  <section class="prerequisites" aria-labelledby="prerequisites-heading">
-    <h2 id="prerequisites-heading">Before You Start</h2>
-
-    <p class="prerequisites__lead">You should be comfortable with:</p>
-
-    <ul class="prerequisites__list">
-      {prerequisites.map((item) => (
-        <li>{item}</li>
+  <section
+    class="prereqs-card"
+    aria-labelledby="prereqs-card-heading"
+  >
+    <h3 id="prereqs-card-heading" class="prereqs-card__heading">PREREQUISITES</h3>
+    <ul class="prereqs-card__list">
+      {items.map((item) => (
+        <li class="prereqs-card__item">
+          <span class="prereqs-card__arrow" aria-hidden="true">↳</span>
+          {item.href ? (
+            <a class="prereqs-card__link" href={item.href}>{item.title}</a>
+          ) : (
+            <span class="prereqs-card__muted">
+              {item.title}
+              <span class="prereqs-card__suffix"> (coming soon)</span>
+            </span>
+          )}
+        </li>
       ))}
     </ul>
-
-    {hasLinks && (
-      <p class="prerequisites__links">
-        {prerequisiteCourses.map((pre, i) => {
-          const preSlug = pre.id.split('/')[0]!;
-          return (
-            <>
-              {i > 0 && <span aria-hidden="true"> · </span>}
-              <a href={courseUrl(preSlug)}>See our {pre.data.title} course →</a>
-            </>
-          );
-        })}
-      </p>
-    )}
   </section>
 )}
 
 <style>
-  .prerequisites {
-    margin: 2rem 0 0;
-  }
-  .prerequisites h2 {
-    font-size: var(--text-h2);
-    font-weight: 600;
-    margin: 0 0 0.5rem;
-    color: var(--color-text);
-  }
-  .prerequisites__lead {
-    margin: 0 0 0.5rem;
-    color: var(--color-text-muted);
-  }
-  .prerequisites__list {
-    margin: 0;
-    padding-left: 1.5rem;
+  .prereqs-card {
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
-    color: var(--color-text);
-    line-height: 1.55;
-    max-width: 44rem;
+    gap: 0.75rem;
+    padding: 0 0 0 1rem;
+    border-left: 1px solid var(--color-border);
   }
-  .prerequisites__list li::marker {
+
+  .prereqs-card__heading {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+
+  .prereqs-card__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .prereqs-card__item {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+    line-height: 1.45;
+  }
+
+  .prereqs-card__arrow {
+    color: var(--color-text-muted);
+    flex-shrink: 0;
+  }
+
+  .prereqs-card__link {
+    color: var(--color-text);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    transition: color 150ms ease, border-color 150ms ease;
+  }
+  .prereqs-card__link:hover,
+  .prereqs-card__link:focus-visible {
+    color: var(--color-accent);
+    border-bottom-color: color-mix(in srgb, var(--color-accent) 45%, transparent);
+  }
+
+  .prereqs-card__muted {
     color: var(--color-text-muted);
   }
-  .prerequisites__links {
-    margin: 0.75rem 0 0;
-    font-size: 0.9375rem;
-  }
-  .prerequisites__links a {
-    color: var(--color-text);
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-  .prerequisites__links a:hover,
-  .prerequisites__links a:focus-visible {
-    color: var(--color-accent, var(--color-text));
+  .prereqs-card__suffix {
+    font-family: var(--font-serif), Georgia, serif;
+    font-style: italic;
+    font-size: 0.8125rem;
+    opacity: 0.85;
   }
 </style>
