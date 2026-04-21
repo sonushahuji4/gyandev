@@ -1,18 +1,33 @@
 ---
 title: JavaScript
-description: The language that runs the web — deep notes on the parts that matter most in interviews and production code.
+heroItalic: the language underneath
+description: The language that runs the web — deep notes on how JavaScript actually executes, from the Execution Context through closures, promises, and the event loop.
 order: 2
-status: coming-soon
+status: published
 difficulty: beginner
 icon: JS
-estimatedHours: 16
+estimatedHours: 2
 learningObjectives:
-  - TBD — coming soon
-prerequisites: []
+  - The two-phase execution model — Memory Creation and Code Execution, end to end.
+  - The Call Stack — how LIFO drives every synchronous function call, return, and stack overflow.
+  - Hoisting and the Temporal Dead Zone — var vs function vs let/const/class, and the three different errors they produce.
+  - Variable Environments and lexical scoping — why same-named variables in different functions never collide.
+  - Pass by value vs pass by reference — primitives, objects, and the traps around reassignment.
+  - Common interview questions with the right mental models ready to deploy.
+prerequisites:
+  - Comfortable reading basic JavaScript syntax (variables, functions, if/else, loops)
+  - No prior runtime knowledge needed — this course builds it from first principles
+related:
+  - nodejs/course
 updated: 2026-04-21
 ---
 
-{/* Placeholder course — real content lands after Node.js ships. */}
+JavaScript is the most misunderstood popular language. It looks simple — a
+script for buttons — but under the hood it is a two-phase execution model,
+a LIFO call stack, and a single thread juggling everything through the
+event loop. This course is the one we wish we had when `var` first printed
+`undefined` instead of crashing.
 
-This course will land after the Node.js track is complete. Drop an email above and we'll
-tell you the day it goes live.
+Each chapter ships as three views: **Full Notes** for the deep read,
+**Quick Revision** for pre-interview skimming, and a **Flow Diagram** so
+you can see the moving parts at a glance.

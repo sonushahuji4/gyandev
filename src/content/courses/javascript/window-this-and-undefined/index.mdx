@@ -1,0 +1,593 @@
+---
+title: "window, this, undefined vs not defined"
+description: The global object, the `this` keyword, and two commonly confused concepts — `undefined` (declared, no value) vs `not defined` (never declared).
+excerpt: The global object, the this keyword, and two commonly confused concepts.
+course: javascript/course
+order: 5
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 14
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - window
+  - this
+  - global-object
+  - undefined
+  - "null"
+  - globalthis
+---
+
+## Topic 5 — The Shortest JS Program, window & this
+
+### The Shortest JS Program Is an Empty File
+
+Even an **empty JavaScript file** triggers the JS engine to do significant
+work:
+
+- Creates a **Global Execution Context (GEC)**
+- Creates the `window` object (the global object in browsers)
+- Creates the `this` keyword, pointing to `window` at the global level
+- Sets up the memory space and execution thread
+
+### The `window` Object
+
+The `window` object is the **global object** in browser environments. It
+is created by the JS engine along with the GEC. It contains:
+
+- All Web APIs — `setTimeout`, `setInterval`, `fetch`, `console`, `alert`,
+  DOM APIs, etc.
+- All global variables declared with `var`
+- All global function declarations
+- Browser-specific properties — `window.location`, `window.document`,
+  `window.navigator`, etc.
+
+In Node.js, the global object is `global` (or `globalThis` in modern JS,
+which works in both browser and Node).
+
+### The `this` Keyword at Global Level
+
+At the global level (outside any function), `this` refers to the `window`
+object:
+
+```js title="Browser Console"
+console.log(this === window); // true
+```
+
+Inside functions, `this` behaves differently depending on how the function
+is called — this is a deep topic covered separately, but the key rule for
+now: at the global level, `this === window`.
+
+### Global Variables & the `window` Object
+
+Variables declared with `var` in the global scope get **attached to the
+window object**:
+
+```js title="var — attached to window"
+var x = 10;
+console.log(x);          // 10
+console.log(this.x);     // 10
+console.log(window.x);   // 10
+// All three are identical
+```
+
+However, `let` and `const` do **NOT** attach to the window object:
+
+```js title="let/const — NOT on window"
+let a = 10;
+const b = 20;
+console.log(window.a);  // undefined (not attached!)
+console.log(window.b);  // undefined (not attached!)
+console.log(a);         // 10 (accessible via Script scope)
+```
+
+### The `this` Keyword in Different Contexts
+
+Here's a comprehensive summary of how `this` behaves in various
+situations:
+
+- **Global level:** `this === window` (browser) or `global` (Node.js)
+- **Regular function (non-strict):** `this === window`
+- **Regular function (strict mode):** `this === undefined`
+- **Object method:** `this === the object` that owns the method
+- **Arrow function:** `this` is inherited from the enclosing lexical scope
+  (no own `this`)
+- **Constructor (new keyword):** `this === the new object` being created
+- **Event handler:** `this === the DOM element` that received the event
+- **call/apply/bind:** `this === whatever you explicitly pass`
+
+<Callout type="tip" title="Key Rule">
+  The value of `this` is determined by *how* a function is called, not
+  where it's defined. The only exception is arrow functions, which inherit
+  `this` from their lexical scope.
+</Callout>
+
+### The `globalThis` — Modern Universal Global Object
+
+Since different environments have different global objects (`window` in
+browsers, `global` in Node, `self` in web workers), ES2020 introduced
+`globalThis` as a universal way to access the global object:
+
+```js title="Works everywhere"
+console.log(globalThis); // window (in browser) or global (in Node)
+console.log(globalThis === window); // true (in browser)
+```
+
+## Topic 5 — Interview Questions & Answers
+
+**Q1. What is the shortest JavaScript program?**
+
+An **empty file**. Even without any code, the JS engine creates a Global
+Execution Context, the `window` global object (in browsers), and the
+`this` keyword pointing to `window`. It sets up the entire execution
+infrastructure.
+
+**Q2. What is the `window` object?**
+
+The `window` object is the global object provided by the browser's JS
+runtime environment. It is created automatically by the JS engine along
+with the GEC. It serves as the top-level container for all Web APIs (like
+`setTimeout`, `fetch`, `console`, DOM manipulation), global variables
+(declared with `var`), and browser-specific properties. In Node.js, the
+equivalent is the `global` object. The modern cross-environment way to
+reference it is `globalThis`.
+
+**Q3. What does `this` refer to at the global level?**
+
+At the global level in a browser, `this` refers to the `window` object, so
+`this === window` is `true`. In Node.js modules, `this` at the top level
+refers to `module.exports` (an empty object), not the `global` object —
+which is a subtle difference.
+
+**Q4. Why do global `var` variables appear on `window` but `let`/`const` don't?**
+
+`var` declarations at the global scope are stored in the **Global Object
+(window)** itself — this is by design from the early days of JS. `let`
+and `const` are stored in a separate memory space called the **Script
+scope** (or declarative environment record), which is NOT part of the
+`window` object. This was an intentional improvement in ES6 to avoid
+polluting the global object and to support block scoping.
+
+**Q5. How does `this` behave inside a regular function vs an arrow function?**
+
+**Regular function:** `this` is determined by how the function is
+*called*. In non-strict mode, a standalone call gives `this === window`.
+In strict mode, it's `undefined`. As a method on an object, `this` is the
+object.
+
+**Arrow function:** Arrow functions do NOT have their own `this`. They
+*inherit* `this` from the enclosing lexical scope at the time they are
+defined. This makes them useful for callbacks where you want to preserve
+the outer `this`.
+
+```js title="Example"
+const obj = {
+  name: "Akshay",
+  regular: function() { console.log(this.name); },
+  arrow: () => { console.log(this.name); }
+};
+obj.regular(); // "Akshay" — this = obj
+obj.arrow();   // undefined — this = window (inherited from global)
+```
+
+**Q6. What is `globalThis` and why was it introduced?**
+
+`globalThis` is a standardized way (ES2020) to access the global object
+across any JavaScript environment. Before it, you needed `window`
+(browser), `global` (Node.js), or `self` (web workers). `globalThis`
+resolves to the correct global object regardless of the environment,
+making code more portable.
+
+**Q7. Are `console.log`, `setTimeout`, `alert` part of JavaScript itself?**
+
+No! These are **Web APIs** provided by the browser (or runtime
+environment), not part of the JavaScript language specification
+(ECMAScript). They are properties of the `window` object. We can call
+them without writing `window.` because the JS engine automatically looks
+up the global object. So `console.log()` is really `window.console.log()`.
+In Node.js, similar APIs are provided by the Node runtime.
+
+## Topic 5 — Input/Output Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+var x = 10;
+console.log(x);
+console.log(this.x);
+console.log(window.x);
+```
+
+**Output:** `10 → 10 → 10`
+
+Global `var x = 10` is attached to `window`. At global level,
+`this === window`. So all three access the same value.
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+let a = 10;
+const b = 20;
+var c = 30;
+
+console.log(window.a);
+console.log(window.b);
+console.log(window.c);
+```
+
+**Output:** `undefined → undefined → 30`
+
+`let` and `const` live in Script scope, not on `window`. Only `var` gets
+attached to the global object.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+function test() {
+  console.log(this);
+}
+test();
+```
+
+**Output (non-strict):** `Window {...} (the global window object)`
+
+In non-strict mode, a standalone function call has `this === window`. In
+strict mode (`"use strict"`), it would be `undefined`.
+
+**I/O 4. What will be the output? (Tricky — this in arrow vs regular)**
+
+```js title="JavaScript"
+var name = "Global";
+
+const obj = {
+  name: "Object",
+  getName: function() {
+    console.log(this.name);
+  },
+  getNameArrow: () => {
+    console.log(this.name);
+  }
+};
+
+obj.getName();
+obj.getNameArrow();
+```
+
+**Output:** `"Object" → "Global"`
+
+`getName` is a regular function — `this` = the calling object (`obj`).
+`getNameArrow` is an arrow function — it inherits `this` from the
+enclosing scope (global), so `this.name` = `window.name` = `"Global"`
+(because `var name` attaches to window).
+
+**I/O 5. What will be the output? (this inside nested function)**
+
+```js title="JavaScript"
+var x = 100;
+
+const obj = {
+  x: 200,
+  getX: function() {
+    console.log(this.x);  // A
+
+    function inner() {
+      console.log(this.x);  // B
+    }
+    inner();
+  }
+};
+obj.getX();
+```
+
+**Output:** `200 → 100`
+
+**Line A:** `getX` is called as a method of `obj`, so `this = obj`,
+`this.x = 200`. **Line B:** `inner()` is a standalone function call (not
+`obj.inner()`), so in non-strict mode `this = window`, `this.x = 100`.
+This is a classic `this` gotcha — nested regular functions lose the
+object's `this`.
+
+## Topic 6 — undefined vs not defined
+
+### `undefined` vs `not defined`
+
+**`undefined`** — Memory is **allocated** for the variable, but **no
+value** has been assigned yet. It's the default value during the memory
+creation phase of hoisting. `typeof undefined` → `"undefined"`. It is a
+**primitive value** and a **type**.
+
+**`not defined`** — The variable was **never declared** anywhere in the
+code. No memory was ever allocated for it. Accessing it throws a
+`ReferenceError`. This is an **error**, not a value:
+`ReferenceError: x is not defined`.
+
+### The Three States of a Variable
+
+```js title="JavaScript"
+console.log(x);   // undefined  — declared but not yet assigned
+var x = 25;
+console.log(x);   // 25         — declared and assigned
+console.log(a);   // ReferenceError: a is not defined — never declared
+```
+
+### JavaScript Is Loosely / Weakly Typed
+
+JS does NOT attach variables to any specific data type. A variable can
+hold any type and change types freely:
+
+```js title="Dynamic typing"
+var a = 5;         // number
+a = "hello";       // now a string
+a = true;          // now a boolean
+a = [1, 2, 3];     // now an array
+a = null;          // now null
+```
+
+This flexibility is why JS is called a "loosely typed" or "dynamically
+typed" language. TypeScript was created to add static type checking on
+top of JS.
+
+### `undefined` vs `null` — Another Common Confusion
+
+- `undefined` → Variable exists but has **no value assigned** (JS sets
+  this automatically)
+- `null` → Explicitly assigned by the programmer to mean **"intentionally
+  empty / no value"**
+- `typeof undefined` → `"undefined"`
+- `typeof null` → `"object"` (this is a historical bug in JS, never fixed
+  for backward compatibility)
+- `undefined == null` → `true` (loose equality)
+- `undefined === null` → `false` (strict equality — different types)
+
+<Callout type="warning" title="Best Practice">
+  Never manually assign `undefined` to a variable. Let JS handle it. If
+  you want to explicitly indicate "no value," use `null` instead. This
+  keeps the semantic meaning clear: `undefined` = "JS hasn't assigned a
+  value yet," `null` = "programmer intentionally set no value."
+</Callout>
+
+### All the Ways You Can Get `undefined`
+
+- Variable declared but not assigned: `var x; console.log(x);` →
+  `undefined`
+- Accessing a `var` before its assignment (hoisting):
+  `console.log(x); var x = 5;`
+- Function with no return statement: `function f() {} console.log(f());`
+  → `undefined`
+- Function with bare `return;`: returns `undefined`
+- Missing function parameter: `function f(a,b) {} f(1);` → `b` is
+  `undefined`
+- Accessing non-existent object property: `({}).foo` → `undefined`
+- Array element at non-existent index: `[1,2][5]` → `undefined`
+- `void` operator: `void 0` → `undefined`
+
+## Topic 6 — Interview Questions & Answers
+
+**Q1. What is the difference between `undefined` and "not defined" in JavaScript?**
+
+`undefined` means a variable has been **declared** but has not been
+**assigned a value** yet. Memory is allocated for it during hoisting, and
+the placeholder value `undefined` is stored. "Not defined" means the
+variable was **never declared** anywhere in the code — no memory exists
+for it. Accessing an undeclared variable throws
+`ReferenceError: x is not defined`.
+
+**Q2. What is the difference between `undefined` and `null`?**
+
+`undefined` is the default value JS assigns to variables that are
+declared but not initialized — it's the engine saying "this exists but
+has no value." `null` is an explicit assignment by the programmer meaning
+"intentionally no value." They are different types (`typeof undefined` →
+`"undefined"`, `typeof null` → `"object"`), but loosely equal:
+`undefined == null` is `true`, while `undefined === null` is `false`.
+
+**Q3. Why is `typeof null` equal to `"object"`?**
+
+This is a **historical bug** from the very first implementation of
+JavaScript. In the original implementation, values were represented as a
+type tag + value, and `null` was represented as the null pointer
+(`0x00`), which had the same type tag as objects. This was never fixed
+to maintain backward compatibility. It is universally acknowledged as a
+mistake, but changing it now would break too much existing code.
+
+**Q4. Is JavaScript statically typed or dynamically typed? Explain.**
+
+JavaScript is **dynamically typed** (also called loosely/weakly typed).
+Variables are not bound to any data type at declaration time. A single
+variable can hold a number, then be reassigned to a string, then to an
+object. Type checking happens at **runtime**, not at compile time. This
+provides flexibility but can lead to type-related bugs, which is why
+TypeScript (a statically typed superset of JS) was created.
+
+**Q5. Should you ever assign `undefined` to a variable? Why or why not?**
+
+**No.** You should never manually assign `undefined` because it defeats
+its purpose. `undefined` is meant to be a signal from the JS engine that
+a variable exists but hasn't been given a value yet. If you want to
+indicate "no value," use `null`. Manually assigning `undefined` makes it
+impossible to distinguish between "programmer set no value" and "JS
+engine hasn't assigned a value yet," which makes debugging harder.
+
+**Q6. How can you safely check if a variable is declared?**
+
+Use `typeof`. It returns `"undefined"` for both undeclared variables AND
+declared-but-unassigned variables, without throwing an error:
+
+```js title="Safe check"
+if (typeof myVar !== "undefined") {
+  // myVar exists and has a value
+}
+// This works even if myVar was never declared — no ReferenceError!
+```
+
+**Q7. What are all the falsy values in JavaScript?**
+
+There are exactly **8 falsy values** in JavaScript. Both `undefined` and
+`null` are among them:
+
+`false`, `0`, `-0`, `0n` (BigInt zero), `""` (empty string), `null`,
+`undefined`, `NaN`
+
+Everything else is truthy — including `"0"`, `"false"`, empty arrays
+`[]`, empty objects `{}`, and `-1`.
+
+## Topics 5 & 6 — Input/Output Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+console.log(x);
+var x = 25;
+console.log(x);
+console.log(a);
+```
+
+**Line 1:** `undefined`
+**Line 3:** `25`
+**Line 4:** `ReferenceError: a is not defined`
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+var a;
+console.log(a);
+console.log(typeof a);
+console.log(typeof b);
+```
+
+**Output:** `undefined → "undefined" → "undefined"`
+
+`a` is declared but unassigned → `undefined`. `typeof a` → `"undefined"`.
+`typeof b` → `"undefined"` even though `b` was never declared! This is a
+special behavior of `typeof` — it doesn't throw ReferenceError for
+undeclared variables.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+console.log(undefined == null);
+console.log(undefined === null);
+console.log(typeof undefined);
+console.log(typeof null);
+```
+
+**Output:** `true → false → "undefined" → "object"`
+
+Loose equality treats them as equal, strict equality does not (different
+types). `typeof null` returns `"object"` — the infamous JS bug.
+
+**I/O 4. What will be the output?**
+
+```js title="JavaScript"
+var x;
+console.log(x === undefined);
+console.log(x === null);
+
+x = null;
+console.log(x === undefined);
+console.log(x === null);
+```
+
+**Output:** `true → false → false → true`
+
+Initially `x` is `undefined` (declared, no value). After `x = null`, it's
+explicitly `null`. Strict equality distinguishes between them.
+
+**I/O 5. What will be the output?**
+
+```js title="JavaScript"
+function test(a, b) {
+  console.log(a);
+  console.log(b);
+  console.log(typeof b);
+}
+test(5);
+```
+
+**Output:** `5 → undefined → "undefined"`
+
+Parameter `b` was not passed any argument, so it defaults to `undefined`
+in the function's variable environment.
+
+**I/O 6. What will be the output? (Tricky — void operator)**
+
+```js title="JavaScript"
+console.log(void 0);
+console.log(void("hello"));
+console.log(void 0 === undefined);
+```
+
+**Output:** `undefined → undefined → true`
+
+The `void` operator evaluates any expression and always returns
+`undefined`. `void 0` is sometimes used as a reliable way to get
+`undefined` (in case someone has shadowed the global `undefined`
+variable, though this is rare in modern JS).
+
+**I/O 7. What will be the output? (Tricky — object property vs variable)**
+
+```js title="JavaScript"
+var obj = { a: 1 };
+console.log(obj.a);
+console.log(obj.b);
+console.log(obj.b === undefined);
+```
+
+**Output:** `1 → undefined → true`
+
+Accessing a **non-existent property** on an object returns `undefined` —
+it does NOT throw ReferenceError. This is different from accessing an
+undeclared variable. Objects silently return `undefined` for missing
+properties.
+
+**I/O 8. What will be the output? (Tricky — falsy values)**
+
+```js title="JavaScript"
+console.log(Boolean(undefined));
+console.log(Boolean(null));
+console.log(Boolean(0));
+console.log(Boolean(""));
+console.log(Boolean("0"));
+console.log(Boolean([]));
+console.log(Boolean({}));
+```
+
+**Output:** `false → false → false → false → true → true → true`
+
+`undefined`, `null`, `0`, `""` are falsy. But `"0"` (non-empty string),
+`[]` (empty array), and `{}` (empty object) are all **truthy**. This is
+a very common interview trap.
+
+## Quick Revision — Cheat Sheet
+
+### Topic 5 — window & this
+
+- Shortest JS program = empty file (still creates GEC + window + this)
+- `window` = global object in browsers, contains all Web APIs
+- At global level: `this === window` → `true`
+- `var` in global scope → attached to `window`
+- `let` / `const` → NOT on `window` (separate Script scope)
+- `console.log`, `setTimeout`, `alert` → Web APIs on `window`, not JS
+  itself
+- `globalThis` → universal global object (ES2020)
+- Regular function `this` → determined by *how it's called*
+- Arrow function `this` → inherited from enclosing lexical scope
+- Nested regular function inside method → loses object's `this` (becomes
+  window/undefined)
+
+### Topic 6 — undefined vs not defined
+
+- `undefined` = declared, no value assigned (placeholder from hoisting)
+- `not defined` = never declared, throws `ReferenceError`
+- `null` = intentionally empty, assigned by programmer
+- `typeof null` → `"object"` (historical bug)
+- `undefined == null` → `true` / `undefined === null` → `false`
+- Never assign `undefined` manually — use `null` instead
+- `typeof` is safe on undeclared variables (no ReferenceError)
+- Missing object property → `undefined` (no error)
+- Missing function parameter → `undefined`
+- 8 falsy values: `false, 0, -0, 0n, "", null, undefined, NaN`
+- Empty arrays `[]` and objects `{}` are **truthy**!
+- JS is dynamically/loosely typed — variables can change types freely

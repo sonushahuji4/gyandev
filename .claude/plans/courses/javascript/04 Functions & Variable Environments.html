@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 4: Functions & Variable Environments — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --orange: #fb923c;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+    --error-bg: #1a0f0f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header .tag {
+    display: inline-block; background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 4px; margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 34px; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, #22c55e 0%, #22d3ee 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 16px; font-weight: 300; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin: 44px 0 20px; font-size: 20px; font-weight: 700; color: var(--accent2);
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 24px;
+    background: var(--accent2); border-radius: 2px; flex-shrink: 0;
+  }
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .concept-card h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent);
+    margin-bottom: 10px; letter-spacing: 0.5px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 14.5px; color: var(--text); line-height: 1.75;
+  }
+  .concept-card ul, .concept-card ol { padding-left: 20px; margin-top: 8px; }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+  .highlight {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    padding: 2px 7px; border-radius: 4px; font-weight: 600;
+    font-size: 13.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--green);
+  }
+  .key-box strong { font-weight: 700; }
+  .warn-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%);
+    border-left: 3px solid var(--red);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--red);
+  }
+  .info-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-left: 3px solid var(--accent2);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--accent2);
+  }
+  .qa-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 20px; overflow: hidden;
+  }
+  .qa-q {
+    background: var(--q-bg); padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-q .q-badge {
+    background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .qa-q .q-text { font-size: 15px; font-weight: 600; color: #e2e8f0; line-height: 1.5; }
+  .qa-a { padding: 16px 24px; }
+  .qa-a .a-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .qa-a p { font-size: 14px; color: var(--text); line-height: 1.75; }
+  .qa-a p + p { margin-top: 8px; }
+  .code-wrap {
+    margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #21262d;
+  }
+  .code-label {
+    background: #161b22; padding: 6px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-dim); letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    line-height: 1.65; color: #e6edf3; margin: 0;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .output-block {
+    background: var(--output-bg); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .output-block .out-icon {
+    background: var(--green); color: #000; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .output-block .out-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green);
+  }
+  .error-block {
+    background: var(--error-bg); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .error-block .err-icon {
+    background: var(--red); color: #fff; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .error-block .err-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--red);
+  }
+  .diagram {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;
+    overflow-x: auto;
+  }
+  .step-list { counter-reset: steps; list-style: none; padding: 0; margin: 16px 0; }
+  .step-list li {
+    counter-increment: steps; position: relative; padding-left: 40px;
+    margin-bottom: 14px; font-size: 14px; line-height: 1.7;
+  }
+  .step-list li::before {
+    content: counter(steps); position: absolute; left: 0; top: 1px;
+    width: 26px; height: 26px; background: var(--accent2); color: #fff;
+    border-radius: 50%; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+  .nav-footer {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .nav-footer span { font-size: 14px; }
+  .callstack-trace {
+    display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0;
+    align-items: center;
+  }
+  .cs-item {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    padding: 5px 12px; border-radius: 6px; font-weight: 600;
+  }
+  .cs-gec { background: rgba(59,130,246,0.15); color: var(--accent2); border: 1px solid rgba(59,130,246,0.3); }
+  .cs-fn { background: rgba(245,158,11,0.15); color: var(--accent); border: 1px solid rgba(245,158,11,0.3); }
+  .cs-fn2 { background: rgba(167,139,250,0.15); color: var(--purple); border: 1px solid rgba(167,139,250,0.3); }
+  .cs-arrow { color: var(--text-dim); font-size: 16px; }
+  .memory-table {
+    width: 100%; border-collapse: collapse; margin: 12px 0;
+    font-size: 13px;
+  }
+  .memory-table th {
+    background: var(--surface2); color: var(--accent); padding: 8px 14px;
+    text-align: left; font-weight: 700; font-size: 11px;
+    letter-spacing: 0.5px; text-transform: uppercase;
+    border-bottom: 2px solid var(--border);
+  }
+  .memory-table td {
+    padding: 8px 14px; border-bottom: 1px solid var(--border);
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px;
+  }
+  .memory-table tr:last-child td { border-bottom: none; }
+  .val-undef { color: var(--orange); }
+  .val-num { color: var(--cyan); }
+  .val-fn { color: var(--green); }
+  @media (max-width: 640px) {
+    .header h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="tag">Topic 4 of 19</div>
+  <h1>Functions &amp; Variable Environments</h1>
+  <p>How each function creates its own isolated world of variables — and why same-named variables don't clash</p>
+</div>
+
+<!-- ─── CORE CONCEPTS ─── -->
+<div class="section-title">Core Concepts</div>
+
+<div class="concept-card">
+  <h3>Every Function Invocation = New Execution Context</h3>
+  <p>This is the single most important idea in this topic. When a function is <strong>invoked</strong> (called), JavaScript creates a <strong>brand new execution context</strong> for it. This context has:</p>
+  <ul>
+    <li>Its own <strong>Variable Environment</strong> (memory space) — completely independent</li>
+    <li>Its own <strong>Code Execution</strong> phase — runs the function body line by line</li>
+    <li>Its own <strong>copy</strong> of local variables — even if they share names with global variables</li>
+  </ul>
+  <p style="margin-top:10px;">When the function finishes (returns), its entire execution context is <strong>destroyed</strong>. The local variables cease to exist.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Complete Walkthrough — The Master Example</h3>
+  <div class="code-wrap">
+    <div class="code-label">JavaScript</div>
+    <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="fn">a</span>();
+<span class="fn">b</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+
+<span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> x = <span class="num">10</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="kw">var</span> x = <span class="num">100</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}</pre>
+  </div>
+
+  <p style="margin-top: 16px; font-weight:700; color: var(--accent);">Step-by-step Execution:</p>
+
+  <ol class="step-list">
+    <li><strong>GEC Memory Phase:</strong> <code>x → undefined</code>, <code>a → {fn}</code>, <code>b → {fn}</code>. GEC is pushed onto Call Stack.</li>
+    <li><strong>GEC Execution:</strong> <code>x = 1</code> (replaces undefined with 1).</li>
+    <li><strong><code>a()</code> is called:</strong> A new execution context for <code>a</code> is created and pushed onto the stack. In <code>a</code>'s memory phase: <code>x → undefined</code>. In <code>a</code>'s execution: <code>x = 10</code>, then <code>console.log(x)</code> prints <strong>10</strong> (the local x). Context for <code>a</code> is destroyed and popped.</li>
+    <li><strong><code>b()</code> is called:</strong> New execution context for <code>b</code>. In <code>b</code>'s memory: <code>x → undefined</code>. In <code>b</code>'s execution: <code>x = 100</code>, then <code>console.log(x)</code> prints <strong>100</strong>. Context for <code>b</code> is destroyed and popped.</li>
+    <li><strong>Back in GEC:</strong> <code>console.log(x)</code> prints <strong>1</strong> — the global x was never touched by a() or b().</li>
+    <li><strong>GEC is destroyed</strong> and popped. Call Stack is empty. Program done.</li>
+  </ol>
+
+  <div class="output-block">
+    <span class="out-icon">FINAL OUTPUT</span>
+    <span class="out-text">10 → 100 → 1</span>
+  </div>
+</div>
+
+<!-- DIAGRAM: Three separate memory environments -->
+<div class="diagram">
+  <svg viewBox="0 0 720 300" xmlns="http://www.w3.org/2000/svg" font-family="Outfit, sans-serif">
+    <!-- GEC -->
+    <rect x="20" y="20" width="200" height="260" rx="10" fill="none" stroke="#3b82f6" stroke-width="2"/>
+    <text x="120" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#3b82f6">Global EC</text>
+    <line x1="30" y1="58" x2="210" y2="58" stroke="#2a2f4a" stroke-width="1"/>
+    <text x="40" y="82" font-size="12" fill="#8891b0">Memory:</text>
+    <text x="50" y="106" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">x : <tspan fill="#22d3ee">1</tspan></text>
+    <text x="50" y="128" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">a : <tspan fill="#22c55e">{fn}</tspan></text>
+    <text x="50" y="150" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">b : <tspan fill="#22c55e">{fn}</tspan></text>
+    <text x="40" y="182" font-size="12" fill="#8891b0">Logs:</text>
+    <text x="50" y="206" font-size="13" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-weight="600">→ 1</text>
+
+    <!-- a() EC -->
+    <rect x="260" y="20" width="200" height="260" rx="10" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <text x="360" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#f59e0b">a() Execution Context</text>
+    <line x1="270" y1="58" x2="450" y2="58" stroke="#2a2f4a" stroke-width="1"/>
+    <text x="280" y="82" font-size="12" fill="#8891b0">Memory:</text>
+    <text x="290" y="106" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">x : <tspan fill="#22d3ee">10</tspan></text>
+    <text x="280" y="140" font-size="12" fill="#8891b0">Logs:</text>
+    <text x="290" y="164" font-size="13" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-weight="600">→ 10</text>
+    <text x="280" y="210" font-size="11" fill="#ef4444" font-weight="600">✗ Destroyed after return</text>
+    <!-- Separate x label -->
+    <text x="360" y="250" text-anchor="middle" font-size="10" fill="#f59e0b" font-weight="600">This x ≠ Global x</text>
+
+    <!-- b() EC -->
+    <rect x="500" y="20" width="200" height="260" rx="10" fill="none" stroke="#a78bfa" stroke-width="2"/>
+    <text x="600" y="48" text-anchor="middle" font-size="13" font-weight="700" fill="#a78bfa">b() Execution Context</text>
+    <line x1="510" y1="58" x2="690" y2="58" stroke="#2a2f4a" stroke-width="1"/>
+    <text x="520" y="82" font-size="12" fill="#8891b0">Memory:</text>
+    <text x="530" y="106" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">x : <tspan fill="#22d3ee">100</tspan></text>
+    <text x="520" y="140" font-size="12" fill="#8891b0">Logs:</text>
+    <text x="530" y="164" font-size="13" fill="#22d3ee" font-family="JetBrains Mono, monospace" font-weight="600">→ 100</text>
+    <text x="520" y="210" font-size="11" fill="#ef4444" font-weight="600">✗ Destroyed after return</text>
+    <text x="600" y="250" text-anchor="middle" font-size="10" fill="#a78bfa" font-weight="600">This x ≠ Global x</text>
+  </svg>
+</div>
+
+<div class="key-box">
+  <strong>Key Insight:</strong> Three different variables named <code>x</code> exist in three separate memory spaces. They never interfere with each other. Each function's <code>x</code> lives and dies with its own execution context.
+</div>
+
+<div class="concept-card">
+  <h3>Call Stack During the Example</h3>
+  <p>Here's how the Call Stack evolves:</p>
+
+  <div class="callstack-trace">
+    <span class="cs-item cs-gec">GEC</span>
+    <span class="cs-arrow">→</span>
+    <span class="cs-item cs-gec">GEC</span>
+    <span class="cs-item cs-fn">a()</span>
+    <span class="cs-arrow">→</span>
+    <span class="cs-item cs-gec">GEC</span>
+    <span class="cs-arrow">→</span>
+    <span class="cs-item cs-gec">GEC</span>
+    <span class="cs-item cs-fn2">b()</span>
+    <span class="cs-arrow">→</span>
+    <span class="cs-item cs-gec">GEC</span>
+    <span class="cs-arrow">→</span>
+    <span style="color: var(--red); font-size: 12px; font-weight: 600;">Empty ✓</span>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Variable Environment — The Technical Term</h3>
+  <p>The <strong>Variable Environment</strong> is the memory component of an execution context. It's where all local variables, function declarations, and function parameters are stored. Each execution context has its own independent variable environment.</p>
+  <p style="margin-top:8px;">When people say "a function has its own scope," they're really saying it has its own variable environment inside its own execution context.</p>
+</div>
+
+<div class="concept-card">
+  <h3>What Happens to Variables When a Function Returns?</h3>
+  <p>When a function finishes execution:</p>
+  <ul>
+    <li>Its execution context is <strong>completely destroyed</strong></li>
+    <li>All local variables in its variable environment are <strong>garbage collected</strong></li>
+    <li>The memory is freed up</li>
+    <li>The return value (if any) is passed back to the calling context</li>
+  </ul>
+  <p style="margin-top:8px;">This is why local variables are not accessible outside their function — they literally don't exist anymore after the function returns. (The exception to this is <strong>closures</strong>, covered in Topic 10.)</p>
+</div>
+
+<div class="concept-card">
+  <h3>Parameters Are Local Variables Too</h3>
+  <p>Function parameters are treated as <strong>local variables</strong> within the function's execution context. They are allocated in the function's variable environment during its memory creation phase.</p>
+  <div class="code-wrap">
+    <div class="code-label">Example</div>
+    <pre><span class="kw">function</span> <span class="fn">greet</span>(name, greeting) {
+  <span class="cm">// name and greeting are local variables in greet's variable environment</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(greeting + <span class="str">", "</span> + name);
+}
+<span class="fn">greet</span>(<span class="str">"Akshay"</span>, <span class="str">"Hello"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(name); <span class="cm">// ReferenceError: name is not defined</span></pre>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Common Mistake:</strong> Thinking that modifying a same-named variable inside a function will affect the global variable. If the function declares its own <code>var x</code>, it creates a <strong>completely separate variable</strong> — the global <code>x</code> is untouched. But if you do NOT declare <code>var x</code> inside the function and just do <code>x = 10</code>, it modifies the <strong>global</strong> <code>x</code> (or creates one if it doesn't exist — a dangerous implicit global).
+</div>
+
+<div class="concept-card">
+  <h3>With vs Without Local Declaration — Critical Difference</h3>
+  <div class="code-wrap">
+    <div class="code-label">WITH local var — Global is safe</div>
+    <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="kw">function</span> <span class="fn">change</span>() {
+  <span class="kw">var</span> x = <span class="num">999</span>;  <span class="cm">// local x — doesn't affect global</span>
+}
+<span class="fn">change</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// 1 ✓ global is untouched</span></pre>
+  </div>
+  <div class="code-wrap">
+    <div class="code-label">WITHOUT local var — Global gets modified!</div>
+    <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="kw">function</span> <span class="fn">change</span>() {
+  x = <span class="num">999</span>;  <span class="cm">// NO var/let/const — modifies global x!</span>
+}
+<span class="fn">change</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// 999 — global was changed!</span></pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── INTERVIEW QUESTIONS ─── -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<!-- Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What is a Variable Environment in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The Variable Environment is the memory component of an execution context. It stores all the variables, function declarations, and function parameters as key-value pairs within that specific execution context. Each function invocation creates a new execution context with its own independent variable environment, ensuring variables in one function don't interfere with variables in another — even if they share the same name.</p>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">Can two different functions have variables with the same name? Will they conflict?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>No, they will <strong>not</strong> conflict. Each function invocation creates its own execution context with its own variable environment (memory space). A variable named <code>x</code> inside function <code>a()</code> and another <code>x</code> inside function <code>b()</code> are <strong>completely independent</strong> variables stored in separate memory locations. They have no knowledge of each other and don't interact in any way. When each function returns, its execution context is destroyed along with its local variables.</p>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">What happens to local variables when a function finishes execution?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>When a function finishes execution (either by reaching the end or hitting a <code>return</code> statement), its entire execution context is <strong>destroyed</strong> and popped off the Call Stack. All local variables in its variable environment are deallocated and become eligible for <strong>garbage collection</strong>. They are no longer accessible. The only thing that survives is the return value, which is sent back to the calling context. The key exception is <strong>closures</strong>, where inner functions retain references to outer function variables even after the outer function returns.</p>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">What is the difference between local scope and global scope?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Global scope:</strong> Variables declared outside any function, in the Global Execution Context. They are accessible from anywhere in the program and live for the entire duration of the program. With <code>var</code>, they are also properties of the <code>window</code> object.</p>
+    <p><strong>Local scope (Function scope):</strong> Variables declared inside a function, within that function's execution context. They are only accessible within that function and are destroyed when the function finishes. They exist only for the lifetime of that function call.</p>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">What happens if you assign to a variable without declaring it with var/let/const?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>In <strong>non-strict mode</strong>, if you assign a value to a variable without declaring it (e.g., <code>x = 10</code> without <code>var</code>/<code>let</code>/<code>const</code>), JavaScript creates it as a <strong>property on the global object</strong> (<code>window.x</code> in browsers). This is called an "implicit global" and is considered a bug-prone behavior. In <strong>strict mode</strong> (<code>"use strict"</code>), this throws a <code>ReferenceError: x is not defined</code>, which is the safer behavior.</p>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">Are function parameters part of the variable environment?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Yes. Function parameters are treated as <strong>local variables</strong> within the function's execution context. During the memory creation phase of the function's execution context, parameters are allocated memory and initialized with the argument values passed during the call. They exist in the function's variable environment and are destroyed when the function returns, just like any other local variable.</p>
+  </div>
+</div>
+
+<!-- Q7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q7</span>
+    <span class="q-text">If a function is called multiple times, does it use the same execution context?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>No.</strong> Every single function call creates a <strong>new, fresh execution context</strong> with its own variable environment. If you call <code>square(2)</code> and then <code>square(4)</code>, two separate execution contexts are created (and destroyed) one after the other. They share no state. This is why each call can have different parameter values and produce different results independently.</p>
+  </div>
+</div>
+
+<!-- Q8 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q8</span>
+    <span class="q-text">Explain the concept of "scope isolation" in JavaScript functions.</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Scope isolation means each function creates its own enclosed environment where its variables are private and inaccessible from outside. This is achieved through the execution context model — each function call gets its own variable environment. Variables declared inside a function cannot be read or modified from outside. The global execution context cannot access local variables of a function, though a function CAN access global variables (via the scope chain). This one-way access pattern is fundamental to JavaScript's scoping.</p>
+  </div>
+</div>
+
+<!-- Q9 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q9</span>
+    <span class="q-text">What is the <code>arguments</code> object in a function?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The <code>arguments</code> object is an <strong>array-like object</strong> available inside every non-arrow function. It contains all the arguments passed to the function, regardless of how many parameters were defined. It's part of the function's variable environment. Key points:</p>
+    <p>• It has a <code>length</code> property and can be accessed by index (<code>arguments[0]</code>, etc.)</p>
+    <p>• It is NOT a real array — it doesn't have methods like <code>map</code>, <code>forEach</code> etc.</p>
+    <p>• Arrow functions do NOT have their own <code>arguments</code> object — they inherit from the enclosing function.</p>
+    <div class="code-wrap">
+      <div class="code-label">Example</div>
+      <pre><span class="kw">function</span> <span class="fn">sum</span>() {
+  <span class="kw">let</span> total = <span class="num">0</span>;
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="fn">arguments</span>.length; i++) {
+    total += <span class="fn">arguments</span>[i];
+  }
+  <span class="kw">return</span> total;
+}
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">sum</span>(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>)); <span class="cm">// 10</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Q10 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q10</span>
+    <span class="q-text">What is the difference between pass by value and pass by reference in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Primitives (number, string, boolean, null, undefined, symbol, bigint)</strong> are passed <strong>by value</strong>. The function receives a copy. Modifying the parameter inside the function does NOT affect the original variable.</p>
+    <p><strong>Objects (arrays, objects, functions)</strong> are passed <strong>by reference</strong> (technically, a copy of the reference). The function receives a reference to the same object in memory. Modifying properties of the object inside the function DOES affect the original. However, reassigning the parameter to a new object does NOT affect the original reference.</p>
+    <div class="code-wrap">
+      <div class="code-label">Example</div>
+      <pre><span class="kw">let</span> num = <span class="num">10</span>;
+<span class="kw">let</span> obj = { a: <span class="num">1</span> };
+
+<span class="kw">function</span> <span class="fn">modify</span>(x, o) {
+  x = <span class="num">99</span>;         <span class="cm">// won't affect num (copy of value)</span>
+  o.a = <span class="num">99</span>;        <span class="cm">// WILL affect obj (same reference)</span>
+  o = { a: <span class="num">0</span> };    <span class="cm">// won't affect obj (reassigns local ref)</span>
+}
+<span class="fn">modify</span>(num, obj);
+<span class="fn">console</span>.<span class="fn">log</span>(num);   <span class="cm">// 10 (unchanged)</span>
+<span class="fn">console</span>.<span class="fn">log</span>(obj.a); <span class="cm">// 99 (property was modified)</span></pre>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── INPUT/OUTPUT QUESTIONS ─── -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<!-- IO Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 1</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="fn">a</span>();
+<span class="fn">b</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+
+<span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> x = <span class="num">10</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="kw">var</span> x = <span class="num">100</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10 → 100 → 1</span>
+    </div>
+    <p style="margin-top:10px;">Three separate <code>x</code> variables in three separate execution contexts. Each function logs its own local <code>x</code>. The global <code>x = 1</code> is never modified.</p>
+  </div>
+</div>
+
+<!-- IO Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 2</span>
+    <span class="q-text">What will be the output? (No var inside function)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">1</span>;
+
+<span class="kw">function</span> <span class="fn">a</span>() {
+  x = <span class="num">10</span>;  <span class="cm">// NO var — modifies global x</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="fn">a</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10 → 10</span>
+    </div>
+    <p style="margin-top:10px;">Without <code>var</code>/<code>let</code>/<code>const</code>, <code>x = 10</code> modifies the <strong>global</strong> <code>x</code>. Both logs print 10.</p>
+  </div>
+</div>
+
+<!-- IO Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 3</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">10</span>;
+
+<span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="kw">var</span> x = <span class="num">20</span>;
+  <span class="fn">a</span>();
+}
+
+<span class="fn">b</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Very important!</strong> Even though <code>a()</code> is <em>called from inside</em> <code>b()</code>, function <code>a</code> is <strong>lexically defined</strong> in the global scope. So <code>a</code>'s scope chain goes to the <strong>global scope</strong>, not to <code>b</code>'s scope. It finds the global <code>x = 10</code>, not b's <code>x = 20</code>. JavaScript uses <strong>lexical (static) scoping</strong>, not dynamic scoping.</p>
+  </div>
+</div>
+
+<!-- IO Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 4</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> count = <span class="num">0</span>;
+
+<span class="kw">function</span> <span class="fn">increment</span>() {
+  count++;
+  <span class="fn">console</span>.<span class="fn">log</span>(count);
+}
+
+<span class="fn">increment</span>();
+<span class="fn">increment</span>();
+<span class="fn">increment</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">1 → 2 → 3</span>
+    </div>
+    <p style="margin-top:10px;">No local <code>count</code> is declared inside <code>increment()</code>, so it accesses and modifies the <strong>global</strong> <code>count</code>. Each call creates a new execution context, but all three access the same global variable. The state persists between calls because it lives in the global scope.</p>
+  </div>
+</div>
+
+<!-- IO Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 5</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> x = <span class="num">10</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="fn">a</span>();
+<span class="fn">b</span>();</pre>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">OUTPUT</span>
+      <span class="err-text">10 → ReferenceError: x is not defined</span>
+    </div>
+    <p style="margin-top:10px;"><code>a()</code> logs its local <code>x = 10</code> fine. <code>b()</code> tries to access <code>x</code> but has no local <code>x</code> and there's no global <code>x</code> either. <code>a</code>'s local <code>x</code> was destroyed when <code>a()</code> finished. <code>b</code> cannot access <code>a</code>'s variables — they are in separate execution contexts.</p>
+  </div>
+</div>
+
+<!-- IO Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 6</span>
+    <span class="q-text">What will be the output? (Pass by value vs reference)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">5</span>;
+<span class="kw">var</span> obj = { val: <span class="num">5</span> };
+
+<span class="kw">function</span> <span class="fn">change</span>(num, o) {
+  num = num * <span class="num">10</span>;
+  o.val = o.val * <span class="num">10</span>;
+}
+
+<span class="fn">change</span>(a, obj);
+<span class="fn">console</span>.<span class="fn">log</span>(a);       <span class="cm">// ?</span>
+<span class="fn">console</span>.<span class="fn">log</span>(obj.val); <span class="cm">// ?</span></pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">5 → 50</span>
+    </div>
+    <p style="margin-top:10px;"><code>a</code> is a primitive — passed by value. Modifying <code>num</code> doesn't affect <code>a</code>. <code>obj</code> is an object — passed by reference. Modifying <code>o.val</code> changes the actual object's property.</p>
+  </div>
+</div>
+
+<!-- IO Q7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 7</span>
+    <span class="q-text">What will be the output? (Tricky — hoisting + variable environment)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">21</span>;
+
+<span class="kw">var</span> fun = <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+  <span class="kw">var</span> x = <span class="num">20</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+};
+
+<span class="fn">fun</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined → 20</span>
+    </div>
+    <p style="margin-top:10px;">Inside <code>fun()</code>, <code>var x = 20</code> causes <code>x</code> to be <strong>hoisted within the function's scope</strong> as <code>undefined</code>. The first <code>console.log(x)</code> finds this <strong>local</strong> <code>x</code> (which is <code>undefined</code>), NOT the global <code>x = 21</code>. The local declaration <strong>shadows</strong> the global one entirely. After <code>x = 20</code> runs, the second log prints <code>20</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q8 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 8</span>
+    <span class="q-text">What will be the output? (Nested function calls)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">1</span>;
+
+<span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> x = <span class="num">2</span>;
+
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="kw">var</span> x = <span class="num">3</span>;
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"inner:"</span>, x);
+  }
+
+  <span class="fn">inner</span>();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"outer:"</span>, x);
+}
+
+<span class="fn">outer</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"global:"</span>, x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"inner: 3" → "outer: 2" → "global: 1"</span>
+    </div>
+    <p style="margin-top:10px;">Three completely separate <code>x</code> variables: global (<code>1</code>), outer (<code>2</code>), inner (<code>3</code>). Each function logs its own local <code>x</code>. None affect each other.</p>
+  </div>
+</div>
+
+<!-- IO Q9 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 9</span>
+    <span class="q-text">What will be the output? (Strict mode)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="str">"use strict"</span>;
+
+<span class="kw">function</span> <span class="fn">test</span>() {
+  y = <span class="num">20</span>;
+}
+
+<span class="fn">test</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(y);</pre>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">ERROR</span>
+      <span class="err-text">ReferenceError: y is not defined</span>
+    </div>
+    <p style="margin-top:10px;">In strict mode, assigning to an undeclared variable is <strong>not allowed</strong>. Without <code>"use strict"</code>, this would silently create a global variable <code>y = 20</code>. Strict mode prevents this dangerous behavior.</p>
+  </div>
+</div>
+
+<!-- IO Q10 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 10</span>
+    <span class="q-text">What will be the output? (Tricky — same function called twice)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">counter</span>() {
+  <span class="kw">var</span> count = <span class="num">0</span>;
+  count++;
+  <span class="fn">console</span>.<span class="fn">log</span>(count);
+}
+
+<span class="fn">counter</span>();
+<span class="fn">counter</span>();
+<span class="fn">counter</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">1 → 1 → 1</span>
+    </div>
+    <p style="margin-top:10px;">Each call to <code>counter()</code> creates a <strong>new execution context</strong> with a fresh <code>count = 0</code>. The variable doesn't persist between calls because it's local and gets destroyed after each return. This is why closures are needed to maintain state (Topic 10).</p>
+  </div>
+</div>
+
+<!-- IO Q11 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 11</span>
+    <span class="q-text">What will be the output? (Advanced — arguments object)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">test</span>(a, b, c) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">arguments</span>.length);
+  <span class="fn">console</span>.<span class="fn">log</span>(a, b, c);
+}
+
+<span class="fn">test</span>(<span class="num">1</span>, <span class="num">2</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">2 → 1 2 undefined</span>
+    </div>
+    <p style="margin-top:10px;"><code>arguments.length</code> is <code>2</code> (number of arguments <em>passed</em>, not parameters declared). <code>c</code> was not passed any argument, so it defaults to <code>undefined</code> in the function's variable environment.</p>
+  </div>
+</div>
+
+<!-- IO Q12 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 12</span>
+    <span class="q-text">What will be the output? (Tricky — reassigning parameter)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> arr = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];
+
+<span class="kw">function</span> <span class="fn">addItem</span>(list) {
+  list.push(<span class="num">4</span>);      <span class="cm">// modifies original array</span>
+  list = [<span class="num">99</span>];       <span class="cm">// reassigns local reference only</span>
+  list.push(<span class="num">100</span>);    <span class="cm">// pushes to the NEW local array</span>
+}
+
+<span class="fn">addItem</span>(arr);
+<span class="fn">console</span>.<span class="fn">log</span>(arr);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">[1, 2, 3, 4]</span>
+    </div>
+    <p style="margin-top:10px;"><code>list.push(4)</code> modifies the original <code>arr</code> because <code>list</code> points to the same array. But <code>list = [99]</code> reassigns the <strong>local parameter</strong> to a new array — it doesn't change what <code>arr</code> points to. <code>list.push(100)</code> only affects the local <code>[99]</code> array, which is destroyed when the function returns.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── QUICK REVISION ─── -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Remember These Points</h3>
+  <ul>
+    <li>Every function call → <strong>new execution context</strong> → new variable environment</li>
+    <li>Same-named variables in different functions → <strong>completely independent</strong></li>
+    <li>Local variables are <strong>destroyed</strong> when the function returns</li>
+    <li><code>var x</code> inside function → creates local <code>x</code>, does NOT touch global <code>x</code></li>
+    <li>No <code>var</code>/<code>let</code>/<code>const</code> → modifies global (dangerous!) or throws error in strict mode</li>
+    <li>Parameters = local variables allocated in function's variable environment</li>
+    <li>Calling same function N times = N separate execution contexts (no shared state)</li>
+    <li>Primitives → passed by value (copy), Objects → passed by reference</li>
+    <li>Modifying object properties inside function → affects original</li>
+    <li>Reassigning object parameter → only changes local reference</li>
+    <li><code>arguments</code> object available in regular functions (not arrow functions)</li>
+    <li>Lexical scoping: function's scope chain is based on <strong>where it's defined</strong>, not where it's called</li>
+    <li>Local <code>var</code> shadows global even before assignment line (hoisting within function)</li>
+    <li><code>"use strict"</code> prevents accidental global variable creation</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topic 3: Hoisting</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 5: window &amp; this keyword</span>
+</div>
+
+</body>
+</html>

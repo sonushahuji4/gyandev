@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episode 25: this keyword in JavaScript — Complete Deep Dive</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;--text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;--orange:#fb923c;--code-bg:#0d1117;--q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);--output-bg:#0f1a14;--error-bg:#1a0f0f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--orange);color:#000;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:30px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#fb923c 0%,#f59e0b 40%,#22c55e 70%,#3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .st{display:flex;align-items:center;gap:12px;margin:52px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .st::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .c{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .c h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .c p,.c li{font-size:14.5px;color:var(--text);line-height:1.8}
+  .c ul,.c ol{padding-left:20px;margin-top:8px}
+  .c li{margin-bottom:8px}
+  .c li::marker{color:var(--accent)}
+  .why{background:linear-gradient(135deg,rgba(167,139,250,0.08) 0%,rgba(167,139,250,0.03) 100%);border-left:3px solid var(--purple);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--purple);line-height:1.8}
+  .why strong{font-weight:700;color:#c4b5fd}
+  .key{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green);line-height:1.8}
+  .key strong{font-weight:700}
+  .warn{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red);line-height:1.8}
+  .info{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2);line-height:1.8}
+  .qa{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .b{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .t{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .l{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.8}
+  .qa-a p+p{margin-top:10px}
+  .cw{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .cl{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .ob{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .ob .oi{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .ob .ot{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .eb{background:var(--error-bg);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .eb .ei{background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .eb .et{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--red)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:40px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center}
+  .nav-footer span{font-size:14px;color:var(--green);font-weight:700}
+  .rapid{display:grid;grid-template-columns:1fr auto;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:12.5px;margin:12px 0}
+  .rr{display:contents}
+  .rr:nth-child(odd) .rq,.rr:nth-child(odd) .ra{background:var(--surface)}
+  .rr:nth-child(even) .rq,.rr:nth-child(even) .ra{background:var(--surface2)}
+  .rq{padding:8px 14px;border-right:1px solid var(--border);color:var(--text)}
+  .ra{padding:8px 14px;color:var(--green);font-weight:600;text-align:right;min-width:140px}
+  .vs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  .vc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+  .vc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .vc.t1::before{background:var(--accent2)}.vc.t2::before{background:var(--green)}.vc.t3::before{background:var(--orange)}.vc.t4::before{background:var(--purple)}.vc.t5::before{background:var(--red)}
+  .vc h4{font-size:14px;font-weight:700;margin-bottom:6px}
+  .vc.t1 h4{color:var(--accent2)}.vc.t2 h4{color:var(--green)}.vc.t3 h4{color:var(--orange)}.vc.t4 h4{color:var(--purple)}.vc.t5 h4{color:var(--red)}
+  .vc p{font-size:12.5px;line-height:1.6}
+  @media(max-width:700px){.vs{grid-template-columns:1fr}.header h1{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Episode 25 — Complete Deep Dive</div>
+  <h1>this keyword in JavaScript — Every Context Explained</h1>
+  <p>The value of this depends on HOW a function is called, not WHERE it's written — every scenario with exact examples</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- THE GOLDEN RULE                                     -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">The Golden Rule — Before Everything Else</div>
+
+<div class="c">
+  <h3>this is NOT determined by WHERE a function is written — it's determined by HOW it is called</h3>
+  <p>This is the single most important thing to understand about <code>this</code> in JavaScript. The same function can have different <code>this</code> values depending on how you call it. This is what makes <code>this</code> confusing — and what interviewers always test.</p>
+  <div class="cw"><div class="cl">Same function, different this values</div>
+    <pre><span class="kw">function</span> <span class="fn">showThis</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);
+}
+
+showThis();          <span class="cm">// window (non-strict) or undefined (strict)</span>
+window.showThis();   <span class="cm">// window — always, even in strict mode</span>
+
+<span class="kw">const</span> obj = { show: showThis };
+obj.show();          <span class="cm">// obj — because obj is before the dot</span>
+
+showThis.call({a:<span class="num">1</span>}); <span class="cm">// {a: 1} — explicitly set with call</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does this exist?</strong> JavaScript functions are NOT attached to objects by default — they're standalone values. Unlike Java or C++ where methods always belong to a class, a JS function can be assigned to any variable, passed anywhere, called from any context. So <code>this</code> is the mechanism that tells the function: "here's the object you're working on <em>right now</em>." The same function can work with different objects just by changing how it's called.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 1. THIS IN GLOBAL SPACE                             -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">1. <code>this</code> in Global Space</div>
+
+<div class="c">
+  <h3>In global space, this = the global object</h3>
+  <p>Anything defined globally is said to be in a global space. At the top level of your code (not inside any function), <code>this</code> always refers to the <strong>global object</strong>.</p>
+  <div class="cw"><div class="cl">Global space</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>); <span class="cm">// window object (in browser)</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does the global object differ?</strong> The global object depends on the <strong>runtime environment</strong>:
+  In the <b>browser</b>, the global object is <code>window</code>.
+  In <b>Node.js</b>, the global object is <code>global</code>.
+  In <b>web workers</b>, the global object is <code>self</code>.
+  The universal way to refer to it in any environment is <code>globalThis</code> (ES2020).
+  But at the top level, <code>this</code> always points to whatever the global object is in that environment.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 2. THIS INSIDE A FUNCTION                           -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">2. <code>this</code> Inside a Function</div>
+
+<div class="c">
+  <h3>The value depends on strict mode vs non-strict mode</h3>
+  <div class="cw"><div class="cl">Function call — the behavior changes with strict mode</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);
+}
+<span class="fn">x</span>();
+
+<span class="cm">// In NON-STRICT mode → window object</span>
+<span class="cm">// In STRICT mode ("use strict") → undefined</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does this feel confusing?</strong> On first look, it seems like <code>this</code> in global space and <code>this</code> inside a function behave the same (both show window in non-strict mode). But in reality they are different. The <code>this</code> inside a function is actually <code>undefined</code>. The reason it shows <code>window</code> in non-strict mode is because of a mechanism called <b>this substitution</b>.
+</div>
+
+<div class="c">
+  <h3>this substitution — The Hidden Mechanism</h3>
+  <p>According to <strong>this substitution</strong>: if the value of <code>this</code> keyword is <code>null</code> or <code>undefined</code>, it will be <strong>replaced by the globalObject</strong> — but <strong>only in non-strict mode</strong>.</p>
+  <p style="margin-top:10px;">Here's what actually happens step by step:</p>
+  <ol>
+    <li>You call <code>x()</code> — a standalone function call</li>
+    <li>JS determines <code>this</code> = <code>undefined</code> (because there's no object before the dot)</li>
+    <li><strong>Non-strict mode:</strong> JS sees <code>this</code> is <code>undefined</code> → replaces it with <code>window</code> (this substitution)</li>
+    <li><strong>Strict mode:</strong> JS sees <code>this</code> is <code>undefined</code> → leaves it as <code>undefined</code> (no substitution)</li>
+  </ol>
+</div>
+
+<div class="key">
+  <strong>To summarize:</strong> The actual value of <code>this</code> inside a function is <code>undefined</code>. But because of <b>this substitution</b>, in non-strict mode it gets replaced by <code>window</code>. In strict mode, it stays <code>undefined</code>. This is why strict mode is considered safer — it shows you the real value instead of hiding it behind substitution.
+</div>
+
+<div class="c">
+  <h3>this depends on HOW the function is called — proof</h3>
+  <div class="cw"><div class="cl">Same function, different call style — different this</div>
+    <pre><span class="str">"use strict"</span>;
+
+<span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);
+}
+
+<span class="fn">x</span>();         <span class="cm">// undefined — standalone call, no object</span>
+window.<span class="fn">x</span>(); <span class="cm">// window — called as a method of window object!</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why is this different?</strong> When you call <code>x()</code>, there's no object before the dot — it's a standalone call. In strict mode, <code>this</code> = <code>undefined</code>. But <code>window.x()</code> is a <b>method call</b> — the object before the dot is <code>window</code>. So <code>this</code> = <code>window</code>. This proves that <code>this</code> depends on <b>how</b> the function is called, not where it's written. Same function, two different <code>this</code> values.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 3. THIS INSIDE OBJECT'S METHOD                      -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">3. <code>this</code> Inside an Object's Method</div>
+
+<div class="c">
+  <h3>When a function is called as a method of an object, this = that object</h3>
+  <p>A function that is a property of an object is called a <strong>method</strong>. When you call it using <code>obj.method()</code>, <code>this</code> inside the method refers to the object before the dot.</p>
+  <div class="cw"><div class="cl">this inside a method — refers to the calling object</div>
+    <pre><span class="kw">const</span> obj = {
+  a: <span class="num">10</span>,
+  x: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);   <span class="cm">// {a: 10, x: ƒ}</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a); <span class="cm">// 10</span>
+  },
+};
+
+obj.x(); <span class="cm">// this = obj — because obj is the object before the dot</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this = obj?</strong> The rule is simple: the object that appears <b>before the dot</b> in the function call becomes <code>this</code>. <code>obj.x()</code> → <code>this</code> = <code>obj</code>. This is called <b>implicit binding</b> — JS implicitly sets <code>this</code> to the calling object. This works for any depth: <code>a.b.c.method()</code> → <code>this</code> = <code>c</code> (the immediate object before the method).
+</div>
+
+<div class="c">
+  <h3>The "Lost this" Problem — Extracting a Method</h3>
+  <div class="cw"><div class="cl">What happens when you copy a method to a variable?</div>
+    <pre><span class="kw">const</span> obj = {
+  a: <span class="num">10</span>,
+  x: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a);
+  },
+};
+
+obj.x();          <span class="cm">// 10 ✓ — method call, this = obj</span>
+
+<span class="kw">const</span> fn = obj.x;  <span class="cm">// extracting the function reference</span>
+fn();              <span class="cm">// undefined ✗ — standalone call, this = window (no 'a' on window)</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does extracting break this?</strong> When you write <code>const fn = obj.x</code>, you're copying the <em>function reference</em> — NOT the object. <code>fn</code> is now a standalone function with no object attached. When you call <code>fn()</code>, there's no object before the dot, so <code>this</code> falls to the default rule (window in non-strict, undefined in strict). The function has "lost" its connection to <code>obj</code>. This is the exact problem that <code>call</code>, <code>apply</code>, and <code>bind</code> solve.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 4. CALL, APPLY, BIND                                -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">4. <code>this</code> with call, apply &amp; bind</div>
+
+<div class="c">
+  <h3>Explicitly setting this — method borrowing</h3>
+  <p><code>call</code>, <code>apply</code>, and <code>bind</code> let you <strong>explicitly</strong> tell a function what <code>this</code> should be. This is called <b>explicit binding</b> — you're overriding the default behavior.</p>
+  <div class="cw"><div class="cl">Method borrowing with call — from the episode</div>
+    <pre><span class="kw">const</span> student = {
+  name: <span class="str">"Alok"</span>,
+  printName: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name);
+  },
+};
+
+student.printName(); <span class="cm">// "Alok" — this = student (implicit binding)</span>
+
+<span class="kw">const</span> student2 = {
+  name: <span class="str">"Kajal"</span>,
+};
+
+<span class="cm">// student2 doesn't have printName method!</span>
+<span class="cm">// student2.printName(); → TypeError: not a function</span>
+
+<span class="cm">// Solution: BORROW the method using call</span>
+student.printName.call(student2);
+<span class="cm">// "Kajal" — this is now student2 instead of student!</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>What's happening here?</strong> <code>student.printName.call(student2)</code> says: "Take the <code>printName</code> function from <code>student</code>, but run it with <code>this</code> set to <code>student2</code>." Inside <code>printName</code>, <code>this.name</code> now looks up <code>student2.name</code> → "Kajal". This is <b>method borrowing</b> — reusing one object's method for another object without duplicating code. <code>call</code>, <code>apply</code>, and <code>bind</code> are all used to set the value of <code>this</code> keyword.
+</div>
+
+<div class="c">
+  <h3>Quick Reminder — call vs apply vs bind</h3>
+  <ul>
+    <li><code>fn.call(obj, arg1, arg2)</code> — calls immediately, args one by one</li>
+    <li><code>fn.apply(obj, [arg1, arg2])</code> — calls immediately, args as array</li>
+    <li><code>const newFn = fn.bind(obj)</code> — does NOT call. Returns new function with <code>this</code> permanently bound</li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 5. THIS INSIDE ARROW FUNCTION                       -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">5. <code>this</code> Inside Arrow Function — The Most Tricky Part</div>
+
+<div class="c">
+  <h3>Arrow functions do NOT have their own <code>this</code></h3>
+  <p>This is the most important thing to understand about arrow functions: they <strong>do not have their own <code>this</code></strong> value. Instead, they take <code>this</code> from the <strong>enclosing lexical context</strong> — meaning the scope where the arrow function is <em>physically written</em>.</p>
+</div>
+
+<div class="c">
+  <h3>Example 1: Arrow function directly inside an object — TRAP!</h3>
+  <div class="cw"><div class="cl">Arrow as a method — this is NOT what you expect</div>
+    <pre><span class="kw">const</span> obj = {
+  a: <span class="num">10</span>,
+  x: () =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>); <span class="cm">// window! NOT obj!</span>
+  },
+};
+
+obj.x();</pre>
+  </div>
+  <div class="ob"><span class="oi">OUTPUT</span><span class="ot">window object (NOT {a: 10, x: ƒ})</span></div>
+</div>
+
+<div class="why">
+  <strong>Why is this window and not obj?</strong> Arrow functions don't have their own <code>this</code> — they take it from the <b>enclosing lexical context</b>. Where is this arrow function physically written? Inside the <code>obj</code> object literal. But an object literal is NOT a scope — it doesn't create its own execution context. So the enclosing lexical context of this arrow function is the <b>global scope</b>. In the global scope, <code>this</code> = <code>window</code>. That's why <code>this</code> inside the arrow function is <code>window</code>, not <code>obj</code>.
+</div>
+
+<div class="warn">
+  <strong>This is a common interview trap!</strong> Many developers expect <code>this</code> inside an arrow function in an object to be the object. It's NOT. An object literal <code>{ }</code> is NOT a scope. It's just a data structure. Only functions, blocks, and the global scope create scoping contexts. So the arrow function looks "past" the object literal to find its enclosing scope — which is the global scope.
+</div>
+
+<div class="c">
+  <h3>Example 2: Arrow function inside a regular method — this WORKS correctly</h3>
+  <div class="cw"><div class="cl">Arrow function inherits this from the enclosing function</div>
+    <pre><span class="kw">const</span> obj2 = {
+  a: <span class="num">10</span>,
+  x: <span class="kw">function</span>() {
+    <span class="cm">// Regular function x — has its own this</span>
+    <span class="cm">// When called as obj2.x(), this = obj2</span>
+
+    <span class="kw">const</span> <span class="fn">y</span> = () =&gt; {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);
+      <span class="cm">// Arrow function y — no own this</span>
+      <span class="cm">// Takes this from enclosing lexical context</span>
+      <span class="cm">// Enclosing context = function x</span>
+      <span class="cm">// x's this = obj2</span>
+      <span class="cm">// Therefore y's this = obj2 ✓</span>
+    };
+    <span class="fn">y</span>();
+  },
+};
+
+obj2.x();</pre>
+  </div>
+  <div class="ob"><span class="oi">OUTPUT</span><span class="ot">{a: 10, x: ƒ} — this is obj2 ✓</span></div>
+</div>
+
+<div class="why">
+  <strong>Why does this work?</strong> The arrow function <code>y</code> is physically written inside the regular function <code>x</code>. <code>x</code> is a regular function — it HAS its own <code>this</code>. When called as <code>obj2.x()</code>, <code>x</code>'s <code>this</code> = <code>obj2</code>. The arrow function <code>y</code> inherits <code>this</code> from its enclosing lexical context, which is <code>x</code>. So <code>y</code>'s <code>this</code> = <code>obj2</code>. This is exactly WHY arrow functions were created — to solve the "nested function loses this" problem that existed before ES6.
+</div>
+
+<div class="c">
+  <h3>The Problem Arrow Functions Were Created to Solve</h3>
+  <div class="cw"><div class="cl">Before arrow functions — nested function lost this</div>
+    <pre><span class="kw">const</span> obj = {
+  a: <span class="num">10</span>,
+  x: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a); <span class="cm">// 10 ✓ — method call</span>
+
+    <span class="kw">function</span> <span class="fn">inner</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a); <span class="cm">// undefined ✗ — standalone call!</span>
+    }
+    inner();
+
+    <span class="cm">// Old fix before arrow functions:</span>
+    <span class="kw">var</span> self = <span class="kw">this</span>; <span class="cm">// save this in a variable</span>
+    <span class="kw">function</span> <span class="fn">inner2</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(self.a); <span class="cm">// 10 ✓ — using saved reference</span>
+    }
+    inner2();
+  },
+};
+obj.x();</pre>
+  </div>
+  <div class="cw"><div class="cl">After arrow functions — clean solution</div>
+    <pre><span class="kw">const</span> obj = {
+  a: <span class="num">10</span>,
+  x: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a); <span class="cm">// 10 ✓</span>
+
+    <span class="kw">const</span> inner = () =&gt; {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a); <span class="cm">// 10 ✓ — inherits from x!</span>
+    };
+    inner();
+  },
+};
+obj.x();</pre>
+  </div>
+</div>
+
+<div class="key">
+  <strong>Arrow functions were created to solve this exact problem.</strong> Before ES6, nested functions inside methods lost <code>this</code>, and developers had to use hacks like <code>var self = this</code> or <code>.bind(this)</code>. Arrow functions fix this elegantly by not having their own <code>this</code> — they automatically inherit it from the enclosing function.
+</div>
+
+<div class="c">
+  <h3>Important: call/apply/bind CANNOT change an arrow function's this</h3>
+  <div class="cw"><div class="cl">Arrow function ignores explicit binding</div>
+    <pre><span class="kw">const</span> arrow = () =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);
+
+arrow.call({ name: <span class="str">"test"</span> });  <span class="cm">// window — NOT {name:"test"}</span>
+arrow.apply({ name: <span class="str">"test"</span> }); <span class="cm">// window — ignores apply too</span>
+<span class="kw">const</span> bound = arrow.bind({ name: <span class="str">"test"</span> });
+bound(); <span class="cm">// window — ignores bind too</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why can't call/apply/bind override arrow's this?</strong> Because arrow functions literally don't have a <code>this</code> binding slot. There's nothing to override. The <code>this</code> they use comes from their lexical scope — it's baked in at creation time and can never be changed. This is by design: arrow functions are meant to inherit <code>this</code> and that inheritance is permanent.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 6. THIS INSIDE DOM                                  -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">6. <code>this</code> Inside DOM Elements</div>
+
+<div class="c">
+  <h3>In DOM event handlers, this = the HTML element</h3>
+  <div class="cw"><div class="cl">HTML</div>
+    <pre>&lt;button onclick="alert(<span class="kw">this</span>)"&gt;Click Me&lt;/button&gt;
+<span class="cm">&lt;!-- this = [object HTMLButtonElement] --&gt;</span>
+<span class="cm">&lt;!-- this refers to the button element itself --&gt;</span></pre>
+  </div>
+  <div class="cw"><div class="cl">JavaScript — addEventListener</div>
+    <pre>document.getElementById(<span class="str">"btn"</span>).addEventListener(<span class="str">"click"</span>, <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>); <span class="cm">// the button element</span>
+});
+
+<span class="cm">// But with arrow function:</span>
+document.getElementById(<span class="str">"btn"</span>).addEventListener(<span class="str">"click"</span>, () =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>); <span class="cm">// window! Arrow inherits from enclosing scope</span>
+});</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does this differ between regular and arrow function in event handlers?</strong> With a regular function callback, the browser sets <code>this</code> to the element that triggered the event. With an arrow function, the browser can't set <code>this</code> (arrow functions don't have their own) — so it inherits from the enclosing lexical scope, which is usually the global scope (<code>window</code>). <b>Use regular functions for event handlers if you need access to the element via <code>this</code>.</b> Or use <code>event.target</code> / <code>event.currentTarget</code> instead.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 7. THIS INSIDE CLASS                                -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">7. <code>this</code> Inside a Class (Bonus — Not in Episode)</div>
+
+<div class="c">
+  <h3>In a class constructor and methods, this = the instance</h3>
+  <div class="cw"><div class="cl">this in ES6 classes</div>
+    <pre><span class="kw">class</span> <span class="fn">User</span> {
+  <span class="fn">constructor</span>(name) {
+    <span class="kw">this</span>.name = name;   <span class="cm">// this = the new instance being created</span>
+  }
+
+  <span class="fn">greet</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello, "</span> + <span class="kw">this</span>.name);
+  }
+}
+
+<span class="kw">const</span> u = <span class="kw">new</span> User(<span class="str">"Akshay"</span>);
+u.greet(); <span class="cm">// "Hello, Akshay" — this = u (the instance)</span>
+
+<span class="cm">// BUT: extracting the method loses this (same problem!)</span>
+<span class="kw">const</span> fn = u.greet;
+fn(); <span class="cm">// TypeError in strict mode (classes are always strict)</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why classes use strict mode:</strong> Class bodies run in strict mode automatically. So extracting a method gives <code>this = undefined</code> (not window), which causes a <code>TypeError</code> when trying to access <code>undefined.name</code>. This is why React class components needed <code>this.handleClick = this.handleClick.bind(this)</code> in the constructor.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- 8. THIS IN SETTIMEOUT                               -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">8. <code>this</code> Inside setTimeout (Bonus — Interview Favorite)</div>
+
+<div class="c">
+  <h3>setTimeout's callback loses this — unless you handle it</h3>
+  <div class="cw"><div class="cl">The problem and 3 solutions</div>
+    <pre><span class="kw">const</span> user = {
+  name: <span class="str">"Akshay"</span>,
+  greet: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello, "</span> + <span class="kw">this</span>.name);
+  }
+};
+
+<span class="cm">// ❌ Problem: loses this</span>
+setTimeout(user.greet, <span class="num">1000</span>); <span class="cm">// "Hello, undefined"</span>
+
+<span class="cm">// ✅ Fix 1: bind</span>
+setTimeout(user.greet.bind(user), <span class="num">1000</span>); <span class="cm">// "Hello, Akshay"</span>
+
+<span class="cm">// ✅ Fix 2: arrow function wrapper</span>
+setTimeout(() =&gt; user.greet(), <span class="num">1000</span>); <span class="cm">// "Hello, Akshay"</span>
+
+<span class="cm">// ✅ Fix 3: self reference</span>
+<span class="kw">const</span> obj = {
+  name: <span class="str">"Akshay"</span>,
+  greet: <span class="kw">function</span>() {
+    <span class="kw">const</span> self = <span class="kw">this</span>;
+    setTimeout(<span class="kw">function</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello, "</span> + self.name); <span class="cm">// uses closure</span>
+    }, <span class="num">1000</span>);
+  }
+};
+obj.greet(); <span class="cm">// "Hello, Akshay"</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does setTimeout lose this?</strong> When you write <code>setTimeout(user.greet, 1000)</code>, you're extracting the function reference and passing it to the browser's timer. The browser stores it and calls it later as a <em>standalone function</em> — no object before the dot. So <code>this</code> defaults to <code>window</code>. <code>bind</code> fixes this by creating a new function with <code>this</code> permanently locked. The arrow wrapper keeps it as a method call (<code>user.greet()</code> — object before the dot).
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- COMPLETE REFERENCE TABLE                            -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Complete Reference — this in Every Context</div>
+
+<div class="rapid">
+  <div class="rr"><div class="rq">Global scope</div><div class="ra">window (browser)</div></div>
+  <div class="rr"><div class="rq">fn() — non-strict</div><div class="ra">window (this substitution)</div></div>
+  <div class="rr"><div class="rq">fn() — strict</div><div class="ra">undefined</div></div>
+  <div class="rr"><div class="rq">window.fn() — strict</div><div class="ra">window (method call!)</div></div>
+  <div class="rr"><div class="rq">obj.fn()</div><div class="ra">obj (implicit binding)</div></div>
+  <div class="rr"><div class="rq">fn.call(obj)</div><div class="ra">obj (explicit binding)</div></div>
+  <div class="rr"><div class="rq">fn.apply(obj)</div><div class="ra">obj (explicit binding)</div></div>
+  <div class="rr"><div class="rq">const b = fn.bind(obj); b()</div><div class="ra">obj (permanent)</div></div>
+  <div class="rr"><div class="rq">new Fn()</div><div class="ra">new object (highest priority)</div></div>
+  <div class="rr"><div class="rq">() => {} in global</div><div class="ra">window (inherits global)</div></div>
+  <div class="rr"><div class="rq">() => {} in obj method</div><div class="ra">window (obj is NOT a scope!)</div></div>
+  <div class="rr"><div class="rq">() => {} inside regular fn</div><div class="ra">fn's this (inherits from fn)</div></div>
+  <div class="rr"><div class="rq">DOM onclick handler</div><div class="ra">the HTML element</div></div>
+  <div class="rr"><div class="rq">addEventListener regular fn</div><div class="ra">the element</div></div>
+  <div class="rr"><div class="rq">addEventListener arrow fn</div><div class="ra">window (inherits enclosing)</div></div>
+  <div class="rr"><div class="rq">setTimeout regular fn</div><div class="ra">window (standalone call)</div></div>
+  <div class="rr"><div class="rq">setTimeout arrow fn</div><div class="ra">enclosing this</div></div>
+  <div class="rr"><div class="rq">class method</div><div class="ra">the instance</div></div>
+  <div class="rr"><div class="rq">class method extracted</div><div class="ra">undefined (strict mode)</div></div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS                                 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Interview Questions &amp; Answers</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q1</span><span class="t">What is the <code>this</code> keyword in JavaScript?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><code>this</code> is a special keyword that refers to an object. Which object it refers to depends on <strong>how the function is called</strong>, not where it's written. In global space, <code>this</code> = the global object (window in browsers). In a method call (<code>obj.fn()</code>), <code>this</code> = the object before the dot. In a standalone call (<code>fn()</code>), <code>this</code> = window (non-strict) or undefined (strict). With <code>call</code>/<code>apply</code>/<code>bind</code>, <code>this</code> = the explicitly provided object. In arrow functions, <code>this</code> = inherited from enclosing lexical scope.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q2</span><span class="t">What is "this substitution"?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>This substitution is a behavior in <strong>non-strict mode</strong> where if the value of <code>this</code> is <code>null</code> or <code>undefined</code>, JavaScript automatically replaces it with the global object (<code>window</code> in browsers). This is why <code>this</code> inside a standalone function call shows <code>window</code> in non-strict mode — the actual value is <code>undefined</code>, but this substitution replaces it. In strict mode, no substitution happens — <code>this</code> stays as <code>undefined</code>. This is one reason strict mode is considered safer.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q3</span><span class="t">Why does <code>this</code> inside an arrow function in an object literal point to window, not the object?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>Arrow functions don't have their own <code>this</code> — they inherit it from the <strong>enclosing lexical context</strong>. An object literal <code>{ }</code> is NOT a scope — it doesn't create an execution context. So when an arrow function is directly inside an object literal, its enclosing lexical context is the scope where the object is defined — which is typically the global scope. So <code>this</code> = <code>window</code>. To get <code>this</code> = the object, put the arrow function inside a <em>regular function</em> method — the regular function has its own <code>this</code> (set to the object), and the arrow function inherits it.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q4</span><span class="t">Can you change an arrow function's <code>this</code> using call, apply, or bind?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><strong>No.</strong> Arrow functions don't have a <code>this</code> binding slot — there's nothing to override. <code>call</code>, <code>apply</code>, and <code>bind</code> can pass arguments to an arrow function, but the <code>this</code> value is always ignored — it remains whatever it inherited from the enclosing lexical scope at creation time. This is by design: arrow functions were created specifically to have a permanent, inherited <code>this</code>.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q5</span><span class="t">What is the priority order of <code>this</code> binding rules?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>From highest to lowest priority: (1) <code>new</code> keyword — <code>this</code> = newly created object. (2) Explicit binding — <code>call</code>/<code>apply</code>/<code>bind</code> set <code>this</code> to the provided object. (3) Implicit binding — <code>obj.fn()</code> sets <code>this</code> = <code>obj</code>. (4) Default binding — standalone <code>fn()</code> sets <code>this</code> = <code>window</code> (non-strict) or <code>undefined</code> (strict). (5) Arrow functions — no own <code>this</code>, inherits from enclosing scope, cannot be overridden. The <code>new</code> keyword can even override <code>bind</code>, but nothing can override an arrow function's <code>this</code>.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q6</span><span class="t">Why does setTimeout lose <code>this</code> and how do you fix it?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>When you pass a method to setTimeout (<code>setTimeout(obj.greet, 1000)</code>), you're extracting the function reference and handing it to the browser timer. The browser calls it later as a standalone function — no object before the dot — so <code>this</code> defaults to <code>window</code>. Three fixes: (1) <code>setTimeout(obj.greet.bind(obj), 1000)</code> — bind permanently locks <code>this</code>. (2) <code>setTimeout(() => obj.greet(), 1000)</code> — arrow function preserves the method call syntax. (3) Save <code>this</code> in a variable: <code>const self = this</code> and use <code>self</code> in the callback (old-school approach).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- OUTPUT QUESTIONS                                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Output-Based Interview Questions</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 1</span><span class="t">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript (non-strict mode)</div>
+      <pre><span class="kw">var</span> x = <span class="num">100</span>;
+
+<span class="kw">const</span> obj = {
+  x: <span class="num">200</span>,
+  getX: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A:"</span>, <span class="kw">this</span>.x);
+
+    <span class="kw">function</span> <span class="fn">inner</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B:"</span>, <span class="kw">this</span>.x);
+    }
+    inner();
+
+    <span class="kw">const</span> arrowInner = () =&gt; {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C:"</span>, <span class="kw">this</span>.x);
+    };
+    arrowInner();
+  }
+};
+
+obj.getX();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">A: 200 → B: 100 → C: 200</span></div>
+    <p style="margin-top:10px;"><strong>A:</strong> <code>getX</code> is called as <code>obj.getX()</code> → <code>this</code> = <code>obj</code> → <code>obj.x</code> = 200. <strong>B:</strong> <code>inner()</code> is a standalone call → <code>this</code> = <code>window</code> (non-strict, this substitution) → <code>window.x</code> = 100 (<code>var x</code> attaches to window). <strong>C:</strong> Arrow function inherits <code>this</code> from <code>getX</code> → <code>this</code> = <code>obj</code> → <code>obj.x</code> = 200.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 2</span><span class="t">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> obj = {
+  a: <span class="num">10</span>,
+  x: () =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a);
+  },
+};
+
+<span class="kw">const</span> obj2 = {
+  a: <span class="num">20</span>,
+  x: <span class="kw">function</span>() {
+    <span class="kw">const</span> y = () =&gt; {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a);
+    };
+    y();
+  },
+};
+
+obj.x();
+obj2.x();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">undefined → 20</span></div>
+    <p style="margin-top:10px;"><code>obj.x()</code>: Arrow directly in object → enclosing scope is global → <code>this.a</code> = <code>window.a</code> = <code>undefined</code>. <code>obj2.x()</code>: Arrow inside regular function → inherits <code>this</code> from <code>x</code> → <code>this</code> = <code>obj2</code> → <code>obj2.a</code> = 20.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 3</span><span class="t">What will be the output? (Strict mode)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="str">"use strict"</span>;
+
+<span class="kw">function</span> <span class="fn">x</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>); }
+
+<span class="fn">x</span>();
+window.<span class="fn">x</span>();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">undefined → window</span></div>
+    <p style="margin-top:10px;"><code>x()</code>: Standalone call in strict mode → no this substitution → <code>undefined</code>. <code>window.x()</code>: Method call → object before the dot is <code>window</code> → <code>this</code> = <code>window</code>. Same function, different <code>this</code> — proves it depends on HOW it's called.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 4</span><span class="t">What will be the output? (Method borrowing)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> student = {
+  name: <span class="str">"Alok"</span>,
+  printName: <span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name); },
+};
+
+<span class="kw">const</span> student2 = { name: <span class="str">"Kajal"</span> };
+
+student.printName();
+student.printName.call(student2);
+student.printName.bind(student2)();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"Alok" → "Kajal" → "Kajal"</span></div>
+    <p style="margin-top:10px;">First: implicit binding → <code>this</code> = <code>student</code>. Second: <code>call</code> sets <code>this</code> to <code>student2</code>. Third: <code>bind</code> creates new function with <code>this</code> = <code>student2</code>, then <code>()</code> calls it.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 5</span><span class="t">What will be the output? (Tricky — object in object)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> outer = {
+  name: <span class="str">"outer"</span>,
+  inner: {
+    name: <span class="str">"inner"</span>,
+    getName: <span class="kw">function</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name);
+    }
+  }
+};
+
+outer.inner.getName();
+
+<span class="kw">const</span> fn = outer.inner.getName;
+fn();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"inner" → undefined (or "" depending on env)</span></div>
+    <p style="margin-top:10px;"><code>outer.inner.getName()</code>: The object <b>immediately before the dot</b> is <code>inner</code>, not <code>outer</code>. So <code>this</code> = <code>inner</code> → <code>inner.name</code> = "inner". Extracting and calling standalone → <code>this</code> = <code>window</code> → <code>window.name</code> (empty string or undefined).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Quick Revision — Cheat Sheet</div>
+
+<div class="c">
+  <h3>this keyword — Everything to Remember</h3>
+  <ul>
+    <li><code>this</code> depends on <b>how</b> a function is called, NOT where it's written.</li>
+    <li><strong>Global space:</strong> <code>this</code> = window (browser) / global (Node.js) / globalThis (universal).</li>
+    <li><strong>Function call f():</strong> <code>this</code> = undefined. But in non-strict mode, <b>this substitution</b> replaces it with window.</li>
+    <li><strong>Method call obj.f():</strong> <code>this</code> = obj (the object before the dot). Implicit binding.</li>
+    <li><strong>Nested object a.b.f():</strong> <code>this</code> = b (immediate object before the dot, not a).</li>
+    <li><strong>call/apply/bind:</strong> Explicitly sets <code>this</code>. call = comma args. apply = array. bind = returns new function.</li>
+    <li><strong>new Fn():</strong> <code>this</code> = new empty object. Highest priority.</li>
+    <li><strong>Arrow function:</strong> NO own <code>this</code>. Inherits from enclosing lexical context. CANNOT be changed by call/apply/bind.</li>
+    <li><strong>Arrow in object literal:</strong> <code>this</code> = window/global (object is NOT a scope!).</li>
+    <li><strong>Arrow inside regular method:</strong> <code>this</code> = method's <code>this</code> (works correctly!).</li>
+    <li><strong>DOM handler (regular fn):</strong> <code>this</code> = the HTML element.</li>
+    <li><strong>DOM handler (arrow fn):</strong> <code>this</code> = enclosing scope (usually window).</li>
+    <li><strong>setTimeout(obj.fn):</strong> Loses <code>this</code>. Fix with .bind(obj) or arrow wrapper.</li>
+    <li><strong>Extracting method:</strong> <code>const fn = obj.method; fn()</code> → loses <code>this</code>.</li>
+    <li><strong>Priority order:</strong> new > call/apply/bind > obj.fn() > fn() standalone > arrow (inherits).</li>
+    <li><strong>bind is permanent:</strong> call/apply/second bind can't override. Only <code>new</code> overrides bind.</li>
+    <li><strong>this substitution:</strong> null/undefined → replaced by window in non-strict mode only.</li>
+    <li>Classes are always strict mode → extracting method gives <code>undefined</code>, not window.</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span>Episode 25 — this keyword — Complete Deep Dive Done!</span>
+</div>
+
+</body>
+</html>

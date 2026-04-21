@@ -1,0 +1,554 @@
+---
+title: Hoisting in JavaScript
+description: Why you can use variables and functions before declaring them — and why it sometimes breaks. Full walkthrough of var, function declarations, function expressions, arrow functions, let/const, and classes.
+excerpt: Why you can use variables and functions before declaring them — and why it sometimes breaks.
+course: javascript/course
+order: 3
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 13
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - hoisting
+  - var
+  - let-const
+  - tdz
+---
+
+## Core Concepts
+
+### What is Hoisting?
+
+**Hoisting** is JavaScript's default behavior of moving *declarations*
+(not assignments) to the top of their scope during the **Memory Creation
+Phase** of the Execution Context. This means you can access variables and
+call functions *before* the line where they are written in code.
+
+Hoisting is NOT a physical movement of code. It's a consequence of how
+the JS engine allocates memory in Phase 1 before executing any code in
+Phase 2.
+
+### Declaration Types — At a Glance
+
+**Function Declaration** — Hoisted with **entire code**. Can be called
+before declaration. `function foo() {}` ✓ Fully hoisted.
+
+**var Variable** — Hoisted with value `undefined`. Accessing before
+assignment gives `undefined`. `var x = 10;` ⚠ Partially hoisted.
+
+**Function Expression** — Treated as a **variable**. Hoisted as
+`undefined`. Calling before assignment → **TypeError**.
+`var fn = function() {}` ✗ Not usable before.
+
+### How Hoisting Works Under the Hood
+
+Remember the two phases from Topic 2:
+
+1. **Memory Creation Phase:** JS scans the code, finds all declarations,
+   and allocates memory. Variables declared with `var` get `undefined`.
+   Function declarations get their **complete function body**.
+2. **Code Execution Phase:** JS runs line by line. When it reaches
+   `var x = 7`, it replaces `undefined` with `7`. Function declarations
+   are skipped (already stored).
+
+This is why `console.log(x)` before `var x = 7` gives `undefined` (not an
+error) — memory for `x` was already allocated in Phase 1.
+
+### Classic Example — The Proof
+
+```js title="JavaScript"
+getName();          // "Namaste Javascript"  ✓ works!
+console.log(x);      // undefined             ✓ no error, just undefined
+
+var x = 7;
+function getName() {
+  console.log("Namaste Javascript");
+}
+```
+
+In most other languages, calling `getName()` or accessing `x` before
+they're defined would crash the program. In JS, hoisting makes this
+possible (though the behavior is different for var vs functions).
+
+<Callout type="tip" title="Key Rule">
+  Only *declarations* are hoisted, not *initializations*. `var x = 7` is
+  split into `var x` (hoisted as undefined) and `x = 7` (happens during
+  execution).
+</Callout>
+
+### Function Expression vs Function Declaration — Hoisting Difference
+
+```js title="Function Declaration — Fully Hoisted"
+greet();  // "Hello!" — works because entire function is hoisted
+
+function greet() {
+  console.log("Hello!");
+}
+```
+
+```js title="Function Expression — Hoisted as undefined"
+greet();  // TypeError: greet is not a function
+
+var greet = function() {
+  console.log("Hello!");
+};
+```
+
+**Why TypeError?** During memory creation, `greet` is a `var` so it's
+stored as `undefined`. Calling `undefined()` throws TypeError — you're
+trying to invoke something that is not a function.
+
+### Arrow Functions & Hoisting
+
+Arrow functions behave **exactly like function expressions** during
+hoisting. They are variables assigned a function value, so they are
+hoisted as `undefined`.
+
+```js title="Arrow Function — Same behavior as function expression"
+sayHi();  // TypeError: sayHi is not a function
+
+var sayHi = () => {
+  console.log("Hi!");
+};
+```
+
+If declared with `let` or `const` instead, it would throw a
+**ReferenceError** (Temporal Dead Zone) instead of TypeError. More on
+this in Topic 8.
+
+### Hoisting with let & const (Preview)
+
+`let` and `const` **are hoisted**, but they live in the **Temporal Dead
+Zone (TDZ)** — you get a `ReferenceError` if you try to access them
+before their declaration line. This is covered in depth in Topic 8, but
+it's important to know for hoisting questions.
+
+```js title="let/const — ReferenceError, not undefined"
+console.log(a);  // ReferenceError: Cannot access 'a' before initialization
+let a = 10;
+
+console.log(b);  // ReferenceError: Cannot access 'b' before initialization
+const b = 20;
+```
+
+### Hoisting with Class Declarations
+
+Classes are hoisted like `let`/`const` — they exist in the TDZ. Accessing
+before declaration throws a `ReferenceError`.
+
+```js title="Class — also in TDZ"
+const obj = new Animal(); // ReferenceError: Cannot access 'Animal' before initialization
+
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
+}
+```
+
+<Callout type="warning" title="Common Confusion">
+  `undefined` (var before assignment) vs
+  `ReferenceError: x is not defined` (variable never declared at all)
+  vs `ReferenceError: Cannot access before initialization` (let/const in
+  TDZ). These are three *different* behaviors.
+</Callout>
+
+## Hoisting Behavior Summary
+
+| Declaration Type        | Hoisted Value     | Access Before Declaration   |
+| ----------------------- | ----------------- | --------------------------- |
+| `var x = 10`            | `undefined`       | ✓ Returns undefined         |
+| `function foo(){}`      | Entire function   | ✓ Fully works               |
+| `var fn = function(){}` | `undefined`       | ✗ TypeError                 |
+| `var fn = () => {}`     | `undefined`       | ✗ TypeError                 |
+| `let` / `const`         | TDZ (hoisted)     | ✗ ReferenceError            |
+| `class MyClass {}`      | TDZ (hoisted)     | ✗ ReferenceError            |
+
+## Interview Questions & Answers
+
+**Q1. What is Hoisting in JavaScript?**
+
+Hoisting is JavaScript's mechanism of moving *declarations* to the top of
+their scope during the memory creation phase of the execution context.
+Variables declared with `var` are initialized as `undefined`, while
+function declarations are stored with their complete function body. This
+allows you to use variables and call functions before their actual line
+of declaration in code. It's not a physical movement — it's a result of
+how the JS engine allocates memory before execution.
+
+**Q2. Why does `console.log(x)` before `var x = 7` print `undefined` and not throw an error?**
+
+Because during the memory creation phase, the JS engine scans the code
+and finds `var x`. It allocates memory for `x` and initializes it with
+the placeholder value `undefined`. When the code execution phase begins
+and reaches `console.log(x)`, memory for `x` already exists with the
+value `undefined` — so it prints that. Later, when execution reaches
+`x = 7`, the value is updated from `undefined` to `7`.
+
+**Q3. What is the difference between hoisting of function declarations and function expressions?**
+
+**Function declarations** are fully hoisted — their entire code is stored
+in memory during Phase 1. You can call them before the line where they
+appear.
+
+**Function expressions** (whether using `function` keyword or arrow
+syntax) are treated as variables. If declared with `var`, they are
+hoisted as `undefined`. Calling them before assignment throws
+**TypeError: is not a function** because you're trying to invoke
+`undefined`. If declared with `let`/`const`, they throw
+**ReferenceError** due to the Temporal Dead Zone.
+
+**Q4. What is the difference between `TypeError` and `ReferenceError` in the context of hoisting?**
+
+**TypeError:** The variable exists in memory (hoisted), but its current
+value doesn't support the operation. For example, calling `undefined()`
+when a function expression hasn't been assigned yet. The JS engine says
+"I found this variable, but it's not a function."
+
+**ReferenceError:** The variable either doesn't exist at all
+(`x is not defined`) or exists but is in the Temporal Dead Zone
+(`Cannot access 'x' before initialization` for let/const). The JS engine
+says "I can't find this variable in any accessible scope."
+
+**Q5. Does hoisting actually move code to the top of the file?**
+
+No. Hoisting is **not a physical movement** of code. The source code
+stays exactly where it is. What actually happens is that the JS engine
+does a *first pass* (memory creation phase) where it scans for
+declarations and allocates memory for them before executing any code.
+The term "hoisting" is just a conceptual way to explain this behavior —
+as if declarations were lifted to the top.
+
+**Q6. Are arrow functions hoisted?**
+
+Arrow functions are **never function declarations** — they are always
+expressions assigned to a variable. So they follow the hoisting rules of
+whatever keyword is used to declare the variable: with `var` they're
+hoisted as `undefined` (TypeError if called); with `let`/`const` they're
+in the TDZ (ReferenceError if accessed). The arrow function itself is
+never hoisted as a complete function.
+
+**Q7. What happens when a variable and a function have the same name?**
+
+During the memory creation phase, the variable is first stored as
+`undefined`, then the function declaration **overwrites** it with the
+function body (function declarations take priority over variable
+declarations during hoisting). During execution, if a value is assigned
+to the variable, it overwrites the function. This can lead to confusing
+behavior:
+
+```js title="Example"
+console.log(typeof a); // "function" — function overwrote var in memory phase
+var a = 10;
+function a() { return 20; }
+console.log(typeof a); // "number" — var assignment overwrote function
+```
+
+**Q8. What is the output of `console.log(getName)` (not calling it, just logging)?**
+
+```js title="JavaScript"
+console.log(getName);
+
+function getName() {
+  console.log("Namaste JavaScript");
+}
+```
+
+It prints the **entire function code**:
+`ƒ getName() { console.log("Namaste JavaScript"); }`. This proves that
+during hoisting, the complete function body is stored in memory, not
+just `undefined`.
+
+**Q9. Does hoisting happen inside functions too, or only at the global level?**
+
+Hoisting happens in **every execution context** — both global and
+function-level. When a function is invoked, a new execution context is
+created with its own memory creation phase. So variables declared with
+`var` inside a function are hoisted to the top of *that function's
+scope*, and nested function declarations inside are also fully hoisted
+within that function's context.
+
+```js title="Hoisting inside a function"
+function outer() {
+  console.log(x); // undefined (hoisted within outer's scope)
+  inner();         // "inner called" (function hoisted within outer)
+  var x = 5;
+  function inner() { console.log("inner called"); }
+}
+outer();
+```
+
+**Q10. What happens if a variable is used but never declared anywhere in the code?**
+
+If a variable is never declared (not with `var`, `let`, or `const`) and
+you try to access it, JavaScript throws
+`ReferenceError: x is not defined`. This is different from `undefined` —
+"not defined" means the variable was never declared at all, while
+`undefined` means it was declared but no value was assigned yet.
+
+```js title="Example"
+console.log(x); // ReferenceError: x is not defined
+// No var x, let x, or const x anywhere in the code
+```
+
+## Input/Output Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+getName();
+console.log(x);
+
+var x = 7;
+function getName() {
+  console.log("Namaste Javascript");
+}
+```
+
+**Output:** `"Namaste Javascript" → undefined`
+
+`getName` is a function declaration → fully hoisted, so the call works.
+`x` is declared with `var` → hoisted as `undefined`, so it logs
+`undefined`.
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+getName();
+console.log(getName);
+
+var getName = function() {
+  console.log("Namaste Javascript");
+}
+```
+
+**Error:** `TypeError: getName is not a function`
+
+This is a **function expression**, not a declaration. `getName` is a
+`var` so it's hoisted as `undefined`. Calling `undefined()` throws
+TypeError. Line 2 never executes because the error stops execution.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+console.log(a);
+console.log(b);
+
+var a = 10;
+let b = 20;
+```
+
+**Line 1:** `undefined`
+**Line 2:** `ReferenceError: Cannot access 'b' before initialization`
+
+`var a` → hoisted as undefined. `let b` → hoisted but in TDZ, so
+accessing it throws ReferenceError. **Wait** — actually line 1 prints
+`undefined` successfully, but line 2 crashes. So the output is:
+`undefined` then error.
+
+**I/O 4. What will be the output? (Tricky!)**
+
+```js title="JavaScript"
+var x = 1;
+function x() {}
+console.log(typeof x);
+```
+
+**Output:** `"number"`
+
+**Memory Phase:** `x` is first set to `undefined` (var), then the
+function declaration overwrites it with the function body.
+**Execution Phase:** `x = 1` runs and overwrites the function with the
+number `1`. The function declaration line does nothing in Phase 2
+(already handled). So `typeof x` is `"number"`.
+
+**I/O 5. What will be the output? (Tricky!)**
+
+```js title="JavaScript"
+console.log(typeof x);
+function x() {}
+var x = 1;
+console.log(typeof x);
+```
+
+**Output:** `"function" → "number"`
+
+**Memory Phase:** `var x` hoists as `undefined`, then `function x`
+overwrites it with the function body.
+**Execution Phase:** Line 1 — `typeof x` is `"function"`. Line 2 —
+function declaration, already processed, skip. Line 3 — `x = 1`, now x
+is a number. Line 4 — `typeof x` is `"number"`.
+
+**I/O 6. What will be the output?**
+
+```js title="JavaScript"
+var a = 1;
+function b() {
+  a = 10;
+  return;
+  function a() {}
+}
+b();
+console.log(a);
+```
+
+**Output:** `1`
+
+This is a classic tricky question! Inside `b()`, there is a function
+declaration `function a() {}`. Even though it's after `return`,
+**function declarations are hoisted during memory phase** regardless of
+position. So inside b's scope, `a` is a local variable (the hoisted
+function). When `a = 10` runs, it modifies the **local** `a`, not the
+global one. The global `a` remains `1`.
+
+**I/O 7. What will be the output?**
+
+```js title="JavaScript"
+foo();
+bar();
+
+function foo() {
+  console.log("foo");
+}
+
+var bar = function() {
+  console.log("bar");
+}
+```
+
+**Line 1:** `"foo"`
+**Line 2:** `TypeError: bar is not a function`
+
+`foo` is a function declaration → fully hoisted → call works. `bar` is a
+function expression with `var` → hoisted as `undefined` → calling
+`undefined()` throws TypeError. "bar" is never printed.
+
+**I/O 8. What will be the output?**
+
+```js title="JavaScript"
+console.log(foo());
+console.log(bar());
+
+function foo() {
+  return "hello";
+}
+
+function bar() {
+  return "world";
+}
+```
+
+**Output:** `"hello" → "world"`
+
+Both are function declarations → both fully hoisted. `foo()` returns
+`"hello"`, `bar()` returns `"world"`. Both log successfully.
+
+**I/O 9. What will be the output? (Tricky — duplicate function declarations)**
+
+```js title="JavaScript"
+foo();
+
+function foo() {
+  console.log("first");
+}
+
+function foo() {
+  console.log("second");
+}
+
+foo();
+```
+
+**Output:** `"second" → "second"`
+
+During memory creation phase, the first `foo` function is stored, then
+the second one **overwrites** it. By the time execution starts, only the
+second definition exists. Both calls at line 1 and the end print
+`"second"`.
+
+**I/O 10. What will be the output? (Advanced)**
+
+```js title="JavaScript"
+var x = 21;
+var fun = function() {
+  console.log(x);
+  var x = 20;
+};
+fun();
+```
+
+**Output:** `undefined`
+
+When `fun()` is called, its own execution context is created. In
+**fun's memory phase**, it finds `var x = 20` and hoists `x` as
+`undefined` within the function scope. So `console.log(x)` accesses the
+**local** `x` (which is `undefined`), NOT the global `x = 21`. The local
+declaration *shadows* the global one. This is hoisting inside a function
+scope.
+
+**I/O 11. What will be the output? (Named function expression)**
+
+```js title="JavaScript"
+var b = function xyz() {
+  console.log("b called");
+};
+b();
+xyz();
+```
+
+**Line 4:** `"b called"`
+**Line 5:** `ReferenceError: xyz is not defined`
+
+`xyz` is a **named function expression**. The name `xyz` is NOT created
+in the outer scope — it's only accessible inside the function body
+itself (useful for recursion). In the outer scope, only `b` holds the
+reference. So `b()` works, but `xyz()` throws ReferenceError.
+
+**I/O 12. What will be the output? (Conditional function declaration)**
+
+```js title="JavaScript"
+console.log(typeof foo);
+
+if (true) {
+  function foo() {
+    console.log("inside");
+  }
+}
+
+console.log(typeof foo);
+```
+
+**Output:** `"undefined" → "function"`
+
+In modern JS (strict mode or modern browsers), function declarations
+inside blocks are **block-scoped**. Before the block runs, `foo` is
+`undefined` in the outer scope. After the block executes, `foo` becomes
+available. Note: This behavior can vary across environments and strict
+vs non-strict mode — a common interview gotcha.
+
+## Quick Revision — Cheat Sheet
+
+**Remember These Points**
+
+- Hoisting = memory allocation in Phase 1, NOT physical code movement
+- `var` → hoisted as `undefined`
+- Function declarations → hoisted with **entire code**
+- Function expressions & arrow functions → hoisted as `undefined` (if
+  var) or TDZ (if let/const)
+- `let` / `const` / `class` → hoisted but in **Temporal Dead Zone**
+- Only **declarations** are hoisted, not initializations
+- Accessing undeclared variable → `ReferenceError: x is not defined`
+- Calling `undefined()` → `TypeError: is not a function`
+- Accessing let/const in TDZ →
+  `ReferenceError: Cannot access before initialization`
+- If var and function have same name → function wins during hoisting,
+  but var assignment wins during execution
+- Duplicate function declarations → last one wins
+- Named function expressions → name only accessible inside the function
+  body, not outside
+- Hoisting happens in **every** execution context, not just global
+- Local `var` inside a function shadows global variable even before
+  assignment (logs `undefined`, not the global value)

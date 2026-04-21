@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topics 18 & 19: Higher-Order Functions, map, filter & reduce — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;
+    --text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;
+    --green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;
+    --orange:#fb923c;--pink:#f472b6;--code-bg:#0d1117;
+    --q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);
+    --output-bg:#0f1a14;--error-bg:#1a0f0f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--accent);color:#000;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:32px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#22c55e 0%,#f59e0b 50%,#ef4444 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .section-title{display:flex;align-items:center;gap:12px;margin:44px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .section-title::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .topic-divider{margin:56px 0 0;padding:20px 0 0;border-top:2px solid var(--green)}
+  .topic-divider h2{font-size:24px;font-weight:800;background:linear-gradient(135deg,#22c55e 0%,#22d3ee 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .topic-divider p{color:var(--text-dim);font-size:14px}
+  .concept-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .concept-card h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .concept-card p,.concept-card li{font-size:14.5px;color:var(--text);line-height:1.75}
+  .concept-card ul,.concept-card ol{padding-left:20px;margin-top:8px}
+  .concept-card li{margin-bottom:6px}
+  .concept-card li::marker{color:var(--accent)}
+  .highlight{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .key-box{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green)}
+  .key-box strong{font-weight:700}
+  .warn-box{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red)}
+  .info-box{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2)}
+  .qa-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .q-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .q-text{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .a-label{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.75}
+  .qa-a p+p{margin-top:8px}
+  .code-wrap{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .code-label{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .output-block{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .output-block .out-icon{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .output-block .out-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:32px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  .nav-footer span{font-size:14px}
+  .method-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+  .method-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+  .method-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .method-card.m-map::before{background:var(--accent2)}
+  .method-card.m-filter::before{background:var(--green)}
+  .method-card.m-reduce::before{background:var(--orange)}
+  .method-card h4{font-size:14px;font-weight:700;margin-bottom:6px}
+  .method-card.m-map h4{color:var(--accent2)}
+  .method-card.m-filter h4{color:var(--green)}
+  .method-card.m-reduce h4{color:var(--orange)}
+  .method-card p{font-size:12.5px;line-height:1.6}
+  .method-card code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px}
+  .diagram{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0;text-align:center;overflow-x:auto}
+  @media(max-width:700px){.method-grid{grid-template-columns:1fr}.header h1{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Topics 18 &amp; 19 of 19 — Final Chapter</div>
+  <h1>Higher-Order Functions, map, filter &amp; reduce</h1>
+  <p>Functional programming in JavaScript — the patterns that power modern codebases, React, and every interview</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 18: HIGHER ORDER FUNCTIONS           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Topic 18 — Higher-Order Functions</div>
+
+<div class="concept-card">
+  <h3>What is a Higher-Order Function (HOF)?</h3>
+  <p>A Higher-Order Function is a function that does at least one of these:</p>
+  <ul>
+    <li><strong>Takes one or more functions as arguments</strong> (e.g., <code>array.map(callback)</code>)</li>
+    <li><strong>Returns a function as its result</strong> (e.g., function factories, currying)</li>
+  </ul>
+  <p style="margin-top:8px;">This is possible because JavaScript has <strong>first-class functions</strong> — functions can be treated as values.</p>
+  <div class="code-wrap"><div class="code-label">Simple HOF example</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi"</span>);
+}
+<span class="kw">function</span> <span class="fn">y</span>(callback) {
+  callback();  <span class="cm">// y takes a function and calls it</span>
+}
+<span class="fn">y</span>(x); <span class="cm">// "Hi" — y is a Higher-Order Function, x is a callback</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>The DRY Principle — Why HOFs Matter</h3>
+  <p>Without HOFs, you end up writing repetitive code. Consider calculating area and circumference for an array of radii:</p>
+  <div class="code-wrap"><div class="code-label">❌ Repetitive — violates DRY</div>
+    <pre><span class="kw">const</span> radius = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>];
+
+<span class="kw">const</span> <span class="fn">calculateArea</span> = <span class="kw">function</span>(radius) {
+  <span class="kw">const</span> output = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; radius.length; i++) {
+    output.push(Math.PI * radius[i] * radius[i]);
+  }
+  <span class="kw">return</span> output;
+};
+
+<span class="kw">const</span> <span class="fn">calculateCircumference</span> = <span class="kw">function</span>(radius) {
+  <span class="kw">const</span> output = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; radius.length; i++) {
+    output.push(<span class="num">2</span> * Math.PI * radius[i]);
+  }
+  <span class="kw">return</span> output;
+};
+<span class="cm">// Two functions with 90% identical code — only the formula differs!</span></pre>
+  </div>
+  <div class="code-wrap"><div class="code-label">✅ Clean — extract logic into HOF</div>
+    <pre><span class="kw">const</span> radius = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>, <span class="num">4</span>];
+
+<span class="kw">const</span> <span class="fn">area</span> = (r) =&gt; Math.PI * r * r;
+<span class="kw">const</span> <span class="fn">circumference</span> = (r) =&gt; <span class="num">2</span> * Math.PI * r;
+<span class="kw">const</span> <span class="fn">diameter</span> = (r) =&gt; <span class="num">2</span> * r;
+
+<span class="kw">const</span> <span class="fn">calculate</span> = <span class="kw">function</span>(arr, operation) {
+  <span class="kw">const</span> output = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; arr.length; i++) {
+    output.push(operation(arr[i]));
+  }
+  <span class="kw">return</span> output;
+};
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">calculate</span>(radius, area));          <span class="cm">// areas</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">calculate</span>(radius, circumference));  <span class="cm">// circumferences</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">calculate</span>(radius, diameter));       <span class="cm">// diameters</span></pre>
+  </div>
+  <p style="margin-top:10px;">The <code>calculate</code> function is a HOF — it takes a function (<code>operation</code>) as an argument. The logic is separated from the iteration. Adding new calculations is one line, not a new function.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Polyfill of <code>map</code> — Building Your Own</h3>
+  <p>The <code>calculate</code> function above is essentially a polyfill of <code>Array.prototype.map</code>. Here's how you'd add it to all arrays:</p>
+  <div class="code-wrap"><div class="code-label">Polyfill</div>
+    <pre>Array.prototype.<span class="fn">myMap</span> = <span class="kw">function</span>(callback) {
+  <span class="kw">const</span> output = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.length; i++) {
+    output.push(callback(<span class="kw">this</span>[i], i, <span class="kw">this</span>));
+  }
+  <span class="kw">return</span> output;
+};
+
+<span class="cm">// Usage — identical to native map:</span>
+[<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].myMap(x =&gt; x * <span class="num">2</span>); <span class="cm">// [2, 4, 6]</span></pre>
+  </div>
+</div>
+
+<div class="key-box">
+  <strong>Interview Tip:</strong> Writing polyfills for <code>map</code>, <code>filter</code>, and <code>reduce</code> is one of the most commonly asked coding questions. Understand the internal logic and be ready to write them on the spot.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 19: MAP, FILTER & REDUCE             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 19 — map, filter &amp; reduce</h2>
+  <p>The three musketeers of functional programming in JS</p>
+</div>
+
+<!-- Three card comparison -->
+<div class="method-grid">
+  <div class="method-card m-map">
+    <h4>map()</h4>
+    <p><strong>Purpose:</strong> Transform every element</p>
+    <p><strong>Returns:</strong> New array of same length</p>
+    <p><strong>Callback returns:</strong> Transformed value</p>
+    <p style="margin-top:6px;"><code>[1,2,3].map(x => x*2)</code></p>
+    <p><code>→ [2, 4, 6]</code></p>
+  </div>
+  <div class="method-card m-filter">
+    <h4>filter()</h4>
+    <p><strong>Purpose:</strong> Select elements by condition</p>
+    <p><strong>Returns:</strong> New array (≤ original length)</p>
+    <p><strong>Callback returns:</strong> Boolean (keep/drop)</p>
+    <p style="margin-top:6px;"><code>[1,2,3,4].filter(x => x>2)</code></p>
+    <p><code>→ [3, 4]</code></p>
+  </div>
+  <div class="method-card m-reduce">
+    <h4>reduce()</h4>
+    <p><strong>Purpose:</strong> Reduce to single value</p>
+    <p><strong>Returns:</strong> Any single value</p>
+    <p><strong>Callback params:</strong> (acc, curr, i, arr)</p>
+    <p style="margin-top:6px;"><code>[1,2,3].reduce((a,c) => a+c, 0)</code></p>
+    <p><code>→ 6</code></p>
+  </div>
+</div>
+
+<!-- MAP -->
+<div class="concept-card">
+  <h3>map() — Transform an Array</h3>
+  <p><code>map()</code> creates a <strong>new array</strong> by calling a function on every element of the original array. The original is NOT modified. The returned array always has the <strong>same length</strong>.</p>
+  <div class="code-wrap"><div class="code-label">map examples</div>
+    <pre><span class="kw">const</span> arr = [<span class="num">5</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">2</span>, <span class="num">6</span>];
+
+<span class="cm">// Double</span>
+arr.map(x =&gt; x * <span class="num">2</span>);         <span class="cm">// [10, 2, 6, 4, 12]</span>
+
+<span class="cm">// To string</span>
+arr.map(x =&gt; x.toString());   <span class="cm">// ["5", "1", "3", "2", "6"]</span>
+
+<span class="cm">// To binary</span>
+arr.map(x =&gt; x.toString(<span class="num">2</span>));  <span class="cm">// ["101", "1", "11", "10", "110"]</span>
+
+<span class="cm">// Object transformation</span>
+arr.map(x =&gt; ({ value: x, squared: x * x }));
+<span class="cm">// [{value:5, squared:25}, {value:1, squared:1}, ...]</span></pre>
+  </div>
+  <p style="margin-top:10px;"><strong>Callback signature:</strong> <code>callback(currentValue, index, array)</code></p>
+</div>
+
+<!-- FILTER -->
+<div class="concept-card">
+  <h3>filter() — Select Elements by Condition</h3>
+  <p><code>filter()</code> creates a new array containing only elements for which the callback returns a <strong>truthy</strong> value. Elements that return falsy are excluded.</p>
+  <div class="code-wrap"><div class="code-label">filter examples</div>
+    <pre><span class="kw">const</span> arr = [<span class="num">5</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">2</span>, <span class="num">6</span>];
+
+<span class="cm">// Odd numbers</span>
+arr.filter(x =&gt; x % <span class="num">2</span> !== <span class="num">0</span>);  <span class="cm">// [5, 1, 3]</span>
+
+<span class="cm">// Greater than 3</span>
+arr.filter(x =&gt; x &gt; <span class="num">3</span>);         <span class="cm">// [5, 6]</span>
+
+<span class="cm">// Remove falsy values from mixed array</span>
+[<span class="num">0</span>, <span class="num">1</span>, <span class="str">""</span>, <span class="str">"hello"</span>, <span class="kw">null</span>, <span class="num">42</span>, <span class="kw">undefined</span>, <span class="kw">false</span>].filter(Boolean);
+<span class="cm">// [1, "hello", 42]</span></pre>
+  </div>
+  <p style="margin-top:10px;"><strong>Callback signature:</strong> <code>callback(currentValue, index, array)</code> → must return truthy/falsy</p>
+</div>
+
+<!-- REDUCE -->
+<div class="concept-card">
+  <h3>reduce() — Reduce to a Single Value</h3>
+  <p><code>reduce()</code> executes a callback on each element, accumulating a single result. The <strong>accumulator</strong> carries the running result. The second argument is the <strong>initial value</strong>.</p>
+  <div class="code-wrap"><div class="code-label">reduce examples</div>
+    <pre><span class="kw">const</span> arr = [<span class="num">5</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">2</span>, <span class="num">6</span>];
+
+<span class="cm">// Sum</span>
+arr.reduce((acc, curr) =&gt; acc + curr, <span class="num">0</span>);  <span class="cm">// 17</span>
+
+<span class="cm">// Max value</span>
+arr.reduce((max, curr) =&gt; curr &gt; max ? curr : max, <span class="num">0</span>);  <span class="cm">// 6</span>
+
+<span class="cm">// Min value</span>
+arr.reduce((min, curr) =&gt; curr &lt; min ? curr : min, Infinity);  <span class="cm">// 1</span>
+
+<span class="cm">// Count occurrences</span>
+[<span class="str">"a"</span>,<span class="str">"b"</span>,<span class="str">"a"</span>,<span class="str">"c"</span>,<span class="str">"b"</span>,<span class="str">"a"</span>].reduce((acc, curr) =&gt; {
+  acc[curr] = (acc[curr] || <span class="num">0</span>) + <span class="num">1</span>;
+  <span class="kw">return</span> acc;
+}, {});
+<span class="cm">// { a: 3, b: 2, c: 1 }</span>
+
+<span class="cm">// Flatten nested arrays</span>
+[[<span class="num">1</span>,<span class="num">2</span>],[<span class="num">3</span>,<span class="num">4</span>],[<span class="num">5</span>]].reduce((acc, curr) =&gt; acc.concat(curr), []);
+<span class="cm">// [1, 2, 3, 4, 5]</span></pre>
+  </div>
+  <p style="margin-top:10px;"><strong>Callback signature:</strong> <code>callback(accumulator, currentValue, index, array)</code></p>
+  <p><strong>Second argument:</strong> Initial value of the accumulator. Always provide it to avoid bugs.</p>
+</div>
+
+<div class="warn-box">
+  <strong>Always provide initial value to reduce!</strong> If you omit it, the first element is used as the initial accumulator and iteration starts from the second element. This works for sum but fails for things like counting or building objects. Passing an explicit initial value (<code>0</code>, <code>[]</code>, <code>{}</code>) is safer and clearer.
+</div>
+
+<!-- FUNCTION CHAINING -->
+<div class="concept-card">
+  <h3>Function Chaining — Combining map, filter &amp; reduce</h3>
+  <p>Since <code>map</code> and <code>filter</code> return arrays, you can <strong>chain</strong> them together. This is one of the most powerful patterns in JS.</p>
+  <div class="code-wrap"><div class="code-label">Chaining example</div>
+    <pre><span class="kw">const</span> users = [
+  { firstName: <span class="str">"Alok"</span>, lastName: <span class="str">"Raj"</span>, age: <span class="num">23</span> },
+  { firstName: <span class="str">"Ashish"</span>, lastName: <span class="str">"Kumar"</span>, age: <span class="num">29</span> },
+  { firstName: <span class="str">"Ankit"</span>, lastName: <span class="str">"Roy"</span>, age: <span class="num">29</span> },
+  { firstName: <span class="str">"Pranav"</span>, lastName: <span class="str">"Mukherjee"</span>, age: <span class="num">50</span> },
+];
+
+<span class="cm">// First names of users under 30</span>
+<span class="kw">const</span> output = users
+  .filter(user =&gt; user.age &lt; <span class="num">30</span>)
+  .map(user =&gt; user.firstName);
+
+<span class="fn">console</span>.<span class="fn">log</span>(output); <span class="cm">// ["Alok", "Ashish", "Ankit"]</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Same Result with reduce Only</h3>
+  <p>Any chain of <code>filter</code> + <code>map</code> can be written as a single <code>reduce</code>. Interviewers love asking you to convert between the two:</p>
+  <div class="code-wrap"><div class="code-label">reduce replaces filter + map</div>
+    <pre><span class="kw">const</span> output = users.reduce((acc, user) =&gt; {
+  <span class="kw">if</span> (user.age &lt; <span class="num">30</span>) {
+    acc.push(user.firstName);
+  }
+  <span class="kw">return</span> acc;
+}, []);
+
+<span class="fn">console</span>.<span class="fn">log</span>(output); <span class="cm">// ["Alok", "Ashish", "Ankit"]</span></pre>
+  </div>
+</div>
+
+<!-- POLYFILLS -->
+<div class="concept-card">
+  <h3>Polyfills — Write Your Own map, filter &amp; reduce</h3>
+  <div class="code-wrap"><div class="code-label">Polyfill: Array.prototype.myMap</div>
+    <pre>Array.prototype.<span class="fn">myMap</span> = <span class="kw">function</span>(cb) {
+  <span class="kw">const</span> result = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.length; i++) {
+    result.push(cb(<span class="kw">this</span>[i], i, <span class="kw">this</span>));
+  }
+  <span class="kw">return</span> result;
+};</pre>
+  </div>
+  <div class="code-wrap"><div class="code-label">Polyfill: Array.prototype.myFilter</div>
+    <pre>Array.prototype.<span class="fn">myFilter</span> = <span class="kw">function</span>(cb) {
+  <span class="kw">const</span> result = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.length; i++) {
+    <span class="kw">if</span> (cb(<span class="kw">this</span>[i], i, <span class="kw">this</span>)) {
+      result.push(<span class="kw">this</span>[i]);
+    }
+  }
+  <span class="kw">return</span> result;
+};</pre>
+  </div>
+  <div class="code-wrap"><div class="code-label">Polyfill: Array.prototype.myReduce</div>
+    <pre>Array.prototype.<span class="fn">myReduce</span> = <span class="kw">function</span>(cb, initialValue) {
+  <span class="kw">let</span> acc = initialValue;
+  <span class="kw">let</span> startIndex = <span class="num">0</span>;
+
+  <span class="kw">if</span> (acc === <span class="kw">undefined</span>) {
+    acc = <span class="kw">this</span>[<span class="num">0</span>];
+    startIndex = <span class="num">1</span>;
+  }
+
+  <span class="kw">for</span> (<span class="kw">let</span> i = startIndex; i &lt; <span class="kw">this</span>.length; i++) {
+    acc = cb(acc, <span class="kw">this</span>[i], i, <span class="kw">this</span>);
+  }
+  <span class="kw">return</span> acc;
+};</pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Other Important Array HOFs</h3>
+  <ul>
+    <li><code>forEach(cb)</code> — like map but <strong>returns nothing</strong> (undefined). For side effects only.</li>
+    <li><code>find(cb)</code> — returns the <strong>first element</strong> that passes the test (or undefined).</li>
+    <li><code>findIndex(cb)</code> — returns the <strong>index</strong> of the first match (or -1).</li>
+    <li><code>some(cb)</code> — returns <code>true</code> if <strong>at least one</strong> element passes the test.</li>
+    <li><code>every(cb)</code> — returns <code>true</code> if <strong>all</strong> elements pass the test.</li>
+    <li><code>flatMap(cb)</code> — maps then flattens one level. Like <code>.map().flat(1)</code>.</li>
+    <li><code>sort(compareFn)</code> — sorts in place (mutates!). A HOF taking a comparator.</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>map vs forEach — A Common Interview Question</h3>
+  <ul>
+    <li><code>map</code> → <strong>returns a new array</strong> with transformed values. Chainable.</li>
+    <li><code>forEach</code> → <strong>returns undefined</strong>. Used for side effects (logging, DOM updates). NOT chainable.</li>
+    <li>Use <code>map</code> when you need the result. Use <code>forEach</code> when you don't.</li>
+  </ul>
+  <div class="code-wrap"><div class="code-label">The difference</div>
+    <pre><span class="kw">const</span> arr = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];
+
+<span class="kw">const</span> result1 = arr.map(x =&gt; x * <span class="num">2</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(result1); <span class="cm">// [2, 4, 6]</span>
+
+<span class="kw">const</span> result2 = arr.forEach(x =&gt; x * <span class="num">2</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(result2); <span class="cm">// undefined</span></pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q1</span><span class="q-text">What is a Higher-Order Function?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>A Higher-Order Function is a function that either (1) takes one or more functions as arguments, or (2) returns a function as its result. Examples include <code>map</code>, <code>filter</code>, <code>reduce</code>, <code>forEach</code>, <code>sort</code>, and custom functions like debounce/throttle. They enable functional programming patterns by abstracting iteration and logic separation.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q2</span><span class="q-text">What is the difference between <code>map</code>, <code>filter</code>, and <code>reduce</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>map:</strong> Transforms every element and returns a new array of the <em>same length</em>. Use when you need to change each element.</p>
+    <p><strong>filter:</strong> Tests every element and returns a new array with only elements that pass the test. The result can be shorter or empty. Use when you need to select/exclude elements.</p>
+    <p><strong>reduce:</strong> Accumulates all elements into a <em>single value</em> (number, string, object, array — anything). The most flexible of the three — can replicate both map and filter. Use when you need to derive a single result from an array.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q3</span><span class="q-text">Write a polyfill for <code>Array.prototype.map</code>.</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Create a new method on <code>Array.prototype</code> that iterates over <code>this</code> (the array), calls the callback with each element, index, and the array itself, pushes the result to a new array, and returns it. The callback receives <code>(currentValue, index, array)</code>. See the polyfill code in the section above — it's the most commonly asked version.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q4</span><span class="q-text">What is the difference between <code>map</code> and <code>forEach</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>map</code> returns a <strong>new array</strong> of transformed values and is chainable. <code>forEach</code> returns <strong>undefined</strong> and is used purely for side effects (logging, DOM manipulation). If you need the result, use <code>map</code>. If you just need to do something with each element without collecting results, use <code>forEach</code>. Neither modifies the original array (unless you explicitly mutate within the callback).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q5</span><span class="q-text">Can <code>reduce</code> do everything that <code>map</code> and <code>filter</code> do?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Yes.</strong> <code>reduce</code> is the most general of the three. You can implement <code>map</code> by pushing transformed values to the accumulator array, and <code>filter</code> by conditionally pushing. You can even combine both in a single <code>reduce</code> call. However, using <code>map</code>/<code>filter</code> separately is more readable and expressive — use <code>reduce</code> when you need something neither can do alone (like counting, grouping, or building objects).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q6</span><span class="q-text">What happens if you don't provide an initial value to <code>reduce</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>If no initial value is provided, <code>reduce</code> uses the <strong>first element</strong> of the array as the initial accumulator and starts iteration from the <strong>second element</strong>. If the array is empty and no initial value is given, it throws a <code>TypeError: Reduce of empty array with no initial value</code>. Best practice: <strong>always provide an initial value</strong> to avoid edge-case bugs and make intent clear.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q7</span><span class="q-text">Do <code>map</code>, <code>filter</code>, <code>reduce</code> mutate the original array?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>No.</strong> All three are <strong>non-mutating</strong> — they return new values without modifying the original array. This is a key principle of functional programming: avoid side effects. However, if your callback itself mutates elements (e.g., modifying object properties), the original array's objects WILL be affected because objects are passed by reference. The array structure stays the same, but object contents can change.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q8</span><span class="q-text">What are <code>find</code>, <code>some</code>, and <code>every</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>find(cb):</strong> Returns the <em>first element</em> where the callback returns truthy (or <code>undefined</code> if none match). Unlike filter which returns all matches.</p>
+    <p><strong>some(cb):</strong> Returns <code>true</code> if <em>at least one</em> element passes the test. Short-circuits on first truthy.</p>
+    <p><strong>every(cb):</strong> Returns <code>true</code> only if <em>all</em> elements pass the test. Short-circuits on first falsy.</p>
+    <p>All three are HOFs and very useful for conditional checks without full iteration.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q9</span><span class="q-text">How would you implement debounce as a Higher-Order Function?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Debounce is a HOF that takes a function and a delay, and returns a new function that only executes after the user has stopped calling it for the specified delay period:</p>
+    <div class="code-wrap"><div class="code-label">Debounce</div>
+      <pre><span class="kw">function</span> <span class="fn">debounce</span>(fn, delay) {
+  <span class="kw">let</span> timer;
+  <span class="kw">return</span> <span class="kw">function</span>(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() =&gt; fn.apply(<span class="kw">this</span>, args), delay);
+  };
+}
+<span class="cm">// Usage: const search = debounce(fetchResults, 300);</span></pre>
+    </div>
+    <p>This uses closures (timer persists between calls) and is a HOF (takes fn, returns fn).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q10</span><span class="q-text">How would you implement throttle as a Higher-Order Function?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Throttle limits a function to execute at most once per specified time period:</p>
+    <div class="code-wrap"><div class="code-label">Throttle</div>
+      <pre><span class="kw">function</span> <span class="fn">throttle</span>(fn, limit) {
+  <span class="kw">let</span> inThrottle = <span class="kw">false</span>;
+  <span class="kw">return</span> <span class="kw">function</span>(...args) {
+    <span class="kw">if</span> (!inThrottle) {
+      fn.apply(<span class="kw">this</span>, args);
+      inThrottle = <span class="kw">true</span>;
+      setTimeout(() =&gt; inThrottle = <span class="kw">false</span>, limit);
+    }
+  };
+}
+<span class="cm">// Usage: const scroll = throttle(handleScroll, 200);</span></pre>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INPUT/OUTPUT QUESTIONS                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 1</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> arr = [<span class="num">5</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">2</span>, <span class="num">6</span>];
+<span class="kw">const</span> doubled = arr.map(x =&gt; x * <span class="num">2</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(doubled);
+<span class="fn">console</span>.<span class="fn">log</span>(arr);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[10, 2, 6, 4, 12] → [5, 1, 3, 2, 6]</span></div>
+    <p style="margin-top:10px;">map returns a new array. Original is untouched.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 2</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> arr = [<span class="num">5</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">2</span>, <span class="num">6</span>];
+<span class="kw">const</span> odds = arr.filter(x =&gt; x % <span class="num">2</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(odds);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[5, 1, 3]</span></div>
+    <p style="margin-top:10px;"><code>x % 2</code> returns <code>1</code> (truthy) for odd, <code>0</code> (falsy) for even. Filter keeps truthy values.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 3</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> arr = [<span class="num">5</span>, <span class="num">1</span>, <span class="num">3</span>, <span class="num">2</span>, <span class="num">6</span>];
+<span class="kw">const</span> sum = arr.reduce((acc, curr) =&gt; acc + curr, <span class="num">0</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(sum);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">17</span></div>
+    <p style="margin-top:10px;">acc starts at 0. Each iteration: 0+5=5, 5+1=6, 6+3=9, 9+2=11, 11+6=17.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 4</span><span class="q-text">What will be the output? (Tricky — age report with reduce)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> users = [
+  { name: <span class="str">"Alok"</span>, age: <span class="num">23</span> },
+  { name: <span class="str">"Ashish"</span>, age: <span class="num">29</span> },
+  { name: <span class="str">"Ankit"</span>, age: <span class="num">29</span> },
+  { name: <span class="str">"Pranav"</span>, age: <span class="num">50</span> },
+];
+
+<span class="kw">const</span> report = users.reduce((acc, curr) =&gt; {
+  <span class="kw">if</span> (acc[curr.age]) {
+    acc[curr.age]++;
+  } <span class="kw">else</span> {
+    acc[curr.age] = <span class="num">1</span>;
+  }
+  <span class="kw">return</span> acc;
+}, {});
+
+<span class="fn">console</span>.<span class="fn">log</span>(report);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">{ 23: 1, 29: 2, 50: 1 }</span></div>
+    <p style="margin-top:10px;">Reduce builds an object counting unique ages. This is a very common interview pattern — grouping/counting with reduce.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 5</span><span class="q-text">What will be the output? (Chaining)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> users = [
+  { name: <span class="str">"Alok"</span>, age: <span class="num">23</span> },
+  { name: <span class="str">"Ashish"</span>, age: <span class="num">29</span> },
+  { name: <span class="str">"Ankit"</span>, age: <span class="num">29</span> },
+  { name: <span class="str">"Pranav"</span>, age: <span class="num">50</span> },
+];
+
+<span class="kw">const</span> result = users
+  .filter(u =&gt; u.age &lt; <span class="num">30</span>)
+  .map(u =&gt; u.name);
+
+<span class="fn">console</span>.<span class="fn">log</span>(result);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">["Alok", "Ashish", "Ankit"]</span></div>
+    <p style="margin-top:10px;">Filter keeps users under 30 (3 users), then map extracts their names.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 6</span><span class="q-text">What will be the output? (Same as above but with reduce)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> users = [
+  { name: <span class="str">"Alok"</span>, age: <span class="num">23</span> },
+  { name: <span class="str">"Ashish"</span>, age: <span class="num">29</span> },
+  { name: <span class="str">"Ankit"</span>, age: <span class="num">29</span> },
+  { name: <span class="str">"Pranav"</span>, age: <span class="num">50</span> },
+];
+
+<span class="kw">const</span> result = users.reduce((acc, curr) =&gt; {
+  <span class="kw">if</span> (curr.age &lt; <span class="num">30</span>) acc.push(curr.name);
+  <span class="kw">return</span> acc;
+}, []);
+
+<span class="fn">console</span>.<span class="fn">log</span>(result);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">["Alok", "Ashish", "Ankit"]</span></div>
+    <p style="margin-top:10px;">Same result — single <code>reduce</code> replaces <code>filter</code> + <code>map</code> chain.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 7</span><span class="q-text">What will be the output? (map vs forEach return)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> a = [<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].map(x =&gt; x * <span class="num">2</span>);
+<span class="kw">const</span> b = [<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].forEach(x =&gt; x * <span class="num">2</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(a);
+<span class="fn">console</span>.<span class="fn">log</span>(b);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[2, 4, 6] → undefined</span></div>
+    <p style="margin-top:10px;"><code>map</code> returns the new array. <code>forEach</code> always returns <code>undefined</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 8</span><span class="q-text">What will be the output? (Tricky — map with index)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> result = [<span class="str">"a"</span>, <span class="str">"b"</span>, <span class="str">"c"</span>].map((val, idx) =&gt; idx);
+<span class="fn">console</span>.<span class="fn">log</span>(result);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[0, 1, 2]</span></div>
+    <p style="margin-top:10px;">The callback ignores the value and returns the index. map creates an array of indices.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 9</span><span class="q-text">What will be the output? (Tricky — reduce without initial value)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> result = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>].reduce((acc, curr) =&gt; acc + curr);
+<span class="fn">console</span>.<span class="fn">log</span>(result);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">6</span></div>
+    <p style="margin-top:10px;">No initial value → first element (1) is the initial acc, iteration starts from index 1. So: 1+2=3, 3+3=6. Works for sum, but risky for other operations.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 10</span><span class="q-text">What will be the output? (Tricky — map with parseInt)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> result = [<span class="str">"1"</span>, <span class="str">"2"</span>, <span class="str">"3"</span>].map(parseInt);
+<span class="fn">console</span>.<span class="fn">log</span>(result);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[1, NaN, NaN]</span></div>
+    <p style="margin-top:10px;"><strong>Classic gotcha!</strong> map passes <code>(value, index, array)</code> to the callback. <code>parseInt</code> accepts <code>(string, radix)</code>. So it actually calls: <code>parseInt("1", 0)</code> → 1, <code>parseInt("2", 1)</code> → NaN (base 1 is invalid), <code>parseInt("3", 2)</code> → NaN (3 doesn't exist in binary). Fix: <code>["1","2","3"].map(x => parseInt(x))</code> or <code>.map(Number)</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 11</span><span class="q-text">What will be the output? (Tricky — flat with reduce)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> nested = [[<span class="num">1</span>,<span class="num">2</span>], [<span class="num">3</span>,<span class="num">4</span>], [<span class="num">5</span>,<span class="num">6</span>]];
+<span class="kw">const</span> flat = nested.reduce((acc, curr) =&gt; [...acc, ...curr], []);
+<span class="fn">console</span>.<span class="fn">log</span>(flat);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[1, 2, 3, 4, 5, 6]</span></div>
+    <p style="margin-top:10px;">Reduce with spread operator flattens one level. Each iteration spreads the accumulator and current sub-array into a new array.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 12</span><span class="q-text">What will be the output? (Tricky — filter with Boolean)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> arr = [<span class="num">0</span>, <span class="num">1</span>, <span class="str">""</span>, <span class="str">"hello"</span>, <span class="kw">null</span>, <span class="kw">undefined</span>, <span class="num">42</span>, <span class="kw">false</span>, <span class="kw">NaN</span>, <span class="str">"0"</span>];
+<span class="fn">console</span>.<span class="fn">log</span>(arr.filter(Boolean));</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">[1, "hello", 42, "0"]</span></div>
+    <p style="margin-top:10px;"><code>Boolean</code> as a callback converts each value to true/false. Keeps truthy values. Note: <code>"0"</code> (non-empty string) is truthy! <code>0</code>, <code>""</code>, <code>null</code>, <code>undefined</code>, <code>false</code>, <code>NaN</code> are all falsy.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 13</span><span class="q-text">What will be the output? (Full name with map)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> users = [
+  { firstName: <span class="str">"Alok"</span>, lastName: <span class="str">"Raj"</span> },
+  { firstName: <span class="str">"Ashish"</span>, lastName: <span class="str">"Kumar"</span> },
+];
+<span class="kw">const</span> names = users.map(u =&gt; u.firstName + <span class="str">" "</span> + u.lastName);
+<span class="fn">console</span>.<span class="fn">log</span>(names);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">["Alok Raj", "Ashish Kumar"]</span></div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 14</span><span class="q-text">What will be the output? (Tricky — chaining with find)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> nums = [<span class="num">10</span>, <span class="num">20</span>, <span class="num">30</span>, <span class="num">40</span>, <span class="num">50</span>];
+
+<span class="kw">const</span> a = nums.find(x =&gt; x &gt; <span class="num">25</span>);
+<span class="kw">const</span> b = nums.filter(x =&gt; x &gt; <span class="num">25</span>);
+<span class="kw">const</span> c = nums.some(x =&gt; x &gt; <span class="num">100</span>);
+<span class="kw">const</span> d = nums.every(x =&gt; x &gt; <span class="num">5</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(a, b, c, d);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">30, [30, 40, 50], false, true</span></div>
+    <p style="margin-top:10px;"><code>find</code> returns the first match (30). <code>filter</code> returns all matches. <code>some</code> checks if any >100 (none → false). <code>every</code> checks if all >5 (yes → true).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- QUICK REVISION                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Everything You Need to Remember</h3>
+  <ul>
+    <li><strong>HOF:</strong> Takes function as argument OR returns a function</li>
+    <li><strong>map:</strong> Transforms every element → new array of same length. Chainable.</li>
+    <li><strong>filter:</strong> Tests every element → new array of elements that pass. Chainable.</li>
+    <li><strong>reduce:</strong> Accumulates → single value (any type). Most flexible.</li>
+    <li><strong>forEach:</strong> Side effects only → returns <code>undefined</code>. NOT chainable.</li>
+    <li><strong>find:</strong> First match. <strong>some:</strong> Any match? <strong>every:</strong> All match?</li>
+    <li>None of them mutate the original array (but callbacks can mutate objects)</li>
+    <li><strong>Always provide initial value to reduce</strong> to avoid edge-case bugs</li>
+    <li>reduce can replace both map and filter — but chaining is more readable</li>
+    <li>Callback signature: <code>(currentValue, index, array)</code> for map/filter; <code>(accumulator, currentValue, index, array)</code> for reduce</li>
+    <li><strong>Polyfills:</strong> Be ready to write map, filter, reduce from scratch using <code>Array.prototype</code></li>
+    <li><code>["1","2","3"].map(parseInt)</code> → <code>[1, NaN, NaN]</code> — classic gotcha (radix issue)</li>
+    <li><code>arr.filter(Boolean)</code> removes all falsy values</li>
+    <li><strong>Debounce &amp; Throttle</strong> are HOFs using closures — very common interview questions</li>
+    <li>Function chaining: <code>.filter().map()</code> — filter first (reduces array size), then map</li>
+  </ul>
+</div>
+
+<div class="concept-card" style="border-color: var(--green);">
+  <h3 style="color: var(--green);">🎉 Congratulations — You've Completed All 19 Topics!</h3>
+  <p>You've covered the entire Namaste JavaScript series plus significant additional content. These notes cover the core of JavaScript — from execution context to the event loop to functional programming. Review the cheat sheets, practice the I/O questions, and you'll be well-prepared for any JavaScript interview.</p>
+  <p style="margin-top:8px;"><strong>Quick recap of all topics:</strong> Execution Context → Call Stack → Hoisting → Variable Environments → window/this → undefined vs not defined → Scope Chain → let/const/TDZ → Block Scope/Shadowing → Closures → setTimeout+Closures → Closure Patterns → First Class Functions → Callbacks → Event Loop → JS Engine → setTimeout Trust → Higher-Order Functions → map/filter/reduce</p>
+</div>
+
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topics 13–17: Functions, Callbacks, Event Loop</span>
+  <span style="color: var(--green); font-weight: 700;">✓ Series Complete!</span>
+</div>
+
+</body>
+</html>

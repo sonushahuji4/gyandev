@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topics 8 & 9: let, const, TDZ, Block Scope & Shadowing — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --orange: #fb923c;
+    --pink: #f472b6;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+    --error-bg: #1a0f0f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .header { padding: 48px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+  .header .tag {
+    display: inline-block; background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 4px; margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 31px; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, #ef4444 0%, #f59e0b 40%, #22c55e 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 16px; font-weight: 300; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin: 44px 0 20px; font-size: 20px; font-weight: 700; color: var(--accent2);
+  }
+  .section-title::before { content: ''; width: 4px; height: 24px; background: var(--accent2); border-radius: 2px; flex-shrink: 0; }
+  .topic-divider {
+    margin: 56px 0 0; padding: 20px 0 0; border-top: 2px solid var(--purple);
+  }
+  .topic-divider h2 {
+    font-size: 26px; font-weight: 800;
+    background: linear-gradient(135deg, #a78bfa 0%, #3b82f6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 4px;
+  }
+  .topic-divider p { color: var(--text-dim); font-size: 14px; }
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .concept-card h3 { font-size: 15px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
+  .concept-card p, .concept-card li { font-size: 14.5px; color: var(--text); line-height: 1.75; }
+  .concept-card ul, .concept-card ol { padding-left: 20px; margin-top: 8px; }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+  .highlight {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    padding: 2px 7px; border-radius: 4px; font-weight: 600;
+    font-size: 13.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green); padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--green);
+  }
+  .key-box strong { font-weight: 700; }
+  .warn-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%);
+    border-left: 3px solid var(--red); padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--red);
+  }
+  .info-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-left: 3px solid var(--accent2); padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--accent2);
+  }
+  .qa-block { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 20px; overflow: hidden; }
+  .qa-q {
+    background: var(--q-bg); padding: 16px 24px; border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-q .q-badge { background: var(--red); color: #fff; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px; }
+  .qa-q .q-text { font-size: 15px; font-weight: 600; color: #e2e8f0; line-height: 1.5; }
+  .qa-a { padding: 16px 24px; }
+  .qa-a .a-label { font-size: 10px; font-weight: 700; color: var(--green); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+  .qa-a p { font-size: 14px; color: var(--text); line-height: 1.75; }
+  .qa-a p + p { margin-top: 8px; }
+  .code-wrap { margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #21262d; }
+  .code-label {
+    background: #161b22; padding: 6px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-dim); font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.65; color: #e6edf3; margin: 0;
+  }
+  .kw { color: #ff7b72; } .str { color: #a5d6ff; } .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; } .num { color: #79c0ff; }
+  .output-block {
+    background: var(--output-bg); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .output-block .out-icon { background: var(--green); color: #000; font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 4px; flex-shrink: 0; }
+  .output-block .out-text { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green); }
+  .error-block {
+    background: var(--error-bg); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .error-block .err-icon { background: var(--red); color: #fff; font-size: 9px; font-weight: 800; padding: 3px 7px; border-radius: 4px; flex-shrink: 0; }
+  .error-block .err-text { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--red); }
+  .diagram { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center; overflow-x: auto; }
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+  .nav-footer {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .nav-footer span { font-size: 14px; }
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .compare-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; position: relative; overflow: hidden;
+  }
+  .compare-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; }
+  .compare-card.cv::before { background: var(--orange); }
+  .compare-card.cl::before { background: var(--accent2); }
+  .compare-card.cc::before { background: var(--green); }
+  .compare-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .compare-card.cv h4 { color: var(--orange); }
+  .compare-card.cl h4 { color: var(--accent2); }
+  .compare-card.cc h4 { color: var(--green); }
+  .compare-card p { font-size: 12.5px; line-height: 1.6; }
+  .compare-card code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; background: rgba(255,255,255,0.05); padding: 1px 4px; border-radius: 3px; }
+  .error-type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0; }
+  .error-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .error-card h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .error-card p { font-size: 12px; line-height: 1.5; }
+  .error-card.e-syntax h4 { color: var(--red); }
+  .error-card.e-ref h4 { color: var(--orange); }
+  .error-card.e-type h4 { color: var(--purple); }
+  .tdz-visual {
+    display: flex; align-items: stretch; margin: 16px 0; border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+  }
+  .tdz-zone {
+    padding: 16px 20px; flex: 1; display: flex; flex-direction: column; justify-content: center;
+  }
+  .tdz-zone.tdz-dead { background: rgba(239,68,68,0.08); border-right: 2px dashed var(--red); }
+  .tdz-zone.tdz-alive { background: rgba(34,197,94,0.06); }
+  .tdz-zone h4 { font-size: 12px; font-weight: 700; letter-spacing: 0.5px; margin-bottom: 6px; }
+  .tdz-zone.tdz-dead h4 { color: var(--red); }
+  .tdz-zone.tdz-alive h4 { color: var(--green); }
+  .tdz-zone p { font-size: 12.5px; line-height: 1.5; }
+  .tdz-zone code { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  @media (max-width: 700px) {
+    .compare-grid, .error-type-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 24px; }
+    .tdz-visual { flex-direction: column; }
+    .tdz-zone.tdz-dead { border-right: none; border-bottom: 2px dashed var(--red); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 8: LET & CONST, TEMPORAL DEAD ZONE  -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="header">
+  <div class="tag">Topics 8 &amp; 9 of 19</div>
+  <h1>let, const, Temporal Dead Zone, Block Scope &amp; Shadowing</h1>
+  <p>The modern variable declarations, their scoping rules, and the errors they produce</p>
+</div>
+
+<div class="section-title">Topic 8 — let &amp; const, Temporal Dead Zone</div>
+
+<!-- var vs let vs const comparison -->
+<div class="compare-grid">
+  <div class="compare-card cv">
+    <h4>var</h4>
+    <p><strong>Scope:</strong> Function</p>
+    <p><strong>Hoisted:</strong> Yes, as <code>undefined</code></p>
+    <p><strong>On window:</strong> Yes</p>
+    <p><strong>Re-declare:</strong> ✓ Allowed</p>
+    <p><strong>Re-assign:</strong> ✓ Allowed</p>
+    <p><strong>TDZ:</strong> None</p>
+    <p><strong>Block scope:</strong> ✗ No</p>
+  </div>
+  <div class="compare-card cl">
+    <h4>let</h4>
+    <p><strong>Scope:</strong> Block</p>
+    <p><strong>Hoisted:</strong> Yes, but in TDZ</p>
+    <p><strong>On window:</strong> No (Script scope)</p>
+    <p><strong>Re-declare:</strong> ✗ SyntaxError</p>
+    <p><strong>Re-assign:</strong> ✓ Allowed</p>
+    <p><strong>TDZ:</strong> Yes</p>
+    <p><strong>Block scope:</strong> ✓ Yes</p>
+  </div>
+  <div class="compare-card cc">
+    <h4>const</h4>
+    <p><strong>Scope:</strong> Block</p>
+    <p><strong>Hoisted:</strong> Yes, but in TDZ</p>
+    <p><strong>On window:</strong> No (Script scope)</p>
+    <p><strong>Re-declare:</strong> ✗ SyntaxError</p>
+    <p><strong>Re-assign:</strong> ✗ TypeError</p>
+    <p><strong>TDZ:</strong> Yes</p>
+    <p><strong>Must init:</strong> ✓ At declaration</p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Are let and const Hoisted?</h3>
+  <p><strong>Yes!</strong> Both <code>let</code> and <code>const</code> are hoisted. But unlike <code>var</code>, they are NOT stored in the Global Object (window). They're placed in a separate memory space called <span class="highlight">Script scope</span>. And critically, they cannot be accessed until the code execution reaches their declaration line. The period between hoisting and initialization is called the <strong>Temporal Dead Zone</strong>.</p>
+  <div class="code-wrap">
+    <div class="code-label">Proof that let is hoisted</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// ReferenceError: Cannot access 'a' BEFORE INITIALIZATION</span>
+<span class="kw">let</span> a = <span class="num">10</span>;
+<span class="cm">// If let was NOT hoisted, the error would be "a is not DEFINED"</span>
+<span class="cm">// "before initialization" proves JS knows about 'a' — it's hoisted!</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>What is the Temporal Dead Zone (TDZ)?</h3>
+  <p>The TDZ is the <strong>time period</strong> between when a <code>let</code>/<code>const</code> variable is hoisted (memory allocated) and when it is initialized with a value. During this period, the variable exists in memory but is <strong>not accessible</strong>. Any access attempt throws a <code>ReferenceError</code>.</p>
+</div>
+
+<!-- TDZ Visual -->
+<div class="tdz-visual">
+  <div class="tdz-zone tdz-dead">
+    <h4>☠ TEMPORAL DEAD ZONE</h4>
+    <p>From the start of the scope until the <code>let</code>/<code>const</code> declaration line.</p>
+    <p style="margin-top:6px;">Accessing here → <code style="color:var(--red);">ReferenceError</code></p>
+    <p style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+      <code>console.log(a);</code> ← Error!<br>
+      <code>console.log(a + 1);</code> ← Error!<br>
+      <code>typeof a;</code> ← Error too!
+    </p>
+  </div>
+  <div class="tdz-zone tdz-alive">
+    <h4>✓ SAFE ZONE</h4>
+    <p>After the <code>let a = 10;</code> declaration line runs.</p>
+    <p style="margin-top:6px;">Accessing here → Works perfectly</p>
+    <p style="margin-top:8px; font-size:11px; color:var(--text-dim);">
+      <code>let a = 10;</code> ← TDZ ends here<br>
+      <code>console.log(a);</code> ← 10 ✓<br>
+      <code>a = 20;</code> ← Fine (let) ✓
+    </p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Where Are Variables Stored? — Memory Spaces</h3>
+  <ul>
+    <li><code>var</code> → stored in the <strong>Global</strong> memory space (attached to <code>window</code>)</li>
+    <li><code>let</code> / <code>const</code> → stored in a separate <strong>Script</strong> memory space (NOT on <code>window</code>)</li>
+    <li>Block-level <code>let</code>/<code>const</code> → stored in a separate <strong>Block</strong> memory space</li>
+  </ul>
+  <p style="margin-top:8px;">You can verify this in Chrome DevTools: set a breakpoint and look at the Scope panel. You'll see separate entries for "Global," "Script," "Block," and "Local."</p>
+</div>
+
+<div class="concept-card">
+  <h3>const — The Strictest Declaration</h3>
+  <p><code>const</code> has all the restrictions of <code>let</code> plus two more:</p>
+  <ul>
+    <li><strong>Must be initialized at declaration:</strong> <code>const b;</code> → SyntaxError</li>
+    <li><strong>Cannot be reassigned:</strong> <code>const b = 10; b = 20;</code> → TypeError</li>
+  </ul>
+  <p style="margin-top:8px;"><strong>Important nuance:</strong> <code>const</code> prevents <em>reassignment of the binding</em>, NOT mutation of the value. If a <code>const</code> holds an object or array, you CAN modify its properties/elements:</p>
+  <div class="code-wrap">
+    <div class="code-label">const with objects — a common gotcha</div>
+    <pre><span class="kw">const</span> obj = { a: <span class="num">1</span> };
+obj.a = <span class="num">2</span>;         <span class="cm">// ✓ Fine! Modifying property, not reassigning obj</span>
+obj.b = <span class="num">3</span>;         <span class="cm">// ✓ Fine! Adding new property</span>
+obj = { a: <span class="num">99</span> };   <span class="cm">// ✗ TypeError! Can't reassign the binding</span>
+
+<span class="kw">const</span> arr = [<span class="num">1</span>, <span class="num">2</span>];
+arr.push(<span class="num">3</span>);       <span class="cm">// ✓ Fine! [1, 2, 3]</span>
+arr[<span class="num">0</span>] = <span class="num">99</span>;       <span class="cm">// ✓ Fine! [99, 2, 3]</span>
+arr = [<span class="num">4</span>, <span class="num">5</span>];      <span class="cm">// ✗ TypeError! Can't reassign</span></pre>
+  </div>
+</div>
+
+<!-- Three error types -->
+<div class="concept-card">
+  <h3>Three Types of Errors Related to let/const</h3>
+</div>
+<div class="error-type-grid">
+  <div class="error-card e-syntax">
+    <h4>SyntaxError</h4>
+    <p>Code doesn't run <strong>at all</strong>. Caught before any execution.</p>
+    <p style="margin-top:6px; font-size:11px; color:var(--text-dim);">Duplicate let/const declaration, missing const initializer</p>
+  </div>
+  <div class="error-card e-ref">
+    <h4>ReferenceError</h4>
+    <p>Variable in TDZ or never declared. Thrown <strong>during execution</strong>.</p>
+    <p style="margin-top:6px; font-size:11px; color:var(--text-dim);">Accessing let/const before init, accessing undeclared variable</p>
+  </div>
+  <div class="error-card e-type">
+    <h4>TypeError</h4>
+    <p>Invalid operation on a type. Thrown <strong>during execution</strong>.</p>
+    <p style="margin-top:6px; font-size:11px; color:var(--text-dim);">Reassigning const, calling undefined as function</p>
+  </div>
+</div>
+
+<div class="key-box">
+  <strong>Best Practices:</strong> 1) Use <code>const</code> by default. 2) Use <code>let</code> only when you need to reassign. 3) Avoid <code>var</code> entirely. 4) Declare variables at the top of their scope to minimize TDZ.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 9: BLOCK SCOPE & SHADOWING           -->
+<!-- ═══════════════════════════════════════════ -->
+
+<div class="topic-divider">
+  <h2>Topic 9 — Block Scope &amp; Shadowing</h2>
+  <p>How curly braces create boundaries for let/const but not for var</p>
+</div>
+
+<div class="section-title">Core Concepts</div>
+
+<div class="concept-card">
+  <h3>What is a Block?</h3>
+  <p>A <strong>block</strong> (also called a compound statement) is code wrapped in <code>{ }</code>. It's used to group multiple statements where JavaScript expects only one (e.g., after <code>if</code>, <code>for</code>, <code>while</code>).</p>
+  <div class="code-wrap">
+    <div class="code-label">A block</div>
+    <pre>{
+  <span class="kw">var</span> a = <span class="num">10</span>;    <span class="cm">// stored in Global scope</span>
+  <span class="kw">let</span> b = <span class="num">20</span>;    <span class="cm">// stored in Block scope</span>
+  <span class="kw">const</span> c = <span class="num">30</span>;  <span class="cm">// stored in Block scope</span>
+}</pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Block Scope</h3>
+  <p><code>let</code> and <code>const</code> are <strong>block-scoped</strong> — they exist only inside the <code>{ }</code> where they are declared. <code>var</code> is NOT block-scoped — it ignores blocks entirely and attaches to the nearest function or global scope.</p>
+  <div class="code-wrap">
+    <div class="code-label">Block scope demonstration</div>
+    <pre>{
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">let</span> b = <span class="num">20</span>;
+  <span class="kw">const</span> c = <span class="num">30</span>;
+}
+<span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// 10 — var leaks out of the block</span>
+<span class="fn">console</span>.<span class="fn">log</span>(b); <span class="cm">// ReferenceError: b is not defined</span>
+<span class="fn">console</span>.<span class="fn">log</span>(c); <span class="cm">// ReferenceError: c is not defined</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>What is Shadowing?</h3>
+  <p><strong>Shadowing</strong> occurs when a variable inside a block/function has the same name as a variable in an outer scope. The inner variable "shadows" the outer one within that scope.</p>
+  <div class="code-wrap">
+    <div class="code-label">var shadowing — modifies the outer variable!</div>
+    <pre><span class="kw">var</span> a = <span class="num">100</span>;
+{
+  <span class="kw">var</span> a = <span class="num">10</span>;  <span class="cm">// same var — NOT a new variable!</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// 10</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// 10 ← also 10! var a inside block modified the global a</span></pre>
+  </div>
+  <p style="margin-top:10px;">Because <code>var</code> is not block-scoped, <code>var a = 10</code> inside the block points to the <strong>same memory location</strong> as the global <code>var a</code>. It doesn't create a new variable — it modifies the existing one.</p>
+
+  <div class="code-wrap">
+    <div class="code-label">let shadowing — creates a separate variable</div>
+    <pre><span class="kw">let</span> b = <span class="num">100</span>;
+{
+  <span class="kw">let</span> b = <span class="num">20</span>;  <span class="cm">// NEW variable in Block scope</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(b); <span class="cm">// 20 — block's b</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(b); <span class="cm">// 100 — outer b is untouched!</span></pre>
+  </div>
+  <p style="margin-top:10px;">With <code>let</code>/<code>const</code>, the inner variable lives in a separate <strong>Block scope</strong> memory. The outer variable is unaffected. Two completely independent variables that happen to share a name.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Illegal Shadowing</h3>
+  <p>You <strong>cannot</strong> shadow a <code>let</code> with a <code>var</code> in the same scope boundary. But you CAN shadow a <code>var</code> with a <code>let</code>.</p>
+  <div class="code-wrap">
+    <div class="code-label">Illegal shadowing</div>
+    <pre><span class="kw">let</span> a = <span class="num">20</span>;
+{
+  <span class="kw">var</span> a = <span class="num">20</span>;  <span class="cm">// ✗ SyntaxError: Identifier 'a' has already been declared</span>
+}
+<span class="cm">// var tries to attach to global scope where let a already exists → conflict!</span></pre>
+  </div>
+  <div class="code-wrap">
+    <div class="code-label">Legal — shadowing var with let</div>
+    <pre><span class="kw">var</span> a = <span class="num">20</span>;
+{
+  <span class="kw">let</span> a = <span class="num">30</span>;  <span class="cm">// ✓ Fine! let creates a new block-scoped variable</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// 30</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(a);   <span class="cm">// 20</span></pre>
+  </div>
+  <div class="code-wrap">
+    <div class="code-label">Legal — var inside function (different scope boundary)</div>
+    <pre><span class="kw">let</span> a = <span class="num">20</span>;
+<span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">var</span> a = <span class="num">20</span>;  <span class="cm">// ✓ Fine! var is function-scoped, doesn't leak to outer scope</span>
+}</pre>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Why is <code>let</code> shadowed by <code>var</code> illegal?</strong> Because <code>var</code> ignores block scope and tries to register in the same scope where <code>let</code> already exists. Since you can't have both <code>let a</code> and <code>var a</code> in the same scope, JS throws a SyntaxError. But inside a <em>function</em>, <code>var</code> is contained by the function scope, so there's no conflict.
+</div>
+
+<div class="concept-card">
+  <h3>Shadowing in Functions</h3>
+  <p>The same shadowing logic applies to functions. A <code>const</code>/<code>let</code> inside a function creates a new variable in the function's local scope that shadows any outer variable with the same name.</p>
+  <div class="code-wrap">
+    <div class="code-label">Function shadowing</div>
+    <pre><span class="kw">const</span> c = <span class="num">100</span>;
+<span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">const</span> c = <span class="num">10</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(c); <span class="cm">// 10 — function's own c</span>
+}
+<span class="fn">x</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(c); <span class="cm">// 100 — global c untouched</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Arrow Functions &amp; Block/Scope Rules</h3>
+  <p>All scope rules that apply to regular functions also apply to arrow functions. Arrow functions create their own execution context and their own scope for <code>var</code>, <code>let</code>, <code>const</code> — just like regular functions. The only difference is <code>this</code> binding and <code>arguments</code> object (arrow functions don't have their own).</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS (BOTH TOPICS)          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q1</span><span class="q-text">Are <code>let</code> and <code>const</code> hoisted?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Yes, both are hoisted — but differently from <code>var</code>. They are allocated memory during the creation phase but placed in a separate memory space (Script scope) and remain in the <strong>Temporal Dead Zone</strong> until their declaration line is executed. Accessing them before that line throws <code>ReferenceError: Cannot access 'x' before initialization</code>. The error message itself proves they're hoisted — if they weren't, the error would say <code>x is not defined</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q2</span><span class="q-text">What is the Temporal Dead Zone?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The TDZ is the period between when a <code>let</code>/<code>const</code> variable is hoisted (scope entry) and when it is initialized with a value (the declaration line). During this time, the variable exists in memory but cannot be read, written, or even checked with <code>typeof</code>. Any access throws a ReferenceError. The TDZ exists to catch bugs — using variables before they're declared is almost always a mistake.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q3</span><span class="q-text">What are the differences between <code>var</code>, <code>let</code>, and <code>const</code>?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Scope:</strong> <code>var</code> is function-scoped; <code>let</code>/<code>const</code> are block-scoped. <strong>Hoisting:</strong> <code>var</code> hoists as <code>undefined</code>; <code>let</code>/<code>const</code> hoist into TDZ. <strong>Window:</strong> <code>var</code> attaches to <code>window</code>; <code>let</code>/<code>const</code> don't. <strong>Re-declaration:</strong> <code>var</code> allows re-declaration; <code>let</code>/<code>const</code> throw SyntaxError. <strong>Re-assignment:</strong> <code>var</code> and <code>let</code> allow; <code>const</code> throws TypeError. <strong>Initialization:</strong> <code>const</code> must be initialized at declaration; <code>var</code>/<code>let</code> can be declared separately.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q4</span><span class="q-text">What is a Block in JavaScript? What is Block Scope?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>A <strong>block</strong> is a set of statements grouped inside <code>{ }</code>. It's used where JS syntax expects a single statement (after <code>if</code>, <code>for</code>, <code>while</code>, etc.). <strong>Block scope</strong> means variables declared with <code>let</code>/<code>const</code> inside a block are only accessible within that block. They're stored in a separate "Block" memory space and cannot be accessed after the block ends. <code>var</code> ignores block scope entirely.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q5</span><span class="q-text">What is Shadowing? What is Illegal Shadowing?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Shadowing:</strong> When a variable in an inner scope has the same name as one in an outer scope, it "shadows" the outer variable. With <code>let</code>/<code>const</code>, the inner creates a new independent variable. With <code>var</code>, it actually modifies the outer variable (since var isn't block-scoped).</p>
+    <p><strong>Illegal Shadowing:</strong> You cannot shadow a <code>let</code> with a <code>var</code> in the same scope. <code>var</code> ignores the block and tries to exist in the same scope as <code>let</code>, causing a conflict → SyntaxError. However, shadowing <code>let</code> with <code>var</code> inside a <em>function</em> is legal because the function creates a new scope boundary.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q6</span><span class="q-text">Does <code>const</code> make objects immutable?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>No.</strong> <code>const</code> prevents <em>reassignment of the variable binding</em>, not mutation of the value. If a <code>const</code> holds an object or array, you can still modify its properties, add new ones, or push to the array. You just can't point the variable to a completely new object. To make an object truly immutable, use <code>Object.freeze()</code> — but even that is shallow (nested objects can still be mutated).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q7</span><span class="q-text">What is the difference between SyntaxError, ReferenceError, and TypeError?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>SyntaxError:</strong> Invalid code that can't be parsed. No code executes at all. Examples: duplicate <code>let</code> declaration, missing <code>const</code> initializer, invalid syntax.</p>
+    <p><strong>ReferenceError:</strong> Trying to access a variable that doesn't exist or is in the TDZ. Thrown during execution — code runs until the offending line.</p>
+    <p><strong>TypeError:</strong> A value is used in a way incompatible with its type. Examples: reassigning <code>const</code>, calling <code>undefined()</code>, accessing property of <code>null</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q8</span><span class="q-text">Can you use <code>typeof</code> on a variable in the TDZ?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>No.</strong> Unlike undeclared variables (where <code>typeof</code> safely returns <code>"undefined"</code>), using <code>typeof</code> on a <code>let</code>/<code>const</code> variable in the TDZ throws a <code>ReferenceError</code>. The TDZ is strict — any form of access is blocked.</p>
+    <div class="code-wrap">
+      <div class="code-label">typeof and TDZ</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> undeclaredVar); <span class="cm">// "undefined" — safe</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> x);              <span class="cm">// ReferenceError! x is in TDZ</span>
+<span class="kw">let</span> x = <span class="num">10</span>;</pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q9</span><span class="q-text">How do you shrink the Temporal Dead Zone to zero?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Declare and initialize all <code>let</code>/<code>const</code> variables <strong>at the very top</strong> of their scope. If the declaration is the first line, the TDZ is effectively zero lines long — the variable is immediately available after hoisting. This is considered a best practice to avoid TDZ-related errors.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q10</span><span class="q-text">Why were <code>let</code> and <code>const</code> introduced in ES6?</span></div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><code>var</code> had several problematic behaviors: no block scoping (variables leaked out of blocks), polluting the global object, allowing re-declarations (hiding bugs), and hoisting as <code>undefined</code> (causing silent failures). <code>let</code>/<code>const</code> were introduced to fix all of these: they provide block scoping, don't attach to <code>window</code>, prevent re-declarations, and the TDZ catches use-before-declaration bugs. <code>const</code> additionally prevents accidental reassignment.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INPUT/OUTPUT QUESTIONS                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 1</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(a);
+<span class="fn">console</span>.<span class="fn">log</span>(b);
+<span class="kw">let</span> a = <span class="num">10</span>;
+<span class="kw">var</span> b = <span class="num">15</span>;</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">LINE 1</span><span class="err-text">ReferenceError: Cannot access 'a' before initialization</span></div>
+    <p style="margin-top:10px;"><code>let a</code> is in TDZ. Code stops at line 1. Line 2 never executes.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 2</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = <span class="num">10</span>;
+<span class="kw">let</span> a = <span class="num">100</span>;</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">ERROR</span><span class="err-text">SyntaxError: Identifier 'a' has already been declared</span></div>
+    <p style="margin-top:10px;">SyntaxError — no code runs at all. Duplicate <code>let</code> declaration in the same scope is forbidden.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 3</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = <span class="num">10</span>;
+<span class="kw">var</span> a = <span class="num">100</span>;</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">ERROR</span><span class="err-text">SyntaxError: Identifier 'a' has already been declared</span></div>
+    <p style="margin-top:10px;">Can't have <code>let</code> and <code>var</code> with the same name in the same scope. SyntaxError, no execution.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 4</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> b;
+b = <span class="num">10</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(b);</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">ERROR</span><span class="err-text">SyntaxError: Missing initializer in const declaration</span></div>
+    <p style="margin-top:10px;"><code>const</code> must be initialized at the time of declaration. Separate declaration and assignment is not allowed.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 5</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> b = <span class="num">100</span>;
+b = <span class="num">1000</span>;</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">ERROR</span><span class="err-text">TypeError: Assignment to constant variable</span></div>
+    <p style="margin-top:10px;">TypeError — not SyntaxError. The code is syntactically valid, but the operation (reassigning const) is invalid at runtime.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 6</span><span class="q-text">What will be the output? (Block scope)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre>{
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">let</span> b = <span class="num">20</span>;
+  <span class="kw">const</span> c = <span class="num">30</span>;
+}
+<span class="fn">console</span>.<span class="fn">log</span>(a);
+<span class="fn">console</span>.<span class="fn">log</span>(b);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">LINE 7</span><span class="out-text">10</span></div>
+    <div class="error-block"><span class="err-icon">LINE 8</span><span class="err-text">ReferenceError: b is not defined</span></div>
+    <p style="margin-top:10px;"><code>var a</code> leaks out of the block. <code>let b</code> and <code>const c</code> are confined to the block and destroyed when it ends.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 7</span><span class="q-text">What will be the output? (var shadowing)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">100</span>;
+{
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(a);
+}
+<span class="fn">console</span>.<span class="fn">log</span>(a);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">10 → 10</span></div>
+    <p style="margin-top:10px;"><code>var a</code> inside the block is NOT a new variable — it's the <strong>same</strong> global <code>a</code>. Both point to the same memory. The global value is permanently changed to 10.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 8</span><span class="q-text">What will be the output? (let shadowing)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> b = <span class="num">100</span>;
+{
+  <span class="kw">let</span> b = <span class="num">20</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(b);
+}
+<span class="fn">console</span>.<span class="fn">log</span>(b);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">20 → 100</span></div>
+    <p style="margin-top:10px;">Two separate <code>b</code> variables: one in Block scope (20), one in Script scope (100). The block's <code>b</code> shadows the outer <code>b</code> inside the block only.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 9</span><span class="q-text">What will be the output? (Illegal shadowing)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = <span class="num">20</span>;
+{
+  <span class="kw">var</span> a = <span class="num">20</span>;
+}</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">ERROR</span><span class="err-text">SyntaxError: Identifier 'a' has already been declared</span></div>
+    <p style="margin-top:10px;"><code>var</code> ignores the block and tries to exist in the same scope as the outer <code>let a</code> → conflict → SyntaxError. No code runs.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 10</span><span class="q-text">What will be the output? (Legal — var in function)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = <span class="num">20</span>;
+<span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">var</span> a = <span class="num">30</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(a);
+}
+<span class="fn">x</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(a);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">30 → 20</span></div>
+    <p style="margin-top:10px;">Inside a function, <code>var</code> is function-scoped so it doesn't conflict with the outer <code>let a</code>. Two separate variables in two separate scopes.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 11</span><span class="q-text">What will be the output? (const with object)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> obj = { x: <span class="num">1</span>, y: <span class="num">2</span> };
+obj.x = <span class="num">10</span>;
+obj.z = <span class="num">30</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(obj);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">{ x: 10, y: 2, z: 30 }</span></div>
+    <p style="margin-top:10px;"><code>const</code> prevents reassignment of the variable, NOT mutation of the object. Modifying and adding properties is allowed.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 12</span><span class="q-text">What will be the output? (for loop — var vs let)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">0</span>; i &lt; <span class="num">3</span>; i++) {
+  <span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(i), <span class="num">100</span>);
+}
+
+<span class="kw">for</span> (<span class="kw">let</span> j = <span class="num">0</span>; j &lt; <span class="num">3</span>; j++) {
+  <span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(j), <span class="num">200</span>);
+}</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">var loop</span><span class="out-text">3 → 3 → 3</span></div>
+    <div class="output-block"><span class="out-icon">let loop</span><span class="out-text">0 → 1 → 2</span></div>
+    <p style="margin-top:10px;"><strong>var:</strong> Only one <code>i</code> exists (function-scoped). By the time callbacks run, the loop is done and <code>i = 3</code>. All callbacks see the same <code>i</code>.</p>
+    <p><strong>let:</strong> Each iteration creates a <em>new</em> <code>j</code> in a new block scope. Each callback closes over its own <code>j</code>. This is the classic closure + setTimeout question (covered deeply in Topic 11).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 13</span><span class="q-text">What will be the output? (TDZ in blocks)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> x = <span class="num">10</span>;
+{
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+  <span class="kw">let</span> x = <span class="num">20</span>;
+}</pre>
+    </div>
+    <div class="error-block"><span class="err-icon">ERROR</span><span class="err-text">ReferenceError: Cannot access 'x' before initialization</span></div>
+    <p style="margin-top:10px;"><strong>Tricky!</strong> The inner <code>let x = 20</code> creates a new <code>x</code> in the block scope. This block-scoped <code>x</code> shadows the outer <code>x = 10</code>, so the outer <code>x</code> is NOT accessible inside this block. But the inner <code>x</code> is in its TDZ on line 3. Result: ReferenceError, not <code>10</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 14</span><span class="q-text">What will be the output? (Tricky — if block)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = <span class="num">1</span>;
+
+<span class="kw">if</span> (<span class="kw">true</span>) {
+  <span class="kw">let</span> a = <span class="num">2</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(a);
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(a);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">2 → 1</span></div>
+    <p style="margin-top:10px;">The <code>if</code> block creates a new block scope. <code>let a = 2</code> inside it is a separate variable. After the block ends, the outer <code>a = 1</code> is accessible again.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- QUICK REVISION                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Topic 8 — let, const &amp; TDZ</h3>
+  <ul>
+    <li><code>let</code>/<code>const</code> <strong>are hoisted</strong> but live in TDZ until initialization</li>
+    <li>TDZ = period from scope entry to declaration line — any access throws ReferenceError</li>
+    <li><code>var</code> → Global/function scope, on <code>window</code>; <code>let</code>/<code>const</code> → Block scope, Script memory</li>
+    <li><code>let</code>: no re-declare, can re-assign | <code>const</code>: no re-declare, no re-assign</li>
+    <li><code>const</code> must be initialized at declaration | <code>let</code> can be declared then assigned later</li>
+    <li><code>const</code> with objects/arrays: can modify properties/elements, can't reassign binding</li>
+    <li>SyntaxError → no code runs | ReferenceError → runtime | TypeError → runtime</li>
+    <li>Even <code>typeof</code> throws error in TDZ (unlike undeclared variables)</li>
+    <li>Best practice: <code>const</code> &gt; <code>let</code> &gt; avoid <code>var</code></li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>Topic 9 — Block Scope &amp; Shadowing</h3>
+  <ul>
+    <li>Block = <code>{ }</code>, groups statements, creates scope for <code>let</code>/<code>const</code></li>
+    <li><code>var</code> ignores blocks, leaks to function/global scope</li>
+    <li><code>let</code>/<code>const</code> in blocks → separate Block memory, destroyed when block ends</li>
+    <li><code>var</code> shadowing in block → modifies the outer variable (same memory!)</li>
+    <li><code>let</code>/<code>const</code> shadowing in block → creates new independent variable</li>
+    <li>Illegal: can't shadow <code>let</code> with <code>var</code> in same scope boundary</li>
+    <li>Legal: <code>var</code> shadowing <code>let</code> inside a <em>function</em> (different scope boundary)</li>
+    <li>Legal: <code>let</code> shadowing <code>var</code>, <code>let</code> shadowing <code>let</code> in nested block</li>
+    <li>TDZ applies in blocks too — inner <code>let x</code> shadows outer <code>x</code> and creates its own TDZ</li>
+    <li><code>var</code> in for loop: one shared variable | <code>let</code> in for loop: new variable per iteration</li>
+    <li>Arrow functions follow same scope rules as regular functions</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topic 7: Scope Chain</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 10: Closures</span>
+</div>
+
+</body>
+</html>

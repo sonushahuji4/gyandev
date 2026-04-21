@@ -1,0 +1,621 @@
+---
+title: "Scope Chain, Scope & Lexical Environment"
+description: How JavaScript finds variables — the lookup mechanism that powers everything from closures to modules. Lexical environments, scope chains, and why JS is lexically (not dynamically) scoped.
+excerpt: How JS finds variables — the lookup mechanism that powers closures and modules.
+course: javascript/course
+order: 6
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 14
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - scope
+  - scope-chain
+  - lexical-environment
+  - shadowing
+  - closures
+---
+
+## Core Concepts
+
+### What is Scope?
+
+**Scope** determines the *accessibility* (visibility) of variables and
+functions in different parts of your code. When you ask "is this variable
+accessible here?", you're asking about scope.
+
+In JavaScript, scope is directly tied to the **Lexical Environment**.
+
+### What is Lexical Environment?
+
+Every time an execution context is created, a **Lexical Environment** is
+also created. It consists of two things:
+
+- **Local Memory** — the variables and functions in the current execution
+  context
+- **Reference to the Lexical Environment of its parent** — a pointer to
+  the outer scope
+
+> **Lexical Environment = Local Memory + Reference to Parent's Lexical
+> Environment.** This reference chain is what makes the scope chain
+> possible.
+
+### What Does "Lexical" Mean?
+
+**Lexical** means "relating to the position in the source code." A
+function's lexical environment is determined by *where it is physically
+written* in the code, NOT where it is called from.
+
+```js title="Lexical positioning"
+function a() {        // a is lexically inside Global
+  function c() {      // c is lexically inside a
+    // logic here
+  }
+  c();
+}
+a();
+```
+
+Here, `c`'s lexical parent is `a`, and `a`'s lexical parent is the
+**Global scope**. This is fixed and doesn't change regardless of how or
+where these functions are called.
+
+### What is the Scope Chain?
+
+When JavaScript needs to find a variable, it follows this process:
+
+1. Look in the **current scope** (local memory of the current execution
+   context)
+2. If not found, go to the **parent's lexical environment** and look
+   there
+3. If still not found, go to the **grandparent's lexical environment**
+4. Keep going until you reach the **Global scope**
+5. If not found even in Global scope, throw
+   `ReferenceError: x is not defined`
+
+This chain of lookups from inner → outer → outer → ... → global → null is
+called the **Scope Chain** (also called the Lexical Environment Chain).
+
+<Callout type="tip" title="Key Insight">
+  The scope chain always goes *outward* (from inner to outer). An inner
+  function can access variables from all its outer scopes, but an outer
+  scope can **never** access an inner function's local variables. This
+  is a one-way relationship.
+</Callout>
+
+### Lexical Scope vs Dynamic Scope
+
+JavaScript uses **Lexical Scope** (also called Static Scope). This means
+the scope is determined by *where* a function is written in the source
+code, NOT by *where* or *how* it is called.
+
+**Lexical Scope (JavaScript uses this):** Scope is determined at **write
+time** based on the physical location of functions and variables in the
+code. A function always looks up variables in the scope where it was
+*defined*.
+
+**Dynamic Scope (JS does NOT use this):** Scope would be determined at
+**runtime** based on the call stack. A function would look up variables
+in the scope where it was *called from*. Languages like Bash use this.
+
+### The Proof — Lexical Scope in Action
+
+```js title="JavaScript — Lexical, NOT dynamic"
+var x = 10;
+
+function a() {
+  console.log(x);  // Where does a look for x?
+}
+
+function b() {
+  var x = 20;
+  a();  // a() is CALLED from b(), but DEFINED in global
+}
+
+b();  // Output: 10 (NOT 20!)
+```
+
+If JS used dynamic scope, `a()` would look in `b()`'s scope and find
+`x = 20`. But since JS uses lexical scope, `a()` looks in the scope
+where it was **defined** (global) and finds `x = 10`.
+
+### The Complete Example from Namaste JS
+
+```js title="Case 4 — Nested functions and scope chain"
+function a() {
+  var b = 10;
+  c();
+  function c() {
+    console.log(b); // 10 — found in parent a()'s scope
+  }
+}
+a();
+console.log(b); // ReferenceError: b is not defined
+```
+
+**Call Stack:** `[GEC, a(), c()]`. **Scope chain for c():** c's local →
+a's local (finds `b = 10`!) → global → null. **But** at the global
+level, `b` is NOT accessible because it's local to `a()`. The scope
+chain only goes *outward*, never inward.
+
+### Scope Chain Memory Model
+
+Here's how the lexical environment references look for the example
+above:
+
+```js title="Internal representation"
+// Call stack at the point when c() is executing:
+// [GEC, a(), c()]
+
+c()  = {
+  localMemory: {},
+  outerEnvRef: → a()     // c is lexically inside a
+}
+
+a()  = {
+  localMemory: { b: 10, c: fn },
+  outerEnvRef: → GEC     // a is lexically inside global
+}
+
+GEC  = {
+  localMemory: { a: fn },
+  outerEnvRef: → null    // global has no parent
+}
+```
+
+### Types of Scope in JavaScript
+
+- **Global Scope:** Variables declared outside any function or block.
+  Accessible everywhere.
+- **Function Scope:** Variables declared inside a function (with `var`,
+  `let`, or `const`). Accessible only within that function.
+- **Block Scope:** Variables declared with `let` or `const` inside a
+  block `{ }`. Accessible only within that block. (`var` is NOT block
+  scoped — covered in Topic 9.)
+- **Module Scope:** In ES modules, top-level variables are scoped to the
+  module file, not global.
+- **Lexical Scope:** The scope of a function is determined by where it's
+  defined in the code (same as static scope).
+
+<Callout type="insight" title="Important">
+  `var` is **function-scoped** (ignores blocks like if/for/while). `let`
+  and `const` are **block-scoped** (respects any `{ }`). This is a
+  critical difference covered in Topics 8 & 9.
+</Callout>
+
+### Scope Chain with Multiple Levels of Nesting
+
+```js title="Three-level nesting"
+var global = "I'm global";
+
+function outer() {
+  var outerVar = "I'm outer";
+
+  function middle() {
+    var middleVar = "I'm middle";
+
+    function inner() {
+      console.log(global);    // ✓ found in global scope
+      console.log(outerVar);  // ✓ found in outer's scope
+      console.log(middleVar); // ✓ found in middle's scope
+    }
+    inner();
+  }
+  middle();
+}
+outer();
+```
+
+`inner()` can access variables from **all** its ancestor scopes. The
+scope chain is: inner → middle → outer → global → null.
+
+<Callout type="warning" title="Common Interview Mistake">
+  Confusing "where a function is called" with "where it is defined." In
+  JavaScript, the scope chain is ALWAYS based on where the function is
+  *written* in the source code (lexical), NOT where it is invoked
+  (dynamic). This distinction is the foundation of closures (Topic 10).
+</Callout>
+
+## Interview Questions & Answers
+
+**Q1. What is Scope in JavaScript?**
+
+Scope is the current context of execution, which determines the
+visibility and accessibility of variables and functions. It defines
+where a variable can be "seen" and used. JavaScript has Global Scope,
+Function Scope, Block Scope (for let/const), and Module Scope. Scope in
+JS is directly related to the Lexical Environment.
+
+**Q2. What is a Lexical Environment?**
+
+A Lexical Environment is created every time an execution context is
+created. It consists of two parts: (1) the **local memory** (environment
+record) containing all variables and functions declared in that scope,
+and (2) a **reference to the parent's lexical environment** (outer
+environment reference). This parent reference creates a chain that
+enables variable lookup across scopes.
+
+**Q3. What is the Scope Chain?**
+
+The Scope Chain is the chain of lexical environments that JavaScript
+traverses when looking for a variable. When a variable is not found in
+the current scope's local memory, JS follows the outer environment
+reference to the parent scope, then the grandparent, and so on until it
+reaches the global scope. If the variable isn't found even there (the
+global scope's outer reference is `null`), a `ReferenceError` is thrown.
+This entire lookup path is the scope chain.
+
+**Q4. What is the difference between Lexical Scope and Dynamic Scope?**
+
+**Lexical (Static) Scope:** The scope is determined at *author time*
+based on where functions and variables are physically written in the
+source code. JavaScript uses lexical scoping. A function always accesses
+variables from the scope where it was *defined*, regardless of where
+it's called.
+
+**Dynamic Scope:** The scope would be determined at *runtime* based on
+the current call stack. A function would access variables from the scope
+where it was *called from*. Some languages like Bash and some Lisp
+dialects use dynamic scoping. JavaScript does NOT.
+
+**Q5. Can an outer function access variables from an inner function?**
+
+**No.** The scope chain is one-directional — it only goes *outward*
+(from inner to outer). An inner function CAN access variables from its
+outer scopes (via the scope chain), but an outer function or the global
+scope CANNOT access variables defined inside an inner function. Those
+inner variables only exist within the inner function's execution context
+and are destroyed when it returns.
+
+**Q6. What happens when a variable is not found in any scope?**
+
+If JavaScript traverses the entire scope chain — from the current scope
+all the way up to the global scope — and doesn't find the variable, it
+throws a `ReferenceError: [variable] is not defined`. The global scope's
+outer reference is `null`, which is the end of the chain. In non-strict
+mode, *assigning* to an undeclared variable would create an implicit
+global instead of throwing an error, which is why strict mode is
+recommended.
+
+**Q7. How many types of scope exist in modern JavaScript?**
+
+Modern JavaScript (ES6+) has four main types of scope:
+
+**1. Global Scope** — accessible everywhere. **2. Function Scope** —
+variables declared with `var`, `let`, or `const` inside a function.
+**3. Block Scope** — variables declared with `let` or `const` inside any
+`{ }` block (if/for/while/plain blocks). `var` ignores block scope.
+**4. Module Scope** — in ES modules (`import`/`export`), top-level
+variables are scoped to the module, not the global scope.
+
+**Q8. Why is understanding the scope chain important for closures?**
+
+Closures are a direct consequence of the scope chain and lexical
+scoping. When a function is returned from its parent function, it
+carries a reference to its parent's lexical environment. This means it
+can still access the parent's variables even after the parent has
+finished executing, because the scope chain reference is preserved.
+Without understanding the scope chain, closures seem like magic — but
+they're simply the scope chain persisting beyond the lifetime of the
+execution context. (Detailed in Topic 10.)
+
+**Q9. What is variable shadowing in the context of scope chain?**
+
+Variable shadowing occurs when a variable in an inner scope has the same
+name as a variable in an outer scope. The inner variable "shadows"
+(hides) the outer one within that scope. When the JS engine looks up the
+variable, it finds the inner one first and stops — it never reaches the
+outer one via the scope chain.
+
+```js title="Shadowing example"
+var x = 10;
+function test() {
+  var x = 20; // shadows global x
+  console.log(x); // 20 (inner x found first, stops looking)
+}
+test();
+console.log(x); // 10 (global x, untouched)
+```
+
+**Q10. Does the scope chain follow the call stack or the code structure?**
+
+The scope chain follows the **code structure (lexical structure)**, NOT
+the call stack. The scope chain is determined by where functions are
+physically written in the source code. The call stack tells you the
+*order of execution*, but the scope chain tells you *where to look for
+variables*. A function called from function `b()` does NOT inherit
+`b()`'s scope — it uses the scope from where it was *defined*.
+
+## Input/Output Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+function a() {
+  console.log(b);
+}
+var b = 10;
+a();
+```
+
+**Output:** `10`
+
+`a()` has no local `b`. Scope chain: a() → global. Finds `b = 10` in
+global scope.
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+function a() {
+  c();
+  function c() {
+    console.log(b);
+  }
+}
+var b = 10;
+a();
+```
+
+**Output:** `10`
+
+Scope chain for c(): c() → a() → global. `b` is not in c() or a(), but
+found in global scope = 10.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+function a() {
+  c();
+  function c() {
+    var b = 100;
+    console.log(b);
+  }
+}
+var b = 10;
+a();
+```
+
+**Output:** `100`
+
+c() has its own local `b = 100`. It's found immediately in the current
+scope — no need to traverse the scope chain. The global `b = 10` is
+shadowed.
+
+**I/O 4. What will be the output?**
+
+```js title="JavaScript"
+function a() {
+  var b = 10;
+  c();
+  function c() {
+    console.log(b);
+  }
+}
+a();
+console.log(b);
+```
+
+**Line 5:** `10`
+**Line 9:** `ReferenceError: b is not defined`
+
+c() finds `b = 10` in its parent a()'s scope. But at the global level,
+`b` doesn't exist — it's local to a() and was destroyed when a()
+returned. Scope chain goes outward only.
+
+**I/O 5. What will be the output? (Classic lexical scope question)**
+
+```js title="JavaScript"
+var x = 10;
+
+function a() {
+  console.log(x);
+}
+
+function b() {
+  var x = 20;
+  a();
+}
+
+b();
+```
+
+**Output:** `10`
+
+**Critical question!** `a()` is *called* from `b()`, but *defined* in
+the global scope. Its scope chain is: a() → global. NOT a() → b().
+Lexical scope = where it's written, not where it's called. Finds
+`x = 10` in global.
+
+**I/O 6. What will be the output? (Deep nesting)**
+
+```js title="JavaScript"
+var a = 1;
+
+function one() {
+  var b = 2;
+
+  function two() {
+    var c = 3;
+
+    function three() {
+      var d = 4;
+      console.log(a + b + c + d);
+    }
+    three();
+  }
+  two();
+}
+one();
+```
+
+**Output:** `10`
+
+Scope chain for three(): three() → two()(finds c=3) → one()(finds b=2) →
+global(finds a=1). d=4 is local. Sum = 1 + 2 + 3 + 4 = 10.
+
+**I/O 7. What will be the output? (Tricky — sibling functions)**
+
+```js title="JavaScript"
+function a() {
+  var x = 10;
+}
+
+function b() {
+  console.log(x);
+}
+
+a();
+b();
+```
+
+**Error:** `ReferenceError: x is not defined`
+
+Sibling functions cannot access each other's local variables. `a()`'s
+`x` was destroyed when `a()` returned. `b()`'s scope chain is:
+b() → global. No `x` found anywhere.
+
+**I/O 8. What will be the output? (Tricky — variable same name at multiple levels)**
+
+```js title="JavaScript"
+var x = "global";
+
+function outer() {
+  var x = "outer";
+
+  function inner() {
+    console.log(x);
+  }
+
+  inner();
+}
+
+outer();
+```
+
+**Output:** `"outer"`
+
+inner() has no local `x`. Scope chain: inner() → outer(). Finds
+`x = "outer"` in the immediate parent — stops searching. Never reaches
+global. This is shadowing.
+
+**I/O 9. What will be the output? (Tricky — returned function)**
+
+```js title="JavaScript"
+function outer() {
+  var x = 42;
+
+  function inner() {
+    console.log(x);
+  }
+
+  return inner;
+}
+
+var fn = outer();
+fn();
+```
+
+**Output:** `42`
+
+**This is a closure preview!** Even though `outer()` has finished
+executing and its execution context is destroyed, `inner` still carries
+a reference to its lexical environment (outer's scope). So when `fn()`
+is called, it can still access `x = 42`. The scope chain is preserved.
+(Deep dive in Topic 10.)
+
+**I/O 10. What will be the output? (Advanced — scope chain with let)**
+
+```js title="JavaScript"
+let x = 1;
+
+function outer() {
+  let y = 2;
+
+  function inner() {
+    let z = 3;
+    console.log(x, y, z);
+  }
+
+  inner();
+  console.log(x, y);
+  console.log(z);
+}
+
+outer();
+```
+
+**Line 8:** `1 2 3`
+**Line 11:** `1 2`
+**Line 12:** `ReferenceError: z is not defined`
+
+inner() accesses all three via scope chain. outer() can access x and y
+but NOT z (z is local to inner, destroyed when inner returned). Same
+rules apply for `let` — scope chain still works the same way.
+
+**I/O 11. What will be the output? (Tricky — IIFE and scope)**
+
+```js title="JavaScript"
+var x = 10;
+
+(function() {
+  console.log(x);
+  var x = 20;
+  console.log(x);
+})();
+```
+
+**Output:** `undefined → 20`
+
+The IIFE creates its own function scope. `var x = 20` is hoisted within
+the IIFE as `x = undefined`, shadowing the global `x = 10`. First log
+prints `undefined` (local hoisted x), second prints `20` (after
+assignment).
+
+**I/O 12. What will be the output? (Tricky — for loop scope with var)**
+
+```js title="JavaScript"
+for (var i = 0; i < 3; i++) {
+  // var i is function-scoped (or global here)
+}
+console.log(i);
+
+for (let j = 0; j < 3; j++) {
+  // let j is block-scoped to this for block
+}
+console.log(j);
+```
+
+**Line 4:** `3`
+**Line 9:** `ReferenceError: j is not defined`
+
+`var i` leaks out of the for block (it's function/global scoped, not
+block scoped). After the loop, `i = 3`. `let j` is block-scoped — it
+doesn't exist outside the for block, so accessing it throws
+ReferenceError.
+
+## Quick Revision — Cheat Sheet
+
+**Remember These Points**
+
+- **Scope** = where a variable is accessible in your code
+- **Lexical Environment** = local memory + reference to parent's lexical
+  environment
+- **Scope Chain** = chain of lexical environments (inner → outer → ... →
+  global → null)
+- **Lexical** = determined by where code is *written*, not where it's
+  *called*
+- JS uses **Lexical (Static) Scope**, NOT Dynamic Scope
+- Inner functions CAN access outer variables, but NOT vice versa
+- Sibling functions CANNOT access each other's local variables
+- Variable not found in entire chain → `ReferenceError`
+- Variable found in current scope → stops looking (shadowing)
+- `var` = function scoped; `let`/`const` = block scoped
+- Four scope types: Global, Function, Block, Module
+- Closures work because scope chain references are **preserved** even
+  after parent returns
+- IIFE creates its own function scope — local vars shadow global ones
+- `var` in a for loop leaks to outer scope; `let` stays in the block
+- The scope chain is based on code structure, NOT the call stack

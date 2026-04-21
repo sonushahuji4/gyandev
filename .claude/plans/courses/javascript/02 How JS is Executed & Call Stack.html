@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 2: How JS is Executed & Call Stack — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header .tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 34px;
+    font-weight: 800;
+    line-height: 1.2;
+    background: linear-gradient(135deg, #3b82f6 0%, #22d3ee 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 16px; font-weight: 300; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin: 44px 0 20px; font-size: 20px; font-weight: 700; color: var(--accent2);
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 24px;
+    background: var(--accent2); border-radius: 2px; flex-shrink: 0;
+  }
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .concept-card h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent);
+    margin-bottom: 10px; letter-spacing: 0.5px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 14.5px; color: var(--text); line-height: 1.75;
+  }
+  .concept-card ul { padding-left: 20px; margin-top: 8px; }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+  .highlight {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    padding: 2px 7px; border-radius: 4px; font-weight: 600;
+    font-size: 13.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--green);
+  }
+  .key-box strong { font-weight: 700; }
+  .warn-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%);
+    border-left: 3px solid var(--red);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--red);
+  }
+  .qa-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 20px; overflow: hidden;
+  }
+  .qa-q {
+    background: var(--q-bg); padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-q .q-badge {
+    background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .qa-q .q-text { font-size: 15px; font-weight: 600; color: #e2e8f0; line-height: 1.5; }
+  .qa-a { padding: 16px 24px; }
+  .qa-a .a-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .qa-a p { font-size: 14px; color: var(--text); line-height: 1.75; }
+  .qa-a p + p { margin-top: 8px; }
+  .code-wrap {
+    margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #21262d;
+  }
+  .code-label {
+    background: #161b22; padding: 6px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-dim); letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    line-height: 1.65; color: #e6edf3; margin: 0;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .output-block {
+    background: var(--output-bg); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .output-block .out-icon {
+    background: var(--green); color: #000; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .output-block .out-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green);
+  }
+  .diagram {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;
+  }
+  .phase-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+  }
+  .phase-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; position: relative; overflow: hidden;
+  }
+  .phase-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .phase-card.p1::before { background: var(--accent); }
+  .phase-card.p2::before { background: var(--green); }
+  .phase-card h4 {
+    font-size: 13px; font-weight: 700; margin-bottom: 10px; letter-spacing: 0.5px;
+  }
+  .phase-card.p1 h4 { color: var(--accent); }
+  .phase-card.p2 h4 { color: var(--green); }
+  .phase-card p, .phase-card li { font-size: 13.5px; line-height: 1.7; }
+  .phase-card ul { padding-left: 16px; margin-top: 6px; }
+  .phase-card li { margin-bottom: 4px; }
+  .step-list { counter-reset: steps; list-style: none; padding: 0; margin: 16px 0; }
+  .step-list li {
+    counter-increment: steps; position: relative; padding-left: 40px;
+    margin-bottom: 14px; font-size: 14px; line-height: 1.7;
+  }
+  .step-list li::before {
+    content: counter(steps); position: absolute; left: 0; top: 1px;
+    width: 26px; height: 26px; background: var(--accent2); color: #fff;
+    border-radius: 50%; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+  .nav-footer {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .nav-footer span { color: var(--text-dim); font-size: 14px; }
+  .alias-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .alias-tag {
+    background: rgba(167,139,250,0.1); border: 1px solid rgba(167,139,250,0.25);
+    color: var(--purple); font-size: 12px; padding: 4px 12px; border-radius: 20px;
+    font-weight: 600;
+  }
+  @media (max-width: 640px) {
+    .phase-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="tag">Topic 2 of 19</div>
+  <h1>How JS is Executed &amp; Call Stack</h1>
+  <p>Understanding the two-phase execution model and how the Call Stack orchestrates everything</p>
+</div>
+
+<!-- ─── CORE CONCEPTS ─── -->
+<div class="section-title">Core Concepts</div>
+
+<div class="concept-card">
+  <h3>The Two Phases of Execution</h3>
+  <p>When a JS program runs, a <span class="highlight">Global Execution Context (GEC)</span> is created. This creation happens in <strong>two distinct phases</strong>:</p>
+</div>
+
+<div class="phase-grid">
+  <div class="phase-card p1">
+    <h4>Phase 1 — Memory Creation</h4>
+    <p>JS scans the entire code (without executing) and allocates memory:</p>
+    <ul>
+      <li><strong>Variables</strong> → stored as <code>undefined</code></li>
+      <li><strong>Function declarations</strong> → stored with their <strong>entire code</strong></li>
+      <li>Function expressions / arrow functions → stored as <code>undefined</code> (they are variables)</li>
+    </ul>
+  </div>
+  <div class="phase-card p2">
+    <h4>Phase 2 — Code Execution</h4>
+    <p>JS goes through the code <strong>line by line</strong> and executes it:</p>
+    <ul>
+      <li>Variables get their <strong>actual values</strong> assigned</li>
+      <li>Function <strong>invocations</strong> trigger creation of a new execution context</li>
+      <li><code>return</code> sends value back and <strong>destroys</strong> the function's context</li>
+    </ul>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Detailed Walkthrough — Example Code</h3>
+  <div class="code-wrap">
+    <div class="code-label">JavaScript</div>
+    <pre><span class="kw">var</span> n = <span class="num">2</span>;
+<span class="kw">function</span> <span class="fn">square</span>(num) {
+  <span class="kw">var</span> ans = num * num;
+  <span class="kw">return</span> ans;
+}
+<span class="kw">var</span> square2 = <span class="fn">square</span>(n);
+<span class="kw">var</span> square4 = <span class="fn">square</span>(<span class="num">4</span>);</pre>
+  </div>
+  <p style="margin-top:12px;"><strong>Phase 1 — Memory Creation:</strong></p>
+  <ul style="padding-left:20px; margin: 8px 0;">
+    <li><code>n</code> → <span class="highlight">undefined</span></li>
+    <li><code>square</code> → <span class="highlight">{...entire function code...}</span></li>
+    <li><code>square2</code> → <span class="highlight">undefined</span></li>
+    <li><code>square4</code> → <span class="highlight">undefined</span></li>
+  </ul>
+  <p style="margin-top:12px;"><strong>Phase 2 — Code Execution:</strong></p>
+  <ol class="step-list">
+    <li>Line 1: <code>n</code> is assigned the value <strong>2</strong> (replaces undefined).</li>
+    <li>Lines 2–5: Function declaration — nothing to execute, already stored in memory.</li>
+    <li>Line 6: <code>square(n)</code> is invoked → a <strong>brand new execution context</strong> is created for this function call with its own Memory and Code phases. Inside it: <code>num = 2</code>, <code>ans = 4</code>. The <code>return</code> sends <strong>4</strong> back to <code>square2</code> and this function context is <strong>deleted</strong>.</li>
+    <li>Line 7: <code>square(4)</code> is invoked → another new execution context. <code>num = 4</code>, <code>ans = 16</code>. Returns <strong>16</strong> to <code>square4</code>, context deleted.</li>
+    <li>Program finished → GEC is destroyed and popped from Call Stack.</li>
+  </ol>
+</div>
+
+<div class="key-box">
+  <strong>Key Insight:</strong> Every function call creates a completely new execution context with its own two phases. When the function returns, its entire context is deleted.
+</div>
+
+<hr class="divider">
+
+<!-- ─── CALL STACK ─── -->
+<div class="section-title">The Call Stack</div>
+
+<div class="concept-card">
+  <h3>What is the Call Stack?</h3>
+  <p>The Call Stack is a <strong>stack data structure</strong> (LIFO — Last In, First Out) that JS uses to manage execution contexts. It keeps track of <em>where</em> the program is in the code.</p>
+  <ul>
+    <li>When the program starts → <strong>GEC is pushed</strong> onto the stack.</li>
+    <li>When a function is called → its <strong>new execution context is pushed</strong> on top.</li>
+    <li>When a function returns → its context is <strong>popped off</strong> the stack.</li>
+    <li>When the stack is empty → the program has finished.</li>
+  </ul>
+</div>
+
+<!-- Call Stack Diagram -->
+<div class="diagram">
+  <svg viewBox="0 0 640 320" xmlns="http://www.w3.org/2000/svg" font-family="Outfit, sans-serif">
+    <!-- Timeline labels -->
+    <text x="72" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#8891b0">Step 1</text>
+    <text x="208" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#8891b0">Step 2</text>
+    <text x="344" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#8891b0">Step 3</text>
+    <text x="480" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#8891b0">Step 4</text>
+    <text x="596" y="22" text-anchor="middle" font-size="11" font-weight="600" fill="#8891b0">Step 5</text>
+
+    <!-- Stack 1: GEC only -->
+    <rect x="22" y="34" width="100" height="200" rx="6" fill="none" stroke="#2a2f4a" stroke-width="1.5"/>
+    <rect x="28" y="192" width="88" height="36" rx="4" fill="#3b82f6" opacity="0.8"/>
+    <text x="72" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">GEC</text>
+    <text x="72" y="252" text-anchor="middle" font-size="10" fill="#8891b0">Program</text>
+    <text x="72" y="266" text-anchor="middle" font-size="10" fill="#8891b0">starts</text>
+
+    <!-- Stack 2: GEC + square(n) -->
+    <rect x="158" y="34" width="100" height="200" rx="6" fill="none" stroke="#2a2f4a" stroke-width="1.5"/>
+    <rect x="164" y="192" width="88" height="36" rx="4" fill="#3b82f6" opacity="0.8"/>
+    <text x="208" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">GEC</text>
+    <rect x="164" y="150" width="88" height="36" rx="4" fill="#f59e0b" opacity="0.85"/>
+    <text x="208" y="173" text-anchor="middle" font-size="10" font-weight="600" fill="#000">square(n)</text>
+    <text x="208" y="252" text-anchor="middle" font-size="10" fill="#8891b0">square(n)</text>
+    <text x="208" y="266" text-anchor="middle" font-size="10" fill="#8891b0">called</text>
+
+    <!-- Stack 3: GEC (square(n) returned) -->
+    <rect x="294" y="34" width="100" height="200" rx="6" fill="none" stroke="#2a2f4a" stroke-width="1.5"/>
+    <rect x="300" y="192" width="88" height="36" rx="4" fill="#3b82f6" opacity="0.8"/>
+    <text x="344" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">GEC</text>
+    <text x="344" y="252" text-anchor="middle" font-size="10" fill="#8891b0">square(n)</text>
+    <text x="344" y="266" text-anchor="middle" font-size="10" fill="#22c55e">returned ✓</text>
+
+    <!-- Stack 4: GEC + square(4) -->
+    <rect x="430" y="34" width="100" height="200" rx="6" fill="none" stroke="#2a2f4a" stroke-width="1.5"/>
+    <rect x="436" y="192" width="88" height="36" rx="4" fill="#3b82f6" opacity="0.8"/>
+    <text x="480" y="215" text-anchor="middle" font-size="11" font-weight="600" fill="#fff">GEC</text>
+    <rect x="436" y="150" width="88" height="36" rx="4" fill="#a78bfa" opacity="0.85"/>
+    <text x="480" y="173" text-anchor="middle" font-size="10" font-weight="600" fill="#000">square(4)</text>
+    <text x="480" y="252" text-anchor="middle" font-size="10" fill="#8891b0">square(4)</text>
+    <text x="480" y="266" text-anchor="middle" font-size="10" fill="#8891b0">called</text>
+
+    <!-- Stack 5: Empty -->
+    <rect x="546" y="34" width="100" height="200" rx="6" fill="none" stroke="#2a2f4a" stroke-width="1.5" stroke-dasharray="5"/>
+    <text x="596" y="145" text-anchor="middle" font-size="11" fill="#ef4444" font-weight="600">Empty</text>
+    <text x="596" y="252" text-anchor="middle" font-size="10" fill="#8891b0">Program</text>
+    <text x="596" y="266" text-anchor="middle" font-size="10" fill="#ef4444">finished</text>
+
+    <!-- Arrows -->
+    <path d="M128 140 L152 140" stroke="#8891b0" stroke-width="1" marker-end="url(#arrowhead)"/>
+    <path d="M264 140 L288 140" stroke="#8891b0" stroke-width="1" marker-end="url(#arrowhead)"/>
+    <path d="M400 140 L424 140" stroke="#8891b0" stroke-width="1" marker-end="url(#arrowhead)"/>
+    <path d="M536 140 L540 140" stroke="#8891b0" stroke-width="1" marker-end="url(#arrowhead)"/>
+    <defs>
+      <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#8891b0"/>
+      </marker>
+    </defs>
+
+    <!-- Bottom label -->
+    <text x="320" y="300" text-anchor="middle" font-size="12" font-weight="600" fill="#3b82f6">Call Stack Visualization (LIFO — Last In, First Out)</text>
+  </svg>
+</div>
+
+<div class="concept-card">
+  <h3>Other Names for Call Stack</h3>
+  <p>You might hear any of these in an interview — they all refer to the same thing:</p>
+  <div class="alias-tags">
+    <span class="alias-tag">Execution Context Stack</span>
+    <span class="alias-tag">Program Stack</span>
+    <span class="alias-tag">Control Stack</span>
+    <span class="alias-tag">Runtime Stack</span>
+    <span class="alias-tag">Machine Stack</span>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Stack Overflow</h3>
+  <p>If functions keep getting pushed onto the call stack without returning (e.g., infinite recursion), the stack exceeds its maximum size and throws a <span class="highlight">RangeError: Maximum call stack size exceeded</span>. This is called a <strong>Stack Overflow</strong>.</p>
+  <div class="code-wrap">
+    <div class="code-label">Example — Infinite Recursion</div>
+    <pre><span class="kw">function</span> <span class="fn">boom</span>() {
+  <span class="fn">boom</span>(); <span class="cm">// calls itself forever</span>
+}
+<span class="fn">boom</span>();
+<span class="cm">// RangeError: Maximum call stack size exceeded</span></pre>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Important:</strong> The Call Stack has no timer. It doesn't wait for anything. Whatever is pushed onto it gets executed immediately. This is why setTimeout callbacks don't run inside the call stack directly — they go through the callback queue and event loop (covered in Topic 15).
+</div>
+
+<hr class="divider">
+
+<!-- ─── INTERVIEW QUESTIONS ─── -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<!-- Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What happens when a JavaScript program is executed?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>When a JS program runs, a <strong>Global Execution Context (GEC)</strong> is created and pushed onto the <strong>Call Stack</strong>. The GEC goes through two phases: the <strong>Memory Creation Phase</strong> (where variables are initialized as <code>undefined</code> and function declarations are stored entirely) and the <strong>Code Execution Phase</strong> (where code runs line by line, values are assigned, and function calls create new execution contexts).</p>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">Explain the Memory Creation Phase with an example.</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">10</span>;
+<span class="kw">function</span> <span class="fn">add</span>(x, y) { <span class="kw">return</span> x + y; }
+<span class="kw">var</span> result = <span class="fn">add</span>(a, <span class="num">5</span>);</pre>
+    </div>
+    <p>During the memory creation phase, JS scans the entire code without executing anything. It allocates: <code>a → undefined</code>, <code>add → { entire function code }</code>, <code>result → undefined</code>. No values are assigned yet — that happens in Phase 2. This is why hoisting works: functions are already stored before any code runs.</p>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">What is the Call Stack in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The Call Stack is a <strong>LIFO (Last In, First Out)</strong> data structure that keeps track of function calls and execution contexts. When the program starts, the GEC is pushed. Each function call pushes a new context on top. When a function finishes (via <code>return</code> or end of code), its context is popped off. The program ends when the stack is empty. It is also known as Execution Context Stack, Program Stack, Control Stack, Runtime Stack, or Machine Stack.</p>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">What happens when a function is invoked in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>A <strong>brand new execution context</strong> is created for that function and pushed onto the Call Stack. This new context has its own Memory and Code phases. The function's parameters and local variables are allocated in its memory space. The code inside the function runs line by line. When a <code>return</code> statement is hit, the return value is sent back to the calling context, and the function's execution context is <strong>completely deleted</strong> from the stack.</p>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">What is a Stack Overflow? How does it happen?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>A Stack Overflow occurs when the Call Stack exceeds its maximum size. This typically happens with <strong>infinite recursion</strong> — a function calling itself without a proper base case. Each call pushes a new context, and since none ever return, the stack grows until the engine throws a <code>RangeError: Maximum call stack size exceeded</code>. The exact limit varies by browser (Chrome's V8 typically allows ~10,000–15,000 frames).</p>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">What is the role of the <code>return</code> keyword in the context of execution contexts?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The <code>return</code> keyword does two things: (1) it sends a value back to the line where the function was called, and (2) it signals the JS engine to <strong>delete the current function's execution context</strong> and pop it off the Call Stack. Control then returns to the calling execution context. If a function has no explicit return, it implicitly returns <code>undefined</code>.</p>
+  </div>
+</div>
+
+<!-- Q7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q7</span>
+    <span class="q-text">Can you have nested execution contexts? How deep can they go?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Yes. Every function call creates a new execution context, and if that function calls another function, yet another context is created on top. They can nest as deep as the Call Stack allows. For example: <code>a()</code> calls <code>b()</code> which calls <code>c()</code> → the stack would be <code>[GEC, a(), b(), c()]</code>. When <code>c()</code> returns, it's popped, then <code>b()</code>, then <code>a()</code>, and finally GEC is removed when the program ends.</p>
+  </div>
+</div>
+
+<!-- Q8 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q8</span>
+    <span class="q-text">What happens to the Global Execution Context when the program finishes?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Once all the code has been executed and all function calls have returned, the GEC is <strong>popped off the Call Stack</strong> and destroyed. At this point the Call Stack is empty and the program has finished execution. In a browser, the window and its global scope remain alive (the tab is still open), but the GEC for that particular script is done.</p>
+  </div>
+</div>
+
+<!-- Q9 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q9</span>
+    <span class="q-text">Why does JavaScript need a Call Stack?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>JavaScript is single-threaded, so it needs a mechanism to manage which function is currently running and where to return after a function finishes. The Call Stack provides this by maintaining the <strong>order of execution</strong>. Without it, JS wouldn't know which function to resume after a nested call returns, or where to send a return value.</p>
+  </div>
+</div>
+
+<!-- Q10 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q10</span>
+    <span class="q-text">What is the difference between Global Execution Context and Function Execution Context?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Global Execution Context (GEC):</strong> Created once when the program starts. Contains global variables and functions. The <code>this</code> keyword points to the <code>window</code> object (in browsers). It sits at the bottom of the Call Stack.</p>
+    <p><strong>Function Execution Context (FEC):</strong> Created every time a function is invoked. Contains the function's local variables, parameters, and arguments. Has its own <code>this</code> binding (depends on how the function is called). It's pushed on top of the current stack and popped when the function returns.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── INPUT/OUTPUT QUESTIONS ─── -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<!-- IO Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output? Trace the call stack.</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> n = <span class="num">2</span>;
+<span class="kw">function</span> <span class="fn">square</span>(num) {
+  <span class="kw">var</span> ans = num * num;
+  <span class="kw">return</span> ans;
+}
+<span class="kw">var</span> square2 = <span class="fn">square</span>(n);
+<span class="kw">var</span> square4 = <span class="fn">square</span>(<span class="num">4</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(square2);
+<span class="fn">console</span>.<span class="fn">log</span>(square4);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">4, 16</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Call Stack Trace:</strong> [GEC] → [GEC, square(2)] → square returns 4, popped → [GEC] → [GEC, square(4)] → square returns 16, popped → [GEC] → GEC logs 4, 16 → GEC popped → empty.</p>
+  </div>
+</div>
+
+<!-- IO Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"a start"</span>);
+  <span class="fn">b</span>();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"a end"</span>);
+}
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"b start"</span>);
+  <span class="fn">c</span>();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"b end"</span>);
+}
+<span class="kw">function</span> <span class="fn">c</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"c"</span>);
+}
+<span class="fn">a</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">a start → b start → c → b end → a end</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Stack:</strong> [GEC] → [GEC, a()] prints "a start" → [GEC, a(), b()] prints "b start" → [GEC, a(), b(), c()] prints "c" → c() popped → [GEC, a(), b()] prints "b end" → b() popped → [GEC, a()] prints "a end" → a() popped → [GEC] → done.</p>
+  </div>
+</div>
+
+<!-- IO Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">multiply</span>(x, y) {
+  <span class="kw">return</span> x * y;
+}
+<span class="kw">function</span> <span class="fn">square</span>(n) {
+  <span class="kw">return</span> <span class="fn">multiply</span>(n, n);
+}
+<span class="kw">function</span> <span class="fn">printSquare</span>(n) {
+  <span class="kw">var</span> result = <span class="fn">square</span>(n);
+  <span class="fn">console</span>.<span class="fn">log</span>(result);
+}
+<span class="fn">printSquare</span>(<span class="num">5</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">25</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Stack at deepest point:</strong> [GEC, printSquare(5), square(5), multiply(5,5)]. multiply returns 25 to square, square returns 25 to printSquare, which logs 25.</p>
+  </div>
+</div>
+
+<!-- IO Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output? (Tricky — return value)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">foo</span>() {
+  <span class="kw">var</span> x = <span class="num">10</span>;
+  <span class="kw">return</span>;
+  <span class="kw">var</span> y = <span class="num">20</span>;
+}
+<span class="kw">var</span> result = <span class="fn">foo</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(result);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined</span>
+    </div>
+    <p style="margin-top:10px;">The <code>return;</code> without a value returns <code>undefined</code>. Everything after the return statement (<code>var y = 20</code>) is <strong>unreachable code</strong> — it never executes. The execution context for <code>foo()</code> is destroyed after the return.</p>
+  </div>
+</div>
+
+<!-- IO Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output? (Tricky — no explicit return)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">greet</span>(name) {
+  <span class="kw">var</span> msg = <span class="str">"Hello "</span> + name;
+  <span class="fn">console</span>.<span class="fn">log</span>(msg);
+}
+<span class="kw">var</span> x = <span class="fn">greet</span>(<span class="str">"Akshay"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">Hello Akshay → undefined</span>
+    </div>
+    <p style="margin-top:10px;">The function <code>greet</code> logs "Hello Akshay" but has <strong>no return statement</strong>, so it implicitly returns <code>undefined</code>. Therefore <code>x</code> is <code>undefined</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will happen here?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">recurse</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"running"</span>);
+  <span class="fn">recurse</span>();
+}
+<span class="fn">recurse</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"running" printed many times → RangeError: Maximum call stack size exceeded</span>
+    </div>
+    <p style="margin-top:10px;">Each call to <code>recurse()</code> pushes a new execution context onto the Call Stack without ever popping one off (no base case, no return). The stack overflows. "running" prints thousands of times before the engine throws the error.</p>
+  </div>
+</div>
+
+<!-- IO Q7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What is the value of <code>a</code> and <code>b</code> at each stage?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">2</span>;
+<span class="kw">var</span> b = <span class="num">3</span>;
+
+<span class="kw">function</span> <span class="fn">swap</span>() {
+  <span class="kw">var</span> temp = a;
+  a = b;
+  b = temp;
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Before:"</span>, a, b);
+<span class="fn">swap</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"After:"</span>, a, b);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">Before: 2 3 → After: 3 2</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Memory Phase:</strong> a=undefined, b=undefined, swap=fn. <strong>Execution:</strong> a=2, b=3. swap() is called — a new context is created. Inside swap, <code>temp</code> is a local variable. But <code>a</code> and <code>b</code> are accessed from the global scope (no local declaration with var inside swap), so the global values are swapped.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── QUICK REVISION ─── -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Remember These Points</h3>
+  <ul>
+    <li>JS creates a <strong>Global Execution Context</strong> when the program runs</li>
+    <li><strong>Two phases:</strong> Memory Creation (scan &amp; allocate) → Code Execution (run line by line)</li>
+    <li>Variables → <code>undefined</code> in Phase 1; functions → entire code in Phase 1</li>
+    <li>Every function <strong>invocation</strong> creates a new execution context</li>
+    <li><code>return</code> = send value back + delete the function's execution context</li>
+    <li>No explicit return → implicitly returns <code>undefined</code></li>
+    <li>Call Stack = LIFO stack managing execution contexts</li>
+    <li>GEC is always at the <strong>bottom</strong> of the stack</li>
+    <li>Stack Overflow = too many contexts pushed without popping (infinite recursion)</li>
+    <li>Call Stack has <strong>no timer</strong> — it executes whatever is pushed immediately</li>
+    <li>Other names: Execution Context Stack, Program Stack, Control Stack, Runtime Stack, Machine Stack</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topic 1: Execution Context</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 3: Hoisting</span>
+</div>
+
+</body>
+</html>

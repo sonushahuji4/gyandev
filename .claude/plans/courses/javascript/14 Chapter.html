@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Callbacks & Promises — Complete Deep Dive with Diagrams</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;--text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;--orange:#fb923c;--code-bg:#0d1117;--q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);--output-bg:#0f1a14;--error-bg:#1a0f0f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--orange);color:#000;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:28px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#fb923c 0%,#f59e0b 40%,#22c55e 70%,#3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .st{display:flex;align-items:center;gap:12px;margin:52px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .st::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .td{margin:64px 0 0;padding:24px 0 0;border-top:3px solid var(--purple)}
+  .td h2{font-size:26px;font-weight:800;background:linear-gradient(135deg,#a78bfa 0%,#3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .td p{color:var(--text-dim);font-size:15px}
+  .c{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .c h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .c p,.c li{font-size:14.5px;color:var(--text);line-height:1.8}
+  .c ul,.c ol{padding-left:20px;margin-top:8px}
+  .c li{margin-bottom:8px}
+  .c li::marker{color:var(--accent)}
+  .hl{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .why{background:linear-gradient(135deg,rgba(167,139,250,0.08) 0%,rgba(167,139,250,0.03) 100%);border-left:3px solid var(--purple);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--purple);line-height:1.8}
+  .why strong{font-weight:700;color:#c4b5fd}
+  .key{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green);line-height:1.8}
+  .key strong{font-weight:700}
+  .warn{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red);line-height:1.8}
+  .info{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2);line-height:1.8}
+  .qa{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .b{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .t{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .l{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.8}
+  .qa-a p+p{margin-top:10px}
+  .cw{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .cl{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .ob{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .ob .oi{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .ob .ot{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:40px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center}
+  .nav-footer span{font-size:14px;color:var(--green);font-weight:700}
+  .diagram{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0;overflow-x:auto}
+  .flow{display:flex;align-items:center;gap:0;margin:12px 0;flex-wrap:wrap}
+  .flow-box{padding:10px 16px;border-radius:8px;font-size:13px;font-weight:600;text-align:center;min-width:100px;line-height:1.4}
+  .flow-arrow{color:var(--text-dim);font-size:20px;padding:0 4px;flex-shrink:0}
+  .fb-blue{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:var(--accent2)}
+  .fb-green{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:var(--green)}
+  .fb-red{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--red)}
+  .fb-orange{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--accent)}
+  .fb-purple{background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:var(--purple)}
+  .fb-gray{background:rgba(136,145,176,0.12);border:1px solid rgba(136,145,176,0.3);color:var(--text-dim)}
+  .vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  .vs-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden}
+  .vs-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .vs-card.bad::before{background:var(--red)}
+  .vs-card.good::before{background:var(--green)}
+  .vs-card h4{font-size:14px;font-weight:700;margin-bottom:8px}
+  .vs-card.bad h4{color:var(--red)}
+  .vs-card.good h4{color:var(--green)}
+  .vs-card p{font-size:13px;line-height:1.65}
+  @media(max-width:700px){.vs-grid{grid-template-columns:1fr}.header h1{font-size:22px}.flow{gap:4px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Episodes 20 &amp; 21 — Deep Dive</div>
+  <h1>Callbacks &amp; Promises — From Problem to Solution</h1>
+  <p>Understanding why callbacks break, how promises fix it, and how to explain it in an interview with confidence</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- EPISODE 20: CALLBACKS                               -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Episode 20 — Callbacks: The Good, The Bad &amp; The Ugly</div>
+
+<div class="c">
+  <h3>First, remember: JavaScript waits for nobody</h3>
+  <p>JavaScript is a <strong>synchronous, single-threaded</strong> language. It has one call stack and executes one thing at a time. It runs through your code line by line and does NOT wait for anything.</p>
+  <div class="cw"><div class="cl">JS runs top to bottom without waiting</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"JavaScript"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Season 2"</span>);
+<span class="cm">// Namaste → JavaScript → Season 2  (instantly, no delay)</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this matters:</strong> Since JS doesn't wait, how do we handle things that take time — like API calls, file reads, or database queries? We can't just pause the engine. The answer is <strong>callbacks</strong> — we give JS a function to call <em>later</em>, when the async work is done. This is the fundamental reason callbacks exist.
+</div>
+
+<div class="c">
+  <h3>The Good Part — Callbacks Enable Async Programming</h3>
+  <p>Without callbacks, we couldn't do anything asynchronous in JavaScript. Callbacks are the foundation that everything else (Promises, async/await) is built on.</p>
+  <div class="cw"><div class="cl">Callback delays execution until later</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste"</span>);
+
+<span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"JavaScript"</span>); <span class="cm">// runs AFTER 5 seconds</span>
+}, <span class="num">5000</span>);
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Season 2"</span>);
+<span class="cm">// Namaste → Season 2 → (5 sec later) → JavaScript</span></pre>
+  </div>
+  <p style="margin-top:10px;">JS doesn't wait for setTimeout. It registers the callback with the Web API timer and moves to the next line. After 5 seconds, the callback is pushed to the call stack via the event loop.</p>
+</div>
+
+<div class="key">
+  <strong>Key insight:</strong> Async programming in JavaScript exists <em>because</em> callbacks exist. Every setTimeout, every event listener, every API call uses callbacks. They are the mechanism that bridges synchronous JS with the asynchronous browser world.
+</div>
+
+<hr class="divider">
+
+<div class="st">The Bad Part 1 — Callback Hell (Pyramid of Doom)</div>
+
+<div class="c">
+  <h3>The E-Commerce Scenario</h3>
+  <p>Imagine building an e-commerce checkout. The steps are:</p>
+  <div class="flow">
+    <div class="flow-box fb-blue">Create Order</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-orange">Proceed to Payment</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-purple">Show Summary</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-green">Update Wallet</div>
+  </div>
+  <p style="margin-top:10px;">Each step <strong>depends on the previous one</strong>. You can't pay before the order exists. You can't show summary before payment is done. These are <strong>sequential async dependencies</strong>.</p>
+</div>
+
+<div class="c">
+  <h3>How it looks with callbacks — the pyramid grows</h3>
+  <div class="cw"><div class="cl">❌ Callback Hell — each dependency nests deeper</div>
+    <pre><span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>, <span class="str">"kurta"</span>];
+
+api.createOrder(cart, <span class="kw">function</span>(orderId) {
+  api.proceedToPayment(orderId, <span class="kw">function</span>(paymentInfo) {
+    api.showOrderSummary(paymentInfo, <span class="kw">function</span>(balance) {
+      api.updateWallet(balance, <span class="kw">function</span>() {
+        <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"All done!"</span>);
+        <span class="cm">// ... and what if there are more steps?</span>
+      });
+    });
+  });
+});</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this is a problem:</strong> The code grows <strong>horizontally</strong> — each new dependency adds another level of nesting. With 4 steps it's already hard to read. Imagine 10 steps. This is called the <strong>Pyramid of Doom</strong> because the code looks like a triangle/pyramid when you look at the indentation. It's nearly impossible to debug, maintain, or add error handling to each step.
+</div>
+
+<!-- Visual: Callback Hell shape -->
+<div class="diagram">
+  <p style="font-size:13px;color:var(--text-dim);margin-bottom:10px;font-weight:600;">What Callback Hell looks like — the pyramid shape:</p>
+  <pre style="background:transparent;padding:0;color:var(--red);font-size:12px;line-height:1.5;">createOrder(cart, function(orderId) {
+    proceedToPayment(orderId, function(paymentInfo) {
+        showOrderSummary(paymentInfo, function(balance) {
+            updateWallet(balance, function() {
+                sendConfirmation(function() {
+                    logAnalytics(function() {
+                        // 😵 6 levels deep...
+                    });
+                });
+            });
+        });
+    });
+});</pre>
+  <p style="font-size:12px;color:var(--text-dim);margin-top:8px;">See how it expands to the right? Each new step adds indentation. This is why it's called Pyramid of Doom.</p>
+</div>
+
+<hr class="divider">
+
+<div class="st">The Bad Part 2 — Inversion of Control</div>
+
+<div class="c">
+  <h3>This is the BIGGER problem — and most people miss it</h3>
+  <p>Callback hell is ugly, but the <em>real</em> danger is something deeper: <span class="hl">Inversion of Control</span>.</p>
+  <div class="cw"><div class="cl">Look at this carefully</div>
+    <pre>api.createOrder(cart, <span class="kw">function</span>() {
+  api.proceedToPayment();  <span class="cm">// 💰 THIS HANDLES REAL MONEY</span>
+});</pre>
+  </div>
+  <p style="margin-top:10px;">We are <strong>giving</strong> the <code>proceedToPayment</code> function to <code>createOrder</code> and <strong>blindly trusting</strong> that:</p>
+  <ul>
+    <li>createOrder will actually call it</li>
+    <li>createOrder will call it <strong>only once</strong> (not twice — double charge!)</li>
+    <li>createOrder will call it at the <strong>right time</strong></li>
+    <li>createOrder will pass the <strong>correct data</strong></li>
+    <li>createOrder won't silently fail and <strong>never call it</strong></li>
+  </ul>
+</div>
+
+<div class="warn">
+  <strong>Why this is dangerous:</strong> We've handed the <em>control</em> of our critical code (payment!) to someone else's function. If <code>createOrder</code> was written by another developer, or is from a third-party library — we have ZERO guarantee about how or when our callback will be called. The control has been <strong>inverted</strong>: instead of us controlling when payment happens, we're depending on someone else to trigger it. This is called <strong>Inversion of Control</strong>.
+</div>
+
+<div class="vs-grid">
+  <div class="vs-card bad">
+    <h4>❌ With Callbacks — We PASS our function</h4>
+    <p>"Hey <code>createOrder</code>, here's my payment function. Please call it when you're done. I'm trusting you completely."</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--text-dim);">We've GIVEN AWAY control. What if it calls twice? Never? With wrong data?</p>
+  </div>
+  <div class="vs-card good">
+    <h4>✅ With Promises — We ATTACH our function</h4>
+    <p>"Hey <code>createOrder</code>, give me a promise. I'll decide what to do when the result is ready. I keep the control."</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--text-dim);">WE control the flow. Promise guarantees: called once, immutable result.</p>
+  </div>
+</div>
+
+<div class="why">
+  <strong>The key difference — "passing" vs "attaching":</strong> With callbacks, we <em>pass</em> our function INTO another function (giving away control). With promises, the other function gives us back an object (the promise), and WE <em>attach</em> our function to it. We never lose control. This subtle difference is what makes promises fundamentally better, and it's what interviewers want you to explain.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- EPISODE 21: PROMISES                                -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="td">
+  <h2>Episode 21 — Promises: The Solution</h2>
+  <p>How promises solve both callback hell AND inversion of control</p>
+</div>
+
+<div class="st">What is a Promise? — 3 Definitions (Use These in Interviews)</div>
+
+<div class="c">
+  <h3>Definition 1 — The Simple Version</h3>
+  <p>A Promise is a <strong>placeholder object for a future value</strong>. It represents a value that we don't have yet, but will have eventually (or will know that we can't get it).</p>
+</div>
+
+<div class="c">
+  <h3>Definition 2 — The Technical Version</h3>
+  <p>A Promise is an <strong>object representing the eventual completion or failure</strong> of an asynchronous operation.</p>
+</div>
+
+<div class="c">
+  <h3>Definition 3 — The Akshay Saini Version</h3>
+  <p>A Promise object is a <strong>placeholder for a certain period of time</strong> until we receive a value from an asynchronous operation. It's a <strong>container for a future value</strong>.</p>
+</div>
+
+<div class="why">
+  <strong>Why all 3 definitions?</strong> Different interviewers expect different levels. The simple version shows you get the concept. The technical version shows you know the spec. The third version shows you understand the practical behavior — the promise starts empty and gets filled later.
+</div>
+
+<hr class="divider">
+
+<div class="st">How Promises Work — Step by Step</div>
+
+<div class="c">
+  <h3>Before: Callback Approach</h3>
+  <div class="cw"><div class="cl">❌ We PASS the callback — losing control</div>
+    <pre><span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>, <span class="str">"kurta"</span>];
+
+createOrder(cart, <span class="kw">function</span>(orderId) {
+  proceedToPayment(orderId);
+});
+<span class="cm">// We're TRUSTING createOrder to call our callback correctly</span>
+<span class="cm">// Inversion of Control — we've given away control 😰</span></pre>
+  </div>
+</div>
+
+<div class="c">
+  <h3>After: Promise Approach</h3>
+  <div class="cw"><div class="cl">✅ createOrder RETURNS a promise — we keep control</div>
+    <pre><span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>, <span class="str">"kurta"</span>];
+
+<span class="kw">const</span> promiseRef = createOrder(cart);
+<span class="cm">// promiseRef = { data: undefined }  ← immediately returned</span>
+<span class="cm">// JS doesn't wait — continues executing other code</span>
+
+<span class="cm">// After some time... createOrder finishes, orderId is ready</span>
+<span class="cm">// promiseRef = { data: "order_123" }  ← automatically filled!</span>
+
+<span class="cm">// We ATTACH our callback — we decide what happens next:</span>
+promiseRef.then(<span class="kw">function</span>(orderId) {
+  proceedToPayment(orderId);
+});
+<span class="cm">// ✅ WE control the flow. Promise guarantees it calls .then ONCE.</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>What changed fundamentally?</strong> The control is now in OUR hands. We're not handing our function to someone else. Instead, <code>createOrder</code> gives us back an object (the promise), and WE attach our function to it. The promise guarantees: (1) <code>.then</code> will be called only <strong>once</strong>, (2) the data inside is <strong>immutable</strong> once set — nobody can tamper with it, (3) the callback WILL run when data is ready. These guarantees are what callbacks couldn't provide.
+</div>
+
+<!-- Flow diagram: Promise lifecycle -->
+<div class="c">
+  <h3>Promise Lifecycle — Visual Flow</h3>
+  <div class="flow">
+    <div class="flow-box fb-gray">createOrder(cart)<br><small>called</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-orange">Promise returned<br><small>{data: undefined}</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-blue">JS continues<br><small>doesn't wait</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-purple">...time passes...<br><small>async work happens</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-green">Promise fulfilled<br><small>{data: "order_123"}</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-green">.then() fires<br><small>our callback runs</small></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Seeing a Real Promise — fetch() API</div>
+
+<div class="c">
+  <h3>fetch() returns a Promise — let's inspect it</h3>
+  <div class="cw"><div class="cl">Real API call with fetch</div>
+    <pre><span class="kw">const</span> URL = <span class="str">"https://api.github.com/users/alok722"</span>;
+<span class="kw">const</span> user = fetch(URL);
+
+<span class="fn">console</span>.<span class="fn">log</span>(user); <span class="cm">// Promise {&lt;pending&gt;}</span></pre>
+  </div>
+</div>
+
+<div class="c">
+  <h3>What's inside a Promise object?</h3>
+  <p>If you inspect a promise in Chrome DevTools, you'll see 3 properties:</p>
+  <ul>
+    <li><strong><code>[[Prototype]]</code></strong> — the Promise prototype (has .then, .catch, .finally methods)</li>
+    <li><strong><code>[[PromiseState]]</code></strong> — current state: <code>"pending"</code>, <code>"fulfilled"</code>, or <code>"rejected"</code></li>
+    <li><strong><code>[[PromiseResult]]</code></strong> — the result data. Initially <code>undefined</code>, later filled with the actual value (or error reason)</li>
+  </ul>
+</div>
+
+<div class="why">
+  <strong>Why <code>console.log(user)</code> shows "pending":</strong> When <code>fetch()</code> is called, it immediately returns a Promise in the <strong>pending</strong> state. JS doesn't wait for the API response — it moves to the next line and logs the promise. At that point, the HTTP request is still in flight. Later, when the response arrives, the PromiseState changes to "fulfilled" and PromiseResult gets the Response object. Chrome DevTools has a quirk: if you expand the logged promise, it might show "fulfilled" because Chrome updates the log retroactively.
+</div>
+
+<div class="c">
+  <h3>Consuming the Promise with .then</h3>
+  <div class="cw"><div class="cl">Attaching a callback to handle the result</div>
+    <pre><span class="kw">const</span> URL = <span class="str">"https://api.github.com/users/alok722"</span>;
+<span class="kw">const</span> user = fetch(URL);
+
+user.then(<span class="kw">function</span>(data) {
+  <span class="fn">console</span>.<span class="fn">log</span>(data);
+});
+<span class="cm">// When the API response arrives, our function is automatically called</span>
+<span class="cm">// with the Response object as 'data'</span></pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Promise States — The 3 Stages</div>
+
+<div class="flow">
+  <div class="flow-box fb-orange" style="min-width:150px"><strong>Pending</strong><br><small>Initial state<br>PromiseResult: undefined</small></div>
+  <span class="flow-arrow">→ success →</span>
+  <div class="flow-box fb-green" style="min-width:150px"><strong>Fulfilled</strong><br><small>Operation succeeded<br>PromiseResult: value</small></div>
+</div>
+<div class="flow" style="margin-top:-4px;">
+  <div class="flow-box" style="min-width:150px;visibility:hidden">hidden</div>
+  <span class="flow-arrow">→ failure →</span>
+  <div class="flow-box fb-red" style="min-width:150px"><strong>Rejected</strong><br><small>Operation failed<br>PromiseResult: error</small></div>
+</div>
+
+<div class="c">
+  <h3>Key Properties of Promises</h3>
+  <ul>
+    <li><strong>Immutable once settled:</strong> Once a promise is fulfilled or rejected, it CANNOT change state. Calling <code>resolve()</code> twice has no effect. This is the guarantee callbacks couldn't give us — no double calling.</li>
+    <li><strong>.then() is called exactly once:</strong> When the promise settles, each attached <code>.then</code> handler is called once. Not zero times, not twice. Exactly once.</li>
+    <li><strong>Result is immutable:</strong> Once the PromiseResult has data, it can't be changed or tampered with. You can pass the promise around safely — nobody can mutate the result.</li>
+  </ul>
+</div>
+
+<div class="why">
+  <strong>Why immutability solves Inversion of Control:</strong> With callbacks, we worried the callback might be called twice (double payment!), never called (order stuck), or called with wrong data. Promises make all these impossible: settled once (no double call), .then guaranteed to fire (always called), result locked (no tampering). Every fear we had with callbacks is addressed by these guarantees.
+</div>
+
+<hr class="divider">
+
+<div class="st">Promise Chaining — Solving Callback Hell</div>
+
+<div class="c">
+  <h3>Before: Callback Hell (horizontal growth)</h3>
+  <div class="cw"><div class="cl">❌ Pyramid of Doom</div>
+    <pre>createOrder(cart, <span class="kw">function</span>(orderId) {
+  proceedToPayment(orderId, <span class="kw">function</span>(paymentInfo) {
+    showOrderSummary(paymentInfo, <span class="kw">function</span>(balance) {
+      updateWallet(balance);
+    });
+  });
+});</pre>
+  </div>
+</div>
+
+<div class="c">
+  <h3>After: Promise Chaining (vertical, readable flow)</h3>
+  <div class="cw"><div class="cl">✅ Flat, readable chain</div>
+    <pre>createOrder(cart)
+  .then(<span class="kw">function</span>(orderId) {
+    <span class="kw">return</span> proceedToPayment(orderId);
+  })
+  .then(<span class="kw">function</span>(paymentInfo) {
+    <span class="kw">return</span> showOrderSummary(paymentInfo);
+  })
+  .then(<span class="kw">function</span>(balance) {
+    <span class="kw">return</span> updateWallet(balance);
+  })
+  .catch(<span class="kw">function</span>(err) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error at any step:"</span>, err);
+  });</pre>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>Common Pitfall — ALWAYS return in .then()!</strong> If you forget to <code>return</code> the promise from each <code>.then</code>, the next <code>.then</code> receives <code>undefined</code> instead of the actual data. The chain breaks silently. The rule: <strong>whatever you return from one .then becomes the input to the next .then.</strong>
+</div>
+
+<div class="c">
+  <h3>Cleaner with arrow functions</h3>
+  <div class="cw"><div class="cl">✅ Even cleaner — arrow functions auto-return</div>
+    <pre>createOrder(cart)
+  .then(orderId =&gt; proceedToPayment(orderId))
+  .then(paymentInfo =&gt; showOrderSummary(paymentInfo))
+  .then(balance =&gt; updateWallet(balance))
+  .catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error:"</span>, err));</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why chaining works:</strong> Each <code>.then()</code> returns a <strong>new promise</strong>. If your callback returns a value, the next <code>.then</code> gets that value. If your callback returns a promise, the chain <em>waits</em> for it to settle before moving to the next <code>.then</code>. This is why the code flows top-to-bottom instead of nesting — each step is at the same indentation level.
+</div>
+
+<!-- Visual: Chaining flow -->
+<div class="c">
+  <h3>Data Flow Through the Chain</h3>
+  <div class="flow">
+    <div class="flow-box fb-blue">createOrder(cart)<br><small>returns orderId</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-orange">proceedToPayment<br><small>receives orderId<br>returns paymentInfo</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-purple">showSummary<br><small>receives paymentInfo<br>returns balance</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-green">updateWallet<br><small>receives balance</small></div>
+  </div>
+  <p style="margin-top:10px;font-size:13px;color:var(--text-dim);">Each step's output becomes the next step's input. If any step fails → jumps directly to .catch()</p>
+</div>
+
+<div class="c">
+  <h3>Error Handling — .catch() catches errors from ANY step above it</h3>
+  <div class="cw"><div class="cl">One catch handles everything</div>
+    <pre>createOrder(cart)
+  .then(orderId =&gt; proceedToPayment(orderId))
+  .then(paymentInfo =&gt; showOrderSummary(paymentInfo))
+  .then(balance =&gt; updateWallet(balance))
+  .catch(err =&gt; {
+    <span class="cm">// If createOrder fails → caught here</span>
+    <span class="cm">// If proceedToPayment fails → caught here</span>
+    <span class="cm">// If showOrderSummary fails → caught here</span>
+    <span class="cm">// If updateWallet fails → caught here</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Something went wrong:"</span>, err.message);
+  })
+  .finally(() =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Cleanup — runs regardless of success/failure"</span>);
+  });</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why one catch works for everything:</strong> When any <code>.then</code> in the chain throws an error or returns a rejected promise, the chain <strong>skips all remaining .then handlers</strong> and jumps straight to the nearest <code>.catch</code>. It's like a try/catch block wrapped around the entire chain. With callbacks, you'd need separate error handling at EVERY nesting level — with promises, one <code>.catch</code> at the end handles all failures.
+</div>
+
+<hr class="divider">
+
+<div class="st">Creating Your Own Promise</div>
+
+<div class="c">
+  <h3>Building the createOrder function that returns a promise</h3>
+  <div class="cw"><div class="cl">Full implementation</div>
+    <pre><span class="kw">function</span> <span class="fn">createOrder</span>(cart) {
+  <span class="cm">// Return a new promise</span>
+  <span class="kw">return new</span> Promise(<span class="kw">function</span>(resolve, reject) {
+    <span class="cm">// Validate cart</span>
+    <span class="kw">if</span> (!cart.length) {
+      <span class="kw">const</span> err = <span class="kw">new</span> Error(<span class="str">"Cart is empty!"</span>);
+      reject(err); <span class="cm">// ← rejects the promise (failure path)</span>
+      <span class="kw">return</span>;
+    }
+
+    <span class="cm">// Simulate async order creation (e.g., API call)</span>
+    setTimeout(<span class="kw">function</span>() {
+      <span class="kw">const</span> orderId = <span class="str">"ORDER_"</span> + Math.floor(Math.random() * <span class="num">10000</span>);
+      resolve(orderId); <span class="cm">// ← fulfills the promise (success path)</span>
+    }, <span class="num">2000</span>);
+  });
+}
+
+<span class="cm">// Using it:</span>
+<span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>];
+
+createOrder(cart)
+  .then(orderId =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Order created:"</span>, orderId);
+    <span class="kw">return</span> orderId;
+  })
+  .catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(err.message));
+
+<span class="cm">// After 2 seconds: "Order created: ORDER_7342"</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>The anatomy explained:</strong> <code>new Promise</code> takes an <strong>executor function</strong> with two parameters: <code>resolve</code> (call when success) and <code>reject</code> (call when failure). The executor runs <strong>immediately</strong> (synchronously!). Inside, you do your async work. When it's done, call <code>resolve(value)</code> to fulfill the promise, or <code>reject(error)</code> to reject it. The consumers then use <code>.then</code> for success and <code>.catch</code> for failure.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS                                 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Interview Questions &amp; Answers</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q1</span><span class="t">What is a callback function?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>A callback function is a function passed as an argument to another function, to be executed at a later point. It's how JavaScript handles asynchronous operations — since JS is single-threaded and can't wait, it registers a callback with the environment (Web API, timer, etc.) and continues executing. When the async work is done, the callback is placed in the queue and eventually pushed to the call stack by the event loop. Callbacks are the foundation of async JS — setTimeout, event listeners, and API calls all use them.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q2</span><span class="t">What is Callback Hell? Why is it a problem?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>Callback Hell (or Pyramid of Doom) is a pattern where callbacks are nested inside callbacks, creating deeply indented, horizontally-growing code. It happens when multiple async operations depend on each other sequentially. It's a problem because: (1) the code is very hard to <strong>read</strong> — the logic is buried in nesting, (2) it's hard to <strong>maintain</strong> — adding/removing a step requires restructuring the entire nesting, (3) <strong>error handling</strong> is extremely difficult — you need try/catch at every level, and (4) it becomes nearly impossible to <strong>debug</strong> — you can't tell which callback threw an error.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q3</span><span class="t">What is Inversion of Control? Why is it dangerous?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>Inversion of Control happens when we pass a callback to another function and <strong>lose control</strong> over when, how, and how many times our callback is executed. The control of our critical code is now in someone else's hands. It's dangerous because: the callback might be called <strong>twice</strong> (double payment), <strong>never</strong> (order stuck), with <strong>wrong data</strong>, at the <strong>wrong time</strong>, or the parent function might <strong>swallow errors</strong> silently. We're blindly trusting external code with our critical business logic. Promises solve this by inverting the control back to us — we attach our callback to a promise object that WE own.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q4</span><span class="t">What is a Promise in JavaScript?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>A Promise is an object representing the <strong>eventual completion or failure</strong> of an asynchronous operation. It's a placeholder for a future value — initially in a "pending" state with no data, and eventually settling to either "fulfilled" (with a result value) or "rejected" (with an error reason). Promises solve two problems of callbacks: (1) <strong>Inversion of Control</strong> — instead of passing our function to someone else, the async function returns a promise and we attach our handler to it (we keep control), (2) <strong>Callback Hell</strong> — promise chaining with <code>.then()</code> keeps code flat and readable instead of deeply nested.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q5</span><span class="t">What is the difference between "passing" a callback and "attaching" a callback?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><strong>Passing a callback</strong> (callbacks approach): We give our function TO another function. The other function decides when/how to call it. We've given away control. Example: <code>createOrder(cart, myCallback)</code> — createOrder has full power over myCallback.</p>
+    <p><strong>Attaching a callback</strong> (promises approach): The other function returns a promise to US. We then attach our callback to that promise using <code>.then()</code>. WE decide what happens with the result. The promise guarantees it calls our handler exactly once. Example: <code>createOrder(cart).then(myCallback)</code> — we keep control.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q6</span><span class="t">Why are Promise objects immutable?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>Once a promise is settled (fulfilled or rejected), its state and result <strong>cannot be changed</strong>. This is by design for trust and safety. With callbacks, there was no guarantee that our callback wouldn't be called with different data or called multiple times. Promise immutability guarantees: (1) <code>resolve()</code>/<code>reject()</code> can only settle the promise <strong>once</strong> — a second call is ignored, (2) the result value can't be mutated after settlement, (3) we can pass the promise around (to other functions, components) without worrying that someone will tamper with the data inside. This is crucial for building reliable async systems.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q7</span><span class="t">What is Promise Chaining? What's the common mistake?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><strong>Promise Chaining</strong> is connecting multiple <code>.then()</code> calls where each step's output becomes the next step's input. Each <code>.then()</code> returns a new promise, so you can keep chaining. It solves callback hell by keeping code flat (vertical) instead of nested (horizontal).</p>
+    <p><strong>The common mistake:</strong> Forgetting to <code>return</code> from inside <code>.then()</code>. If you don't return, the next <code>.then</code> receives <code>undefined</code> instead of the data. Always return the value or promise from each <code>.then</code> to maintain the data flow through the chain.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q8</span><span class="t">What are the three states of a Promise?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><strong>Pending:</strong> Initial state. The async operation hasn't completed yet. <code>PromiseResult</code> is <code>undefined</code>.</p>
+    <p><strong>Fulfilled:</strong> The operation succeeded. <code>PromiseResult</code> contains the resolved value. <code>.then()</code> handlers are triggered.</p>
+    <p><strong>Rejected:</strong> The operation failed. <code>PromiseResult</code> contains the error/reason. <code>.catch()</code> handlers are triggered.</p>
+    <p>A promise is "settled" once it's fulfilled or rejected. Settlement is <strong>permanent</strong> — it can never go back to pending or change to the other settled state.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q9</span><span class="t">How does error handling work with promises vs callbacks?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><strong>Callbacks:</strong> Error handling is manual and per-level. Every nested callback needs its own error check. There's no standard pattern — some libraries use error-first callbacks (<code>function(err, data)</code>), others don't. Missing error handling at any level means silent failures.</p>
+    <p><strong>Promises:</strong> A single <code>.catch()</code> at the end of the chain catches errors from <em>any</em> step above it. When any <code>.then</code> throws or returns a rejected promise, the chain skips all remaining <code>.then</code>s and jumps to <code>.catch()</code>. <code>.finally()</code> runs regardless — for cleanup. This is similar to try/catch/finally but for async code.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q10</span><span class="t">Does the Promise constructor run synchronously or asynchronously?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>The executor function inside <code>new Promise((resolve, reject) => { ... })</code> runs <strong>synchronously</strong>! It executes immediately when the Promise is created. Only the <code>.then()</code>/<code>.catch()</code>/<code>.finally()</code> callbacks are asynchronous — they go to the microtask queue and run after the current synchronous code finishes. Also, calling <code>resolve()</code> does NOT stop execution of the remaining code inside the executor — code after <code>resolve()</code> still runs.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- OUTPUT QUESTIONS                                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Output-Based Interview Questions</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 1</span><span class="t">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);
+
+<span class="kw">const</span> p = <span class="kw">new</span> Promise((resolve) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Inside Promise"</span>);
+  resolve(<span class="str">"Done"</span>);
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"After resolve"</span>);
+});
+
+p.then(val =&gt; <span class="fn">console</span>.<span class="fn">log</span>(val));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"Start" → "Inside Promise" → "After resolve" → "End" → "Done"</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> Constructor runs synchronously (Start, Inside Promise). <code>resolve()</code> doesn't stop execution (After resolve). "End" is sync. "Done" is microtask (.then callback).</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 2</span><span class="t">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>);
+
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>), <span class="num">0</span>);
+
+Promise.resolve(<span class="str">"C"</span>).then(val =&gt; <span class="fn">console</span>.<span class="fn">log</span>(val));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"A" → "D" → "C" → "B"</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> Sync first (A, D). Then microtask queue (Promise: C). Then macrotask queue (setTimeout: B). Promises always have higher priority than setTimeout.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 3</span><span class="t">What will be the output? (Promise chain without return)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript — spot the bug</div>
+      <pre>Promise.resolve(<span class="num">1</span>)
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(val);
+    val + <span class="num">1</span>;  <span class="cm">// ← FORGOT to return!</span>
+  })
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(val);
+  });</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">1 → undefined</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> First .then logs 1 correctly. But <code>val + 1</code> is computed but NOT returned. Without <code>return</code>, the .then handler returns <code>undefined</code>. The next .then receives <code>undefined</code>. This is the most common promise chaining mistake.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 4</span><span class="t">What will be the output? (Error propagation)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre>Promise.resolve(<span class="num">1</span>)
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(val);
+    <span class="kw">throw new</span> Error(<span class="str">"Oops!"</span>);
+  })
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"This won't run"</span>);
+  })
+  .catch(err =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Caught:"</span>, err.message);
+  })
+  .then(() =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"After catch"</span>);
+  });</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">1 → "Caught: Oops!" → "After catch"</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> First .then logs 1 and throws. Second .then is SKIPPED (chain jumps to catch). Catch handles the error. IMPORTANT: .then AFTER .catch still runs! Catch returns a resolved promise (with undefined), so the chain continues.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 5</span><span class="t">What will be the output? (Double resolve)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> p = <span class="kw">new</span> Promise((resolve, reject) =&gt; {
+  resolve(<span class="str">"First"</span>);
+  resolve(<span class="str">"Second"</span>);  <span class="cm">// ← ignored?</span>
+  reject(<span class="str">"Error"</span>);    <span class="cm">// ← ignored?</span>
+});
+
+p.then(val =&gt; <span class="fn">console</span>.<span class="fn">log</span>(val));
+p.catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(err));</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"First"</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> A promise can only be settled ONCE. The first <code>resolve("First")</code> fulfills it. The second <code>resolve</code> and the <code>reject</code> are silently ignored — the promise is already settled. This is the immutability guarantee.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Quick Revision — Cheat Sheet</div>
+
+<div class="c">
+  <h3>Callbacks</h3>
+  <ul>
+    <li><strong>Good:</strong> Callbacks enable async programming in synchronous JS. Foundation of everything.</li>
+    <li><strong>Bad 1 — Callback Hell:</strong> Nested callbacks → horizontal pyramid → unreadable, unmaintainable.</li>
+    <li><strong>Bad 2 — Inversion of Control:</strong> Passing function to another function → lose control → no guarantee about when/how/how many times it runs.</li>
+    <li>Understanding these two problems is <strong>essential</strong> to understand why promises were created.</li>
+  </ul>
+</div>
+
+<div class="c">
+  <h3>Promises</h3>
+  <ul>
+    <li><strong>What:</strong> Object representing eventual completion/failure of async operation. Placeholder for future value.</li>
+    <li><strong>Solves Inversion of Control:</strong> Instead of PASSING callback → async function RETURNS promise → we ATTACH callback. Control stays with us.</li>
+    <li><strong>Solves Callback Hell:</strong> Promise chaining with <code>.then()</code> keeps code flat, readable, top-to-bottom.</li>
+    <li><strong>3 states:</strong> Pending → Fulfilled (success) / Rejected (failure). Settlement is permanent.</li>
+    <li><strong>Immutability:</strong> Once settled, can't change state. .then called exactly once. Result can't be tampered.</li>
+    <li><strong>Constructor runs synchronously.</strong> .then/.catch/.finally are microtasks (async).</li>
+    <li><strong>resolve() doesn't stop execution</strong> — code after it in the constructor still runs.</li>
+    <li><strong>Always return</strong> from .then() — otherwise next .then gets undefined.</li>
+    <li><strong>One .catch()</strong> at the end catches errors from any step above.</li>
+    <li><strong>.then after .catch</strong> still runs — catch returns a resolved promise.</li>
+    <li>"Passing" vs "Attaching" — the fundamental difference between callbacks and promises.</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span>Callbacks &amp; Promises — Complete Deep Dive Done!</span>
+</div>
+
+</body>
+</html>

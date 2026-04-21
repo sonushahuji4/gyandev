@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: call/apply/bind, Currying & Promises — With Intent & Reasoning</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;--text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;--orange:#fb923c;--code-bg:#0d1117;--q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);--output-bg:#0f1a14;--error-bg:#1a0f0f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--red);color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:28px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#ef4444 0%,#f59e0b 30%,#22c55e 60%,#3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .section-title{display:flex;align-items:center;gap:12px;margin:52px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .section-title::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .topic-divider{margin:64px 0 0;padding:24px 0 0;border-top:3px solid var(--purple)}
+  .topic-divider h2{font-size:26px;font-weight:800;background:linear-gradient(135deg,#a78bfa 0%,#3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .topic-divider p{color:var(--text-dim);font-size:15px}
+  .c{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .c h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .c p,.c li{font-size:14.5px;color:var(--text);line-height:1.8}
+  .c ul,.c ol{padding-left:20px;margin-top:8px}
+  .c li{margin-bottom:8px}
+  .c li::marker{color:var(--accent)}
+  .hl{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .why{background:linear-gradient(135deg,rgba(167,139,250,0.08) 0%,rgba(167,139,250,0.03) 100%);border-left:3px solid var(--purple);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--purple);line-height:1.8}
+  .why strong{font-weight:700;color:#c4b5fd}
+  .key{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green);line-height:1.8}
+  .key strong{font-weight:700}
+  .warn{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red);line-height:1.8}
+  .qa{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .b{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .t{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .l{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.8}
+  .qa-a p+p{margin-top:10px}
+  .cw{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .cl{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .ob{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .ob .oi{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .ob .ot{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .eb{background:var(--error-bg);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .eb .ei{background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .eb .et{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--red)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:40px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center}
+  .nav-footer span{font-size:14px;color:var(--green);font-weight:700}
+  .cg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:16px 0}
+  .cc{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+  .cc::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .cc.t1::before{background:var(--cyan)}.cc.t2::before{background:var(--orange)}.cc.t3::before{background:var(--green)}.cc.t4::before{background:var(--red)}.cc.t5::before{background:var(--purple)}
+  .cc h4{font-size:14px;font-weight:700;margin-bottom:6px}
+  .cc.t1 h4{color:var(--cyan)}.cc.t2 h4{color:var(--orange)}.cc.t3 h4{color:var(--green)}.cc.t4 h4{color:var(--red)}.cc.t5 h4{color:var(--purple)}
+  .cc p{font-size:12.5px;line-height:1.6}
+  .cc code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px}
+  .cg4{grid-template-columns:1fr 1fr 1fr 1fr}
+  @media(max-width:700px){.cg,.cg4{grid-template-columns:1fr}.header h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Deep Dive — With Intent &amp; Reasoning</div>
+  <h1>call/apply/bind, Currying &amp; Promises — The Complete Guide</h1>
+  <p>Not just what — but <em>why</em> each concept exists, when to use it, and how interviewers test it</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PART 1: CALL / APPLY / BIND                        -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="section-title">Part 1 — Understanding <code>this</code> First (The Foundation)</div>
+
+<div class="c">
+  <h3>Why does <code>this</code> exist?</h3>
+  <p>JavaScript functions are <strong>not attached to any object by default</strong>. Unlike Java or C++ where methods always belong to a class, a JS function is a standalone value — you can assign it to any variable, pass it anywhere, call it from any context. This creates a problem: <strong>how does a function know which object's data to work with?</strong></p>
+  <p style="margin-top:10px;">That's what <code>this</code> solves. It's a dynamic reference that tells the function: "here's the object you're working on <em>right now</em>." The same function can work with different objects just by changing <code>this</code>.</p>
+</div>
+
+<div class="why">
+  <strong>Why this matters for interviews:</strong> Interviewers don't just want you to recite "<code>this</code> depends on how the function is called." They want you to understand that <code>this</code> exists because JS functions are first-class values that aren't inherently bound to objects. That's the design decision that makes <code>call</code>/<code>apply</code>/<code>bind</code> necessary.
+</div>
+
+<div class="c">
+  <h3>The 5 Rules of <code>this</code> — In Priority Order</h3>
+  <p>When JS determines <code>this</code>, it checks these rules <strong>top to bottom</strong>. The first match wins:</p>
+  <ol>
+    <li><strong><code>new</code> keyword</strong> — <code>new Foo()</code> → <code>this</code> = a brand new empty object. <em>Why: the constructor needs a fresh object to set up.</em></li>
+    <li><strong>Explicit binding</strong> — <code>fn.call(obj)</code> / <code>fn.apply(obj)</code> / <code>fn.bind(obj)</code> → <code>this</code> = <code>obj</code>. <em>Why: you're explicitly telling JS "use THIS object." It overrides the default behavior.</em></li>
+    <li><strong>Implicit binding</strong> — <code>obj.fn()</code> → <code>this</code> = <code>obj</code> (the object before the dot). <em>Why: when you call a method on an object, JS assumes you want that object's data.</em></li>
+    <li><strong>Default binding</strong> — <code>fn()</code> → <code>this</code> = <code>window</code> (non-strict) or <code>undefined</code> (strict). <em>Why: no object context, so JS falls back to the global object. Strict mode makes this safer by using undefined.</em></li>
+    <li><strong>Arrow function</strong> — no own <code>this</code>, inherits from enclosing scope. <em>Why: arrow functions were created specifically to solve the "lost this" problem in callbacks and nested functions.</em></li>
+  </ol>
+</div>
+
+<div class="c">
+  <h3>The "Lost <code>this</code>" Problem — Why call/apply/bind Were Created</h3>
+  <div class="cw"><div class="cl">The problem that started everything</div>
+    <pre><span class="kw">const</span> user = {
+  name: <span class="str">"Akshay"</span>,
+  greet: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello, "</span> + <span class="kw">this</span>.name);
+  }
+};
+
+user.greet();  <span class="cm">// "Hello, Akshay" ✓ — called as method, this = user</span>
+
+<span class="cm">// Now extract the function and pass it somewhere else:</span>
+<span class="kw">const</span> fn = user.greet;
+fn();          <span class="cm">// "Hello, undefined" ✗ — standalone call, this = window!</span>
+
+<span class="cm">// Same problem with setTimeout:</span>
+setTimeout(user.greet, <span class="num">1000</span>); <span class="cm">// "Hello, undefined" ✗</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does this happen?</strong> When you write <code>const fn = user.greet</code>, you're copying the <em>function reference</em> — not the object. It's like photocopying a recipe without remembering which kitchen it came from. The function no longer knows it belonged to <code>user</code>. When called as <code>fn()</code>, there's no object before the dot, so <code>this</code> defaults to <code>window</code>. This is THE reason <code>call</code>, <code>apply</code>, and <code>bind</code> exist — they let you explicitly say "use THIS kitchen."
+</div>
+
+<hr class="divider">
+
+<div class="section-title">call() — "Call this function right now, with this context"</div>
+
+<div class="c">
+  <h3>What it does &amp; why it exists</h3>
+  <p><code>fn.call(context, arg1, arg2)</code> — calls the function <strong>immediately</strong> with <code>this</code> set to <code>context</code>, and passes arguments one by one.</p>
+  <p style="margin-top:10px;"><strong>Why it exists:</strong> Sometimes you have a function that uses <code>this</code>, and you want to run it with a <em>specific</em> object as <code>this</code> — right now, not later. Maybe you're borrowing a method from one object for another. Maybe you're calling a parent constructor. <code>call</code> is the direct way to say "execute this function, and when it looks at <code>this</code>, it should see this object."</p>
+</div>
+
+<div class="c">
+  <h3>Example 1: Method Borrowing — The #1 Interview Use Case</h3>
+  <div class="cw"><div class="cl">One function, reused across different objects</div>
+    <pre><span class="kw">const</span> person1 = {
+  name: <span class="str">"Akshay"</span>,
+  printDetails: <span class="kw">function</span>(city, country) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name + <span class="str">" from "</span> + city + <span class="str">", "</span> + country);
+  }
+};
+
+<span class="kw">const</span> person2 = { name: <span class="str">"Alok"</span> };
+<span class="kw">const</span> person3 = { name: <span class="str">"Pranav"</span> };
+
+<span class="cm">// person2 and person3 don't have printDetails, but we BORROW it:</span>
+person1.printDetails.call(person2, <span class="str">"Delhi"</span>, <span class="str">"India"</span>);
+<span class="cm">// "Alok from Delhi, India"</span>
+
+person1.printDetails.call(person3, <span class="str">"Pune"</span>, <span class="str">"India"</span>);
+<span class="cm">// "Pranav from Pune, India"</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why is this useful?</strong> Without <code>call</code>, you'd have to copy <code>printDetails</code> into every object — duplicating code. With <code>call</code>, you write the function once and reuse it with any object. This is the DRY principle in action. In large codebases, method borrowing saves hundreds of lines.
+</div>
+
+<div class="c">
+  <h3>Example 2: Calling Parent Constructor — Inheritance Pattern</h3>
+  <div class="cw"><div class="cl">Constructor chaining</div>
+    <pre><span class="kw">function</span> <span class="fn">Animal</span>(name, sound) {
+  <span class="kw">this</span>.name = name;
+  <span class="kw">this</span>.sound = sound;
+}
+
+<span class="kw">function</span> <span class="fn">Dog</span>(name) {
+  Animal.call(<span class="kw">this</span>, name, <span class="str">"Woof"</span>);
+  <span class="cm">// ^ We're saying: "Run the Animal constructor,</span>
+  <span class="cm">//   but set 'this' to the new Dog object."</span>
+  <span class="cm">//   This gives Dog all of Animal's properties.</span>
+  <span class="kw">this</span>.type = <span class="str">"Dog"</span>;
+}
+
+<span class="kw">const</span> buddy = <span class="kw">new</span> Dog(<span class="str">"Buddy"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(buddy);
+<span class="cm">// { name: "Buddy", sound: "Woof", type: "Dog" }</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this matters:</strong> Before ES6 classes, this was THE way to do inheritance in JavaScript. <code>Animal.call(this, ...)</code> runs the parent constructor but sets <code>this</code> to the child object — so the child gets all parent properties. Even with modern <code>class</code> syntax, <code>super()</code> does exactly this internally.
+</div>
+
+<div class="c">
+  <h3>Example 3: Borrowing Array Methods for Array-Like Objects</h3>
+  <div class="cw"><div class="cl">The classic arguments trick</div>
+    <pre><span class="kw">function</span> <span class="fn">listArgs</span>() {
+  <span class="cm">// 'arguments' looks like an array but ISN'T one.</span>
+  <span class="cm">// It has .length and indexes but NO .map, .filter, .forEach</span>
+
+  <span class="cm">// Borrow Array's slice to convert it to a real array:</span>
+  <span class="kw">const</span> realArray = Array.prototype.slice.call(<span class="fn">arguments</span>);
+  <span class="fn">console</span>.<span class="fn">log</span>(realArray);
+}
+
+listArgs(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>); <span class="cm">// [1, 2, 3] — a real array now!</span>
+
+<span class="cm">// Modern equivalents (ES6+):</span>
+<span class="cm">// Array.from(arguments)</span>
+<span class="cm">// [...arguments]</span>
+<span class="cm">// Or just use rest params: function listArgs(...args) {}</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why interviewers ask this:</strong> It tests whether you understand that <code>call</code> isn't just for your own functions — you can borrow <em>any</em> method from <em>any</em> prototype. <code>Array.prototype.slice.call(arguments)</code> says "run Array's slice method, but pretend <code>arguments</code> is the array." This works because <code>slice</code> only needs <code>.length</code> and numeric indexes — which <code>arguments</code> has.
+</div>
+
+<hr class="divider">
+
+<div class="section-title">apply() — Same as call, but arguments in an array</div>
+
+<div class="c">
+  <h3>Why does apply exist if we already have call?</h3>
+  <p><code>fn.apply(context, [arg1, arg2])</code> — identical to <code>call</code> except arguments are passed as an <strong>array</strong>.</p>
+  <p style="margin-top:10px;"><strong>Why it exists:</strong> Sometimes your arguments are already in an array. Before ES6's spread operator (<code>...</code>), there was NO way to "unpack" an array into individual arguments. <code>apply</code> was invented to solve this. Today, <code>...spread</code> does the same thing, so <code>apply</code> is less commonly needed — but interviewers still test it.</p>
+</div>
+
+<div class="c">
+  <h3>The Classic Use Case: Math.max with an Array</h3>
+  <div class="cw"><div class="cl">The problem apply was made for</div>
+    <pre><span class="kw">const</span> numbers = [<span class="num">5</span>, <span class="num">2</span>, <span class="num">8</span>, <span class="num">1</span>, <span class="num">9</span>];
+
+<span class="cm">// Math.max expects individual args: Math.max(5, 2, 8, 1, 9)</span>
+<span class="cm">// But we have an array! We can't do Math.max([5,2,8,1,9]) — that gives NaN.</span>
+
+<span class="cm">// BEFORE ES6 — apply was the ONLY solution:</span>
+Math.max.apply(<span class="kw">null</span>, numbers);  <span class="cm">// 9</span>
+<span class="cm">// null because Math.max doesn't use 'this' — we don't care about context</span>
+
+<span class="cm">// AFTER ES6 — spread operator replaced this pattern:</span>
+Math.max(...numbers);  <span class="cm">// 9 — cleaner and easier to read</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why <code>null</code> as context?</strong> When the function doesn't use <code>this</code> at all (like <code>Math.max</code>), you still have to pass <em>something</em> as the first argument to <code>apply</code>. <code>null</code> is the convention — it says "I don't care about <code>this</code>, I'm only using <code>apply</code> for the argument-spreading feature." In non-strict mode, <code>null</code> becomes <code>window</code> internally, but it doesn't matter since the function ignores <code>this</code>.
+</div>
+
+<div class="key">
+  <strong>call vs apply — one-line summary:</strong> Use <code>call</code> when you know the arguments individually. Use <code>apply</code> when they're already in an array. Memory trick: <strong>C</strong>all = <strong>C</strong>omma-separated. <strong>A</strong>pply = <strong>A</strong>rray.
+</div>
+
+<hr class="divider">
+
+<div class="section-title">bind() — "Give me a copy with <code>this</code> locked forever"</div>
+
+<div class="c">
+  <h3>Why bind is fundamentally different from call/apply</h3>
+  <p><code>const newFn = fn.bind(context, arg1, arg2)</code> — does <strong>NOT call</strong> the function. Returns a <strong>new function</strong> with <code>this</code> permanently set.</p>
+  <p style="margin-top:10px;"><strong>Why it exists:</strong> <code>call</code> and <code>apply</code> are for <em>immediate</em> execution. But what if you need to fix <code>this</code> for <em>later</em>? When you pass a method as a callback to <code>setTimeout</code>, <code>addEventListener</code>, or <code>Array.map</code>, you can't use <code>call</code> because you're not calling the function — you're <em>giving it to someone else</em> to call later. <code>bind</code> creates a version of the function where <code>this</code> is baked in permanently.</p>
+</div>
+
+<div class="c">
+  <h3>The Problem bind Solves — setTimeout losing <code>this</code></h3>
+  <div class="cw"><div class="cl">The problem → the fix</div>
+    <pre><span class="kw">const</span> user = {
+  name: <span class="str">"Akshay"</span>,
+  greet: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello, "</span> + <span class="kw">this</span>.name);
+  }
+};
+
+<span class="cm">// ❌ PROBLEM: setTimeout extracts the function, loses this</span>
+setTimeout(user.greet, <span class="num">1000</span>);
+<span class="cm">// "Hello, undefined" — this = window, not user</span>
+
+<span class="cm">// ✅ FIX 1: bind — locks this to user permanently</span>
+setTimeout(user.greet.bind(user), <span class="num">1000</span>);
+<span class="cm">// "Hello, Akshay"</span>
+
+<span class="cm">// ✅ FIX 2: arrow function — captures this from surrounding scope</span>
+setTimeout(() =&gt; user.greet(), <span class="num">1000</span>);
+<span class="cm">// "Hello, Akshay"</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why does setTimeout break <code>this</code>?</strong> When you write <code>setTimeout(user.greet, 1000)</code>, you're NOT calling <code>user.greet()</code>. You're extracting the function reference and handing it to the browser's timer. The browser stores it and calls it later as a <em>standalone function</em> — no object before the dot. So <code>this</code> falls to the default rule (window). <code>bind</code> solves this by returning a NEW function where <code>this</code> is hardcoded. Even when the browser calls it standalone, <code>this</code> is still <code>user</code>.
+</div>
+
+<div class="c">
+  <h3>Partial Application with bind</h3>
+  <div class="cw"><div class="cl">Pre-filling arguments — creating specialized functions</div>
+    <pre><span class="kw">function</span> <span class="fn">multiply</span>(a, b) {
+  <span class="kw">return</span> a * b;
+}
+
+<span class="cm">// Pre-fill the first argument. The bound function only needs the second:</span>
+<span class="kw">const</span> double = multiply.bind(<span class="kw">null</span>, <span class="num">2</span>);  <span class="cm">// a is always 2</span>
+<span class="kw">const</span> triple = multiply.bind(<span class="kw">null</span>, <span class="num">3</span>);  <span class="cm">// a is always 3</span>
+
+double(<span class="num">5</span>);  <span class="cm">// 10 (2 * 5)</span>
+triple(<span class="num">5</span>);  <span class="cm">// 15 (3 * 5)</span>
+double(<span class="num">100</span>); <span class="cm">// 200 (2 * 100)</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why partial application matters:</strong> It lets you create <em>specialized</em> functions from <em>general</em> ones. Instead of writing separate <code>double()</code> and <code>triple()</code> functions, you configure them from one <code>multiply</code>. This is a core pattern in functional programming. React's event handlers use this: <code>onClick={handleDelete.bind(null, itemId)}</code> pre-fills the ID.
+</div>
+
+<div class="c">
+  <h3>Critical Rule: bind Cannot Be Overridden</h3>
+  <div class="cw"><div class="cl">Once bound, forever bound</div>
+    <pre><span class="kw">function</span> <span class="fn">sayName</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name); }
+
+<span class="kw">const</span> bound = sayName.bind({ name: <span class="str">"Akshay"</span> });
+
+bound();                              <span class="cm">// "Akshay"</span>
+bound.call({ name: <span class="str">"Alok"</span> });         <span class="cm">// "Akshay" ← call can't override!</span>
+bound.bind({ name: <span class="str">"Pranav"</span> })();     <span class="cm">// "Akshay" ← second bind ignored!</span>
+
+<span class="cm">// Exception: new CAN override bind (new has highest priority)</span>
+<span class="kw">function</span> <span class="fn">Person</span>(name) { <span class="kw">this</span>.name = name; }
+<span class="kw">const</span> BoundPerson = Person.bind({ name: <span class="str">"Ignored"</span> });
+<span class="kw">const</span> p = <span class="kw">new</span> BoundPerson(<span class="str">"Akshay"</span>);
+p.name; <span class="cm">// "Akshay" — new wins over bind!</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why is bind permanent?</strong> It was designed to be a guarantee — once you bind, you can safely pass the function anywhere knowing <code>this</code> will never change. If <code>call</code>/<code>apply</code> could override it, bind would be unreliable for callbacks and event handlers. The one exception is <code>new</code> — because the whole point of <code>new</code> is to create a fresh object, which requires a fresh <code>this</code>.
+</div>
+
+<div class="c">
+  <h3>Polyfill of bind — Most Asked Polyfill in Interviews</h3>
+  <div class="cw"><div class="cl">myBind — understand every line</div>
+    <pre>Function.prototype.<span class="fn">myBind</span> = <span class="kw">function</span>(context, ...boundArgs) {
+  <span class="cm">// 'this' here = the function being bound (e.g., greet in greet.myBind(obj))</span>
+  <span class="kw">const</span> originalFn = <span class="kw">this</span>;
+
+  <span class="cm">// Return a NEW function (bind doesn't call, it returns)</span>
+  <span class="kw">return function</span>(...calledArgs) {
+    <span class="cm">// When this new function is eventually called:</span>
+    <span class="cm">// - Use apply to set 'this' to context</span>
+    <span class="cm">// - Merge pre-filled args (boundArgs) with new args (calledArgs)</span>
+    <span class="kw">return</span> originalFn.apply(context, [...boundArgs, ...calledArgs]);
+  };
+};
+
+<span class="cm">// Test:</span>
+<span class="kw">function</span> <span class="fn">greet</span>(greeting, punct) {
+  <span class="fn">console</span>.<span class="fn">log</span>(greeting + <span class="str">", "</span> + <span class="kw">this</span>.name + punct);
+}
+
+<span class="kw">const</span> bound = greet.myBind({ name: <span class="str">"Akshay"</span> }, <span class="str">"Hello"</span>);
+bound(<span class="str">"!"</span>); <span class="cm">// "Hello, Akshay!"</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this polyfill works:</strong> The key insight is that <code>this</code> inside <code>myBind</code> refers to the function being bound (because <code>myBind</code> is called as a method on the function: <code>greet.myBind(...)</code>). We store it, then return a closure. When the closure is eventually called, it uses <code>apply</code> to invoke the original function with the fixed context and merged arguments.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PART 2: CURRYING                                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="topic-divider">
+  <h2>Part 2 — Currying In Depth</h2>
+  <p>Transforming how functions receive arguments — and why it's more powerful than it looks</p>
+</div>
+
+<div class="section-title">What is Currying &amp; Why Does It Exist?</div>
+
+<div class="c">
+  <h3>The Core Idea</h3>
+  <p><strong>Currying</strong> transforms a function that takes multiple arguments into a sequence of functions that each take a <strong>single argument</strong>:</p>
+  <p style="margin-top:6px;"><code>f(a, b, c)</code> becomes <code>f(a)(b)(c)</code></p>
+  <p style="margin-top:10px;"><strong>Why it exists:</strong> Currying enables <em>partial application</em> — you can provide some arguments now and the rest later. This creates <strong>specialized, reusable functions</strong> from general ones. It's the backbone of functional programming and is used heavily in libraries like Lodash, Ramda, and Redux.</p>
+</div>
+
+<div class="c">
+  <h3>Basic Currying — Manual Approach</h3>
+  <div class="cw"><div class="cl">Normal function → curried function</div>
+    <pre><span class="cm">// Normal: all args at once</span>
+<span class="kw">function</span> <span class="fn">add</span>(a, b, c) {
+  <span class="kw">return</span> a + b + c;
+}
+add(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>); <span class="cm">// 6</span>
+
+<span class="cm">// Curried: one arg at a time, each returns a new function</span>
+<span class="kw">function</span> <span class="fn">addCurried</span>(a) {
+  <span class="kw">return function</span>(b) {       <span class="cm">// returns a function waiting for b</span>
+    <span class="kw">return function</span>(c) {     <span class="cm">// returns a function waiting for c</span>
+      <span class="kw">return</span> a + b + c;      <span class="cm">// finally computes the result</span>
+    };
+  };
+}
+addCurried(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>); <span class="cm">// 6</span>
+
+<span class="cm">// The magic — partial application:</span>
+<span class="kw">const</span> addOne = addCurried(<span class="num">1</span>);       <span class="cm">// a is locked to 1</span>
+<span class="kw">const</span> addOneAndTwo = addOne(<span class="num">2</span>);     <span class="cm">// b is locked to 2</span>
+addOneAndTwo(<span class="num">10</span>);                   <span class="cm">// 13 (1 + 2 + 10)</span>
+addOneAndTwo(<span class="num">20</span>);                   <span class="cm">// 23 (1 + 2 + 20) — reusable!</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this is powerful:</strong> Each intermediate function is a <em>specialized tool</em>. <code>addOne</code> is a function that adds 1 to something. <code>addOneAndTwo</code> adds 3 to something. You've created configurable, reusable building blocks from one general function. In real codebases: <code>createLogger("ERROR")</code> returns an error-logging function, <code>createValidator("email")</code> returns an email validator, etc.
+</div>
+
+<div class="c">
+  <h3>Real-World Currying Examples</h3>
+  <div class="cw"><div class="cl">Example 1: Configurable discount calculator</div>
+    <pre><span class="kw">function</span> <span class="fn">discount</span>(rate) {
+  <span class="kw">return function</span>(price) {
+    <span class="kw">return</span> price - (price * rate / <span class="num">100</span>);
+  };
+}
+
+<span class="kw">const</span> tenOff = discount(<span class="num">10</span>);    <span class="cm">// 10% discount function</span>
+<span class="kw">const</span> twentyOff = discount(<span class="num">20</span>);  <span class="cm">// 20% discount function</span>
+
+tenOff(<span class="num">500</span>);     <span class="cm">// 450</span>
+tenOff(<span class="num">1000</span>);    <span class="cm">// 900</span>
+twentyOff(<span class="num">500</span>);  <span class="cm">// 400</span></pre>
+  </div>
+  <div class="cw"><div class="cl">Example 2: API URL builder</div>
+    <pre><span class="kw">const</span> <span class="fn">buildUrl</span> = (baseUrl) =&gt; (endpoint) =&gt; (id) =&gt;
+  <span class="str">`${baseUrl}/${endpoint}/${id}`</span>;
+
+<span class="kw">const</span> api = buildUrl(<span class="str">"https://api.example.com"</span>);
+<span class="kw">const</span> usersApi = api(<span class="str">"users"</span>);
+<span class="kw">const</span> postsApi = api(<span class="str">"posts"</span>);
+
+usersApi(<span class="num">42</span>);  <span class="cm">// "https://api.example.com/users/42"</span>
+postsApi(<span class="num">7</span>);   <span class="cm">// "https://api.example.com/posts/7"</span></pre>
+  </div>
+  <div class="cw"><div class="cl">Example 3: Event handler configuration</div>
+    <pre><span class="kw">const</span> <span class="fn">handleEvent</span> = (eventType) =&gt; (element) =&gt; (callback) =&gt; {
+  element.addEventListener(eventType, callback);
+};
+
+<span class="kw">const</span> onClick = handleEvent(<span class="str">"click"</span>);
+<span class="kw">const</span> onClickButton = onClick(document.getElementById(<span class="str">"btn"</span>));
+onClickButton(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Clicked!"</span>));</pre>
+  </div>
+</div>
+
+<div class="c">
+  <h3>Generic <code>curry()</code> Function — Works for Any Number of Args</h3>
+  <div class="cw"><div class="cl">The interview-ready implementation</div>
+    <pre><span class="kw">function</span> <span class="fn">curry</span>(fn) {
+  <span class="cm">// fn.length = number of parameters the original function expects</span>
+  <span class="kw">return function</span> <span class="fn">curried</span>(...args) {
+    <span class="kw">if</span> (args.length &gt;= fn.length) {
+      <span class="cm">// We have enough arguments — call the original function</span>
+      <span class="kw">return</span> fn.apply(<span class="kw">this</span>, args);
+    } <span class="kw">else</span> {
+      <span class="cm">// Not enough args yet — return a function that collects more</span>
+      <span class="kw">return function</span>(...moreArgs) {
+        <span class="kw">return</span> curried.apply(<span class="kw">this</span>, [...args, ...moreArgs]);
+      };
+    }
+  };
+}
+
+<span class="kw">function</span> <span class="fn">sum</span>(a, b, c) { <span class="kw">return</span> a + b + c; }
+<span class="kw">const</span> curriedSum = curry(sum);
+
+curriedSum(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>);   <span class="cm">// 6</span>
+curriedSum(<span class="num">1</span>, <span class="num">2</span>)(<span class="num">3</span>);  <span class="cm">// 6 — can pass multiple args at once too!</span>
+curriedSum(<span class="num">1</span>)(<span class="num">2</span>, <span class="num">3</span>);  <span class="cm">// 6</span>
+curriedSum(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>); <span class="cm">// 6 — works like the original too</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>How it works:</strong> <code>fn.length</code> tells us how many parameters the function was defined with. Each time <code>curried</code> is called, it checks: "do I have enough arguments to satisfy the original function?" If yes, call it. If no, return a new function that remembers what we have so far and waits for more. It's recursion + closures working together.
+</div>
+
+<div class="c">
+  <h3>The Famous Infinite Currying: <code>sum(1)(2)(3)...(n)()</code></h3>
+  <div class="cw"><div class="cl">Sum any number of chained calls, terminate with ()</div>
+    <pre><span class="kw">function</span> <span class="fn">sum</span>(a) {
+  <span class="kw">return function</span>(b) {
+    <span class="kw">if</span> (b !== <span class="kw">undefined</span>) {
+      <span class="kw">return</span> sum(a + b);   <span class="cm">// keep accumulating</span>
+    }
+    <span class="kw">return</span> a;              <span class="cm">// no arg = return total</span>
+  };
+}
+
+sum(<span class="num">1</span>)(<span class="num">2</span>)();            <span class="cm">// 3</span>
+sum(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>)();          <span class="cm">// 6</span>
+sum(<span class="num">5</span>)(<span class="num">10</span>)(<span class="num">15</span>)(<span class="num">20</span>)();    <span class="cm">// 50</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why interviewers love this:</strong> It tests closures (each call remembers the running total), recursion (sum calls itself), and functional thinking. The <code>()</code> at the end acts as a "stop collecting and give me the answer" signal.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- PART 3: PROMISES                                    -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="topic-divider">
+  <h2>Part 3 — Promises In Depth</h2>
+  <p>The modern solution to async JavaScript — how they work, all 4 static methods, chaining, error handling, and every output question pattern</p>
+</div>
+
+<div class="section-title">Why Do Promises Exist?</div>
+
+<div class="c">
+  <h3>The Problem: Callback Hell</h3>
+  <p>Before promises, async code used nested callbacks. When multiple async operations depended on each other, the code became deeply nested, hard to read, and hard to debug. This was called <strong>Callback Hell</strong> or the <strong>Pyramid of Doom</strong>:</p>
+  <div class="cw"><div class="cl">❌ Callback hell — ugly, fragile, hard to follow</div>
+    <pre>getData(userId, <span class="kw">function</span>(user) {
+  getOrders(user.id, <span class="kw">function</span>(orders) {
+    getItems(orders[<span class="num">0</span>].id, <span class="kw">function</span>(items) {
+      getPrice(items[<span class="num">0</span>].id, <span class="kw">function</span>(price) {
+        <span class="fn">console</span>.<span class="fn">log</span>(price);
+        <span class="cm">// 4 levels deep... and error handling makes it worse</span>
+      });
+    });
+  });
+});</pre>
+  </div>
+  <div class="cw"><div class="cl">✅ With promises — flat, readable, manageable</div>
+    <pre>getData(userId)
+  .then(user =&gt; getOrders(user.id))
+  .then(orders =&gt; getItems(orders[<span class="num">0</span>].id))
+  .then(items =&gt; getPrice(items[<span class="num">0</span>].id))
+  .then(price =&gt; <span class="fn">console</span>.<span class="fn">log</span>(price))
+  .catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error:"</span>, err));</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why promises were invented:</strong> Callbacks had three problems: (1) <strong>Inversion of control</strong> — you hand your callback to someone else's function and HOPE they call it correctly. (2) <strong>No standard error handling</strong> — every callback needs its own error checks. (3) <strong>Readability</strong> — deeply nested code is impossible to maintain. Promises solve all three: you control the flow, errors propagate automatically, and the code reads top-to-bottom.
+</div>
+
+<div class="section-title">Promise States &amp; Lifecycle</div>
+
+<div class="c">
+  <h3>The Three States</h3>
+  <p>A promise is an object that represents the <strong>eventual result</strong> of an async operation. It has exactly three states:</p>
+  <ul>
+    <li><strong>Pending</strong> — initial state. The operation hasn't completed yet. <em>Why: the async task is still running (e.g., HTTP request in flight).</em></li>
+    <li><strong>Fulfilled</strong> — the operation succeeded. The promise has a <strong>result value</strong>. <code>.then()</code> handlers run. <em>Why: the data arrived successfully.</em></li>
+    <li><strong>Rejected</strong> — the operation failed. The promise has a <strong>reason (error)</strong>. <code>.catch()</code> handlers run. <em>Why: something went wrong (network error, bad response, etc.).</em></li>
+  </ul>
+  <p style="margin-top:10px;">Once a promise moves from Pending to Fulfilled or Rejected, it is <strong>settled</strong> — it cannot change state again. This is called <strong>immutability of settlement</strong>.</p>
+</div>
+
+<div class="why">
+  <strong>Why immutability matters:</strong> A promise can only be resolved or rejected ONCE. If <code>resolve()</code> is called twice, the second call is ignored. This guarantees that your <code>.then</code> handler runs exactly once — unlike callbacks where a buggy library could call your callback multiple times.
+</div>
+
+<div class="c">
+  <h3>Creating a Promise</h3>
+  <div class="cw"><div class="cl">The anatomy of a promise</div>
+    <pre><span class="kw">const</span> myPromise = <span class="kw">new</span> Promise((resolve, reject) =&gt; {
+  <span class="cm">// This function runs IMMEDIATELY (synchronously!)</span>
+  <span class="cm">// It receives two functions from JS engine:</span>
+  <span class="cm">//   resolve(value) — call this when the operation succeeds</span>
+  <span class="cm">//   reject(error)  — call this when the operation fails</span>
+
+  <span class="kw">const</span> success = <span class="kw">true</span>; <span class="cm">// simulate some condition</span>
+
+  <span class="kw">if</span> (success) {
+    resolve(<span class="str">"Data loaded!"</span>);  <span class="cm">// fulfills the promise</span>
+  } <span class="kw">else</span> {
+    reject(<span class="str">"Something failed"</span>); <span class="cm">// rejects the promise</span>
+  }
+});
+
+<span class="cm">// Consuming the promise:</span>
+myPromise
+  .then(value =&gt; <span class="fn">console</span>.<span class="fn">log</span>(value))    <span class="cm">// runs if fulfilled</span>
+  .catch(error =&gt; <span class="fn">console</span>.<span class="fn">log</span>(error))   <span class="cm">// runs if rejected</span>
+  .finally(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Done"</span>));  <span class="cm">// runs regardless</span></pre>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>Critical trap interviewers test:</strong> The function inside <code>new Promise((resolve, reject) => { ... })</code> runs <strong>synchronously</strong>! Only <code>.then</code>/<code>.catch</code>/<code>.finally</code> callbacks are async (microtasks). And <code>resolve()</code> does NOT stop execution — code after <code>resolve()</code> still runs!
+</div>
+
+<div class="c">
+  <h3>Promise Chaining — The Power of <code>.then</code></h3>
+  <div class="cw"><div class="cl">Each .then returns a NEW promise</div>
+    <pre><span class="cm">// .then() always returns a new promise, so you can chain:</span>
+fetch(<span class="str">"/api/user"</span>)
+  .then(response =&gt; response.json())     <span class="cm">// returns a promise</span>
+  .then(user =&gt; fetch(<span class="str">`/api/posts/${user.id}`</span>)) <span class="cm">// returns a promise</span>
+  .then(response =&gt; response.json())
+  .then(posts =&gt; <span class="fn">console</span>.<span class="fn">log</span>(posts))
+  .catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error anywhere in the chain:"</span>, err));
+  <span class="cm">// ^ One catch handles errors from ANY step above!</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why chaining works:</strong> Every <code>.then()</code> returns a new promise. If you return a value, the next <code>.then</code> gets that value. If you return a promise, the chain waits for it to settle. If any step throws or rejects, the chain skips to the nearest <code>.catch()</code>. This is why one <code>.catch</code> at the end handles all errors — it's like a try/catch around the entire chain.
+</div>
+
+<hr class="divider">
+
+<div class="section-title">The 4 Promise Static Methods — All of Them</div>
+
+<div class="c">
+  <h3>Why do these exist?</h3>
+  <p>Sometimes you have <strong>multiple promises running at the same time</strong> (parallel async operations) and need to combine their results. The four static methods handle different combinations:</p>
+</div>
+
+<div class="cg" style="grid-template-columns:1fr 1fr;">
+  <div class="cc t1">
+    <h4>Promise.all()</h4>
+    <p><strong>Wait for ALL to succeed.</strong></p>
+    <p>Resolves with array of all results.</p>
+    <p>Rejects on FIRST failure.</p>
+    <p style="margin-top:4px;"><em>Use when: all results are needed, one failure means the whole operation fails.</em></p>
+  </div>
+  <div class="cc t2">
+    <h4>Promise.allSettled()</h4>
+    <p><strong>Wait for ALL to finish.</strong></p>
+    <p>Never rejects. Returns status + value/reason for each.</p>
+    <p style="margin-top:4px;"><em>Use when: you want results of all, even if some fail.</em></p>
+  </div>
+  <div class="cc t3">
+    <h4>Promise.race()</h4>
+    <p><strong>First to SETTLE wins.</strong></p>
+    <p>Returns result of the fastest promise (success or failure).</p>
+    <p style="margin-top:4px;"><em>Use when: you want the fastest response (e.g., timeout pattern).</em></p>
+  </div>
+  <div class="cc t4">
+    <h4>Promise.any()</h4>
+    <p><strong>First to SUCCEED wins.</strong></p>
+    <p>Ignores rejections until one succeeds.</p>
+    <p>Rejects only if ALL fail (AggregateError).</p>
+    <p style="margin-top:4px;"><em>Use when: you have fallbacks (try multiple servers).</em></p>
+  </div>
+</div>
+
+<div class="c">
+  <h3>Promise.all() — In Depth</h3>
+  <div class="cw"><div class="cl">All must succeed, or everything fails</div>
+    <pre><span class="kw">const</span> p1 = Promise.resolve(<span class="num">1</span>);
+<span class="kw">const</span> p2 = Promise.resolve(<span class="num">2</span>);
+<span class="kw">const</span> p3 = Promise.resolve(<span class="num">3</span>);
+
+Promise.all([p1, p2, p3]).then(results =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(results); <span class="cm">// [1, 2, 3] — all results, in ORDER (not speed)</span>
+});
+
+<span class="cm">// If ANY one rejects:</span>
+<span class="kw">const</span> p4 = Promise.reject(<span class="str">"Fail!"</span>);
+Promise.all([p1, p2, p4]).catch(err =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(err); <span class="cm">// "Fail!" — first rejection kills everything</span>
+});</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>When to use Promise.all:</strong> Loading a dashboard that needs user data, notifications, AND settings simultaneously. If any one fails, the dashboard can't render properly — so you want to know about the first failure immediately. Results are returned in the same order as the input array, regardless of which resolved first.
+</div>
+
+<div class="c">
+  <h3>Promise.allSettled() — In Depth</h3>
+  <div class="cw"><div class="cl">Get every result, success or failure</div>
+    <pre><span class="kw">const</span> p1 = Promise.resolve(<span class="str">"Success"</span>);
+<span class="kw">const</span> p2 = Promise.reject(<span class="str">"Failed"</span>);
+<span class="kw">const</span> p3 = Promise.resolve(<span class="str">"Also success"</span>);
+
+Promise.allSettled([p1, p2, p3]).then(results =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(results);
+  <span class="cm">// [</span>
+  <span class="cm">//   { status: "fulfilled", value: "Success" },</span>
+  <span class="cm">//   { status: "rejected", reason: "Failed" },</span>
+  <span class="cm">//   { status: "fulfilled", value: "Also success" }</span>
+  <span class="cm">// ]</span>
+});</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>When to use Promise.allSettled:</strong> Sending emails to 100 users. Some might fail, but you still want to know which succeeded. Unlike <code>Promise.all</code>, it NEVER rejects — you always get results for every promise. Added in ES2020.
+</div>
+
+<div class="c">
+  <h3>Promise.race() — In Depth</h3>
+  <div class="cw"><div class="cl">Fastest settles the race — win or lose</div>
+    <pre><span class="kw">const</span> fast = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"Fast!"</span>), <span class="num">100</span>));
+<span class="kw">const</span> slow = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"Slow!"</span>), <span class="num">500</span>));
+
+Promise.race([fast, slow]).then(result =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(result); <span class="cm">// "Fast!" — first to settle wins</span>
+});
+
+<span class="cm">// Classic pattern: timeout for a fetch</span>
+<span class="kw">const</span> timeout = <span class="kw">new</span> Promise((_, reject) =&gt;
+  setTimeout(() =&gt; reject(<span class="str">"Timeout!"</span>), <span class="num">3000</span>)
+);
+<span class="kw">const</span> fetchData = fetch(<span class="str">"/api/data"</span>);
+
+Promise.race([fetchData, timeout])
+  .then(res =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Got data!"</span>))
+  .catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(err)); <span class="cm">// "Timeout!" if fetch takes > 3s</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>When to use Promise.race:</strong> Implementing timeouts, selecting the fastest server, or any scenario where you want the first result regardless of whether it's success or failure. The timeout pattern above is a classic interview question.
+</div>
+
+<div class="c">
+  <h3>Promise.any() — In Depth</h3>
+  <div class="cw"><div class="cl">First SUCCESS wins — failures are ignored</div>
+    <pre><span class="kw">const</span> p1 = Promise.reject(<span class="str">"Error 1"</span>);
+<span class="kw">const</span> p2 = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"Server 2"</span>), <span class="num">200</span>));
+<span class="kw">const</span> p3 = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"Server 3"</span>), <span class="num">100</span>));
+
+Promise.any([p1, p2, p3]).then(result =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(result); <span class="cm">// "Server 3" — first SUCCESS (p1 failed, ignored)</span>
+});
+
+<span class="cm">// Only rejects if ALL fail:</span>
+Promise.any([
+  Promise.reject(<span class="str">"Fail 1"</span>),
+  Promise.reject(<span class="str">"Fail 2"</span>)
+]).catch(err =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(err); <span class="cm">// AggregateError: All promises were rejected</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(err.errors); <span class="cm">// ["Fail 1", "Fail 2"]</span>
+});</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>When to use Promise.any:</strong> Trying multiple CDN servers for a resource — you want the first one that works. Failures are expected (servers go down). Only if ALL fail do you want an error. The <code>AggregateError</code> contains all individual rejection reasons. Added in ES2021.
+</div>
+
+<hr class="divider">
+
+<div class="section-title">async/await — Syntactic Sugar over Promises</div>
+
+<div class="c">
+  <h3>Why async/await exists</h3>
+  <p>Promises with <code>.then</code> chains are better than callbacks, but they still don't read like normal synchronous code. <code>async/await</code> (ES2017) lets you write async code that <em>looks</em> synchronous:</p>
+  <div class="cw"><div class="cl">Same operation — three styles</div>
+    <pre><span class="cm">// Style 1: Callbacks</span>
+getUser(id, (user) =&gt; {
+  getPosts(user.id, (posts) =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(posts);
+  });
+});
+
+<span class="cm">// Style 2: Promises</span>
+getUser(id)
+  .then(user =&gt; getPosts(user.id))
+  .then(posts =&gt; <span class="fn">console</span>.<span class="fn">log</span>(posts));
+
+<span class="cm">// Style 3: async/await — reads like synchronous code!</span>
+<span class="kw">async function</span> <span class="fn">loadPosts</span>(id) {
+  <span class="kw">const</span> user = <span class="kw">await</span> getUser(id);       <span class="cm">// pauses here until resolved</span>
+  <span class="kw">const</span> posts = <span class="kw">await</span> getPosts(user.id); <span class="cm">// pauses here until resolved</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(posts);
+}</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>What await actually does:</strong> <code>await</code> pauses the <code>async</code> function (not the whole program!) and waits for the promise to settle. If fulfilled, it returns the value. If rejected, it throws — which you can catch with try/catch. The paused function is resumed by the event loop's microtask queue. That's why code after <code>await</code> runs as a microtask.
+</div>
+
+<div class="c">
+  <h3>Error Handling with async/await</h3>
+  <div class="cw"><div class="cl">try/catch replaces .catch()</div>
+    <pre><span class="kw">async function</span> <span class="fn">fetchData</span>() {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> response = <span class="kw">await</span> fetch(<span class="str">"/api/data"</span>);
+
+    <span class="kw">if</span> (!response.ok) {
+      <span class="kw">throw new</span> Error(<span class="str">`HTTP ${response.status}`</span>);
+    }
+
+    <span class="kw">const</span> data = <span class="kw">await</span> response.json();
+    <span class="fn">console</span>.<span class="fn">log</span>(data);
+  } <span class="kw">catch</span> (err) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error:"</span>, err.message);
+    <span class="cm">// Catches: network errors, HTTP errors, JSON parse errors</span>
+  } <span class="kw">finally</span> {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Cleanup"</span>); <span class="cm">// runs regardless</span>
+  }
+}</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section-title">Tricky Promise Output Questions</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 1</span><span class="t">What will be the output? (Constructor is synchronous!)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span>);
+
+<span class="kw">new</span> Promise((resolve) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">2</span>);
+  resolve();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">3</span>);  <span class="cm">// ← does this run?</span>
+}).then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">4</span>));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">5</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">1 → 2 → 3 → 5 → 4</span></div>
+    <p style="margin-top:10px;"><strong>Sync:</strong> 1, 2, 3 (yes! resolve() doesn't stop execution!), 5. <strong>Microtask:</strong> 4 (.then callback).</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 2</span><span class="t">What will be the output? (The ultimate event loop question)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>);
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>), <span class="num">0</span>);
+Promise.resolve().then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C"</span>));
+Promise.resolve().then(() =&gt; setTimeout(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>), <span class="num">0</span>));
+Promise.resolve().then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"E"</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"F"</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">A → F → C → E → B → D</span></div>
+    <p style="margin-top:10px;"><strong>Sync:</strong> A, F. <strong>Microtasks (all):</strong> C, then the second .then runs (schedules D as macrotask), E. <strong>Macrotasks:</strong> B (queued first), D (queued by microtask).</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 3</span><span class="t">What will be the output? (async/await ordering)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">async function</span> <span class="fn">foo</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"1"</span>);
+  <span class="kw">const</span> x = <span class="kw">await</span> <span class="str">"hello"</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"2"</span>);
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"3"</span>);
+foo();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"4"</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">3 → 1 → 4 → 2</span></div>
+    <p style="margin-top:10px;">3 (sync). foo() starts → 1 (sync part). <code>await</code> pauses foo. 4 (sync continues). Microtask: 2 (foo resumes after await). Even <code>await "hello"</code> (a non-promise) creates a microtask pause.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 4</span><span class="t">What will Promise.all return here?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> p1 = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"A"</span>), <span class="num">300</span>));
+<span class="kw">const</span> p2 = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"B"</span>), <span class="num">100</span>));
+<span class="kw">const</span> p3 = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"C"</span>), <span class="num">200</span>));
+
+Promise.all([p1, p2, p3]).then(<span class="fn">console</span>.<span class="fn">log</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">["A", "B", "C"]</span></div>
+    <p style="margin-top:10px;">Even though p2 resolves first (100ms), results are in <strong>input order</strong>, not resolution order. Promise.all waits for the slowest (p1 at 300ms) then returns all results in the same order as the input array.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 5</span><span class="t">What will Promise.race return here?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> p1 = <span class="kw">new</span> Promise((_, rej) =&gt; setTimeout(() =&gt; rej(<span class="str">"Error!"</span>), <span class="num">50</span>));
+<span class="kw">const</span> p2 = <span class="kw">new</span> Promise(res =&gt; setTimeout(() =&gt; res(<span class="str">"Success!"</span>), <span class="num">100</span>));
+
+Promise.race([p1, p2])
+  .then(v =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Resolved:"</span>, v))
+  .catch(e =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Rejected:"</span>, e));</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"Rejected: Error!"</span></div>
+    <p style="margin-top:10px;">p1 settles first (50ms) — but it's a <strong>rejection</strong>. race returns the first to settle regardless of outcome. So the catch runs. This is the difference from <code>Promise.any</code>, which would wait for p2's success.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section-title">Quick Revision — Everything You Need</div>
+
+<div class="c">
+  <h3>call / apply / bind</h3>
+  <ul>
+    <li><code>call(ctx, a, b)</code> = invoke NOW, comma args. <code>apply(ctx, [a,b])</code> = invoke NOW, array args. <code>bind(ctx, a)</code> = returns new function for LATER.</li>
+    <li><strong>Why they exist:</strong> To explicitly set <code>this</code> when functions lose their object context (callbacks, extraction, borrowing).</li>
+    <li>bind is permanent — call/apply/second bind can't override it. Only <code>new</code> can.</li>
+    <li>Arrow functions ignore call/apply/bind for <code>this</code> — their this is always from the enclosing scope.</li>
+    <li>Polyfill trick: temporarily attach fn to context object, call as method, delete.</li>
+  </ul>
+</div>
+
+<div class="c">
+  <h3>Currying</h3>
+  <ul>
+    <li>Transforms <code>f(a,b,c)</code> → <code>f(a)(b)(c)</code>. Each call returns a new function waiting for the next arg.</li>
+    <li><strong>Why it exists:</strong> Creates specialized reusable functions from general ones (partial application).</li>
+    <li>Generic curry: check <code>args.length >= fn.length</code> → call or return collecting function.</li>
+    <li>Infinite currying: <code>sum(1)(2)...()</code> — use recursive closure, empty call terminates.</li>
+    <li>Uses closures at every level to remember accumulated arguments.</li>
+  </ul>
+</div>
+
+<div class="c">
+  <h3>Promises</h3>
+  <ul>
+    <li><strong>Why they exist:</strong> Solve callback hell, inversion of control, and error handling.</li>
+    <li>3 states: Pending → Fulfilled / Rejected. Settlement is permanent.</li>
+    <li>Constructor runs <strong>synchronously</strong>. <code>.then</code>/<code>.catch</code> are microtasks.</li>
+    <li><code>resolve()</code> does NOT stop execution inside the constructor!</li>
+    <li><strong>Promise.all</strong> — all must succeed, first rejection fails all. Results in input order.</li>
+    <li><strong>Promise.allSettled</strong> — wait for all, never rejects. Returns {status, value/reason}.</li>
+    <li><strong>Promise.race</strong> — first to SETTLE (success or failure) wins.</li>
+    <li><strong>Promise.any</strong> — first to SUCCEED wins. Rejects only if ALL fail (AggregateError).</li>
+    <li>async/await is sugar over promises. <code>await</code> pauses function (not program), creates microtask.</li>
+    <li>Execution order: Sync → Microtasks (all promises) → Macrotasks (setTimeout).</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span>Deep Dive Complete — call/apply/bind + Currying + Promises — With Intent &amp; Reasoning!</span>
+</div>
+
+</body>
+</html>

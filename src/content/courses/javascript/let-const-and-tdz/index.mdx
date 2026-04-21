@@ -1,0 +1,609 @@
+---
+title: "let, const, Temporal Dead Zone, Block Scope & Shadowing"
+description: The modern variable declarations, their scoping rules, and the errors they produce — let, const, the Temporal Dead Zone, block scope, and the three kinds of shadowing.
+excerpt: The modern declarations, their scoping rules, and the three errors they produce.
+course: javascript/course
+order: 7
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 15
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - let-const
+  - tdz
+  - block-scope
+  - shadowing
+  - hoisting
+---
+
+## Topic 8 — let & const, Temporal Dead Zone
+
+### var vs let vs const — At a Glance
+
+**`var`** — Scope: **Function**. Hoisted: Yes, as `undefined`. On window:
+Yes. Re-declare: ✓ Allowed. Re-assign: ✓ Allowed. TDZ: None. Block
+scope: ✗ No.
+
+**`let`** — Scope: **Block**. Hoisted: Yes, but in TDZ. On window: No
+(Script scope). Re-declare: ✗ SyntaxError. Re-assign: ✓ Allowed. TDZ:
+Yes. Block scope: ✓ Yes.
+
+**`const`** — Scope: **Block**. Hoisted: Yes, but in TDZ. On window: No
+(Script scope). Re-declare: ✗ SyntaxError. Re-assign: ✗ TypeError. TDZ:
+Yes. Must init: ✓ At declaration.
+
+### Are let and const Hoisted?
+
+**Yes!** Both `let` and `const` are hoisted. But unlike `var`, they are
+NOT stored in the Global Object (window). They're placed in a separate
+memory space called **Script scope**. And critically, they cannot be
+accessed until the code execution reaches their declaration line. The
+period between hoisting and initialization is called the **Temporal
+Dead Zone**.
+
+```js title="Proof that let is hoisted"
+console.log(a); // ReferenceError: Cannot access 'a' BEFORE INITIALIZATION
+let a = 10;
+// If let was NOT hoisted, the error would be "a is not DEFINED"
+// "before initialization" proves JS knows about 'a' — it's hoisted!
+```
+
+### What is the Temporal Dead Zone (TDZ)?
+
+The TDZ is the **time period** between when a `let`/`const` variable is
+hoisted (memory allocated) and when it is initialized with a value.
+During this period, the variable exists in memory but is **not
+accessible**. Any access attempt throws a `ReferenceError`.
+
+<Callout type="warning" title="☠ Temporal Dead Zone">
+  From the start of the scope until the `let`/`const` declaration line.
+  Accessing here → `ReferenceError`. Even `typeof a;` throws inside the
+  TDZ. Once the declaration line runs, the TDZ ends and access works
+  normally.
+</Callout>
+
+### Where Are Variables Stored? — Memory Spaces
+
+- `var` → stored in the **Global** memory space (attached to `window`)
+- `let` / `const` → stored in a separate **Script** memory space (NOT on
+  `window`)
+- Block-level `let`/`const` → stored in a separate **Block** memory
+  space
+
+You can verify this in Chrome DevTools: set a breakpoint and look at the
+Scope panel. You'll see separate entries for "Global," "Script,"
+"Block," and "Local."
+
+### const — The Strictest Declaration
+
+`const` has all the restrictions of `let` plus two more:
+
+- **Must be initialized at declaration:** `const b;` → SyntaxError
+- **Cannot be reassigned:** `const b = 10; b = 20;` → TypeError
+
+**Important nuance:** `const` prevents *reassignment of the binding*,
+NOT mutation of the value. If a `const` holds an object or array, you
+CAN modify its properties/elements:
+
+```js title="const with objects — a common gotcha"
+const obj = { a: 1 };
+obj.a = 2;         // ✓ Fine! Modifying property, not reassigning obj
+obj.b = 3;         // ✓ Fine! Adding new property
+obj = { a: 99 };   // ✗ TypeError! Can't reassign the binding
+
+const arr = [1, 2];
+arr.push(3);       // ✓ Fine! [1, 2, 3]
+arr[0] = 99;       // ✓ Fine! [99, 2, 3]
+arr = [4, 5];      // ✗ TypeError! Can't reassign
+```
+
+### Three Types of Errors Related to let/const
+
+**SyntaxError** — Code doesn't run **at all**. Caught before any
+execution. Duplicate let/const declaration, missing const initializer.
+
+**ReferenceError** — Variable in TDZ or never declared. Thrown **during
+execution**. Accessing let/const before init, accessing undeclared
+variable.
+
+**TypeError** — Invalid operation on a type. Thrown **during execution**.
+Reassigning const, calling undefined as function.
+
+<Callout type="tip" title="Best Practices">
+  1) Use `const` by default. 2) Use `let` only when you need to reassign.
+  3) Avoid `var` entirely. 4) Declare variables at the top of their scope
+  to minimize TDZ.
+</Callout>
+
+## Topic 9 — Block Scope & Shadowing
+
+### What is a Block?
+
+A **block** (also called a compound statement) is code wrapped in
+`{ }`. It's used to group multiple statements where JavaScript expects
+only one (e.g., after `if`, `for`, `while`).
+
+```js title="A block"
+{
+  var a = 10;    // stored in Global scope
+  let b = 20;    // stored in Block scope
+  const c = 30;  // stored in Block scope
+}
+```
+
+### Block Scope
+
+`let` and `const` are **block-scoped** — they exist only inside the
+`{ }` where they are declared. `var` is NOT block-scoped — it ignores
+blocks entirely and attaches to the nearest function or global scope.
+
+```js title="Block scope demonstration"
+{
+  var a = 10;
+  let b = 20;
+  const c = 30;
+}
+console.log(a); // 10 — var leaks out of the block
+console.log(b); // ReferenceError: b is not defined
+console.log(c); // ReferenceError: c is not defined
+```
+
+### What is Shadowing?
+
+**Shadowing** occurs when a variable inside a block/function has the
+same name as a variable in an outer scope. The inner variable "shadows"
+the outer one within that scope.
+
+```js title="var shadowing — modifies the outer variable!"
+var a = 100;
+{
+  var a = 10;  // same var — NOT a new variable!
+  console.log(a); // 10
+}
+console.log(a); // 10 ← also 10! var a inside block modified the global a
+```
+
+Because `var` is not block-scoped, `var a = 10` inside the block points
+to the **same memory location** as the global `var a`. It doesn't create
+a new variable — it modifies the existing one.
+
+```js title="let shadowing — creates a separate variable"
+let b = 100;
+{
+  let b = 20;  // NEW variable in Block scope
+  console.log(b); // 20 — block's b
+}
+console.log(b); // 100 — outer b is untouched!
+```
+
+With `let`/`const`, the inner variable lives in a separate **Block
+scope** memory. The outer variable is unaffected. Two completely
+independent variables that happen to share a name.
+
+### Illegal Shadowing
+
+You **cannot** shadow a `let` with a `var` in the same scope boundary.
+But you CAN shadow a `var` with a `let`.
+
+```js title="Illegal shadowing"
+let a = 20;
+{
+  var a = 20;  // ✗ SyntaxError: Identifier 'a' has already been declared
+}
+// var tries to attach to global scope where let a already exists → conflict!
+```
+
+```js title="Legal — shadowing var with let"
+var a = 20;
+{
+  let a = 30;  // ✓ Fine! let creates a new block-scoped variable
+  console.log(a); // 30
+}
+console.log(a);   // 20
+```
+
+```js title="Legal — var inside function (different scope boundary)"
+let a = 20;
+function x() {
+  var a = 20;  // ✓ Fine! var is function-scoped, doesn't leak to outer scope
+}
+```
+
+<Callout type="warning" title="Why is let shadowed by var illegal?">
+  Because `var` ignores block scope and tries to register in the same
+  scope where `let` already exists. Since you can't have both `let a`
+  and `var a` in the same scope, JS throws a SyntaxError. But inside a
+  *function*, `var` is contained by the function scope, so there's no
+  conflict.
+</Callout>
+
+### Shadowing in Functions
+
+The same shadowing logic applies to functions. A `const`/`let` inside a
+function creates a new variable in the function's local scope that
+shadows any outer variable with the same name.
+
+```js title="Function shadowing"
+const c = 100;
+function x() {
+  const c = 10;
+  console.log(c); // 10 — function's own c
+}
+x();
+console.log(c); // 100 — global c untouched
+```
+
+### Arrow Functions & Block/Scope Rules
+
+All scope rules that apply to regular functions also apply to arrow
+functions. Arrow functions create their own execution context and their
+own scope for `var`, `let`, `const` — just like regular functions. The
+only difference is `this` binding and `arguments` object (arrow
+functions don't have their own).
+
+## Interview Questions & Answers
+
+**Q1. Are `let` and `const` hoisted?**
+
+Yes, both are hoisted — but differently from `var`. They are allocated
+memory during the creation phase but placed in a separate memory space
+(Script scope) and remain in the **Temporal Dead Zone** until their
+declaration line is executed. Accessing them before that line throws
+`ReferenceError: Cannot access 'x' before initialization`. The error
+message itself proves they're hoisted — if they weren't, the error
+would say `x is not defined`.
+
+**Q2. What is the Temporal Dead Zone?**
+
+The TDZ is the period between when a `let`/`const` variable is hoisted
+(scope entry) and when it is initialized with a value (the declaration
+line). During this time, the variable exists in memory but cannot be
+read, written, or even checked with `typeof`. Any access throws a
+ReferenceError. The TDZ exists to catch bugs — using variables before
+they're declared is almost always a mistake.
+
+**Q3. What are the differences between `var`, `let`, and `const`?**
+
+**Scope:** `var` is function-scoped; `let`/`const` are block-scoped.
+**Hoisting:** `var` hoists as `undefined`; `let`/`const` hoist into TDZ.
+**Window:** `var` attaches to `window`; `let`/`const` don't.
+**Re-declaration:** `var` allows re-declaration; `let`/`const` throw
+SyntaxError. **Re-assignment:** `var` and `let` allow; `const` throws
+TypeError. **Initialization:** `const` must be initialized at
+declaration; `var`/`let` can be declared separately.
+
+**Q4. What is a Block in JavaScript? What is Block Scope?**
+
+A **block** is a set of statements grouped inside `{ }`. It's used where
+JS syntax expects a single statement (after `if`, `for`, `while`, etc.).
+**Block scope** means variables declared with `let`/`const` inside a
+block are only accessible within that block. They're stored in a
+separate "Block" memory space and cannot be accessed after the block
+ends. `var` ignores block scope entirely.
+
+**Q5. What is Shadowing? What is Illegal Shadowing?**
+
+**Shadowing:** When a variable in an inner scope has the same name as
+one in an outer scope, it "shadows" the outer variable. With
+`let`/`const`, the inner creates a new independent variable. With `var`,
+it actually modifies the outer variable (since var isn't block-scoped).
+
+**Illegal Shadowing:** You cannot shadow a `let` with a `var` in the
+same scope. `var` ignores the block and tries to exist in the same
+scope as `let`, causing a conflict → SyntaxError. However, shadowing
+`let` with `var` inside a *function* is legal because the function
+creates a new scope boundary.
+
+**Q6. Does `const` make objects immutable?**
+
+**No.** `const` prevents *reassignment of the variable binding*, not
+mutation of the value. If a `const` holds an object or array, you can
+still modify its properties, add new ones, or push to the array. You
+just can't point the variable to a completely new object. To make an
+object truly immutable, use `Object.freeze()` — but even that is shallow
+(nested objects can still be mutated).
+
+**Q7. What is the difference between SyntaxError, ReferenceError, and TypeError?**
+
+**SyntaxError:** Invalid code that can't be parsed. No code executes at
+all. Examples: duplicate `let` declaration, missing `const` initializer,
+invalid syntax.
+
+**ReferenceError:** Trying to access a variable that doesn't exist or is
+in the TDZ. Thrown during execution — code runs until the offending
+line.
+
+**TypeError:** A value is used in a way incompatible with its type.
+Examples: reassigning `const`, calling `undefined()`, accessing property
+of `null`.
+
+**Q8. Can you use `typeof` on a variable in the TDZ?**
+
+**No.** Unlike undeclared variables (where `typeof` safely returns
+`"undefined"`), using `typeof` on a `let`/`const` variable in the TDZ
+throws a `ReferenceError`. The TDZ is strict — any form of access is
+blocked.
+
+```js title="typeof and TDZ"
+console.log(typeof undeclaredVar); // "undefined" — safe
+console.log(typeof x);              // ReferenceError! x is in TDZ
+let x = 10;
+```
+
+**Q9. How do you shrink the Temporal Dead Zone to zero?**
+
+Declare and initialize all `let`/`const` variables **at the very top**
+of their scope. If the declaration is the first line, the TDZ is
+effectively zero lines long — the variable is immediately available
+after hoisting. This is considered a best practice to avoid TDZ-related
+errors.
+
+**Q10. Why were `let` and `const` introduced in ES6?**
+
+`var` had several problematic behaviors: no block scoping (variables
+leaked out of blocks), polluting the global object, allowing
+re-declarations (hiding bugs), and hoisting as `undefined` (causing
+silent failures). `let`/`const` were introduced to fix all of these:
+they provide block scoping, don't attach to `window`, prevent
+re-declarations, and the TDZ catches use-before-declaration bugs.
+`const` additionally prevents accidental reassignment.
+
+## Input/Output Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+console.log(a);
+console.log(b);
+let a = 10;
+var b = 15;
+```
+
+**Line 1:** `ReferenceError: Cannot access 'a' before initialization`
+
+`let a` is in TDZ. Code stops at line 1. Line 2 never executes.
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+let a = 10;
+let a = 100;
+```
+
+**Error:** `SyntaxError: Identifier 'a' has already been declared`
+
+SyntaxError — no code runs at all. Duplicate `let` declaration in the
+same scope is forbidden.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+let a = 10;
+var a = 100;
+```
+
+**Error:** `SyntaxError: Identifier 'a' has already been declared`
+
+Can't have `let` and `var` with the same name in the same scope.
+SyntaxError, no execution.
+
+**I/O 4. What will be the output?**
+
+```js title="JavaScript"
+const b;
+b = 10;
+console.log(b);
+```
+
+**Error:** `SyntaxError: Missing initializer in const declaration`
+
+`const` must be initialized at the time of declaration. Separate
+declaration and assignment is not allowed.
+
+**I/O 5. What will be the output?**
+
+```js title="JavaScript"
+const b = 100;
+b = 1000;
+```
+
+**Error:** `TypeError: Assignment to constant variable`
+
+TypeError — not SyntaxError. The code is syntactically valid, but the
+operation (reassigning const) is invalid at runtime.
+
+**I/O 6. What will be the output? (Block scope)**
+
+```js title="JavaScript"
+{
+  var a = 10;
+  let b = 20;
+  const c = 30;
+}
+console.log(a);
+console.log(b);
+```
+
+**Line 7:** `10`
+**Line 8:** `ReferenceError: b is not defined`
+
+`var a` leaks out of the block. `let b` and `const c` are confined to
+the block and destroyed when it ends.
+
+**I/O 7. What will be the output? (var shadowing)**
+
+```js title="JavaScript"
+var a = 100;
+{
+  var a = 10;
+  console.log(a);
+}
+console.log(a);
+```
+
+**Output:** `10 → 10`
+
+`var a` inside the block is NOT a new variable — it's the **same**
+global `a`. Both point to the same memory. The global value is
+permanently changed to 10.
+
+**I/O 8. What will be the output? (let shadowing)**
+
+```js title="JavaScript"
+let b = 100;
+{
+  let b = 20;
+  console.log(b);
+}
+console.log(b);
+```
+
+**Output:** `20 → 100`
+
+Two separate `b` variables: one in Block scope (20), one in Script
+scope (100). The block's `b` shadows the outer `b` inside the block
+only.
+
+**I/O 9. What will be the output? (Illegal shadowing)**
+
+```js title="JavaScript"
+let a = 20;
+{
+  var a = 20;
+}
+```
+
+**Error:** `SyntaxError: Identifier 'a' has already been declared`
+
+`var` ignores the block and tries to exist in the same scope as the
+outer `let a` → conflict → SyntaxError. No code runs.
+
+**I/O 10. What will be the output? (Legal — var in function)**
+
+```js title="JavaScript"
+let a = 20;
+function x() {
+  var a = 30;
+  console.log(a);
+}
+x();
+console.log(a);
+```
+
+**Output:** `30 → 20`
+
+Inside a function, `var` is function-scoped so it doesn't conflict with
+the outer `let a`. Two separate variables in two separate scopes.
+
+**I/O 11. What will be the output? (const with object)**
+
+```js title="JavaScript"
+const obj = { x: 1, y: 2 };
+obj.x = 10;
+obj.z = 30;
+console.log(obj);
+```
+
+**Output:** `{ x: 10, y: 2, z: 30 }`
+
+`const` prevents reassignment of the variable, NOT mutation of the
+object. Modifying and adding properties is allowed.
+
+**I/O 12. What will be the output? (for loop — var vs let)**
+
+```js title="JavaScript"
+for (var i = 0; i < 3; i++) {
+  setTimeout(() => console.log(i), 100);
+}
+
+for (let j = 0; j < 3; j++) {
+  setTimeout(() => console.log(j), 200);
+}
+```
+
+**var loop:** `3 → 3 → 3`
+**let loop:** `0 → 1 → 2`
+
+**var:** Only one `i` exists (function-scoped). By the time callbacks
+run, the loop is done and `i = 3`. All callbacks see the same `i`.
+
+**let:** Each iteration creates a *new* `j` in a new block scope. Each
+callback closes over its own `j`. This is the classic closure +
+setTimeout question (covered deeply in Topic 11).
+
+**I/O 13. What will be the output? (TDZ in blocks)**
+
+```js title="JavaScript"
+let x = 10;
+{
+  console.log(x);
+  let x = 20;
+}
+```
+
+**Error:** `ReferenceError: Cannot access 'x' before initialization`
+
+**Tricky!** The inner `let x = 20` creates a new `x` in the block
+scope. This block-scoped `x` shadows the outer `x = 10`, so the outer
+`x` is NOT accessible inside this block. But the inner `x` is in its
+TDZ on line 3. Result: ReferenceError, not `10`.
+
+**I/O 14. What will be the output? (Tricky — if block)**
+
+```js title="JavaScript"
+let a = 1;
+
+if (true) {
+  let a = 2;
+  console.log(a);
+}
+
+console.log(a);
+```
+
+**Output:** `2 → 1`
+
+The `if` block creates a new block scope. `let a = 2` inside it is a
+separate variable. After the block ends, the outer `a = 1` is
+accessible again.
+
+## Quick Revision — Cheat Sheet
+
+### Topic 8 — let, const & TDZ
+
+- `let`/`const` **are hoisted** but live in TDZ until initialization
+- TDZ = period from scope entry to declaration line — any access throws
+  ReferenceError
+- `var` → Global/function scope, on `window`; `let`/`const` → Block
+  scope, Script memory
+- `let`: no re-declare, can re-assign | `const`: no re-declare, no
+  re-assign
+- `const` must be initialized at declaration | `let` can be declared
+  then assigned later
+- `const` with objects/arrays: can modify properties/elements, can't
+  reassign binding
+- SyntaxError → no code runs | ReferenceError → runtime | TypeError →
+  runtime
+- Even `typeof` throws error in TDZ (unlike undeclared variables)
+- Best practice: `const` > `let` > avoid `var`
+
+### Topic 9 — Block Scope & Shadowing
+
+- Block = `{ }`, groups statements, creates scope for `let`/`const`
+- `var` ignores blocks, leaks to function/global scope
+- `let`/`const` in blocks → separate Block memory, destroyed when block
+  ends
+- `var` shadowing in block → modifies the outer variable (same memory!)
+- `let`/`const` shadowing in block → creates new independent variable
+- Illegal: can't shadow `let` with `var` in same scope boundary
+- Legal: `var` shadowing `let` inside a *function* (different scope
+  boundary)
+- Legal: `let` shadowing `var`, `let` shadowing `let` in nested block
+- TDZ applies in blocks too — inner `let x` shadows outer `x` and
+  creates its own TDZ
+- `var` in for loop: one shared variable | `let` in for loop: new
+  variable per iteration
+- Arrow functions follow same scope rules as regular functions

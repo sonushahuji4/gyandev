@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episodes 22 & 23: Creating Promises, Chaining, Error Handling & async/await</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;--text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;--orange:#fb923c;--code-bg:#0d1117;--q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);--output-bg:#0f1a14;--error-bg:#1a0f0f}
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--cyan);color:#000;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:27px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#22d3ee 0%,#3b82f6 40%,#a78bfa 70%,#f59e0b 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .st{display:flex;align-items:center;gap:12px;margin:52px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .st::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .td{margin:64px 0 0;padding:24px 0 0;border-top:3px solid var(--purple)}
+  .td h2{font-size:26px;font-weight:800;background:linear-gradient(135deg,#a78bfa 0%,#22d3ee 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .td p{color:var(--text-dim);font-size:15px}
+  .c{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .c h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .c p,.c li{font-size:14.5px;color:var(--text);line-height:1.8}
+  .c ul,.c ol{padding-left:20px;margin-top:8px}
+  .c li{margin-bottom:8px}
+  .c li::marker{color:var(--accent)}
+  .hl{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .why{background:linear-gradient(135deg,rgba(167,139,250,0.08) 0%,rgba(167,139,250,0.03) 100%);border-left:3px solid var(--purple);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--purple);line-height:1.8}
+  .why strong{font-weight:700;color:#c4b5fd}
+  .key{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green);line-height:1.8}
+  .key strong{font-weight:700}
+  .warn{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red);line-height:1.8}
+  .info{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2);line-height:1.8}
+  .qa{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .b{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .t{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .l{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.8}
+  .qa-a p+p{margin-top:10px}
+  .cw{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .cl{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .ob{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .ob .oi{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .ob .ot{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .eb{background:var(--error-bg);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .eb .ei{background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .eb .et{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--red)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:40px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center}
+  .nav-footer span{font-size:14px;color:var(--green);font-weight:700}
+  .flow{display:flex;align-items:center;gap:0;margin:12px 0;flex-wrap:wrap}
+  .flow-box{padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;text-align:center;min-width:80px;line-height:1.4}
+  .flow-arrow{color:var(--text-dim);font-size:18px;padding:0 3px;flex-shrink:0}
+  .fb-blue{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:var(--accent2)}
+  .fb-green{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:var(--green)}
+  .fb-red{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--red)}
+  .fb-orange{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--accent)}
+  .fb-purple{background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:var(--purple)}
+  .fb-gray{background:rgba(136,145,176,0.12);border:1px solid rgba(136,145,176,0.3);color:var(--text-dim)}
+  .fb-cyan{background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.3);color:var(--cyan)}
+  .vs-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0}
+  .vs-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;position:relative;overflow:hidden}
+  .vs-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .vs-card.bad::before{background:var(--red)}.vs-card.good::before{background:var(--green)}
+  .vs-card h4{font-size:14px;font-weight:700;margin-bottom:8px}
+  .vs-card.bad h4{color:var(--red)}.vs-card.good h4{color:var(--green)}
+  .vs-card p{font-size:13px;line-height:1.65}
+  @media(max-width:700px){.vs-grid{grid-template-columns:1fr}.header h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Episodes 22 &amp; 23 — Deep Dive</div>
+  <h1>Creating Promises, Chaining, Error Handling &amp; async/await</h1>
+  <p>The producer side of promises, advanced chaining patterns, and the modern way to write async code</p>
+</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- EPISODE 22: CREATING PROMISES & CHAINING            -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Episode 22 — Creating a Promise (The Producer Side)</div>
+
+<div class="c">
+  <h3>Consumer vs Producer — Two Sides of Every Promise</h3>
+  <p>In Episode 21, we learned how to <em>consume</em> promises with <code>.then</code>. Now we learn how to <em>create</em> (produce) them. In real applications, you'll do both — creating promises for your own async logic, and consuming promises from APIs like <code>fetch</code>.</p>
+</div>
+
+<div class="c">
+  <h3>Anatomy of Creating a Promise</h3>
+  <div class="cw"><div class="cl">The full createOrder implementation — line by line</div>
+    <pre><span class="kw">function</span> <span class="fn">createOrder</span>(cart) {
+  <span class="cm">// Step 1: Create a new Promise using the Promise constructor</span>
+  <span class="cm">// The constructor takes an EXECUTOR function</span>
+  <span class="cm">// JS gives us two functions: resolve (for success) and reject (for failure)</span>
+  <span class="kw">const</span> promise = <span class="kw">new</span> Promise(<span class="kw">function</span>(resolve, reject) {
+
+    <span class="cm">// Step 2: Write your async logic inside</span>
+    <span class="cm">// This executor runs IMMEDIATELY (synchronously!)</span>
+
+    <span class="cm">// Step 3: Validate — if something is wrong, REJECT</span>
+    <span class="kw">if</span> (!validateCart(cart)) {
+      <span class="kw">const</span> err = <span class="kw">new</span> Error(<span class="str">"Cart is not Valid"</span>);
+      reject(err);
+      <span class="cm">// The promise state changes: pending → rejected</span>
+      <span class="cm">// .catch() handlers will be triggered</span>
+      <span class="kw">return</span>; <span class="cm">// ← important! Stop execution after reject</span>
+    }
+
+    <span class="cm">// Step 4: Do the actual work (DB call, API call, etc.)</span>
+    <span class="kw">const</span> orderId = <span class="str">"12345"</span>; <span class="cm">// simulating DB response</span>
+
+    <span class="cm">// Step 5: If successful, RESOLVE with the result</span>
+    <span class="kw">if</span> (orderId) {
+      resolve(orderId);
+      <span class="cm">// The promise state changes: pending → fulfilled</span>
+      <span class="cm">// .then() handlers will be triggered with orderId</span>
+    }
+  });
+
+  <span class="cm">// Step 6: RETURN the promise to the consumer</span>
+  <span class="kw">return</span> promise;
+}</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why we return the promise:</strong> The whole point of promises is to give the consumer (the caller) an object they can attach callbacks to. If you don't return the promise, the caller has no way to know when the async work is done. The pattern is always: create promise inside → do async work → resolve/reject → return promise to caller.
+</div>
+
+<div class="c">
+  <h3>What happens when you log the promise immediately?</h3>
+  <div class="cw"><div class="cl">Why it shows "pending"</div>
+    <pre><span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>, <span class="str">"kurta"</span>];
+<span class="kw">const</span> promise = createOrder(cart);
+
+<span class="fn">console</span>.<span class="fn">log</span>(promise); <span class="cm">// Promise {&lt;pending&gt;}</span>
+<span class="cm">// WHY pending? Because JS doesn't wait for the promise to resolve.</span>
+<span class="cm">// It moves to the next line immediately.</span>
+<span class="cm">// The promise will resolve LATER, and .then will fire at that point.</span>
+
+promise.then(<span class="kw">function</span>(orderId) {
+  <span class="fn">console</span>.<span class="fn">log</span>(orderId); <span class="cm">// "12345" — runs when promise is fulfilled</span>
+});</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why this is important to understand:</strong> New developers often think <code>const result = asyncFunction()</code> gives them the actual data. It doesn't — it gives a <em>promise</em> (a container that will eventually hold the data). You must use <code>.then()</code> or <code>await</code> to access the actual value. This is the most common beginner confusion with promises.
+</div>
+
+<hr class="divider">
+
+<div class="st">Error Handling with .catch()</div>
+
+<div class="c">
+  <h3>Catching rejected promises</h3>
+  <p>When <code>reject(err)</code> is called inside the promise, the promise enters the <strong>rejected</strong> state. If you don't handle this with <code>.catch()</code>, the browser throws an <strong>Uncaught (in promise) Error</strong>. Always handle rejections.</p>
+  <div class="cw"><div class="cl">Consumer handles both success and failure</div>
+    <pre><span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>, <span class="str">"kurta"</span>];
+
+createOrder(cart)
+  .then(<span class="kw">function</span>(orderId) {
+    <span class="cm">// ✅ This runs if promise is FULFILLED (resolve was called)</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Order created:"</span>, orderId);
+  })
+  .catch(<span class="kw">function</span>(err) {
+    <span class="cm">// ❌ This runs if promise is REJECTED (reject was called)</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error:"</span>, err.message);
+  });</pre>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>Always add .catch() to every promise chain!</strong> An unhandled promise rejection is a silent bug in production. Modern JS engines will warn you, and in Node.js it can crash your server. Think of <code>.catch()</code> as mandatory, not optional.
+</div>
+
+<hr class="divider">
+
+<div class="st">Promise Chaining — The Complete Pattern</div>
+
+<div class="c">
+  <h3>The Rule of Chaining</h3>
+  <p>In promise chaining, <strong>whatever you return from one .then becomes the data for the next .then</strong>. If you return a value, the next .then gets that value. If you return a promise, the chain waits for it to settle.</p>
+  <div class="cw"><div class="cl">✅ Complete chain with return statements</div>
+    <pre><span class="kw">const</span> cart = [<span class="str">"shoes"</span>, <span class="str">"pants"</span>, <span class="str">"kurta"</span>];
+
+createOrder(cart)
+  .then(<span class="kw">function</span>(orderId) {
+    <span class="fn">console</span>.<span class="fn">log</span>(orderId);     <span class="cm">// "12345"</span>
+    <span class="kw">return</span> orderId;            <span class="cm">// ← MUST return for next .then to receive it</span>
+  })
+  .then(<span class="kw">function</span>(orderId) {
+    <span class="kw">return</span> proceedToPayment(orderId); <span class="cm">// ← returns a PROMISE</span>
+  })
+  .then(<span class="kw">function</span>(paymentInfo) {
+    <span class="fn">console</span>.<span class="fn">log</span>(paymentInfo); <span class="cm">// "Payment Successful"</span>
+  })
+  .catch(<span class="kw">function</span>(err) {
+    <span class="fn">console</span>.<span class="fn">log</span>(err.message); <span class="cm">// catches errors from ANY step above</span>
+  });
+
+<span class="cm">// proceedToPayment also returns a promise:</span>
+<span class="kw">function</span> <span class="fn">proceedToPayment</span>(orderId) {
+  <span class="kw">return new</span> Promise(<span class="kw">function</span>(resolve, reject) {
+    resolve(<span class="str">"Payment Successful"</span>);
+  });
+}</pre>
+  </div>
+</div>
+
+<div class="warn">
+  <strong>The #1 pitfall — forgetting to return!</strong> If you write <code>.then(function(orderId) { proceedToPayment(orderId); })</code> without <code>return</code>, the next .then gets <code>undefined</code> instead of the payment promise. The chain silently breaks. Always <code>return</code> inside .then().
+</div>
+
+<div class="c">
+  <h3>Advanced: Multiple .catch() Blocks — Selective Error Handling</h3>
+  <p>You can place <code>.catch()</code> at different levels to handle errors selectively. A <code>.catch</code> only handles errors from the steps <strong>above</strong> it. Steps <strong>below</strong> it continue to run.</p>
+  <div class="cw"><div class="cl">Selective error handling</div>
+    <pre>createOrder(cart)
+  .then(<span class="kw">function</span>(orderId) {
+    <span class="fn">console</span>.<span class="fn">log</span>(orderId);
+    <span class="kw">return</span> orderId;
+  })
+  .catch(<span class="kw">function</span>(err) {
+    <span class="cm">// ← This catches ONLY errors from createOrder and the .then above</span>
+    <span class="cm">// Steps below this .catch STILL RUN even if an error was caught!</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Order error:"</span>, err.message);
+  })
+  .then(<span class="kw">function</span>(orderId) {
+    <span class="cm">// ← This RUNS even if createOrder failed!</span>
+    <span class="cm">// But orderId will be undefined (catch doesn't pass data)</span>
+    <span class="kw">return</span> proceedToPayment(orderId);
+  })
+  .then(<span class="kw">function</span>(paymentInfo) {
+    <span class="fn">console</span>.<span class="fn">log</span>(paymentInfo);
+  })
+  .catch(<span class="kw">function</span>(err) {
+    <span class="cm">// ← This catches errors from proceedToPayment and above</span>
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Payment error:"</span>, err.message);
+  });</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why you'd use multiple catches:</strong> Sometimes you want to recover from a specific failure and continue the chain. For example, if creating the order fails, maybe you want to show an error message but still proceed with analytics tracking. The mid-chain <code>.catch</code> handles the order error, and the remaining <code>.then</code> steps still execute. The final <code>.catch</code> handles any errors from the later steps.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- EPISODE 23: ASYNC/AWAIT                             -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="td">
+  <h2>Episode 23 — async/await</h2>
+  <p>The modern, cleaner way to write async code — and what actually happens behind the scenes</p>
+</div>
+
+<div class="st">What is async?</div>
+
+<div class="c">
+  <h3>async is a keyword that makes a function return a promise</h3>
+  <p>When you put <code>async</code> before a function, two things change:</p>
+  <ul>
+    <li>The function <strong>always returns a promise</strong> — even if you return a plain value, it gets wrapped in a promise automatically.</li>
+    <li>You can now use the <code>await</code> keyword inside it.</li>
+  </ul>
+  <div class="cw"><div class="cl">async wraps return values in a promise</div>
+    <pre><span class="kw">async function</span> <span class="fn">getData</span>() {
+  <span class="kw">return</span> <span class="str">"Namaste JavaScript"</span>;
+  <span class="cm">// Even though we return a string, async wraps it:</span>
+  <span class="cm">// Equivalent to: return Promise.resolve("Namaste JavaScript")</span>
+}
+
+<span class="kw">const</span> dataPromise = getData();
+<span class="fn">console</span>.<span class="fn">log</span>(dataPromise);
+<span class="cm">// Promise {&lt;fulfilled&gt;: 'Namaste JavaScript'}</span>
+
+<span class="cm">// To get the actual value:</span>
+dataPromise.then(res =&gt; <span class="fn">console</span>.<span class="fn">log</span>(res));
+<span class="cm">// "Namaste JavaScript"</span></pre>
+  </div>
+</div>
+
+<div class="c">
+  <h3>If you return a promise from async function — it doesn't double-wrap</h3>
+  <div class="cw"><div class="cl">Returning a promise from async — no double wrapping</div>
+    <pre><span class="kw">const</span> p = <span class="kw">new</span> Promise(resolve =&gt; resolve(<span class="str">"Already a promise!"</span>));
+
+<span class="kw">async function</span> <span class="fn">getData</span>() {
+  <span class="kw">return</span> p; <span class="cm">// returning an existing promise</span>
+}
+
+<span class="kw">const</span> result = getData();
+<span class="fn">console</span>.<span class="fn">log</span>(result);
+<span class="cm">// Promise {&lt;fulfilled&gt;: 'Already a promise!'}</span>
+<span class="cm">// NOT Promise {Promise {&lt;fulfilled&gt;:...}} — no double-wrapping!</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why async is smart about wrapping:</strong> If the return value is already a promise, async doesn't wrap it in another promise. It returns the original promise as-is. This prevents the confusing "promise inside a promise" situation. JS checks: is the return value a thenable (has a .then method)? If yes, return it directly. If no, wrap it in <code>Promise.resolve(value)</code>.
+</div>
+
+<hr class="divider">
+
+<div class="st">What is await? — The Real Magic</div>
+
+<div class="c">
+  <h3>await pauses the function (NOT the engine)</h3>
+  <p><code>await</code> can ONLY be used inside an <code>async</code> function. It makes JS <strong>wait for the promise to resolve</strong> before moving to the next line — but ONLY inside that function. The rest of the program continues running.</p>
+</div>
+
+<div class="c">
+  <h3>The Key Difference: .then vs await</h3>
+</div>
+
+<div class="vs-grid">
+  <div class="vs-card bad">
+    <h4>Promise.then way</h4>
+    <pre style="background:transparent;padding:8px 0;font-size:12px;line-height:1.5;color:var(--text);">function getData() {
+  p.then(res => console.log(res));
+  console.log("Hello!");
+}
+getData();
+// "Hello!" prints FIRST
+// Then promise result prints LATER</pre>
+    <p style="margin-top:8px;">JS registers the .then callback and <strong>moves on</strong>. "Hello!" prints before the promise resolves.</p>
+  </div>
+  <div class="vs-card good">
+    <h4>async/await way</h4>
+    <pre style="background:transparent;padding:8px 0;font-size:12px;line-height:1.5;color:var(--text);">async function getData() {
+  const val = await p;
+  console.log("Hello!");
+  console.log(val);
+}
+getData();
+// WAITS for promise to resolve
+// Then "Hello!" and val print together</pre>
+    <p style="margin-top:8px;">The function <strong>pauses at await</strong> until the promise settles. Then continues from where it left off.</p>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why await feels different:</strong> With <code>.then</code>, your code reads out of order — the callback runs later, but the line after <code>.then</code> runs now. With <code>await</code>, the code reads <strong>top-to-bottom, in order</strong>, like synchronous code. This is why async/await is called "syntactic sugar" — it makes async code LOOK synchronous while still being non-blocking.
+</div>
+
+<hr class="divider">
+
+<div class="st">Behind the Scenes — What Actually Happens with await</div>
+
+<div class="c">
+  <h3>JS is NOT actually waiting — the function is SUSPENDED</h3>
+  <p>Remember the golden rule: <strong>"Time, Tide, and JS wait for none."</strong> The call stack is never blocked. Here's what really happens:</p>
+  <div class="cw"><div class="cl">The behind-the-scenes mechanics</div>
+    <pre><span class="kw">const</span> p1 = <span class="kw">new</span> Promise(resolve =&gt;
+  setTimeout(() =&gt; resolve(<span class="str">"p1 done"</span>), <span class="num">5000</span>)
+);
+<span class="kw">const</span> p2 = <span class="kw">new</span> Promise(resolve =&gt;
+  setTimeout(() =&gt; resolve(<span class="str">"p2 done"</span>), <span class="num">10000</span>)
+);
+
+<span class="kw">async function</span> <span class="fn">handlePromise</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi"</span>);         <span class="cm">// 1. Prints immediately</span>
+
+  <span class="kw">const</span> val = <span class="kw">await</span> p1;      <span class="cm">// 2. Function SUSPENDS here</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello!"</span>);     <span class="cm">// 4. Prints after 5 seconds</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(val);          <span class="cm">// 5. "p1 done"</span>
+
+  <span class="kw">const</span> val2 = <span class="kw">await</span> p2;     <span class="cm">// 6. Checks if p2 resolved — waits if not</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello! 2"</span>);   <span class="cm">// 7. Prints after 10 seconds from start</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(val2);         <span class="cm">// 8. "p2 done"</span>
+}
+
+<span class="fn">handlePromise</span>();            <span class="cm">// 3. This returns, stack is free!</span></pre>
+  </div>
+</div>
+
+<div class="c">
+  <h3>Call Stack Flow — Step by Step</h3>
+  <div class="flow">
+    <div class="flow-box fb-blue"><small>handlePromise()</small><br>pushed</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-orange"><small>logs "Hi"</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-red"><small>sees await p1</small><br>SUSPENDS</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-gray"><small>handlePromise()</small><br>popped off stack</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-purple"><small>stack is FREE</small><br>other code runs</div>
+  </div>
+  <div class="flow" style="margin-top:4px;">
+    <div class="flow-box fb-green"><small>p1 resolves (5s)</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-blue"><small>handlePromise()</small><br>pushed BACK</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-orange"><small>resumes from</small><br>where it left off</div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-orange"><small>logs "Hello!"</small><br><small>logs val</small></div>
+    <span class="flow-arrow">→</span>
+    <div class="flow-box fb-red"><small>sees await p2</small><br>SUSPENDS again</div>
+  </div>
+</div>
+
+<div class="why">
+  <strong>The critical insight:</strong> When JS hits <code>await</code>, it does NOT freeze the entire engine. It <strong>suspends only that specific function</strong> and pops it off the call stack. The stack is now free for other code to run (UI updates, event handlers, other functions). When the promise resolves, the event loop pushes the function back onto the stack and it <strong>resumes exactly where it left off</strong>. This is why the page doesn't freeze during await — the call stack is never blocked.
+</div>
+
+<hr class="divider">
+
+<div class="st">The Timing Trap — Promises Start Immediately!</div>
+
+<div class="c">
+  <h3>await doesn't START the promise — it waits for an already-running one</h3>
+  <div class="cw"><div class="cl">Both timers start at the SAME time</div>
+    <pre><span class="kw">const</span> p1 = <span class="kw">new</span> Promise(resolve =&gt;
+  setTimeout(() =&gt; resolve(<span class="str">"p1"</span>), <span class="num">10000</span>)  <span class="cm">// 10 second timer starts NOW</span>
+);
+<span class="kw">const</span> p2 = <span class="kw">new</span> Promise(resolve =&gt;
+  setTimeout(() =&gt; resolve(<span class="str">"p2"</span>), <span class="num">5000</span>)   <span class="cm">// 5 second timer starts NOW</span>
+);
+<span class="cm">// ⚠️ BOTH timers are already ticking!</span>
+
+<span class="kw">async function</span> <span class="fn">handle</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi"</span>);             <span class="cm">// instant</span>
+
+  <span class="kw">const</span> val1 = <span class="kw">await</span> p1;        <span class="cm">// waits for p1 (10s)</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(val1);            <span class="cm">// "p1" at 10s</span>
+
+  <span class="kw">const</span> val2 = <span class="kw">await</span> p2;        <span class="cm">// p2 already resolved at 5s!</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(val2);            <span class="cm">// "p2" prints IMMEDIATELY after p1</span>
+}
+<span class="fn">handle</span>();
+<span class="cm">// Output: "Hi" → (10s wait) → "p1" → "p2" (instant!)</span></pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why p2 prints instantly:</strong> Promises execute their constructor <strong>the moment they're created</strong>, not when they're awaited. Both <code>setTimeout</code> timers start ticking when the <code>const p1 = ...</code> and <code>const p2 = ...</code> lines run. By the time we await p2 (after 10 seconds), its 5-second timer finished 5 seconds ago. It's already resolved! So <code>await p2</code> returns immediately.
+</div>
+
+<div class="c">
+  <h3>How to make p2 actually wait AFTER p1</h3>
+  <p>If you want truly sequential execution (p2 starts only after p1 finishes), don't create the promises upfront — create them inside the async function:</p>
+  <div class="cw"><div class="cl">✅ Sequential — p2 starts after p1 finishes</div>
+    <pre><span class="kw">function</span> <span class="fn">createP1</span>() {
+  <span class="kw">return new</span> Promise(resolve =&gt;
+    setTimeout(() =&gt; resolve(<span class="str">"p1 done"</span>), <span class="num">10000</span>)
+  );
+}
+<span class="kw">function</span> <span class="fn">createP2</span>() {
+  <span class="kw">return new</span> Promise(resolve =&gt;
+    setTimeout(() =&gt; resolve(<span class="str">"p2 done"</span>), <span class="num">5000</span>)
+  );
+}
+
+<span class="kw">async function</span> <span class="fn">handle</span>() {
+  <span class="kw">const</span> val1 = <span class="kw">await</span> createP1(); <span class="cm">// p1 CREATED and waited</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(val1);             <span class="cm">// "p1 done" at 10s</span>
+
+  <span class="kw">const</span> val2 = <span class="kw">await</span> createP2(); <span class="cm">// p2 CREATED here — starts NOW</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(val2);             <span class="cm">// "p2 done" at 15s (10 + 5)</span>
+}
+<span class="fn">handle</span>();</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Real-World Example — fetch with async/await</div>
+
+<div class="c">
+  <h3>Fetching data from an API</h3>
+  <div class="cw"><div class="cl">The practical pattern you'll use daily</div>
+    <pre><span class="kw">async function</span> <span class="fn">handlePromise</span>() {
+  <span class="cm">// fetch() returns a Response object (wrapped in a promise)</span>
+  <span class="kw">const</span> response = <span class="kw">await</span> fetch(<span class="str">"https://api.github.com/users/alok722"</span>);
+
+  <span class="cm">// response.json() is ALSO a promise — it parses the body</span>
+  <span class="kw">const</span> data = <span class="kw">await</span> response.json();
+
+  <span class="fn">console</span>.<span class="fn">log</span>(data);
+}
+<span class="fn">handlePromise</span>();</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Why two awaits?</strong> <code>fetch()</code> resolves when the HTTP headers arrive — it gives you a Response object. But the <em>body</em> is a ReadableStream that hasn't been fully received yet. <code>response.json()</code> returns another promise that resolves when the entire body is parsed as JSON. Two awaits for two async steps: (1) get the response, (2) parse the body.
+</div>
+
+<hr class="divider">
+
+<div class="st">Error Handling in async/await</div>
+
+<div class="c">
+  <h3>Two ways to handle errors</h3>
+  <div class="cw"><div class="cl">Way 1: try/catch — the recommended approach</div>
+    <pre><span class="kw">async function</span> <span class="fn">handlePromise</span>() {
+  <span class="kw">try</span> {
+    <span class="kw">const</span> response = <span class="kw">await</span> fetch(<span class="str">"https://invalid-url.com"</span>);
+    <span class="kw">const</span> data = <span class="kw">await</span> response.json();
+    <span class="fn">console</span>.<span class="fn">log</span>(data);
+  } <span class="kw">catch</span> (err) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error:"</span>, err);
+    <span class="cm">// Catches: network errors, JSON parse errors, any throw</span>
+  }
+}
+<span class="fn">handlePromise</span>();</pre>
+  </div>
+  <div class="cw"><div class="cl">Way 2: .catch() on the async function call</div>
+    <pre><span class="kw">async function</span> <span class="fn">handlePromise</span>() {
+  <span class="kw">const</span> response = <span class="kw">await</span> fetch(<span class="str">"https://invalid-url.com"</span>);
+  <span class="kw">const</span> data = <span class="kw">await</span> response.json();
+  <span class="fn">console</span>.<span class="fn">log</span>(data);
+}
+
+<span class="cm">// Since async functions return promises, you can .catch() them:</span>
+<span class="fn">handlePromise</span>().catch(err =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Error:"</span>, err));</pre>
+  </div>
+</div>
+
+<div class="why">
+  <strong>Which to use?</strong> <code>try/catch</code> is preferred because it keeps the error handling inside the function — more readable, easier to add specific error handling per step. The <code>.catch()</code> approach works but puts error handling outside the function, which can be harder to manage in complex code. Use <code>try/catch</code> in production code.
+</div>
+
+<hr class="divider">
+
+<div class="st">async/await vs .then/.catch — Which to Use?</div>
+
+<div class="c">
+  <h3>They're the same thing underneath</h3>
+  <p><code>async/await</code> is <strong>syntactic sugar</strong> over promises. Behind the scenes, it uses the exact same Promise mechanism. The difference is purely in how you write and read the code.</p>
+  <ul>
+    <li><strong>async/await</strong> → reads like synchronous code, easier to debug (step-through in debugger), better for sequential operations, cleaner try/catch error handling</li>
+    <li><strong>.then/.catch</strong> → better for simple one-off promises, useful when you need to run multiple promises in parallel (with <code>Promise.all</code>), more explicit about what's async</li>
+  </ul>
+  <p style="margin-top:10px;"><strong>Recommendation:</strong> Use async/await as the default. Fall back to .then for specific patterns like <code>Promise.all</code>, <code>Promise.race</code>, or when you need to fire-and-forget.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS                                 -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="st">Interview Questions &amp; Answers</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q1</span><span class="t">What is an async function? How is it different from a normal function?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>An async function is a function declared with the <code>async</code> keyword. It differs from a normal function in two ways: (1) it <strong>always returns a promise</strong> — if you return a plain value, it's automatically wrapped in <code>Promise.resolve(value)</code>; if you return a promise, it's returned as-is without double-wrapping. (2) You can use the <code>await</code> keyword inside it to pause execution until a promise resolves. Normal functions cannot use <code>await</code>.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q2</span><span class="t">Does <code>await</code> block the main thread / call stack?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p><strong>No!</strong> <code>await</code> does NOT block the call stack. When JS encounters <code>await</code>, it <strong>suspends the async function</strong> and pops it off the call stack. The stack is now free — other code, event handlers, and UI updates can run normally. When the awaited promise resolves, the event loop pushes the function back onto the stack, and it resumes from where it left off. This is why the page doesn't freeze during await. The function appears to "wait," but the engine is not actually blocked.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q3</span><span class="t">When do promises start executing — when created or when awaited?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>Promises start executing <strong>immediately when created</strong>, not when awaited. The executor function inside <code>new Promise((resolve, reject) => { ... })</code> runs synchronously at creation time. <code>await</code> doesn't start the promise — it only waits for an <em>already-running</em> promise to settle. This is why if you create two promises with <code>const p1 = ...</code> and <code>const p2 = ...</code>, both start their timers immediately. Awaiting them sequentially doesn't make them run sequentially — they're already running in parallel.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q4</span><span class="t">How do you handle errors in async/await?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>Two approaches: (1) <strong>try/catch</strong> (recommended) — wrap await calls in a try block, handle errors in catch. This keeps error handling co-located with the code, allows specific handling per step, and reads naturally. (2) <strong>.catch() on the function call</strong> — since async functions return promises, you can do <code>handlePromise().catch(err => ...)</code>. This handles errors externally. Both work because async/await is sugar over promises. Use try/catch in production for better readability.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q5</span><span class="t">What is the difference between async/await and Promise.then?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>They are functionally identical — async/await is syntactic sugar over promises. The differences are in code style: (1) <strong>Readability</strong> — async/await reads top-to-bottom like synchronous code; .then chains read inside-out. (2) <strong>Error handling</strong> — async/await uses try/catch; .then uses .catch(). (3) <strong>Debugging</strong> — async/await is easier to step through in debuggers. (4) <strong>Parallel execution</strong> — .then with Promise.all is more natural for parallel tasks. Use async/await as the default; use .then for Promise.all/race patterns.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">Q6</span><span class="t">What is the common pitfall in promise chaining?</span></div>
+  <div class="qa-a"><div class="l">Answer</div>
+    <p>The most common pitfall is <strong>forgetting to return</strong> from inside <code>.then()</code>. If you don't return, the next <code>.then</code> receives <code>undefined</code> instead of the actual data or promise. The rule is: whatever you return from one <code>.then</code> becomes the input to the next <code>.then</code>. If you return a promise, the chain waits for it. If you return a value, the next <code>.then</code> gets it immediately. If you return nothing, the next <code>.then</code> gets <code>undefined</code>.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Output-Based Interview Questions</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 1</span><span class="t">What will be the output and timing?</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> p = <span class="kw">new</span> Promise(resolve =&gt;
+  setTimeout(() =&gt; resolve(<span class="str">"Done!"</span>), <span class="num">3000</span>)
+);
+
+<span class="kw">async function</span> <span class="fn">handle</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>);
+  <span class="kw">const</span> val = <span class="kw">await</span> p;
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>);
+  <span class="fn">console</span>.<span class="fn">log</span>(val);
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C"</span>);
+<span class="fn">handle</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>);</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"C" → "A" → "D" → (3s) → "B" → "Done!"</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> "C" (sync). handle() called → "A" (sync part). await suspends handle, pops it off stack. "D" (sync). After 3s, p resolves → handle resumes → "B" → "Done!".</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 2</span><span class="t">What will be the output? (Two awaits, same promise)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> p = <span class="kw">new</span> Promise(resolve =&gt;
+  setTimeout(() =&gt; resolve(<span class="str">"value"</span>), <span class="num">3000</span>)
+);
+
+<span class="kw">async function</span> <span class="fn">handle</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi"</span>);
+
+  <span class="kw">const</span> val1 = <span class="kw">await</span> p;
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>, val1);
+
+  <span class="kw">const</span> val2 = <span class="kw">await</span> p;
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>, val2);
+}
+<span class="fn">handle</span>();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"Hi" → (3s) → "A value" → "B value" (instant)</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> Both await the SAME promise. After 3s it resolves. First await gets the value, second await gets it instantly (already resolved). They don't wait 3+3=6 seconds — just 3 total.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 3</span><span class="t">What will be the output? (p1=10s, p2=5s, await p1 first)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre><span class="kw">const</span> p1 = <span class="kw">new</span> Promise(r =&gt; setTimeout(() =&gt; r(<span class="str">"p1"</span>), <span class="num">10000</span>));
+<span class="kw">const</span> p2 = <span class="kw">new</span> Promise(r =&gt; setTimeout(() =&gt; r(<span class="str">"p2"</span>), <span class="num">5000</span>));
+
+<span class="kw">async function</span> <span class="fn">handle</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi"</span>);
+  <span class="kw">const</span> v1 = <span class="kw">await</span> p1; <span class="fn">console</span>.<span class="fn">log</span>(v1);
+  <span class="kw">const</span> v2 = <span class="kw">await</span> p2; <span class="fn">console</span>.<span class="fn">log</span>(v2);
+}
+<span class="fn">handle</span>();</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">"Hi" → (10s) → "p1" → "p2" (instant!)</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> Both promises start their timers at creation. p2's 5s timer finishes at 5s, p1's 10s timer finishes at 10s. We await p1 first (waits 10s). By then p2 has been resolved for 5 seconds already. So <code>await p2</code> returns immediately.</p>
+  </div>
+</div>
+
+<div class="qa">
+  <div class="qa-q"><span class="b">I/O 4</span><span class="t">What will be the output? (Chaining without return)</span></div>
+  <div class="qa-a">
+    <div class="cw"><div class="cl">JavaScript</div>
+      <pre>Promise.resolve(<span class="num">10</span>)
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(val);     <span class="cm">// A</span>
+    val * <span class="num">2</span>;              <span class="cm">// ← no return!</span>
+  })
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(val);     <span class="cm">// B</span>
+    <span class="kw">return</span> val * <span class="num">2</span>;      <span class="cm">// ← has return</span>
+  })
+  .then(val =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(val);     <span class="cm">// C</span>
+  });</pre>
+    </div>
+    <div class="ob"><span class="oi">OUTPUT</span><span class="ot">10 → undefined → NaN</span></div>
+    <p style="margin-top:10px;"><strong>Why:</strong> A: 10 (correct). B: undefined (first .then didn't return). C: <code>undefined * 2 = NaN</code>. The missing return in the first .then breaks the entire chain's data flow.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="st">Quick Revision — Cheat Sheet</div>
+
+<div class="c">
+  <h3>Episode 22 — Creating Promises &amp; Chaining</h3>
+  <ul>
+    <li><strong>Producer pattern:</strong> <code>new Promise((resolve, reject) => { ... })</code> → do work → call resolve(value) or reject(error) → return the promise</li>
+    <li>Executor function runs <strong>synchronously</strong></li>
+    <li><code>resolve()</code> doesn't stop execution — always add <code>return</code> after reject</li>
+    <li><strong>Chaining rule:</strong> return from .then → data flows to next .then. Forget return → next .then gets undefined</li>
+    <li><strong>.catch()</strong> catches errors from all steps <strong>above</strong> it in the chain</li>
+    <li>.then <strong>after</strong> .catch still runs — catch returns a resolved promise</li>
+    <li>Multiple .catch blocks for selective error handling at different chain levels</li>
+    <li>Arrow functions with implicit return make chains cleaner</li>
+  </ul>
+</div>
+
+<div class="c">
+  <h3>Episode 23 — async/await</h3>
+  <ul>
+    <li><code>async</code> function always returns a promise. Plain values auto-wrapped, existing promises returned as-is.</li>
+    <li><code>await</code> pauses the <strong>function only</strong> — NOT the call stack. Function is suspended, popped off stack, resumed when promise settles.</li>
+    <li>Promises start executing <strong>when created</strong>, not when awaited. await only waits for already-running promises.</li>
+    <li>To make promises truly sequential: create them inside the async function with factory functions, not upfront.</li>
+    <li><strong>Error handling:</strong> try/catch inside async function (recommended) or .catch() on the function call.</li>
+    <li><code>fetch()</code> needs two awaits: one for the Response, one for <code>.json()</code> (body parsing).</li>
+    <li>async/await is <strong>syntactic sugar</strong> over promises — same mechanism underneath.</li>
+    <li>Use async/await as default. Use .then for Promise.all/race/any patterns.</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span>Episodes 22 &amp; 23 — Creating Promises, Chaining &amp; async/await — Complete!</span>
+</div>
+
+</body>
+</html>

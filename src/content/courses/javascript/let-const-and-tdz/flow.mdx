@@ -1,0 +1,47 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  Every `let` and `const` begins its life hoisted but unreachable — the
+  Temporal Dead Zone. This diagram traces the lifecycle inside a single
+  scope: enter the block, hit the TDZ, cross the declaration line, and
+  finally reach the safe zone. The legend below decodes each state and
+  the error each transition can produce.
+</Callout>
+
+## let / const lifecycle — from TDZ to safe zone
+
+```mermaid
+flowchart TD
+    S["<b>i · Scope entry</b><br/>Phase 1 allocates memory<br/>for every let / const"]
+      --> T["<b>ii · Temporal Dead Zone</b><br/>variable exists, but unreachable"]
+    T -->|"<b>iii</b> · access before declaration"| RE["<b>ReferenceError</b><br/>Cannot access 'x' before initialization"]
+    T -->|"<b>iv</b> · declaration line runs"| L["<b>v · Safe zone</b><br/>bound to its initial value"]
+    L -->|"<b>vi</b> · let reassignment"| L
+    L -->|"<b>vii</b> · const reassignment"| TE["<b>TypeError</b><br/>Assignment to constant variable"]
+    L -->|"<b>viii</b> · duplicate declaration"| SE["<b>SyntaxError</b><br/>Identifier 'x' has already been declared"]
+    L -->|"<b>ix</b> · scope exits"| D["<b>GC</b><br/>block memory destroyed"]
+
+    classDef ok   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef warn fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef err  fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    classDef node fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    class S,D node
+    class T warn
+    class L ok
+    class RE,TE,SE err
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Scope entry',        description: 'When execution enters the scope, Phase 1 allocates memory for every `let` / `const` in that scope — before any code runs.' },
+  { numeral: 'ii',   name: 'Temporal Dead Zone', description: 'Variable exists in memory but is flagged as unreachable. Lives in Script scope (top-level) or Block scope (inside `{ }`).' },
+  { numeral: 'iii',  name: 'TDZ violation',      description: 'Reading, writing, or even `typeof` in the TDZ throws `ReferenceError: Cannot access \'x\' before initialization`.' },
+  { numeral: 'iv',   name: 'Declaration runs',   description: 'The `let x = …` / `const x = …` line executes. The TDZ ends, the variable is bound to its initial value.' },
+  { numeral: 'v',    name: 'Safe zone',          description: 'Normal access works. Reads return the value, `typeof` returns the type.' },
+  { numeral: 'vi',   name: 'let reassignment',   description: '`let` allows rebinding to a new value. The variable stays in the safe zone.' },
+  { numeral: 'vii',  name: 'const reassignment', description: '`const` forbids rebinding → `TypeError: Assignment to constant variable`. Mutating object properties is still allowed.' },
+  { numeral: 'viii', name: 'Duplicate declaration', description: 'A second `let` / `const` / `var` with the same name in the same scope throws `SyntaxError` — the code never runs.' },
+  { numeral: 'ix',   name: 'Scope exit',         description: 'When the block or function returns, block-scoped `let` / `const` memory is destroyed. Script-scope bindings live for the page.' },
+]} />

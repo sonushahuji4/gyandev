@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bonus: Tricky JS Interview Questions — Type Coercion, Data Types, Equality & Gotchas</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;
+    --text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;
+    --green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;
+    --orange:#fb923c;--pink:#f472b6;--code-bg:#0d1117;
+    --q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);
+    --output-bg:#0f1a14;--error-bg:#1a0f0f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--red);color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:30px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#ef4444 0%,#f59e0b 40%,#22c55e 70%,#3b82f6 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .section-title{display:flex;align-items:center;gap:12px;margin:48px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .section-title::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .concept-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .concept-card h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .concept-card p,.concept-card li{font-size:14.5px;color:var(--text);line-height:1.75}
+  .concept-card ul,.concept-card ol{padding-left:20px;margin-top:8px}
+  .concept-card li{margin-bottom:6px}
+  .concept-card li::marker{color:var(--accent)}
+  .highlight{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .key-box{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green)}
+  .key-box strong{font-weight:700}
+  .warn-box{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red)}
+  .info-box{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2)}
+  .qa-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .q-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .q-text{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .a-label{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.75}
+  .qa-a p+p{margin-top:8px}
+  .code-wrap{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .code-label{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .output-block{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .output-block .out-icon{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .output-block .out-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .error-block{background:var(--error-bg);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .error-block .err-icon{background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .error-block .err-text{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--red)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:36px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center}
+  .nav-footer span{font-size:14px;color:var(--green);font-weight:700}
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .type-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;position:relative;overflow:hidden}
+  .type-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .type-card.tp::before{background:var(--cyan)}
+  .type-card.tn::before{background:var(--orange)}
+  .type-card h4{font-size:13px;font-weight:700;margin-bottom:6px}
+  .type-card.tp h4{color:var(--cyan)}
+  .type-card.tn h4{color:var(--orange)}
+  .type-card p{font-size:12.5px;line-height:1.6}
+  .type-card code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(255,255,255,0.05);padding:1px 4px;border-radius:3px}
+  .rapid-fire{display:grid;grid-template-columns:1fr auto;gap:0;margin:12px 0;border:1px solid var(--border);border-radius:10px;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:13px}
+  .rf-row{display:contents}
+  .rf-row:nth-child(odd) .rf-q,.rf-row:nth-child(odd) .rf-a{background:var(--surface)}
+  .rf-row:nth-child(even) .rf-q,.rf-row:nth-child(even) .rf-a{background:var(--surface2)}
+  .rf-q{padding:10px 16px;border-right:1px solid var(--border);color:var(--text)}
+  .rf-a{padding:10px 16px;color:var(--green);font-weight:600;text-align:right;min-width:140px}
+  @media(max-width:700px){.type-grid{grid-template-columns:1fr}.header h1{font-size:24px}.rapid-fire{font-size:11.5px}.rf-a{min-width:100px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Bonus Chapter — Most Asked</div>
+  <h1>Tricky JS Interview Questions: Data Types, Type Coercion, Equality &amp; Gotchas</h1>
+  <p>The questions interviewers love that catch everyone off guard — know these and you'll stand out</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 1: DATA TYPES                      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">1. JavaScript Data Types</div>
+
+<div class="concept-card">
+  <h3>Two Categories of Data Types</h3>
+  <p>JavaScript has <strong>8 data types</strong> total, split into two categories:</p>
+</div>
+
+<div class="type-grid">
+  <div class="type-card tp">
+    <h4>Primitive Types (7)</h4>
+    <p>Immutable, stored by <strong>value</strong>, compared by value.</p>
+    <p style="margin-top:8px;">
+      <code>number</code> — integers &amp; floats (64-bit)<br>
+      <code>string</code> — text in quotes<br>
+      <code>boolean</code> — <code>true</code> / <code>false</code><br>
+      <code>undefined</code> — declared, no value<br>
+      <code>null</code> — intentionally empty<br>
+      <code>symbol</code> — unique identifier (ES6)<br>
+      <code>bigint</code> — large integers (ES2020)
+    </p>
+  </div>
+  <div class="type-card tn">
+    <h4>Non-Primitive / Reference Type (1)</h4>
+    <p>Mutable, stored by <strong>reference</strong>, compared by reference.</p>
+    <p style="margin-top:8px;">
+      <code>object</code> — includes:<br>
+      • Plain objects <code>{ }</code><br>
+      • Arrays <code>[ ]</code><br>
+      • Functions <code>function() {}</code><br>
+      • Date, RegExp, Map, Set, etc.<br>
+      • <code>null</code> reports as object (bug!)
+    </p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>The <code>typeof</code> Operator — Complete Reference</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">typeof 42</div><div class="rf-a">"number"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof "hello"</div><div class="rf-a">"string"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof true</div><div class="rf-a">"boolean"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof undefined</div><div class="rf-a">"undefined"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof null</div><div class="rf-a">"object" ⚠ BUG</div></div>
+    <div class="rf-row"><div class="rf-q">typeof Symbol("id")</div><div class="rf-a">"symbol"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof 10n</div><div class="rf-a">"bigint"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof {}</div><div class="rf-a">"object"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof []</div><div class="rf-a">"object" ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">typeof function(){}</div><div class="rf-a">"function"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof NaN</div><div class="rf-a">"number" ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">typeof Infinity</div><div class="rf-a">"number"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof undeclaredVar</div><div class="rf-a">"undefined"</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong>Surprises:</strong> <code>typeof null</code> is "object" (historical bug). <code>typeof []</code> is "object" (arrays are objects). <code>typeof NaN</code> is "number" (NaN is a special numeric value). <code>typeof function</code> is "function" (not "object", even though functions are objects).</p>
+</div>
+
+<div class="concept-card">
+  <h3>How to Correctly Check Types</h3>
+  <div class="code-wrap"><div class="code-label">Type checking techniques</div>
+    <pre><span class="cm">// Check for array</span>
+Array.isArray([<span class="num">1</span>,<span class="num">2</span>]);           <span class="cm">// true</span>
+Array.isArray({});               <span class="cm">// false</span>
+
+<span class="cm">// Check for null</span>
+<span class="kw">const</span> x = <span class="kw">null</span>;
+x === <span class="kw">null</span>;                     <span class="cm">// true (don't use typeof)</span>
+
+<span class="cm">// Check for NaN</span>
+Number.isNaN(<span class="kw">NaN</span>);              <span class="cm">// true</span>
+Number.isNaN(<span class="str">"hello"</span>);           <span class="cm">// false (better than isNaN())</span>
+isNaN(<span class="str">"hello"</span>);                  <span class="cm">// true ⚠ (coerces to number first!)</span>
+
+<span class="cm">// Check for exact type</span>
+Object.prototype.toString.call([]);       <span class="cm">// "[object Array]"</span>
+Object.prototype.toString.call(<span class="kw">null</span>);     <span class="cm">// "[object Null]"</span>
+Object.prototype.toString.call(<span class="kw">undefined</span>); <span class="cm">// "[object Undefined]"</span></pre>
+  </div>
+</div>
+
+<div class="key-box">
+  <strong>Interview Tip:</strong> When asked "What are the data types in JavaScript?", list all 7 primitives + object. Mention that <code>undefined</code> is both a type AND a value. Mention that <code>typeof null === "object"</code> is a historical bug. Mention that arrays and functions are technically objects.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 2: TYPE COERCION                   -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">2. Type Coercion — Implicit Conversion</div>
+
+<div class="concept-card">
+  <h3>What is Type Coercion?</h3>
+  <p><strong>Type coercion</strong> is JavaScript's automatic conversion of one data type to another when operators or functions expect a different type. It happens implicitly (by the engine) or explicitly (by the programmer using <code>Number()</code>, <code>String()</code>, <code>Boolean()</code>, etc.).</p>
+</div>
+
+<div class="concept-card">
+  <h3>The <code>+</code> Operator — String Wins!</h3>
+  <p>The <code>+</code> operator is <strong>overloaded</strong> — it does both addition AND string concatenation. The rule is: <strong>if either operand is a string, the other is converted to a string and concatenated</strong>.</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">"5" + 5</div><div class="rf-a">"55"</div></div>
+    <div class="rf-row"><div class="rf-q">5 + "5"</div><div class="rf-a">"55"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + "5"</div><div class="rf-a">"55"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + 3 + 2</div><div class="rf-a">"532"</div></div>
+    <div class="rf-row"><div class="rf-q">3 + 2 + "5"</div><div class="rf-a">"55"</div></div>
+    <div class="rf-row"><div class="rf-q">"" + 5</div><div class="rf-a">"5"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + true</div><div class="rf-a">"5true"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + null</div><div class="rf-a">"5null"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + undefined</div><div class="rf-a">"5undefined"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + [1, 2]</div><div class="rf-a">"51,2"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + {}</div><div class="rf-a">"5[object Object]"</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong>Key:</strong> <code>"5" + 3 + 2</code> → left to right: <code>"5" + 3</code> = "53", then <code>"53" + 2</code> = "532". But <code>3 + 2 + "5"</code> → <code>3 + 2</code> = 5 (both numbers), then <code>5 + "5"</code> = "55".</p>
+</div>
+
+<div class="concept-card">
+  <h3>Other Arithmetic Operators — Number Wins!</h3>
+  <p><code>-</code>, <code>*</code>, <code>/</code>, <code>%</code>, <code>**</code> always try to convert operands to <strong>numbers</strong>. String concatenation only happens with <code>+</code>.</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">"5" - 3</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">"5" * "2"</div><div class="rf-a">10</div></div>
+    <div class="rf-row"><div class="rf-q">"10" / 2</div><div class="rf-a">5</div></div>
+    <div class="rf-row"><div class="rf-q">"10" % 3</div><div class="rf-a">1</div></div>
+    <div class="rf-row"><div class="rf-q">"abc" - 1</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">true + 1</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">false + 1</div><div class="rf-a">1</div></div>
+    <div class="rf-row"><div class="rf-q">null + 1</div><div class="rf-a">1</div></div>
+    <div class="rf-row"><div class="rf-q">undefined + 1</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">true + true</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">true + false</div><div class="rf-a">1</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong>Numeric conversions:</strong> <code>true</code> → 1, <code>false</code> → 0, <code>null</code> → 0, <code>undefined</code> → NaN, <code>""</code> → 0, <code>"123"</code> → 123, <code>"abc"</code> → NaN.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Unary <code>+</code> Operator — Quick Number Conversion</h3>
+  <p>A <code>+</code> before a value converts it to a number (same as <code>Number()</code>):</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">+"5"</div><div class="rf-a">5</div></div>
+    <div class="rf-row"><div class="rf-q">+""</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">+true</div><div class="rf-a">1</div></div>
+    <div class="rf-row"><div class="rf-q">+false</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">+null</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">+undefined</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">+"abc"</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">+[]</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">+[5]</div><div class="rf-a">5</div></div>
+    <div class="rf-row"><div class="rf-q">+[1,2]</div><div class="rf-a">NaN</div></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 3: EQUALITY                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">3. Equality — <code>==</code> vs <code>===</code></div>
+
+<div class="concept-card">
+  <h3>Loose Equality (<code>==</code>) vs Strict Equality (<code>===</code>)</h3>
+  <p><code>==</code> (loose/abstract) compares values <strong>after type coercion</strong> — it converts operands to the same type first.</p>
+  <p><code>===</code> (strict) compares values <strong>without coercion</strong> — both type AND value must match.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Loose Equality <code>==</code> — The Coercion Table</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">5 == "5"</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">0 == ""</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">0 == "0"</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">"" == "0"</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">0 == false</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">"" == false</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">1 == true</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">2 == true</div><div class="rf-a">false ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">null == undefined</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">null == 0</div><div class="rf-a">false ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">null == ""</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">null == false</div><div class="rf-a">false ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">NaN == NaN</div><div class="rf-a">false ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">[] == false</div><div class="rf-a">true ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">[] == 0</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">"" == []</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">[1] == 1</div><div class="rf-a">true</div></div>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Strict Equality <code>===</code></h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">5 === "5"</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">5 === 5</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">0 === false</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">"" === false</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">null === undefined</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">NaN === NaN</div><div class="rf-a">false ⚠</div></div>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Golden Rules:</strong> 1) <code>NaN</code> is NOT equal to anything, including itself. Use <code>Number.isNaN()</code> to check. 2) <code>null == undefined</code> is true, but neither equals anything else with <code>==</code>. 3) <strong>Always use <code>===</code></strong> in real code to avoid coercion surprises.
+</div>
+
+<div class="concept-card">
+  <h3>Object Equality — Reference Comparison</h3>
+  <p>Objects (including arrays) are compared by <strong>reference</strong>, not by content:</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">[] == []</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">[] === []</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">{} == {}</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">{} === {}</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">const a = []; a == a</div><div class="rf-a">true</div></div>
+  </div>
+  <p style="margin-top:10px;">Two different objects in memory are never equal, even if they have identical content. Only the same reference equals itself.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 4: NaN                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">4. NaN — Not a Number (But It's a Number!)</div>
+
+<div class="concept-card">
+  <h3>NaN Deep Dive</h3>
+  <ul>
+    <li><code>typeof NaN</code> → <code>"number"</code> — yes, "Not a Number" is a number type!</li>
+    <li><code>NaN === NaN</code> → <code>false</code> — it's the only value in JS not equal to itself</li>
+    <li><code>NaN !== NaN</code> → <code>true</code></li>
+    <li>Use <code>Number.isNaN(value)</code> (ES6, strict) or <code>Object.is(value, NaN)</code> to check</li>
+    <li>Avoid <code>isNaN()</code> (legacy) — it coerces the argument first: <code>isNaN("hello")</code> → true ⚠</li>
+  </ul>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">NaN + 1</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">NaN * 5</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">"abc" * 2</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">undefined + 1</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">0 / 0</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">Infinity - Infinity</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">Number("abc")</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">parseInt("xyz")</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">Math.sqrt(-1)</div><div class="rf-a">NaN</div></div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 5: TRUTHY/FALSY                    -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">5. Truthy &amp; Falsy Values</div>
+
+<div class="concept-card">
+  <h3>The 8 Falsy Values (Memorize These!)</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">false</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">0</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">-0</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">0n (BigInt zero)</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">"" (empty string)</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">null</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">undefined</div><div class="rf-a">falsy</div></div>
+    <div class="rf-row"><div class="rf-q">NaN</div><div class="rf-a">falsy</div></div>
+  </div>
+  <p style="margin-top:12px;"><strong>Everything else is truthy</strong>, including these common traps:</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">"0" (string zero)</div><div class="rf-a">truthy ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">"false" (string)</div><div class="rf-a">truthy ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">[] (empty array)</div><div class="rf-a">truthy ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">{} (empty object)</div><div class="rf-a">truthy ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">function(){}</div><div class="rf-a">truthy</div></div>
+    <div class="rf-row"><div class="rf-q">-1</div><div class="rf-a">truthy</div></div>
+    <div class="rf-row"><div class="rf-q">Infinity</div><div class="rf-a">truthy</div></div>
+    <div class="rf-row"><div class="rf-q">" " (space string)</div><div class="rf-a">truthy ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">new Boolean(false)</div><div class="rf-a">truthy ⚠⚠</div></div>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Biggest Trap:</strong> <code>new Boolean(false)</code> is <strong>truthy</strong> because it creates a Boolean <em>object</em>, not a primitive. All objects are truthy. Never use <code>new Boolean()</code>, <code>new String()</code>, or <code>new Number()</code>.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 6: TRICKY OPERATORS                -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">6. Tricky Operators &amp; Expressions</div>
+
+<div class="concept-card">
+  <h3>Logical Operators — They Don't Return Boolean!</h3>
+  <p><code>&&</code> and <code>||</code> return <strong>one of the operands</strong>, not necessarily true/false:</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">"hello" || "world"</div><div class="rf-a">"hello"</div></div>
+    <div class="rf-row"><div class="rf-q">"" || "world"</div><div class="rf-a">"world"</div></div>
+    <div class="rf-row"><div class="rf-q">0 || 42</div><div class="rf-a">42</div></div>
+    <div class="rf-row"><div class="rf-q">null || "default"</div><div class="rf-a">"default"</div></div>
+    <div class="rf-row"><div class="rf-q">"hello" && "world"</div><div class="rf-a">"world"</div></div>
+    <div class="rf-row"><div class="rf-q">"" && "world"</div><div class="rf-a">""</div></div>
+    <div class="rf-row"><div class="rf-q">0 && 42</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">null && "hello"</div><div class="rf-a">null</div></div>
+    <div class="rf-row"><div class="rf-q">1 && 2 && 3</div><div class="rf-a">3</div></div>
+    <div class="rf-row"><div class="rf-q">1 && 0 && 3</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">0 || "" || "hi" || 0</div><div class="rf-a">"hi"</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong><code>||</code></strong> returns the <strong>first truthy</strong> value, or the last value if all falsy. <strong><code>&&</code></strong> returns the <strong>first falsy</strong> value, or the last value if all truthy.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Nullish Coalescing <code>??</code> vs <code>||</code></h3>
+  <p><code>??</code> returns the right side only if the left is <code>null</code> or <code>undefined</code> (not for other falsy values like <code>0</code> or <code>""</code>):</p>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">0 || 42</div><div class="rf-a">42</div></div>
+    <div class="rf-row"><div class="rf-q">0 ?? 42</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">"" || "default"</div><div class="rf-a">"default"</div></div>
+    <div class="rf-row"><div class="rf-q">"" ?? "default"</div><div class="rf-a">""</div></div>
+    <div class="rf-row"><div class="rf-q">null ?? "fallback"</div><div class="rf-a">"fallback"</div></div>
+    <div class="rf-row"><div class="rf-q">undefined ?? "fallback"</div><div class="rf-a">"fallback"</div></div>
+    <div class="rf-row"><div class="rf-q">false ?? "fallback"</div><div class="rf-a">false</div></div>
+  </div>
+  <p style="margin-top:10px;">Use <code>??</code> when you want to keep <code>0</code> or <code>""</code> as valid values. Use <code>||</code> when any falsy should trigger the fallback.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Optional Chaining <code>?.</code></h3>
+  <div class="code-wrap"><div class="code-label">Safely access nested properties</div>
+    <pre><span class="kw">const</span> user = { address: { city: <span class="str">"Mumbai"</span> } };
+
+user.address.city;          <span class="cm">// "Mumbai"</span>
+user.phone?.number;         <span class="cm">// undefined (no error!)</span>
+user.getAge?.();            <span class="cm">// undefined (no error, method doesn't exist)</span>
+user?.address?.city;        <span class="cm">// "Mumbai"</span>
+
+<span class="cm">// Without ?. →</span>
+user.phone.number;          <span class="cm">// TypeError: Cannot read property 'number' of undefined</span></pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 7: MEGA I/O RAPID FIRE             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">7. Mega Rapid-Fire — 50 Tricky Output Questions</div>
+
+<div class="info-box">
+  <strong>How to use:</strong> Cover the answer column. Try to predict the output, then check. If you get it wrong, understand why before moving on. These are the most commonly asked tricky questions in JS interviews.
+</div>
+
+<div class="concept-card">
+  <h3>String &amp; Number Operations</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">"5" + 5</div><div class="rf-a">"55"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" - 3</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">"5" * "2"</div><div class="rf-a">10</div></div>
+    <div class="rf-row"><div class="rf-q">"5" - "3"</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + + "5"</div><div class="rf-a">"55"</div></div>
+    <div class="rf-row"><div class="rf-q">"foo" + + "bar"</div><div class="rf-a">"fooNaN"</div></div>
+    <div class="rf-row"><div class="rf-q">"5" + - "2"</div><div class="rf-a">"5-2"</div></div>
+    <div class="rf-row"><div class="rf-q">5 + + "5"</div><div class="rf-a">10</div></div>
+    <div class="rf-row"><div class="rf-q">"" + 0</div><div class="rf-a">"0"</div></div>
+    <div class="rf-row"><div class="rf-q">"" - 0</div><div class="rf-a">0</div></div>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Boolean &amp; Null &amp; Undefined Operations</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">true + true</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">true + false</div><div class="rf-a">1</div></div>
+    <div class="rf-row"><div class="rf-q">true + "1"</div><div class="rf-a">"true1"</div></div>
+    <div class="rf-row"><div class="rf-q">true + 1</div><div class="rf-a">2</div></div>
+    <div class="rf-row"><div class="rf-q">false + []</div><div class="rf-a">"false"</div></div>
+    <div class="rf-row"><div class="rf-q">null + 1</div><div class="rf-a">1</div></div>
+    <div class="rf-row"><div class="rf-q">null + null</div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">undefined + 1</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">undefined + undefined</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">null + undefined</div><div class="rf-a">NaN</div></div>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Equality Traps</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">0 == false</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">0 === false</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">"" == false</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">"" === false</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">null == undefined</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">null === undefined</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">NaN == NaN</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">[] == false</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">![] == false</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">[] == ![]</div><div class="rf-a">true ⚠⚠</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong>The infamous <code>[] == ![]</code>:</strong> <code>![]</code> → <code>false</code> ([] is truthy, negated = false). Then <code>[] == false</code>. [] converts to <code>""</code>, false converts to <code>0</code>, <code>""</code> converts to <code>0</code>. <code>0 == 0</code> → true!</p>
+</div>
+
+<div class="concept-card">
+  <h3>typeof Traps</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">typeof typeof 1</div><div class="rf-a">"string"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof NaN</div><div class="rf-a">"number"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof null</div><div class="rf-a">"object"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof []</div><div class="rf-a">"object"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof undefined</div><div class="rf-a">"undefined"</div></div>
+    <div class="rf-row"><div class="rf-q">typeof typeof undefined</div><div class="rf-a">"string"</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong><code>typeof typeof 1</code>:</strong> <code>typeof 1</code> → <code>"number"</code> (a string). <code>typeof "number"</code> → <code>"string"</code>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Object &amp; Array Weirdness</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">[] + []</div><div class="rf-a">""</div></div>
+    <div class="rf-row"><div class="rf-q">[] + {}</div><div class="rf-a">"[object Object]"</div></div>
+    <div class="rf-row"><div class="rf-q">{} + []</div><div class="rf-a">0 (in console)</div></div>
+    <div class="rf-row"><div class="rf-q">{} + {}</div><div class="rf-a">"[object Object]..." or NaN</div></div>
+    <div class="rf-row"><div class="rf-q">[] + 1</div><div class="rf-a">"1"</div></div>
+    <div class="rf-row"><div class="rf-q">[1,2] + [3,4]</div><div class="rf-a">"1,23,4"</div></div>
+    <div class="rf-row"><div class="rf-q">+[] </div><div class="rf-a">0</div></div>
+    <div class="rf-row"><div class="rf-q">+{}</div><div class="rf-a">NaN</div></div>
+    <div class="rf-row"><div class="rf-q">!![]</div><div class="rf-a">true</div></div>
+    <div class="rf-row"><div class="rf-q">!!""</div><div class="rf-a">false</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong><code>{} + []</code>:</strong> In browser console, <code>{}</code> at the start is treated as an empty block (not an object), so it becomes <code>+[]</code> → 0. Wrap in parens: <code>({}) + []</code> → <code>"[object Object]"</code>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Comparison Traps</h3>
+  <div class="rapid-fire">
+    <div class="rf-row"><div class="rf-q">null > 0</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">null == 0</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">null >= 0</div><div class="rf-a">true ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">undefined > 0</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">undefined == 0</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">undefined < 0</div><div class="rf-a">false</div></div>
+    <div class="rf-row"><div class="rf-q">"2" > "12"</div><div class="rf-a">true ⚠</div></div>
+    <div class="rf-row"><div class="rf-q">"2" > 12</div><div class="rf-a">false</div></div>
+  </div>
+  <p style="margin-top:10px;"><strong><code>null >= 0</code> is true but <code>null > 0</code> and <code>null == 0</code> are both false!</strong> This is because <code>>=</code>/<code>></code>/<code><</code> use numeric coercion (null → 0), but <code>==</code> has special rules where null only equals undefined.</p>
+  <p><strong><code>"2" > "12"</code>:</strong> String comparison is lexicographic (character by character). "2" > "1" at the first character, so true. But <code>"2" > 12</code> coerces "2" to number → 2 > 12 → false.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 8: INTERVIEW Q&As                  -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">8. Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q1</span><span class="q-text">What are the data types in JavaScript?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>JavaScript has <strong>8 data types</strong>. Seven are <strong>primitives</strong>: <code>number</code>, <code>string</code>, <code>boolean</code>, <code>undefined</code>, <code>null</code>, <code>symbol</code> (ES6), and <code>bigint</code> (ES2020). The eighth is <code>object</code>, which is a non-primitive reference type — arrays, functions, dates, regex, maps, sets, and plain objects are all objects. Primitives are immutable and stored by value; objects are mutable and stored by reference.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q2</span><span class="q-text">What is the difference between <code>==</code> and <code>===</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>==</code> (loose equality) performs <strong>type coercion</strong> before comparison — it converts both operands to the same type, then compares. <code>===</code> (strict equality) does <strong>no coercion</strong> — both the type and value must be identical. Example: <code>5 == "5"</code> is <code>true</code> (string coerced to number), but <code>5 === "5"</code> is <code>false</code> (different types). Best practice: always use <code>===</code> to avoid unexpected coercion bugs.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q3</span><span class="q-text">What is Type Coercion in JavaScript?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Type coercion is the automatic or implicit conversion of values from one type to another by the JS engine. <strong>Implicit</strong> coercion happens when operators expect a different type: <code>"5" - 3</code> coerces "5" to number 5. <strong>Explicit</strong> coercion is done by the programmer using functions like <code>Number("5")</code>, <code>String(42)</code>, <code>Boolean(0)</code>. The <code>+</code> operator prefers string concatenation (string wins), while <code>-</code>, <code>*</code>, <code>/</code> prefer numeric conversion (number wins).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q4</span><span class="q-text">What is <code>NaN</code>? How do you check for it?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>NaN</code> (Not a Number) is a special numeric value that represents an invalid or unrepresentable mathematical result (like <code>0/0</code> or <code>"abc" * 2</code>). Ironically, <code>typeof NaN</code> is <code>"number"</code>. It's the only value in JavaScript that is <strong>not equal to itself</strong> (<code>NaN === NaN</code> is <code>false</code>). To check for NaN, use <code>Number.isNaN(value)</code> (ES6, recommended) — it returns true only if the value is literally NaN. Avoid the older <code>isNaN()</code> which coerces the argument first.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q5</span><span class="q-text">What are truthy and falsy values? List all falsy values.</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>A <strong>falsy</strong> value is one that is treated as <code>false</code> in a boolean context (like <code>if</code> statements). There are exactly <strong>8 falsy values</strong>: <code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code>, <code>""</code>, <code>null</code>, <code>undefined</code>, <code>NaN</code>. Everything else is <strong>truthy</strong>, including commonly confusing values like <code>"0"</code>, <code>"false"</code>, <code>[]</code>, <code>{}</code>, <code>-1</code>, and <code>Infinity</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q6</span><span class="q-text">Why is <code>typeof null === "object"</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>This is a <strong>historical bug</strong> from the first implementation of JavaScript in 1995. Values were stored with a type tag, and <code>null</code> was represented as the null pointer (0x00), which had the same type tag as objects. This bug was never fixed to maintain backward compatibility — changing it would break millions of existing websites. To properly check for null, use <code>value === null</code>, not <code>typeof</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q7</span><span class="q-text">What is the difference between <code>null</code> and <code>undefined</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>undefined</code> means a variable has been declared but hasn't been assigned a value — it's the JS engine's default. <code>null</code> is an intentional assignment by the programmer meaning "no value." Types differ: <code>typeof undefined</code> → <code>"undefined"</code>, <code>typeof null</code> → <code>"object"</code>. With loose equality <code>null == undefined</code> is <code>true</code>, but with strict equality <code>null === undefined</code> is <code>false</code>. In numeric context: <code>Number(undefined)</code> → <code>NaN</code>, <code>Number(null)</code> → <code>0</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q8</span><span class="q-text">What is the difference between <code>||</code> and <code>??</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>||</code> (logical OR) returns the first <strong>truthy</strong> value. It treats <code>0</code>, <code>""</code>, <code>false</code>, <code>NaN</code> as falsy and skips them. <code>??</code> (nullish coalescing, ES2020) returns the first value that is NOT <code>null</code> or <code>undefined</code>. It keeps <code>0</code>, <code>""</code>, and <code>false</code> as valid values. Use <code>??</code> when <code>0</code> or <code>""</code> are legitimate values you want to preserve (e.g., form inputs, counters).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q9</span><span class="q-text">What is the difference between primitive and reference types?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Primitives</strong> are stored directly in the variable's memory location (stack). Assigning or passing creates a <strong>copy</strong>. Comparing checks the <strong>value</strong>. They are <strong>immutable</strong>.</p>
+    <p><strong>Reference types</strong> (objects) are stored in the heap, and the variable holds a <strong>pointer</strong> to that location. Assigning or passing copies the <strong>reference</strong>, not the object. Comparing checks if both point to the <strong>same object in memory</strong>. They are <strong>mutable</strong>.</p>
+    <div class="code-wrap"><div class="code-label">Proof</div>
+      <pre><span class="kw">let</span> a = <span class="num">5</span>; <span class="kw">let</span> b = a; b = <span class="num">10</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// 5 (copy — a is unchanged)</span>
+
+<span class="kw">let</span> x = {v:<span class="num">5</span>}; <span class="kw">let</span> y = x; y.v = <span class="num">10</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x.v); <span class="cm">// 10 (reference — same object!)</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q10</span><span class="q-text">What is the output of <code>[] == ![]</code> and why?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>true</code>. Step by step: (1) <code>![]</code> → <code>[]</code> is truthy, so <code>![]</code> = <code>false</code>. (2) Now we have <code>[] == false</code>. (3) <code>false</code> is coerced to <code>0</code>. (4) <code>[]</code> is coerced to <code>""</code> (via toString). (5) <code>""</code> is coerced to <code>0</code>. (6) <code>0 == 0</code> → <code>true</code>. This is one of the most famous JS quirks and demonstrates why <code>===</code> should always be used.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q11</span><span class="q-text">How do you check if a variable is an array?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Use <code>Array.isArray(value)</code> — it's the most reliable method. <code>typeof []</code> returns <code>"object"</code> (not useful). <code>instanceof Array</code> works but can fail across different frames/iframes. <code>Object.prototype.toString.call(value) === "[object Array]"</code> is another reliable but verbose approach.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q12</span><span class="q-text">What is <code>Object.is()</code> and how is it different from <code>===</code>?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><code>Object.is(a, b)</code> is like <code>===</code> but fixes two edge cases: (1) <code>Object.is(NaN, NaN)</code> → <code>true</code> (whereas <code>NaN === NaN</code> is false). (2) <code>Object.is(0, -0)</code> → <code>false</code> (whereas <code>0 === -0</code> is true). For everything else, it behaves identically to <code>===</code>.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 9: COMPLEX I/O QUESTIONS           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">9. Complex I/O Interview Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 1</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span> + <span class="str">"2"</span> + <span class="str">"2"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span> + +<span class="str">"2"</span> + <span class="str">"2"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span> + -<span class="str">"1"</span> + <span class="str">"2"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(+<span class="str">"1"</span> + <span class="str">"1"</span> + <span class="str">"2"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span> - <span class="str">"B"</span> + <span class="str">"2"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span> - <span class="str">"B"</span> + <span class="num">2</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"122" → "32" → "02" → "112" → "NaN2" → NaN</span></div>
+    <p style="margin-top:10px;">Line 1: 1+"2"="12", "12"+"2"="122". Line 2: +"2"=2, 1+2=3, 3+"2"="32". Line 3: -"1"=-1, 1+(-1)=0, 0+"2"="02". Line 4: +"1"=1, 1+"1"="11", "11"+"2"="112". Line 5: "A"-"B"=NaN, NaN+"2"="NaN2" (string wins). Line 6: NaN+2=NaN (no string, stays number).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 2</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = { };
+<span class="kw">let</span> b = { key: <span class="str">"b"</span> };
+<span class="kw">let</span> c = { key: <span class="str">"c"</span> };
+
+a[b] = <span class="num">123</span>;
+a[c] = <span class="num">456</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(a[b]);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">456</span></div>
+    <p style="margin-top:10px;">Object keys are strings. <code>b</code> and <code>c</code> are objects → both convert to the string <code>"[object Object]"</code> when used as keys. So <code>a["[object Object]"]</code> is set to 123, then overwritten to 456. Both <code>a[b]</code> and <code>a[c]</code> access the same key!</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 3</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="num">0.1</span> + <span class="num">0.2</span> == <span class="num">0.3</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">0.1</span> + <span class="num">0.2</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">false → 0.30000000000000004</span></div>
+    <p style="margin-top:10px;">IEEE 754 floating-point precision issue. <code>0.1 + 0.2</code> is <code>0.30000000000000004</code>, not exactly <code>0.3</code>. Fix: compare with a tolerance: <code>Math.abs(0.1 + 0.2 - 0.3) < Number.EPSILON</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 4</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="kw">var</span> y = x;
+x = <span class="num">5</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(y);
+
+<span class="kw">var</span> a = { val: <span class="num">1</span> };
+<span class="kw">var</span> b = a;
+a.val = <span class="num">5</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(b.val);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">1 → 5</span></div>
+    <p style="margin-top:10px;">Primitives are copied by value (y is independent). Objects are copied by reference (a and b point to the same object).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 5</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> a = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];
+<span class="kw">const</span> b = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];
+<span class="kw">const</span> c = a;
+
+<span class="fn">console</span>.<span class="fn">log</span>(a == b);
+<span class="fn">console</span>.<span class="fn">log</span>(a === b);
+<span class="fn">console</span>.<span class="fn">log</span>(a == c);
+<span class="fn">console</span>.<span class="fn">log</span>(a === c);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">false → false → true → true</span></div>
+    <p style="margin-top:10px;"><code>a</code> and <code>b</code> are different objects in memory (different references). <code>c</code> is the same reference as <code>a</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 6</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> x = <span class="num">10</span>;
+<span class="kw">let</span> y = <span class="str">"10"</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(x == y);
+<span class="fn">console</span>.<span class="fn">log</span>(x === y);
+<span class="fn">console</span>.<span class="fn">log</span>(x + y);
+<span class="fn">console</span>.<span class="fn">log</span>(x - y);
+<span class="fn">console</span>.<span class="fn">log</span>(x * y);
+<span class="fn">console</span>.<span class="fn">log</span>(x / y);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> (x + y));
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> (x - y));</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">true → false → "1010" → 0 → 100 → 1 → "string" → "number"</span></div>
+    <p style="margin-top:10px;">This single example demonstrates all the coercion rules: <code>+</code> concatenates (string wins), <code>-</code>/<code>*</code>/<code>/</code> convert to number, <code>==</code> coerces, <code>===</code> doesn't.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 7</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"10"</span> > <span class="str">"9"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"10"</span> > <span class="num">9</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">false → true</span></div>
+    <p style="margin-top:10px;">String vs string: lexicographic comparison — "1" (49) < "9" (57), so <code>"10" > "9"</code> is false. String vs number: "10" coerced to 10 → <code>10 > 9</code> is true.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 8</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">1</span>;
+<span class="kw">var</span> b = <span class="num">0</span>;
+<span class="kw">var</span> c = -<span class="num">1</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(a && b);
+<span class="fn">console</span>.<span class="fn">log</span>(a || b);
+<span class="fn">console</span>.<span class="fn">log</span>(a && c);
+<span class="fn">console</span>.<span class="fn">log</span>(b || c);
+<span class="fn">console</span>.<span class="fn">log</span>(!a);
+<span class="fn">console</span>.<span class="fn">log</span>(!b);
+<span class="fn">console</span>.<span class="fn">log</span>(!!a);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">0 → 1 → -1 → -1 → false → true → true</span></div>
+    <p style="margin-top:10px;"><code>&&</code> returns first falsy or last value. <code>||</code> returns first truthy or last value. <code>!</code> converts to boolean and negates. <code>!!</code> converts to boolean (double negate).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>The Must-Know Rules</h3>
+  <ul>
+    <li><strong>8 data types:</strong> number, string, boolean, undefined, null, symbol, bigint + object</li>
+    <li><code>typeof null === "object"</code> — historical bug. Check null with <code>=== null</code></li>
+    <li><code>typeof NaN === "number"</code> — NaN is a number type. Check with <code>Number.isNaN()</code></li>
+    <li><code>typeof [] === "object"</code> — arrays are objects. Check with <code>Array.isArray()</code></li>
+    <li><code>+</code> with any string → string concatenation. Other math ops → numeric conversion.</li>
+    <li><code>"5" + 3 + 2</code> → "532" (left to right, string infects). <code>3 + 2 + "5"</code> → "55"</li>
+    <li><code>==</code> coerces types, <code>===</code> doesn't. Always use <code>===</code></li>
+    <li><code>null == undefined</code> → true, but <code>null === undefined</code> → false</li>
+    <li><code>NaN === NaN</code> → false (use <code>Number.isNaN()</code> or <code>Object.is()</code>)</li>
+    <li>Objects compared by <strong>reference</strong>, not content. <code>[] == []</code> → false</li>
+    <li>8 falsy values: <code>false, 0, -0, 0n, "", null, undefined, NaN</code></li>
+    <li><code>"0"</code>, <code>[]</code>, <code>{}</code> are all <strong>truthy</strong>!</li>
+    <li><code>||</code> returns first truthy; <code>&&</code> returns first falsy; <code>??</code> returns first non-null/undefined</li>
+    <li><code>null >= 0</code> is true but <code>null == 0</code> is false (different comparison algorithms)</li>
+    <li>String comparison is lexicographic: <code>"10" > "9"</code> → false</li>
+    <li><code>0.1 + 0.2 !== 0.3</code> — floating point precision</li>
+    <li>Objects as keys → converted to <code>"[object Object]"</code> string</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span>🎉 Complete Namaste JavaScript Interview Preparation — All Topics + Bonus Covered!</span>
+</div>
+
+</body>
+</html>

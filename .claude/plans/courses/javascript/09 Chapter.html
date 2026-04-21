@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topics 13–17: Functions, Callbacks, Event Loop, JS Engine & setTimeout — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;
+    --text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;
+    --green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;
+    --orange:#fb923c;--pink:#f472b6;--code-bg:#0d1117;
+    --q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);
+    --output-bg:#0f1a14;--error-bg:#1a0f0f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--accent);color:#000;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:30px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#22d3ee 0%,#3b82f6 40%,#a78bfa 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .section-title{display:flex;align-items:center;gap:12px;margin:44px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .section-title::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .topic-divider{margin:56px 0 0;padding:20px 0 0;border-top:2px solid var(--purple)}
+  .topic-divider h2{font-size:24px;font-weight:800;background:linear-gradient(135deg,#fb923c 0%,#f59e0b 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px}
+  .topic-divider p{color:var(--text-dim);font-size:14px}
+  .concept-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .concept-card h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .concept-card p,.concept-card li{font-size:14.5px;color:var(--text);line-height:1.75}
+  .concept-card ul,.concept-card ol{padding-left:20px;margin-top:8px}
+  .concept-card li{margin-bottom:6px}
+  .concept-card li::marker{color:var(--accent)}
+  .highlight{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .key-box{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green)}
+  .key-box strong{font-weight:700}
+  .warn-box{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red)}
+  .info-box{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2)}
+  .qa-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .q-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .q-text{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .a-label{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.75}
+  .qa-a p+p{margin-top:8px}
+  .code-wrap{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .code-label{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .output-block{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .output-block .out-icon{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .output-block .out-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .error-block{background:var(--error-bg);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .error-block .err-icon{background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .error-block .err-text{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--red)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:32px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+  .nav-footer span{font-size:14px}
+  .diagram{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0;text-align:center;overflow-x:auto}
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+  .compare-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+  .compare-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+  .compare-card.c1::before{background:var(--green)}.compare-card.c2::before{background:var(--cyan)}
+  .compare-card h4{font-size:13px;font-weight:700;margin-bottom:8px}
+  .compare-card.c1 h4{color:var(--green)}.compare-card.c2 h4{color:var(--cyan)}
+  .compare-card p{font-size:13px;line-height:1.6}
+  .flow-step{display:flex;align-items:stretch;gap:0;margin:16px 0;border-radius:10px;overflow:hidden;border:1px solid var(--border)}
+  .flow-item{flex:1;padding:14px 16px;text-align:center;border-right:1px solid var(--border)}
+  .flow-item:last-child{border-right:none}
+  .flow-item h4{font-size:11px;font-weight:700;letter-spacing:0.5px;margin-bottom:4px}
+  .flow-item p{font-size:11.5px;line-height:1.5}
+  @media(max-width:700px){.compare-grid{grid-template-columns:1fr}.flow-step{flex-direction:column}.flow-item{border-right:none;border-bottom:1px solid var(--border)}.flow-item:last-child{border-bottom:none}.header h1{font-size:24px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Topics 13–17 of 19</div>
+  <h1>Functions, Callbacks, Event Loop, JS Engine &amp; setTimeout</h1>
+  <p>First class functions, the async world, how JavaScript actually runs in the browser, and why setTimeout lies</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 13: FIRST CLASS FUNCTIONS            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Topic 13 — First Class Functions &amp; Anonymous Functions</div>
+
+<div class="concept-card">
+  <h3>Function Statement vs Function Expression vs Arrow Function</h3>
+  <div class="code-wrap"><div class="code-label">Function Statement (aka Declaration)</div>
+    <pre><span class="kw">function</span> <span class="fn">a</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello"</span>); }
+<span class="cm">// Hoisted fully. Can be called before declaration.</span></pre>
+  </div>
+  <div class="code-wrap"><div class="code-label">Function Expression</div>
+    <pre><span class="kw">var</span> b = <span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello"</span>); };
+<span class="cm">// Treated as a variable. Hoisted as undefined. TypeError if called before.</span></pre>
+  </div>
+  <div class="code-wrap"><div class="code-label">Named Function Expression</div>
+    <pre><span class="kw">var</span> b = <span class="kw">function</span> <span class="fn">xyz</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello"</span>); };
+b();   <span class="cm">// ✓ Works</span>
+xyz(); <span class="cm">// ✗ ReferenceError — xyz only accessible inside the function body</span></pre>
+  </div>
+  <div class="code-wrap"><div class="code-label">Arrow Function (ES6)</div>
+    <pre><span class="kw">const</span> c = () =&gt; { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello"</span>); };
+<span class="cm">// Same hoisting as function expression. No own this, arguments, super.</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>What is an Anonymous Function?</h3>
+  <p>A function <strong>without a name</strong>. It cannot stand alone as a statement — <code>function() {}</code> by itself throws <code>SyntaxError: Function statements require a function name</code>. Anonymous functions are used as <strong>values</strong>: assigned to variables, passed as arguments, or returned from functions.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Parameters vs Arguments</h3>
+  <p><strong>Parameters</strong> are the labels/identifiers in the function <em>definition</em>. <strong>Arguments</strong> are the actual values passed during the function <em>call</em>.</p>
+  <div class="code-wrap"><div class="code-label">Example</div>
+    <pre><span class="kw">function</span> <span class="fn">add</span>(a, b) { <span class="kw">return</span> a + b; } <span class="cm">// a, b are PARAMETERS</span>
+<span class="fn">add</span>(<span class="num">3</span>, <span class="num">5</span>);                               <span class="cm">// 3, 5 are ARGUMENTS</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>First Class Functions (First Class Citizens)</h3>
+  <p>In JavaScript, functions are <span class="highlight">first class citizens</span>. This means functions can be:</p>
+  <ul>
+    <li><strong>Assigned to variables:</strong> <code>const fn = function() {}</code></li>
+    <li><strong>Passed as arguments:</strong> <code>arr.map(function(x) { return x * 2; })</code></li>
+    <li><strong>Returned from other functions:</strong> <code>function factory() { return function() {} }</code></li>
+    <li><strong>Stored in data structures:</strong> <code>[fn1, fn2, fn3]</code> or <code>{handler: fn}</code></li>
+    <li><strong>Have properties:</strong> <code>fn.name</code>, <code>fn.length</code> (number of parameters)</li>
+  </ul>
+  <p style="margin-top:8px;">This ability to treat functions as values is the foundation of functional programming in JS, enabling patterns like higher-order functions, callbacks, closures, and currying.</p>
+</div>
+
+<div class="key-box">
+  <strong>Key Difference:</strong> Function Statement vs Expression — the difference is <strong>hoisting</strong>. Statements are fully hoisted; expressions are hoisted as <code>undefined</code> (if <code>var</code>) or put in TDZ (if <code>let</code>/<code>const</code>).
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 14: CALLBACKS & EVENT LISTENERS      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 14 — Callback Functions &amp; Event Listeners</h2>
+  <p>How callbacks unlock async JS, and why event listeners need careful cleanup</p>
+</div>
+
+<div class="concept-card">
+  <h3>What is a Callback Function?</h3>
+  <p>A <strong>callback function</strong> is a function passed as an argument to another function, which is then invoked at a later point. The receiving function "calls back" the passed function when it's ready.</p>
+  <div class="code-wrap"><div class="code-label">Callback pattern</div>
+    <pre><span class="kw">function</span> <span class="fn">greet</span>(name, <span class="fn">callback</span>) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello "</span> + name);
+  <span class="fn">callback</span>();
+}
+<span class="fn">greet</span>(<span class="str">"Akshay"</span>, <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Callback executed!"</span>);
+});
+<span class="cm">// "Hello Akshay" → "Callback executed!"</span></pre>
+  </div>
+  <p style="margin-top:10px;">Callbacks give us access to the <strong>asynchronous world in a synchronous language</strong>. setTimeout, event listeners, fetch — all use callbacks.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Event Listeners &amp; Closures</h3>
+  <div class="code-wrap"><div class="code-label">Counter with event listener + closure</div>
+    <pre><span class="kw">function</span> <span class="fn">attachEventList</span>() {
+  <span class="kw">let</span> count = <span class="num">0</span>;
+  document.getElementById(<span class="str">"btn"</span>).addEventListener(<span class="str">"click"</span>, <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Clicked"</span>, ++count);
+    <span class="cm">// The callback forms a closure over count</span>
+    <span class="cm">// count persists between clicks!</span>
+  });
+}
+<span class="fn">attachEventList</span>();
+<span class="cm">// Click: "Clicked 1", "Clicked 2", "Clicked 3"...</span></pre>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Memory Warning:</strong> Event listeners are <strong>heavy</strong> — they form closures and the closed-over variables are never garbage collected as long as the listener exists (even if the call stack is empty). Always remove listeners with <code>removeEventListener</code> when no longer needed. Multiple listeners (onClick, onScroll, onHover) on a page can cause significant memory usage and slowdowns.
+</div>
+
+<div class="concept-card">
+  <h3>Never Block the Main Thread</h3>
+  <p>Since JS has <strong>only one call stack</strong> (single-threaded), any heavy operation blocks everything — UI freezes, clicks don't register, animations stop. This is called <strong>blocking the main thread</strong>.</p>
+  <p style="margin-top:8px;">Always use <strong>async patterns</strong> (setTimeout, Promises, async/await, Web Workers) for time-consuming operations.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 15: EVENT LOOP                       -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 15 — Asynchronous JS &amp; The Event Loop</h2>
+  <p>The most important architecture concept — how JS handles async operations</p>
+</div>
+
+<div class="concept-card">
+  <h3>The Browser Architecture</h3>
+  <p>The browser provides much more than just a JS engine:</p>
+  <ul>
+    <li><strong>JS Engine</strong> — contains the Call Stack and Memory Heap</li>
+    <li><strong>Web APIs</strong> — setTimeout, DOM APIs, fetch, console, localStorage, geolocation, etc. (These are NOT part of JavaScript itself!)</li>
+    <li><strong>Callback Queue (Task Queue / Macrotask Queue)</strong> — holds callbacks from setTimeout, setInterval, event handlers</li>
+    <li><strong>Microtask Queue</strong> — holds callbacks from Promises (<code>.then</code>/<code>.catch</code>/<code>.finally</code>) and MutationObserver (higher priority than callback queue)</li>
+    <li><strong>Event Loop</strong> — the gatekeeper that moves callbacks from queues to the call stack</li>
+  </ul>
+</div>
+
+<!-- Event Loop Flow -->
+<div class="flow-step">
+  <div class="flow-item" style="background:rgba(59,130,246,0.08)">
+    <h4 style="color:var(--accent2)">1. CALL STACK</h4>
+    <p>Executes code line by line. Web API calls are handed off to the browser.</p>
+  </div>
+  <div class="flow-item" style="background:rgba(245,158,11,0.08)">
+    <h4 style="color:var(--accent)">2. WEB APIs</h4>
+    <p>Browser handles timers, HTTP requests, DOM events in the background.</p>
+  </div>
+  <div class="flow-item" style="background:rgba(167,139,250,0.08)">
+    <h4 style="color:var(--purple)">3. QUEUES</h4>
+    <p>When ready, callbacks go to Microtask Queue (promises) or Callback Queue (setTimeout).</p>
+  </div>
+  <div class="flow-item" style="background:rgba(34,197,94,0.08)">
+    <h4 style="color:var(--green)">4. EVENT LOOP</h4>
+    <p>Checks if call stack is empty. Pushes from Microtask Queue first, then Callback Queue.</p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>The Classic Example — Traced Step by Step</h3>
+  <div class="code-wrap"><div class="code-label">JavaScript</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);
+<span class="fn">setTimeout</span>(<span class="kw">function</span> <span class="fn">cbT</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"CB Timeout"</span>); }, <span class="num">5000</span>);
+fetch(<span class="str">"https://api.example.com"</span>).then(<span class="kw">function</span> <span class="fn">cbF</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"CB Fetch"</span>); });
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);</pre>
+  </div>
+  <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Start" → "End" → "CB Fetch" → "CB Timeout"</span></div>
+  <p style="margin-top:12px;"><strong>Execution trace:</strong></p>
+  <ol style="padding-left:20px; margin-top:6px;">
+    <li><code>console.log("Start")</code> → prints immediately</li>
+    <li><code>setTimeout</code> → registers <code>cbT</code> with Web API timer (5s). JS moves on.</li>
+    <li><code>fetch</code> → registers <code>cbF</code> with Web API. JS moves on.</li>
+    <li><code>console.log("End")</code> → prints immediately. GEC pops. Stack is empty.</li>
+    <li>Fetch response arrives (say after 2s) → <code>cbF</code> goes to <strong>Microtask Queue</strong></li>
+    <li>Timer expires (5s) → <code>cbT</code> goes to <strong>Callback Queue</strong></li>
+    <li>Event Loop: Stack is empty → pushes <code>cbF</code> first (microtask has higher priority) → "CB Fetch"</li>
+    <li>Event Loop: Stack empty again → pushes <code>cbT</code> from callback queue → "CB Timeout"</li>
+  </ol>
+</div>
+
+<div class="compare-grid">
+  <div class="compare-card c1">
+    <h4>Microtask Queue (Higher Priority)</h4>
+    <p>Promise callbacks (<code>.then</code>, <code>.catch</code>, <code>.finally</code>), <code>queueMicrotask()</code>, MutationObserver, <code>process.nextTick()</code> (Node)</p>
+    <p style="margin-top:6px;">Event loop <strong>empties this completely</strong> before touching the callback queue.</p>
+  </div>
+  <div class="compare-card c2">
+    <h4>Callback Queue / Macrotask Queue</h4>
+    <p><code>setTimeout</code>, <code>setInterval</code>, <code>setImmediate</code> (Node), I/O callbacks, UI rendering tasks, event handlers</p>
+    <p style="margin-top:6px;">Only processed after microtask queue is empty.</p>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Starvation:</strong> If microtasks keep creating new microtasks (e.g., a promise that resolves and creates another promise), the callback queue tasks <strong>never get a chance to run</strong>. This is called starvation of the macrotask queue.
+</div>
+
+<div class="concept-card">
+  <h3>What is the Event Loop?</h3>
+  <p>The Event Loop is a continuously running process that has <strong>one simple job</strong>: check if the Call Stack is empty, and if so, push the next task from the queues onto the stack. It prioritizes the Microtask Queue over the Callback Queue. It's what makes asynchronous JavaScript possible despite JS being single-threaded.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 16: JS ENGINE & V8                   -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 16 — JS Engine &amp; V8 Architecture</h2>
+  <p>What happens inside the engine when your code runs</p>
+</div>
+
+<div class="concept-card">
+  <h3>JavaScript Runtime Environment (JRE)</h3>
+  <p>JS runs everywhere because of the JRE — a container with everything needed to execute JS:</p>
+  <ul>
+    <li><strong>JS Engine</strong> — the core (V8 in Chrome/Node, SpiderMonkey in Firefox, Chakra in Edge)</li>
+    <li>Web APIs / Node APIs</li>
+    <li>Event Loop, Callback Queue, Microtask Queue</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>Three Steps Inside the JS Engine</h3>
+  <ol>
+    <li><strong>Parsing:</strong> Code is broken into tokens (<code>let</code>, <code>a</code>, <code>=</code>, <code>7</code>) and converted into an <strong>Abstract Syntax Tree (AST)</strong> — a tree representation of the code's structure.</li>
+    <li><strong>Compilation:</strong> JS uses <strong>JIT (Just-In-Time) Compilation</strong> — a hybrid of interpretation and compilation. The AST goes to an interpreter (Ignition in V8) which generates bytecode. Simultaneously, a compiler (TurboFan in V8) optimizes hot code paths into machine code.</li>
+    <li><strong>Execution:</strong> Uses the <strong>Memory Heap</strong> (stores variables, objects) and <strong>Call Stack</strong> (manages execution contexts). A <strong>Garbage Collector</strong> (Orinoco in V8) uses Mark-and-Sweep algorithm to free unused memory.</li>
+  </ol>
+</div>
+
+<div class="info-box">
+  <strong>V8 Components:</strong> Parser → AST → <strong>Ignition</strong> (Interpreter → Bytecode) ↔ <strong>TurboFan</strong> (Compiler → Optimized Machine Code) + <strong>Orinoco</strong> (Garbage Collector using Mark &amp; Sweep)
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 17: SETTIMEOUT TRUST ISSUES          -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 17 — Trust Issues with setTimeout()</h2>
+  <p>Why setTimeout(fn, 5000) doesn't guarantee execution at exactly 5 seconds</p>
+</div>
+
+<div class="concept-card">
+  <h3>setTimeout Guarantees a MINIMUM Delay, Not Exact</h3>
+  <p>When you write <code>setTimeout(cb, 5000)</code>, the callback <code>cb</code> will wait <strong>at least</strong> 5 seconds. But it might wait 6, 7, or even 10+ seconds. Why?</p>
+  <ol>
+    <li>After 5 seconds, <code>cb</code> moves to the <strong>Callback Queue</strong></li>
+    <li>The Event Loop checks: is the Call Stack empty?</li>
+    <li>If the stack is <strong>busy</strong> (running millions of lines of synchronous code), <code>cb</code> has to <strong>wait</strong></li>
+    <li><code>cb</code> only executes when the stack is completely empty</li>
+  </ol>
+</div>
+
+<div class="concept-card">
+  <h3>setTimeout(fn, 0) — The Zero Delay Trick</h3>
+  <div class="code-wrap"><div class="code-label">JavaScript</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);
+<span class="fn">setTimeout</span>(<span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Callback"</span>); }, <span class="num">0</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);</pre>
+  </div>
+  <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Start" → "End" → "Callback"</span></div>
+  <p style="margin-top:10px;">Even with 0ms delay, the callback must go through the Web API → Callback Queue → Event Loop path. It can only execute <strong>after</strong> the current synchronous code finishes. This pattern is used to <strong>defer</strong> less important tasks, letting critical synchronous code run first.</p>
+</div>
+
+<div class="key-box">
+  <strong>The Concurrency Model of JS:</strong> JavaScript is single-threaded but achieves concurrency through the Event Loop. Async callbacks never run <em>in parallel</em> with the main thread — they wait until the stack is clear. This is cooperative concurrency, not preemptive.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS (ALL TOPICS)           -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q1</span><span class="q-text">What are First Class Functions in JavaScript?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>First class functions means functions are treated as <strong>first class citizens</strong> — they can be assigned to variables, passed as arguments to other functions, returned from functions, and stored in data structures like arrays and objects. This ability to use functions as values is what enables higher-order functions, callbacks, closures, currying, and functional programming patterns in JavaScript.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q2</span><span class="q-text">What is the difference between Function Statement, Expression, and Declaration?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Function Statement</strong> (same as Function Declaration): <code>function a() {}</code> — hoisted fully, can be called before the line it's written on.</p>
+    <p><strong>Function Expression:</strong> <code>var b = function() {}</code> — treated as a variable, hoisted as <code>undefined</code>. Calling before assignment gives TypeError.</p>
+    <p>The only real difference between statement and expression is <strong>hoisting behavior</strong>. "Function Declaration" is just another name for "Function Statement."</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q3</span><span class="q-text">What is a Callback Function? Why are they important?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>A callback is a function passed as an argument to another function, to be executed at a later time. Callbacks are crucial because they give JavaScript access to the <strong>asynchronous world</strong> despite being synchronous and single-threaded. setTimeout, event listeners, array methods (map, filter), fetch — all rely on callbacks. They enable non-blocking code execution, allowing the main thread to continue while waiting for async operations.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q4</span><span class="q-text">What is the Event Loop? Explain its role.</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>The Event Loop is a continuously running mechanism that monitors the Call Stack and the task queues. Its job: when the Call Stack is empty, it takes the next task from the <strong>Microtask Queue</strong> (promises, MutationObserver) first, and only when that's empty, from the <strong>Callback Queue</strong> (setTimeout, events), and pushes it onto the Call Stack for execution. It's the bridge between asynchronous Web APIs and the synchronous Call Stack, enabling JavaScript's concurrency model.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q5</span><span class="q-text">What is the difference between Microtask Queue and Callback Queue?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Microtask Queue:</strong> Higher priority. Holds promise callbacks (<code>.then</code>/<code>.catch</code>), <code>queueMicrotask()</code>, and MutationObserver callbacks. The event loop <em>completely empties</em> this queue before processing any macrotask.</p>
+    <p><strong>Callback Queue (Macrotask Queue):</strong> Lower priority. Holds setTimeout/setInterval callbacks, event handler callbacks, I/O callbacks. Only processed after all microtasks are done.</p>
+    <p>This priority difference is why a resolved promise's <code>.then</code> always runs before a <code>setTimeout(fn, 0)</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q6</span><span class="q-text">Are <code>setTimeout</code>, <code>console.log</code>, <code>fetch</code> part of JavaScript?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>No.</strong> They are <strong>Web APIs</strong> provided by the browser's runtime environment, not part of the ECMAScript specification. They are properties of the <code>window</code> (global) object. The JS engine accesses them through the global object. In Node.js, equivalent APIs are provided by the Node runtime. This is why <code>window.setTimeout()</code> and <code>setTimeout()</code> are the same thing.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q7</span><span class="q-text">Why does <code>setTimeout(fn, 5000)</code> sometimes take longer than 5 seconds?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Because setTimeout guarantees a <strong>minimum</strong> delay, not an exact one. After the timer expires, the callback moves to the Callback Queue. But it can only execute when the Call Stack is <strong>empty</strong>. If the main thread is busy with long-running synchronous code (e.g., a heavy loop), the callback must wait. So a 5-second timer could effectively take 10+ seconds if the stack is blocked. This is why you should never block the main thread.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q8</span><span class="q-text">What does <code>setTimeout(fn, 0)</code> do? Why would you use it?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Even with 0ms delay, the callback is not executed immediately. It goes through Web API → Callback Queue → Event Loop → Call Stack. It runs <strong>after</strong> all current synchronous code finishes. Use case: <strong>deferring</strong> a less important task to let critical synchronous code execute first. It essentially says "run this as soon as you're free, but not before everything else currently in the stack."</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q9</span><span class="q-text">What is JIT Compilation? Is JavaScript interpreted or compiled?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>JavaScript uses <strong>JIT (Just-In-Time) Compilation</strong> — a hybrid approach. The code is first interpreted line by line (generating bytecode), while simultaneously a compiler analyzes frequently executed ("hot") code paths and compiles them into optimized machine code at runtime. So JS is <strong>neither purely interpreted nor purely compiled</strong> — it's JIT compiled. V8's Ignition interpreter generates bytecode, and TurboFan compiler produces optimized machine code.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q10</span><span class="q-text">What is starvation in the context of the event loop?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Starvation occurs when tasks in the Callback Queue (macrotasks) never get to execute because the Microtask Queue keeps getting new tasks added. Since the event loop always empties the microtask queue completely before processing any macrotask, if microtasks keep creating new microtasks, the callback queue tasks are indefinitely starved. For example, a recursive <code>Promise.resolve().then(() => { /* adds another microtask */ })</code> would prevent any setTimeout callbacks from ever running.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q11</span><span class="q-text">What is the difference between a Higher-Order Function and a Callback?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>A <strong>Higher-Order Function (HOF)</strong> is a function that either takes a function as an argument OR returns a function. A <strong>callback</strong> is the function that is <em>passed into</em> a higher-order function. They are two sides of the same coin: <code>array.map(transformFn)</code> — <code>map</code> is the HOF, <code>transformFn</code> is the callback.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INPUT/OUTPUT QUESTIONS                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 1</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">a</span>();
+<span class="fn">b</span>();
+
+<span class="kw">function</span> <span class="fn">a</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"a"</span>); }
+<span class="kw">var</span> b = <span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"b"</span>); };</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">LINE 1</span><span class="out-text">"a"</span></div>
+    <div class="error-block"><span class="err-icon">LINE 2</span><span class="err-text">TypeError: b is not a function</span></div>
+    <p style="margin-top:10px;">Function statement <code>a</code> is fully hoisted. Function expression <code>b</code> is <code>undefined</code> during hoisting.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 2</span><span class="q-text">What will be the output? (The classic event loop question)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);
+
+<span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Timeout"</span>);
+}, <span class="num">0</span>);
+
+Promise.resolve().then(<span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Promise"</span>);
+});
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Start" → "End" → "Promise" → "Timeout"</span></div>
+    <p style="margin-top:10px;">Synchronous code runs first (Start, End). Then Microtask Queue (Promise) has priority over Callback Queue (setTimeout). Even though setTimeout has 0ms delay, the promise callback runs first.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 3</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span>);
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">2</span>), <span class="num">1000</span>);
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">3</span>), <span class="num">0</span>);
+Promise.resolve().then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">4</span>));
+Promise.resolve().then(() =&gt; { <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">5</span>); <span class="kw">return</span> Promise.resolve(); }).then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">6</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">7</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">1 → 7 → 4 → 5 → 6 → 3 → 2</span></div>
+    <p style="margin-top:10px;">Sync: 1, 7. Microtasks: 4, 5, 6 (chained promises resolve in order, all before macrotasks). Macrotasks: 3 (0ms), then 2 (1000ms).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 4</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">setTimeout</span>(<span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"timer"</span>); }, <span class="num">5000</span>);
+
+<span class="kw">function</span> <span class="fn">x</span>(y) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"x"</span>);
+  <span class="fn">y</span>();
+}
+
+<span class="fn">x</span>(<span class="kw">function</span> <span class="fn">y</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"y"</span>);
+});</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"x" → "y" → (after 5s) "timer"</span></div>
+    <p style="margin-top:10px;">x() runs immediately with callback y. Timer runs in Web API background. After 5s, "timer" prints.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 5</span><span class="q-text">What will be the output? (Named function expression scope)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> b = <span class="kw">function</span> <span class="fn">xyz</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"b called"</span>);
+};
+<span class="fn">b</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">b</span>.name);
+<span class="fn">xyz</span>();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">LINE 4</span><span class="out-text">"b called"</span></div>
+    <div class="output-block"><span class="out-icon">LINE 5</span><span class="out-text">"xyz"</span></div>
+    <div class="error-block"><span class="err-icon">LINE 6</span><span class="err-text">ReferenceError: xyz is not defined</span></div>
+    <p style="margin-top:10px;"><code>b()</code> works. <code>b.name</code> is "xyz" (the function's internal name). But <code>xyz</code> is not in the outer scope — only accessible inside the function body itself.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 6</span><span class="q-text">What will be the output? (Tricky — async/await + event loop)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">async function</span> <span class="fn">foo</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>);
+  <span class="kw">await</span> Promise.resolve();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>);
+}
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C"</span>);
+<span class="fn">foo</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"C" → "A" → "D" → "B"</span></div>
+    <p style="margin-top:10px;">"C" prints first (sync). <code>foo()</code> is called — "A" prints (sync part of async function). <code>await</code> pauses <code>foo</code> and returns control. "D" prints (sync). Then the microtask from the resolved promise runs the rest: "B".</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 7</span><span class="q-text">What will be the output? (Tricky — multiple setTimeout ordering)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>), <span class="num">0</span>);
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>), <span class="num">0</span>);
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C"</span>), <span class="num">0</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"D" → "A" → "B" → "C"</span></div>
+    <p style="margin-top:10px;">Sync code first ("D"), then callbacks from the callback queue in FIFO order: A → B → C.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 8</span><span class="q-text">What will be the output? (Functions as values)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> b = <span class="kw">function</span>(param) {
+  <span class="fn">console</span>.<span class="fn">log</span>(param);
+};
+<span class="fn">b</span>(<span class="kw">function</span>() { <span class="kw">return</span> <span class="str">"hello"</span>; });</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">ƒ () { return "hello"; }</span></div>
+    <p style="margin-top:10px;">An anonymous function is passed as an argument. <code>console.log(param)</code> prints the function itself (its code), not its return value. To get "hello", you'd need <code>console.log(param())</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 9</span><span class="q-text">What will be the output? (Promise vs setTimeout priority)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span>), <span class="num">0</span>);
+
+<span class="kw">new</span> Promise((resolve) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">2</span>);
+  resolve();
+}).then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">3</span>));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">4</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">2 → 4 → 3 → 1</span></div>
+    <p style="margin-top:10px;">Promise constructor runs <strong>synchronously</strong> (2 prints). 4 prints sync. Then microtask (3) before macrotask (1).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 10</span><span class="q-text">What will be the output? (Tricky — queueMicrotask)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"start"</span>);
+
+<span class="fn">queueMicrotask</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"microtask"</span>));
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"timeout"</span>), <span class="num">0</span>);
+Promise.resolve().then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"promise"</span>));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"end"</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"start" → "end" → "microtask" → "promise" → "timeout"</span></div>
+    <p style="margin-top:10px;">Sync first. Both <code>queueMicrotask</code> and promise are microtasks — they run before the setTimeout macrotask, in the order they were queued.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- QUICK REVISION                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Everything You Need to Remember</h3>
+  <ul>
+    <li><strong>First Class Functions:</strong> Functions can be values — assigned, passed, returned, stored</li>
+    <li><strong>Function Statement vs Expression:</strong> Only difference is hoisting</li>
+    <li><strong>Named Function Expression:</strong> Name only accessible inside the function body</li>
+    <li><strong>Anonymous Function:</strong> No name — used as values only, can't stand alone</li>
+    <li><strong>Parameters</strong> = definition labels; <strong>Arguments</strong> = actual values passed</li>
+    <li><strong>Callback:</strong> Function passed to another function, called later</li>
+    <li><strong>Never block the main thread</strong> — use async patterns for heavy work</li>
+    <li><strong>Web APIs</strong> (setTimeout, fetch, console) are NOT JavaScript — they're browser features</li>
+    <li><strong>Event Loop:</strong> Checks if stack is empty → pushes from Microtask Queue first, then Callback Queue</li>
+    <li><strong>Microtask Queue</strong> (promises) has <strong>higher priority</strong> than Callback Queue (setTimeout)</li>
+    <li><strong>Promise constructor</strong> runs synchronously; <code>.then</code> callback is async (microtask)</li>
+    <li><strong>Starvation:</strong> Endless microtasks starve macrotask queue</li>
+    <li><strong>setTimeout(fn, N):</strong> Guarantees <strong>minimum</strong> N ms delay, not exact</li>
+    <li><strong>setTimeout(fn, 0):</strong> Defers to after current sync code, still goes through queue</li>
+    <li><strong>JS Engine:</strong> Parsing (AST) → JIT Compilation (Ignition + TurboFan) → Execution (Heap + Stack)</li>
+    <li><strong>V8:</strong> Ignition (interpreter), TurboFan (optimizing compiler), Orinoco (garbage collector)</li>
+    <li><strong>Execution order:</strong> Sync code → Microtasks (all) → One Macrotask → Microtasks (all) → repeat</li>
+    <li>Remove event listeners when done to prevent memory leaks</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topics 10-12: Closures</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topics 18-19: HOF, map, filter, reduce</span>
+</div>
+
+</body>
+</html>

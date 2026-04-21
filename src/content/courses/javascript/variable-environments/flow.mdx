@@ -1,0 +1,44 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  Three separate memory spaces for three same-named `x` variables.
+  Global EC holds `x = 1`; `a()` creates a fresh Variable Environment
+  with `x = 10`; `b()` does the same with `x = 100`. None of them
+  interfere — each `x` lives and dies with its own Execution Context.
+  The legend below decodes each step.
+</Callout>
+
+## Variable Environments — three x's, three contexts
+
+```mermaid
+flowchart TD
+    G["<b>i · Global EC</b><br/>Variable Environment:<br/>x : 1<br/>a : {fn}, b : {fn}"]
+      --> CA["<b>ii · a() called</b><br/>New Execution Context<br/>Variable Environment: x : 10"]
+    CA --> LA["<b>iii · a() logs</b><br/>→ 10 (local x)"]
+    LA --> DA["<b>iv · a() returns</b><br/>context destroyed, x : 10 gone"]
+    DA --> CB["<b>v · b() called</b><br/>New Execution Context<br/>Variable Environment: x : 100"]
+    CB --> LB["<b>vi · b() logs</b><br/>→ 100 (local x)"]
+    LB --> DB["<b>vii · b() returns</b><br/>context destroyed, x : 100 gone"]
+    DB --> GL["<b>viii · Global EC logs</b><br/>→ 1 (never touched)"]
+
+    classDef gec fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef fn1 fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef fn2 fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class G,GL gec
+    class CA,LA,DA fn1
+    class CB,LB,DB fn2
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Global EC',      description: 'GEC pushed onto Call Stack. Variable Environment holds `x : 1`, `a : {fn}`, `b : {fn}`.' },
+  { numeral: 'ii',   name: 'a() invoked',    description: 'New Execution Context pushed. Its Variable Environment allocates a fresh local `x` (undefined → 10).' },
+  { numeral: 'iii',  name: 'a() logs',       description: '`console.log(x)` inside `a()` reads the **local** x = 10. The global `x` is invisible to it.' },
+  { numeral: 'iv',   name: 'a() returns',    description: 'Context destroyed, popped. Local `x = 10` is garbage-collected.' },
+  { numeral: 'v',    name: 'b() invoked',    description: 'New Execution Context pushed. A brand new `x` (undefined → 100) — no memory shared with `a()`.' },
+  { numeral: 'vi',   name: 'b() logs',       description: '`console.log(x)` inside `b()` reads its own local x = 100. No collision with `a()`, no effect on global.' },
+  { numeral: 'vii',  name: 'b() returns',    description: 'Context destroyed, popped. Local `x = 100` is garbage-collected.' },
+  { numeral: 'viii', name: 'Global logs',    description: 'Back in GEC. `console.log(x)` reads global `x = 1` — unchanged throughout. Program ends.' },
+]} />

@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 7: Scope Chain, Scope & Lexical Environment — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --orange: #fb923c;
+    --pink: #f472b6;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+    --error-bg: #1a0f0f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header .tag {
+    display: inline-block; background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 4px; margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 32px; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, #f59e0b 0%, #22c55e 50%, #3b82f6 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 16px; font-weight: 300; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin: 44px 0 20px; font-size: 20px; font-weight: 700; color: var(--accent2);
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 24px;
+    background: var(--accent2); border-radius: 2px; flex-shrink: 0;
+  }
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .concept-card h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent);
+    margin-bottom: 10px; letter-spacing: 0.5px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 14.5px; color: var(--text); line-height: 1.75;
+  }
+  .concept-card ul, .concept-card ol { padding-left: 20px; margin-top: 8px; }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+  .highlight {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    padding: 2px 7px; border-radius: 4px; font-weight: 600;
+    font-size: 13.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--green);
+  }
+  .key-box strong { font-weight: 700; }
+  .warn-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%);
+    border-left: 3px solid var(--red);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--red);
+  }
+  .info-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-left: 3px solid var(--accent2);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--accent2);
+  }
+  .qa-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 20px; overflow: hidden;
+  }
+  .qa-q {
+    background: var(--q-bg); padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-q .q-badge {
+    background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .qa-q .q-text { font-size: 15px; font-weight: 600; color: #e2e8f0; line-height: 1.5; }
+  .qa-a { padding: 16px 24px; }
+  .qa-a .a-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .qa-a p { font-size: 14px; color: var(--text); line-height: 1.75; }
+  .qa-a p + p { margin-top: 8px; }
+  .code-wrap {
+    margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #21262d;
+  }
+  .code-label {
+    background: #161b22; padding: 6px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-dim); letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    line-height: 1.65; color: #e6edf3; margin: 0;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .output-block {
+    background: var(--output-bg); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .output-block .out-icon {
+    background: var(--green); color: #000; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .output-block .out-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green);
+  }
+  .error-block {
+    background: var(--error-bg); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .error-block .err-icon {
+    background: var(--red); color: #fff; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .error-block .err-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--red);
+  }
+  .diagram {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;
+    overflow-x: auto;
+  }
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+  .nav-footer {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .nav-footer span { font-size: 14px; }
+  .scope-chain-visual {
+    display: flex; flex-direction: column; gap: 0; align-items: center; margin: 20px 0;
+  }
+  .scope-box {
+    border: 2px solid; border-radius: 10px; padding: 16px 24px;
+    width: 100%; max-width: 500px; text-align: left; position: relative;
+  }
+  .scope-box h4 { font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+  .scope-box p { font-size: 13px; font-family: 'JetBrains Mono', monospace; line-height: 1.6; }
+  .scope-box.s-inner { border-color: var(--cyan); margin-top: -1px; }
+  .scope-box.s-inner h4 { color: var(--cyan); }
+  .scope-box.s-outer { border-color: var(--accent); margin-top: -1px; }
+  .scope-box.s-outer h4 { color: var(--accent); }
+  .scope-box.s-global { border-color: var(--green); margin-top: -1px; }
+  .scope-box.s-global h4 { color: var(--green); }
+  .scope-arrow {
+    width: 2px; height: 24px; background: var(--text-dim); position: relative;
+  }
+  .scope-arrow::after {
+    content: '▲'; position: absolute; top: -10px; left: -6px;
+    color: var(--text-dim); font-size: 12px;
+  }
+  .scope-label {
+    font-size: 11px; color: var(--text-dim); font-weight: 600;
+    letter-spacing: 0.5px; margin: 2px 0;
+  }
+  .formula-box {
+    background: linear-gradient(135deg, rgba(167,139,250,0.1) 0%, rgba(167,139,250,0.03) 100%);
+    border: 1px solid rgba(167,139,250,0.3); border-radius: 10px;
+    padding: 20px 24px; margin: 16px 0; text-align: center;
+  }
+  .formula-box .formula {
+    font-family: 'JetBrains Mono', monospace; font-size: 15px;
+    color: var(--purple); font-weight: 600; line-height: 1.8;
+  }
+  .formula-box .formula-desc {
+    font-size: 13px; color: var(--text-dim); margin-top: 8px;
+  }
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0;
+  }
+  .compare-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; position: relative; overflow: hidden;
+  }
+  .compare-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .compare-card.c1::before { background: var(--green); }
+  .compare-card.c2::before { background: var(--red); }
+  .compare-card h4 { font-size: 14px; font-weight: 700; margin-bottom: 8px; }
+  .compare-card.c1 h4 { color: var(--green); }
+  .compare-card.c2 h4 { color: var(--red); }
+  .compare-card p { font-size: 13.5px; line-height: 1.65; }
+  @media (max-width: 640px) {
+    .header h1 { font-size: 24px; }
+    .compare-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Topic 7 of 19</div>
+  <h1>Scope Chain, Scope &amp; Lexical Environment</h1>
+  <p>How JavaScript finds variables — the lookup mechanism that powers everything from closures to modules</p>
+</div>
+
+<!-- ═══════════════════════════════════════ -->
+<!-- CORE CONCEPTS                          -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section-title">Core Concepts</div>
+
+<div class="concept-card">
+  <h3>What is Scope?</h3>
+  <p><strong>Scope</strong> determines the <em>accessibility</em> (visibility) of variables and functions in different parts of your code. When you ask "is this variable accessible here?", you're asking about scope.</p>
+  <p style="margin-top:8px;">In JavaScript, scope is directly tied to the <strong>Lexical Environment</strong>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>What is Lexical Environment?</h3>
+  <p>Every time an execution context is created, a <strong>Lexical Environment</strong> is also created. It consists of two things:</p>
+  <ul>
+    <li><strong>Local Memory</strong> — the variables and functions in the current execution context</li>
+    <li><strong>Reference to the Lexical Environment of its parent</strong> — a pointer to the outer scope</li>
+  </ul>
+</div>
+
+<div class="formula-box">
+  <div class="formula">Lexical Environment = Local Memory + Reference to Parent's Lexical Environment</div>
+  <div class="formula-desc">This reference chain is what makes the scope chain possible</div>
+</div>
+
+<div class="concept-card">
+  <h3>What Does "Lexical" Mean?</h3>
+  <p><strong>Lexical</strong> means "relating to the position in the source code." A function's lexical environment is determined by <em>where it is physically written</em> in the code, NOT where it is called from.</p>
+  <div class="code-wrap">
+    <div class="code-label">Lexical positioning</div>
+    <pre><span class="kw">function</span> <span class="fn">a</span>() {        <span class="cm">// a is lexically inside Global</span>
+  <span class="kw">function</span> <span class="fn">c</span>() {      <span class="cm">// c is lexically inside a</span>
+    <span class="cm">// logic here</span>
+  }
+  <span class="fn">c</span>();
+}
+<span class="fn">a</span>();</pre>
+  </div>
+  <p style="margin-top:10px;">Here, <code>c</code>'s lexical parent is <code>a</code>, and <code>a</code>'s lexical parent is the <strong>Global scope</strong>. This is fixed and doesn't change regardless of how or where these functions are called.</p>
+</div>
+
+<div class="concept-card">
+  <h3>What is the Scope Chain?</h3>
+  <p>When JavaScript needs to find a variable, it follows this process:</p>
+  <ol>
+    <li>Look in the <strong>current scope</strong> (local memory of the current execution context)</li>
+    <li>If not found, go to the <strong>parent's lexical environment</strong> and look there</li>
+    <li>If still not found, go to the <strong>grandparent's lexical environment</strong></li>
+    <li>Keep going until you reach the <strong>Global scope</strong></li>
+    <li>If not found even in Global scope, throw <code>ReferenceError: x is not defined</code></li>
+  </ol>
+  <p style="margin-top:10px;">This chain of lookups from inner → outer → outer → ... → global → null is called the <span class="highlight">Scope Chain</span> (also called the Lexical Environment Chain).</p>
+</div>
+
+<!-- SCOPE CHAIN DIAGRAM -->
+<div class="diagram">
+  <svg viewBox="0 0 680 400" xmlns="http://www.w3.org/2000/svg" font-family="Outfit, sans-serif">
+    <!-- c() box -->
+    <rect x="140" y="15" width="400" height="80" rx="10" fill="#141829" stroke="#22d3ee" stroke-width="2"/>
+    <text x="180" y="42" font-size="13" font-weight="700" fill="#22d3ee">c() Execution Context</text>
+    <text x="180" y="65" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">Local: { }</text>
+    <text x="340" y="65" font-size="11" fill="#8891b0">→ parent ref: a()</text>
+
+    <!-- Arrow down -->
+    <line x1="340" y1="95" x2="340" y2="125" stroke="#8891b0" stroke-width="1.5" stroke-dasharray="4"/>
+    <text x="355" y="115" font-size="10" fill="#8891b0" font-weight="600">looks up</text>
+
+    <!-- a() box -->
+    <rect x="100" y="130" width="480" height="80" rx="10" fill="#141829" stroke="#f59e0b" stroke-width="2"/>
+    <text x="140" y="157" font-size="13" font-weight="700" fill="#f59e0b">a() Execution Context</text>
+    <text x="140" y="180" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">Local: { b: 10, c: fn }</text>
+    <text x="420" y="180" font-size="11" fill="#8891b0">→ parent ref: GEC</text>
+
+    <!-- Arrow down -->
+    <line x1="340" y1="210" x2="340" y2="240" stroke="#8891b0" stroke-width="1.5" stroke-dasharray="4"/>
+    <text x="355" y="230" font-size="10" fill="#8891b0" font-weight="600">looks up</text>
+
+    <!-- GEC box -->
+    <rect x="60" y="245" width="560" height="80" rx="10" fill="#141829" stroke="#22c55e" stroke-width="2"/>
+    <text x="100" y="272" font-size="13" font-weight="700" fill="#22c55e">Global Execution Context</text>
+    <text x="100" y="295" font-size="12" fill="#e6edf3" font-family="JetBrains Mono, monospace">Local: { a: fn }</text>
+    <text x="380" y="295" font-size="11" fill="#8891b0">→ parent ref: null</text>
+
+    <!-- Arrow down to null -->
+    <line x1="340" y1="325" x2="340" y2="355" stroke="#8891b0" stroke-width="1.5" stroke-dasharray="4"/>
+    <text x="355" y="345" font-size="10" fill="#8891b0" font-weight="600">looks up</text>
+
+    <!-- null -->
+    <rect x="300" y="360" width="80" height="30" rx="6" fill="#1a0f0f" stroke="#ef4444" stroke-width="1.5"/>
+    <text x="340" y="380" text-anchor="middle" font-size="12" font-weight="700" fill="#ef4444">null</text>
+
+    <!-- Label -->
+    <text x="340" y="15" text-anchor="middle" font-size="11" fill="#a78bfa" font-weight="600">SCOPE CHAIN (Lexical Environment Chain)</text>
+  </svg>
+</div>
+
+<div class="key-box">
+  <strong>Key Insight:</strong> The scope chain always goes <em>outward</em> (from inner to outer). An inner function can access variables from all its outer scopes, but an outer scope can <strong>never</strong> access an inner function's local variables. This is a one-way relationship.
+</div>
+
+<div class="concept-card">
+  <h3>Lexical Scope vs Dynamic Scope</h3>
+  <p>JavaScript uses <strong>Lexical Scope</strong> (also called Static Scope). This means the scope is determined by <em>where</em> a function is written in the source code, NOT by <em>where</em> or <em>how</em> it is called.</p>
+</div>
+
+<div class="compare-grid">
+  <div class="compare-card c1">
+    <h4>Lexical Scope (JavaScript uses this)</h4>
+    <p>Scope is determined at <strong>write time</strong> based on the physical location of functions and variables in the code. A function always looks up variables in the scope where it was <em>defined</em>.</p>
+  </div>
+  <div class="compare-card c2">
+    <h4>Dynamic Scope (JS does NOT use this)</h4>
+    <p>Scope would be determined at <strong>runtime</strong> based on the call stack. A function would look up variables in the scope where it was <em>called from</em>. Languages like Bash use this.</p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>The Proof — Lexical Scope in Action</h3>
+  <div class="code-wrap">
+    <div class="code-label">JavaScript — Lexical, NOT dynamic</div>
+    <pre><span class="kw">var</span> x = <span class="num">10</span>;
+
+<span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);  <span class="cm">// Where does a look for x?</span>
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="kw">var</span> x = <span class="num">20</span>;
+  <span class="fn">a</span>();  <span class="cm">// a() is CALLED from b(), but DEFINED in global</span>
+}
+
+<span class="fn">b</span>();  <span class="cm">// Output: 10 (NOT 20!)</span></pre>
+  </div>
+  <p style="margin-top:10px;">If JS used dynamic scope, <code>a()</code> would look in <code>b()</code>'s scope and find <code>x = 20</code>. But since JS uses lexical scope, <code>a()</code> looks in the scope where it was <strong>defined</strong> (global) and finds <code>x = 10</code>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>The Complete Example from Namaste JS</h3>
+  <div class="code-wrap">
+    <div class="code-label">Case 4 — Nested functions and scope chain</div>
+    <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> b = <span class="num">10</span>;
+  <span class="fn">c</span>();
+  <span class="kw">function</span> <span class="fn">c</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(b); <span class="cm">// 10 — found in parent a()'s scope</span>
+  }
+}
+<span class="fn">a</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(b); <span class="cm">// ReferenceError: b is not defined</span></pre>
+  </div>
+  <p style="margin-top:10px;"><strong>Call Stack:</strong> [GEC, a(), c()]. <strong>Scope chain for c():</strong> c's local → a's local (finds <code>b = 10</code>!) → global → null. <strong>But</strong> at the global level, <code>b</code> is NOT accessible because it's local to <code>a()</code>. The scope chain only goes <em>outward</em>, never inward.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Scope Chain Memory Model</h3>
+  <p>Here's how the lexical environment references look for the example above:</p>
+  <div class="code-wrap">
+    <div class="code-label">Internal representation</div>
+    <pre><span class="cm">// Call stack at the point when c() is executing:</span>
+<span class="cm">// [GEC, a(), c()]</span>
+
+c()  = {
+  localMemory: {},
+  outerEnvRef: → a()     <span class="cm">// c is lexically inside a</span>
+}
+
+a()  = {
+  localMemory: { b: <span class="num">10</span>, c: fn },
+  outerEnvRef: → GEC     <span class="cm">// a is lexically inside global</span>
+}
+
+GEC  = {
+  localMemory: { a: fn },
+  outerEnvRef: → <span class="kw">null</span>    <span class="cm">// global has no parent</span>
+}</pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Types of Scope in JavaScript</h3>
+  <ul>
+    <li><strong>Global Scope:</strong> Variables declared outside any function or block. Accessible everywhere.</li>
+    <li><strong>Function Scope:</strong> Variables declared inside a function (with <code>var</code>, <code>let</code>, or <code>const</code>). Accessible only within that function.</li>
+    <li><strong>Block Scope:</strong> Variables declared with <code>let</code> or <code>const</code> inside a block <code>{ }</code>. Accessible only within that block. (<code>var</code> is NOT block scoped — covered in Topic 9.)</li>
+    <li><strong>Module Scope:</strong> In ES modules, top-level variables are scoped to the module file, not global.</li>
+    <li><strong>Lexical Scope:</strong> The scope of a function is determined by where it's defined in the code (same as static scope).</li>
+  </ul>
+</div>
+
+<div class="info-box">
+  <strong>Important:</strong> <code>var</code> is <strong>function-scoped</strong> (ignores blocks like if/for/while). <code>let</code> and <code>const</code> are <strong>block-scoped</strong> (respects any <code>{ }</code>). This is a critical difference covered in Topics 8 &amp; 9.
+</div>
+
+<div class="concept-card">
+  <h3>Scope Chain with Multiple Levels of Nesting</h3>
+  <div class="code-wrap">
+    <div class="code-label">Three-level nesting</div>
+    <pre><span class="kw">var</span> global = <span class="str">"I'm global"</span>;
+
+<span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> outerVar = <span class="str">"I'm outer"</span>;
+
+  <span class="kw">function</span> <span class="fn">middle</span>() {
+    <span class="kw">var</span> middleVar = <span class="str">"I'm middle"</span>;
+
+    <span class="kw">function</span> <span class="fn">inner</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(global);    <span class="cm">// ✓ found in global scope</span>
+      <span class="fn">console</span>.<span class="fn">log</span>(outerVar);  <span class="cm">// ✓ found in outer's scope</span>
+      <span class="fn">console</span>.<span class="fn">log</span>(middleVar); <span class="cm">// ✓ found in middle's scope</span>
+    }
+    <span class="fn">inner</span>();
+  }
+  <span class="fn">middle</span>();
+}
+<span class="fn">outer</span>();</pre>
+  </div>
+  <p style="margin-top:10px;"><code>inner()</code> can access variables from <strong>all</strong> its ancestor scopes. The scope chain is: inner → middle → outer → global → null.</p>
+</div>
+
+<div class="warn-box">
+  <strong>Common Interview Mistake:</strong> Confusing "where a function is called" with "where it is defined." In JavaScript, the scope chain is ALWAYS based on where the function is <em>written</em> in the source code (lexical), NOT where it is invoked (dynamic). This distinction is the foundation of closures (Topic 10).
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS                    -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What is Scope in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Scope is the current context of execution, which determines the visibility and accessibility of variables and functions. It defines where a variable can be "seen" and used. JavaScript has Global Scope, Function Scope, Block Scope (for let/const), and Module Scope. Scope in JS is directly related to the Lexical Environment.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">What is a Lexical Environment?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>A Lexical Environment is created every time an execution context is created. It consists of two parts: (1) the <strong>local memory</strong> (environment record) containing all variables and functions declared in that scope, and (2) a <strong>reference to the parent's lexical environment</strong> (outer environment reference). This parent reference creates a chain that enables variable lookup across scopes.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">What is the Scope Chain?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The Scope Chain is the chain of lexical environments that JavaScript traverses when looking for a variable. When a variable is not found in the current scope's local memory, JS follows the outer environment reference to the parent scope, then the grandparent, and so on until it reaches the global scope. If the variable isn't found even there (the global scope's outer reference is <code>null</code>), a <code>ReferenceError</code> is thrown. This entire lookup path is the scope chain.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">What is the difference between Lexical Scope and Dynamic Scope?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Lexical (Static) Scope:</strong> The scope is determined at <em>author time</em> based on where functions and variables are physically written in the source code. JavaScript uses lexical scoping. A function always accesses variables from the scope where it was <em>defined</em>, regardless of where it's called.</p>
+    <p><strong>Dynamic Scope:</strong> The scope would be determined at <em>runtime</em> based on the current call stack. A function would access variables from the scope where it was <em>called from</em>. Some languages like Bash and some Lisp dialects use dynamic scoping. JavaScript does NOT.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">Can an outer function access variables from an inner function?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>No.</strong> The scope chain is one-directional — it only goes <em>outward</em> (from inner to outer). An inner function CAN access variables from its outer scopes (via the scope chain), but an outer function or the global scope CANNOT access variables defined inside an inner function. Those inner variables only exist within the inner function's execution context and are destroyed when it returns.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">What happens when a variable is not found in any scope?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>If JavaScript traverses the entire scope chain — from the current scope all the way up to the global scope — and doesn't find the variable, it throws a <code>ReferenceError: [variable] is not defined</code>. The global scope's outer reference is <code>null</code>, which is the end of the chain. In non-strict mode, <em>assigning</em> to an undeclared variable would create an implicit global instead of throwing an error, which is why strict mode is recommended.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q7</span>
+    <span class="q-text">How many types of scope exist in modern JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Modern JavaScript (ES6+) has four main types of scope:</p>
+    <p><strong>1. Global Scope</strong> — accessible everywhere. <strong>2. Function Scope</strong> — variables declared with <code>var</code>, <code>let</code>, or <code>const</code> inside a function. <strong>3. Block Scope</strong> — variables declared with <code>let</code> or <code>const</code> inside any <code>{ }</code> block (if/for/while/plain blocks). <code>var</code> ignores block scope. <strong>4. Module Scope</strong> — in ES modules (<code>import</code>/<code>export</code>), top-level variables are scoped to the module, not the global scope.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q8</span>
+    <span class="q-text">Why is understanding the scope chain important for closures?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Closures are a direct consequence of the scope chain and lexical scoping. When a function is returned from its parent function, it carries a reference to its parent's lexical environment. This means it can still access the parent's variables even after the parent has finished executing, because the scope chain reference is preserved. Without understanding the scope chain, closures seem like magic — but they're simply the scope chain persisting beyond the lifetime of the execution context. (Detailed in Topic 10.)</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q9</span>
+    <span class="q-text">What is variable shadowing in the context of scope chain?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Variable shadowing occurs when a variable in an inner scope has the same name as a variable in an outer scope. The inner variable "shadows" (hides) the outer one within that scope. When the JS engine looks up the variable, it finds the inner one first and stops — it never reaches the outer one via the scope chain.</p>
+    <div class="code-wrap">
+      <div class="code-label">Shadowing example</div>
+      <pre><span class="kw">var</span> x = <span class="num">10</span>;
+<span class="kw">function</span> <span class="fn">test</span>() {
+  <span class="kw">var</span> x = <span class="num">20</span>; <span class="cm">// shadows global x</span>
+  <span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// 20 (inner x found first, stops looking)</span>
+}
+<span class="fn">test</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// 10 (global x, untouched)</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q10</span>
+    <span class="q-text">Does the scope chain follow the call stack or the code structure?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The scope chain follows the <strong>code structure (lexical structure)</strong>, NOT the call stack. The scope chain is determined by where functions are physically written in the source code. The call stack tells you the <em>order of execution</em>, but the scope chain tells you <em>where to look for variables</em>. A function called from function <code>b()</code> does NOT inherit <code>b()</code>'s scope — it uses the scope from where it was <em>defined</em>.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- INPUT/OUTPUT QUESTIONS                 -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<!-- IO 1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 1</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(b);
+}
+<span class="kw">var</span> b = <span class="num">10</span>;
+<span class="fn">a</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10</span>
+    </div>
+    <p style="margin-top:10px;"><code>a()</code> has no local <code>b</code>. Scope chain: a() → global. Finds <code>b = 10</code> in global scope.</p>
+  </div>
+</div>
+
+<!-- IO 2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 2</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">c</span>();
+  <span class="kw">function</span> <span class="fn">c</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(b);
+  }
+}
+<span class="kw">var</span> b = <span class="num">10</span>;
+<span class="fn">a</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10</span>
+    </div>
+    <p style="margin-top:10px;">Scope chain for c(): c() → a() → global. <code>b</code> is not in c() or a(), but found in global scope = 10.</p>
+  </div>
+</div>
+
+<!-- IO 3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 3</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">c</span>();
+  <span class="kw">function</span> <span class="fn">c</span>() {
+    <span class="kw">var</span> b = <span class="num">100</span>;
+    <span class="fn">console</span>.<span class="fn">log</span>(b);
+  }
+}
+<span class="kw">var</span> b = <span class="num">10</span>;
+<span class="fn">a</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">100</span>
+    </div>
+    <p style="margin-top:10px;">c() has its own local <code>b = 100</code>. It's found immediately in the current scope — no need to traverse the scope chain. The global <code>b = 10</code> is shadowed.</p>
+  </div>
+</div>
+
+<!-- IO 4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 4</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> b = <span class="num">10</span>;
+  <span class="fn">c</span>();
+  <span class="kw">function</span> <span class="fn">c</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(b);
+  }
+}
+<span class="fn">a</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(b);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 5</span>
+      <span class="out-text">10</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 9</span>
+      <span class="err-text">ReferenceError: b is not defined</span>
+    </div>
+    <p style="margin-top:10px;">c() finds <code>b = 10</code> in its parent a()'s scope. But at the global level, <code>b</code> doesn't exist — it's local to a() and was destroyed when a() returned. Scope chain goes outward only.</p>
+  </div>
+</div>
+
+<!-- IO 5 — Lexical vs Dynamic -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 5</span>
+    <span class="q-text">What will be the output? (Classic lexical scope question)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">10</span>;
+
+<span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="kw">var</span> x = <span class="num">20</span>;
+  <span class="fn">a</span>();
+}
+
+<span class="fn">b</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Critical question!</strong> <code>a()</code> is <em>called</em> from <code>b()</code>, but <em>defined</em> in the global scope. Its scope chain is: a() → global. NOT a() → b(). Lexical scope = where it's written, not where it's called. Finds <code>x = 10</code> in global.</p>
+  </div>
+</div>
+
+<!-- IO 6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 6</span>
+    <span class="q-text">What will be the output? (Deep nesting)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">1</span>;
+
+<span class="kw">function</span> <span class="fn">one</span>() {
+  <span class="kw">var</span> b = <span class="num">2</span>;
+
+  <span class="kw">function</span> <span class="fn">two</span>() {
+    <span class="kw">var</span> c = <span class="num">3</span>;
+
+    <span class="kw">function</span> <span class="fn">three</span>() {
+      <span class="kw">var</span> d = <span class="num">4</span>;
+      <span class="fn">console</span>.<span class="fn">log</span>(a + b + c + d);
+    }
+    <span class="fn">three</span>();
+  }
+  <span class="fn">two</span>();
+}
+<span class="fn">one</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10</span>
+    </div>
+    <p style="margin-top:10px;">Scope chain for three(): three() → two()(finds c=3) → one()(finds b=2) → global(finds a=1). d=4 is local. Sum = 1 + 2 + 3 + 4 = 10.</p>
+  </div>
+</div>
+
+<!-- IO 7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 7</span>
+    <span class="q-text">What will be the output? (Tricky — sibling functions)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> x = <span class="num">10</span>;
+}
+
+<span class="kw">function</span> <span class="fn">b</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+}
+
+<span class="fn">a</span>();
+<span class="fn">b</span>();</pre>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">ERROR</span>
+      <span class="err-text">ReferenceError: x is not defined</span>
+    </div>
+    <p style="margin-top:10px;">Sibling functions cannot access each other's local variables. <code>a()</code>'s <code>x</code> was destroyed when <code>a()</code> returned. <code>b()</code>'s scope chain is: b() → global. No <code>x</code> found anywhere.</p>
+  </div>
+</div>
+
+<!-- IO 8 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 8</span>
+    <span class="q-text">What will be the output? (Tricky — variable same name at multiple levels)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="str">"global"</span>;
+
+<span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> x = <span class="str">"outer"</span>;
+
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(x);
+  }
+
+  <span class="fn">inner</span>();
+}
+
+<span class="fn">outer</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"outer"</span>
+    </div>
+    <p style="margin-top:10px;">inner() has no local <code>x</code>. Scope chain: inner() → outer(). Finds <code>x = "outer"</code> in the immediate parent — stops searching. Never reaches global. This is shadowing.</p>
+  </div>
+</div>
+
+<!-- IO 9 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 9</span>
+    <span class="q-text">What will be the output? (Tricky — returned function)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> x = <span class="num">42</span>;
+
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(x);
+  }
+
+  <span class="kw">return</span> inner;
+}
+
+<span class="kw">var</span> fn = <span class="fn">outer</span>();
+<span class="fn">fn</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">42</span>
+    </div>
+    <p style="margin-top:10px;"><strong>This is a closure preview!</strong> Even though <code>outer()</code> has finished executing and its execution context is destroyed, <code>inner</code> still carries a reference to its lexical environment (outer's scope). So when <code>fn()</code> is called, it can still access <code>x = 42</code>. The scope chain is preserved. (Deep dive in Topic 10.)</p>
+  </div>
+</div>
+
+<!-- IO 10 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 10</span>
+    <span class="q-text">What will be the output? (Advanced — scope chain with let)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> x = <span class="num">1</span>;
+
+<span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">let</span> y = <span class="num">2</span>;
+
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="kw">let</span> z = <span class="num">3</span>;
+    <span class="fn">console</span>.<span class="fn">log</span>(x, y, z);
+  }
+
+  <span class="fn">inner</span>();
+  <span class="fn">console</span>.<span class="fn">log</span>(x, y);
+  <span class="fn">console</span>.<span class="fn">log</span>(z);
+}
+
+<span class="fn">outer</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 8</span>
+      <span class="out-text">1 2 3</span>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 11</span>
+      <span class="out-text">1 2</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 12</span>
+      <span class="err-text">ReferenceError: z is not defined</span>
+    </div>
+    <p style="margin-top:10px;">inner() accesses all three via scope chain. outer() can access x and y but NOT z (z is local to inner, destroyed when inner returned). Same rules apply for <code>let</code> — scope chain still works the same way.</p>
+  </div>
+</div>
+
+<!-- IO 11 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 11</span>
+    <span class="q-text">What will be the output? (Tricky — IIFE and scope)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">10</span>;
+
+(<span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+  <span class="kw">var</span> x = <span class="num">20</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+})();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined → 20</span>
+    </div>
+    <p style="margin-top:10px;">The IIFE creates its own function scope. <code>var x = 20</code> is hoisted within the IIFE as <code>x = undefined</code>, shadowing the global <code>x = 10</code>. First log prints <code>undefined</code> (local hoisted x), second prints <code>20</code> (after assignment).</p>
+  </div>
+</div>
+
+<!-- IO 12 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 12</span>
+    <span class="q-text">What will be the output? (Tricky — for loop scope with var)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">0</span>; i &lt; <span class="num">3</span>; i++) {
+  <span class="cm">// var i is function-scoped (or global here)</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(i);
+
+<span class="kw">for</span> (<span class="kw">let</span> j = <span class="num">0</span>; j &lt; <span class="num">3</span>; j++) {
+  <span class="cm">// let j is block-scoped to this for block</span>
+}
+<span class="fn">console</span>.<span class="fn">log</span>(j);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 4</span>
+      <span class="out-text">3</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 9</span>
+      <span class="err-text">ReferenceError: j is not defined</span>
+    </div>
+    <p style="margin-top:10px;"><code>var i</code> leaks out of the for block (it's function/global scoped, not block scoped). After the loop, <code>i = 3</code>. <code>let j</code> is block-scoped — it doesn't exist outside the for block, so accessing it throws ReferenceError.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════ -->
+<!-- QUICK REVISION                         -->
+<!-- ═══════════════════════════════════════ -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Remember These Points</h3>
+  <ul>
+    <li><strong>Scope</strong> = where a variable is accessible in your code</li>
+    <li><strong>Lexical Environment</strong> = local memory + reference to parent's lexical environment</li>
+    <li><strong>Scope Chain</strong> = chain of lexical environments (inner → outer → ... → global → null)</li>
+    <li><strong>Lexical</strong> = determined by where code is <em>written</em>, not where it's <em>called</em></li>
+    <li>JS uses <strong>Lexical (Static) Scope</strong>, NOT Dynamic Scope</li>
+    <li>Inner functions CAN access outer variables, but NOT vice versa</li>
+    <li>Sibling functions CANNOT access each other's local variables</li>
+    <li>Variable not found in entire chain → <code>ReferenceError</code></li>
+    <li>Variable found in current scope → stops looking (shadowing)</li>
+    <li><code>var</code> = function scoped; <code>let</code>/<code>const</code> = block scoped</li>
+    <li>Four scope types: Global, Function, Block, Module</li>
+    <li>Closures work because scope chain references are <strong>preserved</strong> even after parent returns</li>
+    <li>IIFE creates its own function scope — local vars shadow global ones</li>
+    <li><code>var</code> in a for loop leaks to outer scope; <code>let</code> stays in the block</li>
+    <li>The scope chain is based on code structure, NOT the call stack</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topics 5 &amp; 6: window, this, undefined</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 8: let, const &amp; Temporal Dead Zone</span>
+</div>
+
+</body>
+</html>

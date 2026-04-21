@@ -1,0 +1,52 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Scope = what's reachable" subtitle="Accessibility of variables and functions.">
+- **Scope** determines where a variable can be seen and used.
+- Four kinds in modern JS: **Global**, **Function**, **Block** (let/const), **Module**.
+- Scope is decided by the **Lexical Environment** created with every Execution Context.
+- `var` → function scoped. `let` / `const` → block scoped.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Lexical Environment" subtitle="Local memory + parent pointer.">
+- Every EC gets a Lexical Environment: **local memory** + **outer environment reference**.
+- The outer reference points at the lexical *parent* — where the function was **written**, not where it was *called*.
+- A chain of these references = the **Scope Chain**.
+- Global's outer reference is `null` — that's the end of the chain.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="The Scope Chain lookup" subtitle="Inner → outer → ... → global → null.">
+- Lookup starts in the current scope's local memory.
+- If not found, follow the outer ref to the parent's lexical environment.
+- Keep climbing until global. If still not found → `ReferenceError: x is not defined`.
+- **One-way street** — an outer scope can never reach an inner function's locals.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Lexical vs Dynamic" subtitle="JS picked lexical. Period.">
+- **Lexical (static):** scope fixed at *write time* — by where the function is defined in source.
+- **Dynamic:** scope resolved at *runtime* — by who called the function. (Bash uses this. JS does not.)
+- The proof: `a()` called from `b()` but defined globally still reads global `x`, ignoring `b`'s local `x`.
+- This is the single fact that makes closures work — scope chain follows code, not call stack.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Shadowing & sibling rules" subtitle="Same name, different scope.">
+- Inner variable with the same name **shadows** the outer — lookup stops at the inner.
+- Sibling functions **cannot** see each other's locals — they share only the global scope.
+- IIFE creates its own function scope; `var` inside it shadows globals starting from `undefined` (hoisted).
+- `var` in a `for` loop leaks out to the enclosing function scope; `let` stays inside the loop block.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Why this matters for closures" subtitle="The preview of Topic 10.">
+- When a function is returned, it carries a reference to its parent's lexical environment.
+- That reference *stays alive* after the parent's EC is popped — the scope chain is preserved.
+- So the returned function can still read the parent's variables. That's a closure.
+- Closures are not magic — they're the scope chain surviving past the call stack.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **L**ocal, then **O**uter, then **G**lobal — **L.O.G.** the lookup.
+  Lexical scope logs where the code was *written*, never where it was
+  *called*.
+</Callout>

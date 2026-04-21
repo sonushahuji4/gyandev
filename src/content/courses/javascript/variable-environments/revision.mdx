@@ -1,0 +1,50 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Every call = new world" subtitle="One invocation, one Execution Context.">
+- A call creates a **brand new** Execution Context with its own Variable Environment.
+- Parameters, locals, and nested function declarations live inside it.
+- Return value is sent back; the entire context is **destroyed** after return.
+- Calling the same function N times = N independent contexts, no shared state.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Same name, different memory" subtitle="Why local variables never collide.">
+- `var x = 10` in `a()` and `var x = 100` in `b()` live in **different** memory slots.
+- Neither touches the global `x`.
+- When `a()` returns, its `x` is gone — `b()` can't read it.
+- This isolation *is* what a "scope" is, underneath the word.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Missing var is dangerous" subtitle="Implicit globals and strict mode.">
+- `x = 10` (no `var`/`let`/`const`) → writes to the **global** variable.
+- In non-strict mode, it silently creates one if none exists.
+- In strict mode → `ReferenceError: x is not defined`.
+- Prefer strict mode everywhere to catch this at the source.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Lexical scoping" subtitle="Scope is decided where you write, not where you call.">
+- Function `a` defined at the top level → its scope chain goes through the **global** scope.
+- Even if `a` is *called* from inside `b`, it cannot see `b`'s locals.
+- JavaScript uses **static** (lexical) scoping, not dynamic.
+- This is why closures work — inner functions remember the scope they were born into.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Primitives vs objects" subtitle="By value, by reference.">
+- Primitives (number, string, boolean, null, undefined, symbol, bigint) → passed by **value**.
+- Objects (arrays, objects, functions) → passed by **reference** (technically, a reference copy).
+- Mutating `o.val` inside the function changes the caller's object.
+- Reassigning the parameter (`o = {}`) only changes the local variable.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="The arguments object" subtitle="Every regular function gets one.">
+- Array-*like*, not an array — has `length` and indexed access, but no `map`/`forEach`.
+- Available in every non-arrow function, regardless of declared parameters.
+- Arrow functions do **not** have their own `arguments` — they borrow the enclosing one.
+- Modern code prefers rest params (`...args`) — cleaner and array-native.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **N**ew context per call, **L**exical scope, **V**alue vs reference — **N.L.V.** is the variable-environment trinity.
+</Callout>

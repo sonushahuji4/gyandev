@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bonus Part 2: Polyfills, Coding Challenges & Practical Interview Questions</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#0c0f1a;--surface:#141829;--surface2:#1a1f36;--border:#2a2f4a;
+    --text:#cdd6f4;--text-dim:#8891b0;--accent:#f59e0b;--accent2:#3b82f6;
+    --green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;
+    --orange:#fb923c;--pink:#f472b6;--code-bg:#0d1117;
+    --q-bg:linear-gradient(135deg,#1e1434 0%,#1a1230 100%);
+    --output-bg:#0f1a14;--error-bg:#1a0f0f;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 20px 80px;max-width:860px;margin:0 auto}
+  .header{padding:48px 0 32px;border-bottom:1px solid var(--border);margin-bottom:40px}
+  .header .tag{display:inline-block;background:var(--purple);color:#fff;font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:4px 12px;border-radius:4px;margin-bottom:16px}
+  .header h1{font-size:28px;font-weight:800;line-height:1.15;background:linear-gradient(135deg,#a78bfa 0%,#3b82f6 40%,#22c55e 70%,#f59e0b 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px}
+  .header p{color:var(--text-dim);font-size:16px;font-weight:300}
+  .section-title{display:flex;align-items:center;gap:12px;margin:48px 0 20px;font-size:20px;font-weight:700;color:var(--accent2)}
+  .section-title::before{content:'';width:4px;height:24px;background:var(--accent2);border-radius:2px;flex-shrink:0}
+  .concept-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+  .concept-card h3{font-size:15px;font-weight:700;color:var(--accent);margin-bottom:10px}
+  .concept-card p,.concept-card li{font-size:14.5px;color:var(--text);line-height:1.75}
+  .concept-card ul,.concept-card ol{padding-left:20px;margin-top:8px}
+  .concept-card li{margin-bottom:6px}
+  .concept-card li::marker{color:var(--accent)}
+  .highlight{background:rgba(245,158,11,0.12);color:var(--accent);padding:2px 7px;border-radius:4px;font-weight:600;font-size:13.5px;font-family:'JetBrains Mono',monospace}
+  .key-box{background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%);border-left:3px solid var(--green);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--green)}
+  .key-box strong{font-weight:700}
+  .warn-box{background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%);border-left:3px solid var(--red);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--red)}
+  .info-box{background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%);border-left:3px solid var(--accent2);padding:14px 20px;border-radius:0 8px 8px 0;margin:12px 0 16px;font-size:14px;color:var(--accent2)}
+  .qa-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:20px;overflow:hidden}
+  .qa-q{background:var(--q-bg);padding:16px 24px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:flex-start}
+  .qa-q .q-badge{background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;margin-top:2px}
+  .qa-q .q-text{font-size:15px;font-weight:600;color:#e2e8f0;line-height:1.5}
+  .qa-a{padding:16px 24px}
+  .qa-a .a-label{font-size:10px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+  .qa-a p{font-size:14px;color:var(--text);line-height:1.75}
+  .qa-a p+p{margin-top:8px}
+  .code-wrap{margin:12px 0;border-radius:8px;overflow:hidden;border:1px solid #21262d}
+  .code-label{background:#161b22;padding:6px 14px;font-size:11px;font-weight:600;color:var(--text-dim);font-family:'JetBrains Mono',monospace;border-bottom:1px solid #21262d}
+  pre{background:var(--code-bg);padding:16px 18px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.65;color:#e6edf3;margin:0}
+  .kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#8b949e;font-style:italic}.num{color:#79c0ff}
+  .output-block{background:var(--output-bg);border:1px solid rgba(34,197,94,0.2);border-radius:8px;padding:12px 18px;margin:10px 0 6px;display:flex;align-items:center;gap:10px}
+  .output-block .out-icon{background:var(--green);color:#000;font-size:9px;font-weight:800;padding:3px 7px;border-radius:4px;flex-shrink:0}
+  .output-block .out-text{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--green)}
+  .divider{border:none;border-top:1px dashed var(--border);margin:36px 0}
+  .nav-footer{margin-top:48px;padding-top:24px;border-top:1px solid var(--border);text-align:center}
+  .nav-footer span{font-size:14px;color:var(--green);font-weight:700}
+  @media(max-width:700px){.header h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Bonus Part 2 — Write-on-the-Spot Questions</div>
+  <h1>Polyfills, this/call/apply/bind, Currying, Debounce, Promises &amp; Coding Challenges</h1>
+  <p>The questions where they say "Can you write it from scratch?" — be ready to code these live</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 1: POLYFILLS                       -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">1. Polyfills — "Write Your Own ___"</div>
+
+<div class="info-box">
+  <strong>Why polyfills are asked:</strong> They test if you truly understand how built-in methods work internally. You'll be asked to write these on a whiteboard or in an editor. Memorize the pattern, not just the code.
+</div>
+
+<!-- map polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Array.prototype.map()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myMap</div>
+      <pre>Array.prototype.<span class="fn">myMap</span> = <span class="kw">function</span>(callback, thisArg) {
+  <span class="kw">if</span> (<span class="kw">typeof</span> callback !== <span class="str">'function'</span>) {
+    <span class="kw">throw new</span> TypeError(callback + <span class="str">' is not a function'</span>);
+  }
+  <span class="kw">const</span> result = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.length; i++) {
+    <span class="kw">if</span> (i <span class="kw">in</span> <span class="kw">this</span>) { <span class="cm">// skip holes in sparse arrays</span>
+      result.push(callback.call(thisArg, <span class="kw">this</span>[i], i, <span class="kw">this</span>));
+    }
+  }
+  <span class="kw">return</span> result;
+};
+
+<span class="cm">// Test:</span>
+[<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].myMap(x =&gt; x * <span class="num">2</span>); <span class="cm">// [2, 4, 6]</span></pre>
+    </div>
+    <p><strong>Key points:</strong> Returns new array. Passes <code>(element, index, array)</code> to callback. Supports optional <code>thisArg</code>. Skips holes in sparse arrays.</p>
+  </div>
+</div>
+
+<!-- filter polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Array.prototype.filter()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myFilter</div>
+      <pre>Array.prototype.<span class="fn">myFilter</span> = <span class="kw">function</span>(callback, thisArg) {
+  <span class="kw">if</span> (<span class="kw">typeof</span> callback !== <span class="str">'function'</span>) {
+    <span class="kw">throw new</span> TypeError(callback + <span class="str">' is not a function'</span>);
+  }
+  <span class="kw">const</span> result = [];
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.length; i++) {
+    <span class="kw">if</span> (i <span class="kw">in</span> <span class="kw">this</span> && callback.call(thisArg, <span class="kw">this</span>[i], i, <span class="kw">this</span>)) {
+      result.push(<span class="kw">this</span>[i]);
+    }
+  }
+  <span class="kw">return</span> result;
+};
+
+[<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>,<span class="num">4</span>].myFilter(x =&gt; x % <span class="num">2</span> === <span class="num">0</span>); <span class="cm">// [2, 4]</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- reduce polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Array.prototype.reduce()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myReduce</div>
+      <pre>Array.prototype.<span class="fn">myReduce</span> = <span class="kw">function</span>(callback, initialValue) {
+  <span class="kw">if</span> (<span class="kw">typeof</span> callback !== <span class="str">'function'</span>) {
+    <span class="kw">throw new</span> TypeError(callback + <span class="str">' is not a function'</span>);
+  }
+  <span class="kw">let</span> acc = initialValue;
+  <span class="kw">let</span> startIndex = <span class="num">0</span>;
+
+  <span class="kw">if</span> (initialValue === <span class="kw">undefined</span>) {
+    <span class="kw">if</span> (<span class="kw">this</span>.length === <span class="num">0</span>) {
+      <span class="kw">throw new</span> TypeError(<span class="str">'Reduce of empty array with no initial value'</span>);
+    }
+    acc = <span class="kw">this</span>[<span class="num">0</span>];
+    startIndex = <span class="num">1</span>;
+  }
+
+  <span class="kw">for</span> (<span class="kw">let</span> i = startIndex; i &lt; <span class="kw">this</span>.length; i++) {
+    acc = callback(acc, <span class="kw">this</span>[i], i, <span class="kw">this</span>);
+  }
+  <span class="kw">return</span> acc;
+};
+
+[<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].myReduce((acc, cur) =&gt; acc + cur, <span class="num">0</span>); <span class="cm">// 6</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- forEach polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Array.prototype.forEach()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myForEach</div>
+      <pre>Array.prototype.<span class="fn">myForEach</span> = <span class="kw">function</span>(callback, thisArg) {
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="kw">this</span>.length; i++) {
+    <span class="kw">if</span> (i <span class="kw">in</span> <span class="kw">this</span>) {
+      callback.call(thisArg, <span class="kw">this</span>[i], i, <span class="kw">this</span>);
+    }
+  }
+  <span class="cm">// returns undefined — no return value!</span>
+};
+
+[<span class="num">1</span>,<span class="num">2</span>,<span class="num">3</span>].myForEach(x =&gt; <span class="fn">console</span>.<span class="fn">log</span>(x)); <span class="cm">// 1, 2, 3</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- bind polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Function.prototype.bind()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myBind — VERY commonly asked!</div>
+      <pre>Function.prototype.<span class="fn">myBind</span> = <span class="kw">function</span>(context, ...args) {
+  <span class="kw">const</span> fn = <span class="kw">this</span>; <span class="cm">// the function being bound</span>
+  <span class="kw">return function</span>(...newArgs) {
+    <span class="kw">return</span> fn.apply(context, [...args, ...newArgs]);
+  };
+};
+
+<span class="cm">// Test:</span>
+<span class="kw">function</span> <span class="fn">greet</span>(greeting, punctuation) {
+  <span class="fn">console</span>.<span class="fn">log</span>(greeting + <span class="str">", "</span> + <span class="kw">this</span>.name + punctuation);
+}
+
+<span class="kw">const</span> user = { name: <span class="str">"Akshay"</span> };
+<span class="kw">const</span> bound = greet.myBind(user, <span class="str">"Hello"</span>);
+bound(<span class="str">"!"</span>); <span class="cm">// "Hello, Akshay!"</span></pre>
+    </div>
+    <p><strong>Key points:</strong> <code>this</code> inside myBind refers to the function being bound. Returns a new function. Supports partial application (pre-filled args).</p>
+  </div>
+</div>
+
+<!-- call polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Function.prototype.call()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myCall</div>
+      <pre>Function.prototype.<span class="fn">myCall</span> = <span class="kw">function</span>(context = <span class="fn">globalThis</span>, ...args) {
+  <span class="kw">const</span> uniqueKey = Symbol(); <span class="cm">// avoid overwriting existing properties</span>
+  context[uniqueKey] = <span class="kw">this</span>; <span class="cm">// attach the function to context</span>
+  <span class="kw">const</span> result = context[uniqueKey](...args);
+  <span class="kw">delete</span> context[uniqueKey]; <span class="cm">// clean up</span>
+  <span class="kw">return</span> result;
+};
+
+<span class="kw">function</span> <span class="fn">sayHi</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi, "</span> + <span class="kw">this</span>.name); }
+sayHi.myCall({ name: <span class="str">"Akshay"</span> }); <span class="cm">// "Hi, Akshay"</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- apply polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Function.prototype.apply()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myApply — same as myCall but takes array</div>
+      <pre>Function.prototype.<span class="fn">myApply</span> = <span class="kw">function</span>(context = <span class="fn">globalThis</span>, args = []) {
+  <span class="kw">const</span> uniqueKey = Symbol();
+  context[uniqueKey] = <span class="kw">this</span>;
+  <span class="kw">const</span> result = context[uniqueKey](...args);
+  <span class="kw">delete</span> context[uniqueKey];
+  <span class="kw">return</span> result;
+};
+
+<span class="kw">function</span> <span class="fn">add</span>(a, b) { <span class="kw">return</span> <span class="kw">this</span>.base + a + b; }
+add.myApply({ base: <span class="num">10</span> }, [<span class="num">1</span>, <span class="num">2</span>]); <span class="cm">// 13</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- flat polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Array.prototype.flat()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myFlat — recursive</div>
+      <pre>Array.prototype.<span class="fn">myFlat</span> = <span class="kw">function</span>(depth = <span class="num">1</span>) {
+  <span class="kw">const</span> result = [];
+  <span class="kw">const</span> <span class="fn">flatten</span> = (arr, d) =&gt; {
+    <span class="kw">for</span> (<span class="kw">const</span> item <span class="kw">of</span> arr) {
+      <span class="kw">if</span> (Array.isArray(item) && d &gt; <span class="num">0</span>) {
+        flatten(item, d - <span class="num">1</span>);
+      } <span class="kw">else</span> {
+        result.push(item);
+      }
+    }
+  };
+  flatten(<span class="kw">this</span>, depth);
+  <span class="kw">return</span> result;
+};
+
+[<span class="num">1</span>,[<span class="num">2</span>,[<span class="num">3</span>,[<span class="num">4</span>]]]].myFlat(<span class="num">2</span>);     <span class="cm">// [1, 2, 3, [4]]</span>
+[<span class="num">1</span>,[<span class="num">2</span>,[<span class="num">3</span>,[<span class="num">4</span>]]]].myFlat(Infinity); <span class="cm">// [1, 2, 3, 4]</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Promise.all polyfill -->
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">POLYFILL</span><span class="q-text">Write a polyfill for <code>Promise.all()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">myPromiseAll</div>
+      <pre><span class="kw">function</span> <span class="fn">myPromiseAll</span>(promises) {
+  <span class="kw">return new</span> Promise((resolve, reject) =&gt; {
+    <span class="kw">const</span> results = [];
+    <span class="kw">let</span> completed = <span class="num">0</span>;
+
+    <span class="kw">if</span> (promises.length === <span class="num">0</span>) <span class="kw">return</span> resolve([]);
+
+    promises.forEach((promise, index) =&gt; {
+      Promise.resolve(promise)
+        .then(value =&gt; {
+          results[index] = value; <span class="cm">// maintain order!</span>
+          completed++;
+          <span class="kw">if</span> (completed === promises.length) {
+            resolve(results);
+          }
+        })
+        .catch(reject); <span class="cm">// first rejection rejects all</span>
+    });
+  });
+}
+
+<span class="cm">// Test:</span>
+myPromiseAll([
+  Promise.resolve(<span class="num">1</span>),
+  Promise.resolve(<span class="num">2</span>),
+  Promise.resolve(<span class="num">3</span>)
+]).then(<span class="fn">console</span>.<span class="fn">log</span>); <span class="cm">// [1, 2, 3]</span></pre>
+    </div>
+    <p><strong>Key:</strong> Results must be in the same order as input. First rejection rejects the whole thing. Use a counter, not <code>results.length</code> (because of sparse arrays).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 2: THIS / CALL / APPLY / BIND      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">2. <code>this</code>, call, apply &amp; bind</div>
+
+<div class="concept-card">
+  <h3>call vs apply vs bind — At a Glance</h3>
+  <ul>
+    <li><code>call(context, arg1, arg2)</code> — Calls function immediately with given <code>this</code> and <strong>individual args</strong></li>
+    <li><code>apply(context, [arg1, arg2])</code> — Calls function immediately with given <code>this</code> and <strong>array of args</strong></li>
+    <li><code>bind(context, arg1)</code> — Returns a <strong>new function</strong> with bound <code>this</code>. Does NOT call it.</li>
+  </ul>
+  <div class="code-wrap"><div class="code-label">Example</div>
+    <pre><span class="kw">function</span> <span class="fn">intro</span>(city, country) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name + <span class="str">" from "</span> + city + <span class="str">", "</span> + country);
+}
+
+<span class="kw">const</span> person = { name: <span class="str">"Akshay"</span> };
+
+intro.call(person, <span class="str">"Mumbai"</span>, <span class="str">"India"</span>);   <span class="cm">// "Akshay from Mumbai, India"</span>
+intro.apply(person, [<span class="str">"Mumbai"</span>, <span class="str">"India"</span>]); <span class="cm">// "Akshay from Mumbai, India"</span>
+
+<span class="kw">const</span> boundFn = intro.bind(person, <span class="str">"Mumbai"</span>);
+boundFn(<span class="str">"India"</span>); <span class="cm">// "Akshay from Mumbai, India"</span></pre>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">this in different contexts</div>
+      <pre><span class="kw">function</span> <span class="fn">abc</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a + <span class="kw">this</span>.b);
+}
+
+<span class="kw">var</span> obj = {
+  a: <span class="num">5</span>,
+  b: <span class="num">6</span>,
+  c: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.a + <span class="kw">this</span>.b);
+  }
+};
+
+abc();    <span class="cm">// ?</span>
+obj.c();  <span class="cm">// ?</span></pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">NaN → 11</span></div>
+    <p style="margin-top:10px;"><code>abc()</code> — standalone call, <code>this</code> = <code>window</code>. <code>window.a</code> and <code>window.b</code> are <code>undefined</code>, so <code>undefined + undefined = NaN</code>. <code>obj.c()</code> — method call, <code>this</code> = <code>obj</code>, so <code>5 + 6 = 11</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O</span><span class="q-text">What will be the output? (Method borrowing with call)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">const</span> person1 = {
+  name: <span class="str">"Akshay"</span>,
+  greet: <span class="kw">function</span>(city) {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name + <span class="str">" lives in "</span> + city);
+  }
+};
+
+<span class="kw">const</span> person2 = { name: <span class="str">"Alok"</span> };
+
+person1.greet.call(person2, <span class="str">"Delhi"</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Alok lives in Delhi"</span></div>
+    <p style="margin-top:10px;">Method borrowing: person2 doesn't have <code>greet</code>, but we borrow it from person1 and change <code>this</code> to person2 using <code>call</code>.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 3: CURRYING                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">3. Currying</div>
+
+<div class="concept-card">
+  <h3>What is Currying?</h3>
+  <p>Currying transforms a function with multiple arguments into a sequence of functions, each taking a single argument: <code>f(a, b, c)</code> → <code>f(a)(b)(c)</code>.</p>
+  <div class="code-wrap"><div class="code-label">Basic currying</div>
+    <pre><span class="cm">// Normal function</span>
+<span class="kw">function</span> <span class="fn">add</span>(a, b, c) { <span class="kw">return</span> a + b + c; }
+add(<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>); <span class="cm">// 6</span>
+
+<span class="cm">// Curried version</span>
+<span class="kw">function</span> <span class="fn">addCurried</span>(a) {
+  <span class="kw">return function</span>(b) {
+    <span class="kw">return function</span>(c) {
+      <span class="kw">return</span> a + b + c;
+    };
+  };
+}
+addCurried(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>); <span class="cm">// 6</span></pre>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement a generic <code>curry()</code> function that works for any number of arguments</span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">Generic curry</div>
+      <pre><span class="kw">function</span> <span class="fn">curry</span>(fn) {
+  <span class="kw">return function</span> <span class="fn">curried</span>(...args) {
+    <span class="kw">if</span> (args.length &gt;= fn.length) {
+      <span class="kw">return</span> fn.apply(<span class="kw">this</span>, args);
+    }
+    <span class="kw">return function</span>(...args2) {
+      <span class="kw">return</span> curried.apply(<span class="kw">this</span>, [...args, ...args2]);
+    };
+  };
+}
+
+<span class="kw">function</span> <span class="fn">sum</span>(a, b, c) { <span class="kw">return</span> a + b + c; }
+<span class="kw">const</span> curriedSum = curry(sum);
+
+curriedSum(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>);   <span class="cm">// 6</span>
+curriedSum(<span class="num">1</span>, <span class="num">2</span>)(<span class="num">3</span>);  <span class="cm">// 6</span>
+curriedSum(<span class="num">1</span>)(<span class="num">2</span>, <span class="num">3</span>);  <span class="cm">// 6</span></pre>
+    </div>
+    <p><strong>How it works:</strong> If enough args are collected (≥ fn.length), call the original function. Otherwise, return a new function that collects more args.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement <code>sum(1)(2)(3)...(n)()</code> that works for infinite chaining and returns total when called with no args</span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">Infinite currying with termination</div>
+      <pre><span class="kw">function</span> <span class="fn">sum</span>(a) {
+  <span class="kw">return function</span>(b) {
+    <span class="kw">if</span> (b !== <span class="kw">undefined</span>) {
+      <span class="kw">return</span> sum(a + b);
+    }
+    <span class="kw">return</span> a;
+  };
+}
+
+sum(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>)();       <span class="cm">// 6</span>
+sum(<span class="num">5</span>)(<span class="num">10</span>)(<span class="num">15</span>)(<span class="num">20</span>)(); <span class="cm">// 50</span></pre>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 4: DEBOUNCE & THROTTLE             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">4. Debounce &amp; Throttle</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement debounce from scratch</span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <p><strong>Debounce:</strong> Wait until the user <em>stops</em> doing something for N ms, then execute once. Use case: search input, window resize.</p>
+    <div class="code-wrap"><div class="code-label">debounce</div>
+      <pre><span class="kw">function</span> <span class="fn">debounce</span>(fn, delay) {
+  <span class="kw">let</span> timer;
+  <span class="kw">return function</span>(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() =&gt; {
+      fn.apply(<span class="kw">this</span>, args);
+    }, delay);
+  };
+}
+
+<span class="cm">// Usage:</span>
+<span class="kw">const</span> search = debounce((query) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Searching: "</span> + query);
+}, <span class="num">300</span>);
+
+<span class="cm">// User types fast → only last call executes after 300ms pause</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement throttle from scratch</span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <p><strong>Throttle:</strong> Execute at most once every N ms, no matter how many times it's called. Use case: scroll events, button clicks.</p>
+    <div class="code-wrap"><div class="code-label">throttle</div>
+      <pre><span class="kw">function</span> <span class="fn">throttle</span>(fn, limit) {
+  <span class="kw">let</span> inThrottle = <span class="kw">false</span>;
+  <span class="kw">return function</span>(...args) {
+    <span class="kw">if</span> (!inThrottle) {
+      fn.apply(<span class="kw">this</span>, args);
+      inThrottle = <span class="kw">true</span>;
+      setTimeout(() =&gt; inThrottle = <span class="kw">false</span>, limit);
+    }
+  };
+}
+
+<span class="cm">// Usage:</span>
+<span class="kw">const</span> handleScroll = throttle(() =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Scrolled!"</span>);
+}, <span class="num">200</span>);
+<span class="cm">// Fires at most once every 200ms even if user scrolls continuously</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="key-box">
+  <strong>Debounce vs Throttle:</strong> Debounce waits for silence (last call wins). Throttle enforces a rate limit (first call wins per interval). Both use closures + setTimeout.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 5: PROMISES                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">5. Promises — Theory &amp; Output Questions</div>
+
+<div class="concept-card">
+  <h3>Promise States &amp; Basics</h3>
+  <ul>
+    <li><strong>Pending</strong> — initial state, neither fulfilled nor rejected</li>
+    <li><strong>Fulfilled</strong> — operation completed, <code>.then()</code> handler runs</li>
+    <li><strong>Rejected</strong> — operation failed, <code>.catch()</code> handler runs</li>
+    <li>A promise is <strong>settled</strong> once fulfilled or rejected — cannot change again</li>
+    <li><code>.finally()</code> runs regardless of outcome — for cleanup</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>Promise Methods</h3>
+  <ul>
+    <li><code>Promise.all([p1, p2])</code> — waits for ALL. Rejects on first failure. Returns array of results.</li>
+    <li><code>Promise.allSettled([p1, p2])</code> — waits for ALL regardless of success/failure. Returns status+value for each.</li>
+    <li><code>Promise.race([p1, p2])</code> — returns the FIRST to settle (win or lose).</li>
+    <li><code>Promise.any([p1, p2])</code> — returns the FIRST to FULFILL. Rejects only if ALL reject.</li>
+  </ul>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O</span><span class="q-text">What will be the output? (Classic promise ordering)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);
+
+<span class="kw">const</span> p = <span class="kw">new</span> Promise((resolve) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Inside Promise"</span>);
+  resolve(<span class="str">"Resolved"</span>);
+});
+
+p.then(val =&gt; <span class="fn">console</span>.<span class="fn">log</span>(val));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Start" → "Inside Promise" → "End" → "Resolved"</span></div>
+    <p style="margin-top:10px;">Promise constructor runs <strong>synchronously</strong>. <code>.then</code> callback goes to microtask queue. Sync code finishes first, then microtasks.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O</span><span class="q-text">What will be the output? (Complete async/event loop question)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'B'</span>), <span class="num">0</span>);
+
+Promise.resolve()
+  .then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'C'</span>))
+  .then(() =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'D'</span>);
+    <span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'E'</span>), <span class="num">0</span>);
+  });
+
+(<span class="kw">async function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'F'</span>);
+  <span class="kw">await</span> <span class="kw">null</span>;
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'G'</span>);
+})();
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'H'</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">F → H → C → G → D → B → E</span></div>
+    <p style="margin-top:10px;"><strong>Sync:</strong> F, H. <strong>Microtasks:</strong> C (promise.then), G (await resumes), D (chained then). <strong>Macrotasks:</strong> B (first setTimeout), E (setTimeout inside then).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 6: COMMON CODING CHALLENGES        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">6. Common Coding Challenges</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement deep clone of an object (without JSON)</span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">deepClone</div>
+      <pre><span class="kw">function</span> <span class="fn">deepClone</span>(obj) {
+  <span class="kw">if</span> (obj === <span class="kw">null</span> || <span class="kw">typeof</span> obj !== <span class="str">'object'</span>) <span class="kw">return</span> obj;
+  <span class="kw">if</span> (obj <span class="kw">instanceof</span> Date) <span class="kw">return new</span> Date(obj);
+  <span class="kw">if</span> (obj <span class="kw">instanceof</span> RegExp) <span class="kw">return new</span> RegExp(obj);
+  <span class="kw">if</span> (Array.isArray(obj)) <span class="kw">return</span> obj.map(item =&gt; deepClone(item));
+
+  <span class="kw">const</span> cloned = {};
+  <span class="kw">for</span> (<span class="kw">const</span> key <span class="kw">in</span> obj) {
+    <span class="kw">if</span> (obj.hasOwnProperty(key)) {
+      cloned[key] = deepClone(obj[key]);
+    }
+  }
+  <span class="kw">return</span> cloned;
+}
+
+<span class="kw">const</span> original = { a: <span class="num">1</span>, b: { c: <span class="num">2</span> }, d: [<span class="num">3</span>, <span class="num">4</span>] };
+<span class="kw">const</span> clone = deepClone(original);
+clone.b.c = <span class="num">99</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(original.b.c); <span class="cm">// 2 (not affected!)</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Flatten a deeply nested array without using <code>.flat()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">Three approaches</div>
+      <pre><span class="cm">// 1. Recursive</span>
+<span class="kw">function</span> <span class="fn">flatten</span>(arr) {
+  <span class="kw">return</span> arr.reduce((acc, item) =&gt; {
+    <span class="kw">return</span> acc.concat(Array.isArray(item) ? flatten(item) : item);
+  }, []);
+}
+
+<span class="cm">// 2. Iterative (using stack)</span>
+<span class="kw">function</span> <span class="fn">flattenIterative</span>(arr) {
+  <span class="kw">const</span> stack = [...arr];
+  <span class="kw">const</span> result = [];
+  <span class="kw">while</span> (stack.length) {
+    <span class="kw">const</span> item = stack.pop();
+    Array.isArray(item) ? stack.push(...item) : result.unshift(item);
+  }
+  <span class="kw">return</span> result;
+}
+
+<span class="cm">// 3. toString hack (only for numbers!)</span>
+[<span class="num">1</span>,[<span class="num">2</span>,[<span class="num">3</span>]]].toString().split(<span class="str">','</span>).map(Number); <span class="cm">// [1,2,3]</span>
+
+flatten([<span class="num">1</span>,[<span class="num">2</span>,[<span class="num">3</span>,[<span class="num">4</span>,[<span class="num">5</span>]]]]]); <span class="cm">// [1,2,3,4,5]</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement a <code>once()</code> function — ensures a function runs only once</span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">once — uses closure</div>
+      <pre><span class="kw">function</span> <span class="fn">once</span>(fn) {
+  <span class="kw">let</span> called = <span class="kw">false</span>;
+  <span class="kw">let</span> result;
+  <span class="kw">return function</span>(...args) {
+    <span class="kw">if</span> (!called) {
+      called = <span class="kw">true</span>;
+      result = fn.apply(<span class="kw">this</span>, args);
+    }
+    <span class="kw">return</span> result;
+  };
+}
+
+<span class="kw">const</span> pay = once((amount) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Paid: $"</span> + amount);
+  <span class="kw">return</span> amount;
+});
+
+pay(<span class="num">100</span>); <span class="cm">// "Paid: $100" → returns 100</span>
+pay(<span class="num">200</span>); <span class="cm">// (nothing logged) → returns 100 (cached)</span>
+pay(<span class="num">300</span>); <span class="cm">// (nothing logged) → returns 100 (cached)</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement <code>memoize()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">memoize — caches function results</div>
+      <pre><span class="kw">function</span> <span class="fn">memoize</span>(fn) {
+  <span class="kw">const</span> cache = <span class="kw">new</span> Map();
+  <span class="kw">return function</span>(...args) {
+    <span class="kw">const</span> key = JSON.stringify(args);
+    <span class="kw">if</span> (cache.has(key)) <span class="kw">return</span> cache.get(key);
+    <span class="kw">const</span> result = fn.apply(<span class="kw">this</span>, args);
+    cache.set(key, result);
+    <span class="kw">return</span> result;
+  };
+}
+
+<span class="kw">const</span> factorial = memoize(<span class="kw">function</span> <span class="fn">f</span>(n) {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Computing..."</span>, n);
+  <span class="kw">return</span> n &lt;= <span class="num">1</span> ? <span class="num">1</span> : n * f(n - <span class="num">1</span>);
+});
+
+factorial(<span class="num">5</span>); <span class="cm">// Computing... 5, 4, 3, 2, 1 → 120</span>
+factorial(<span class="num">5</span>); <span class="cm">// 120 (cached, no computing!)</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Implement <code>pipe()</code> and <code>compose()</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">pipe (left→right) and compose (right→left)</div>
+      <pre><span class="cm">// pipe: f(g(h(x))) → pipe(h, g, f)(x)</span>
+<span class="kw">const</span> <span class="fn">pipe</span> = (...fns) =&gt; (x) =&gt; fns.reduce((acc, fn) =&gt; fn(acc), x);
+
+<span class="cm">// compose: f(g(h(x))) → compose(f, g, h)(x)</span>
+<span class="kw">const</span> <span class="fn">compose</span> = (...fns) =&gt; (x) =&gt; fns.reduceRight((acc, fn) =&gt; fn(acc), x);
+
+<span class="kw">const</span> add10 = x =&gt; x + <span class="num">10</span>;
+<span class="kw">const</span> double = x =&gt; x * <span class="num">2</span>;
+<span class="kw">const</span> square = x =&gt; x * x;
+
+pipe(add10, double, square)(<span class="num">5</span>);    <span class="cm">// (5+10=15) → (15*2=30) → (30*30=900)</span>
+compose(square, double, add10)(<span class="num">5</span>); <span class="cm">// same: 900</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">CODING</span><span class="q-text">Check type of a variable without using <code>typeof</code></span></div>
+  <div class="qa-a"><div class="a-label">Implementation</div>
+    <div class="code-wrap"><div class="code-label">Two approaches</div>
+      <pre><span class="cm">// Method 1: constructor property</span>
+(<span class="num">5</span>).constructor === Number;     <span class="cm">// true</span>
+<span class="str">"hi"</span>.constructor === String;    <span class="cm">// true</span>
+[].constructor === Array;       <span class="cm">// true</span>
+
+<span class="cm">// Method 2: Object.prototype.toString (most reliable)</span>
+Object.prototype.toString.call(<span class="num">5</span>);           <span class="cm">// "[object Number]"</span>
+Object.prototype.toString.call(<span class="str">"hi"</span>);        <span class="cm">// "[object String]"</span>
+Object.prototype.toString.call([]);          <span class="cm">// "[object Array]"</span>
+Object.prototype.toString.call(<span class="kw">null</span>);        <span class="cm">// "[object Null]"</span>
+Object.prototype.toString.call(<span class="kw">undefined</span>);   <span class="cm">// "[object Undefined]"</span>
+Object.prototype.toString.call(() =&gt; {});    <span class="cm">// "[object Function]"</span></pre>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- SECTION 7: EVENT LOOP OUTPUT QUESTIONS      -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">7. Complex Event Loop Output Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="num">1</span>);
+
+<span class="fn">setTimeout</span>(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">2</span>), <span class="num">0</span>);
+
+<span class="kw">new</span> Promise((resolve) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">3</span>);
+  resolve();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">4</span>);
+}).then(() =&gt; <span class="fn">console</span>.<span class="fn">log</span>(<span class="num">5</span>));
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="num">6</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">1 → 3 → 4 → 6 → 5 → 2</span></div>
+    <p style="margin-top:10px;">Sync: 1, 3 (constructor is sync), 4 (resolve doesn't stop execution!), 6. Microtask: 5. Macrotask: 2.</p>
+    <p><strong>Key trap:</strong> <code>console.log(4)</code> after <code>resolve()</code> still runs — resolve doesn't exit the constructor!</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">async function</span> <span class="fn">async1</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'A'</span>);
+  <span class="kw">await</span> async2();
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'B'</span>);
+}
+
+<span class="kw">async function</span> <span class="fn">async2</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'C'</span>);
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'D'</span>);
+async1();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">'E'</span>);</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">D → A → C → E → B</span></div>
+    <p style="margin-top:10px;"><strong>D</strong> (sync). <strong>A</strong> (sync part of async1). <strong>C</strong> (async2 runs sync). <code>await</code> pauses async1. <strong>E</strong> (sync). <strong>B</strong> (microtask after await resolves).</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- QUICK REVISION                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Quick Revision — What to Write on the Spot</div>
+
+<div class="concept-card">
+  <h3>Polyfills You Must Memorize</h3>
+  <ul>
+    <li><code>Array.prototype.map</code> — loop, push callback result, return new array</li>
+    <li><code>Array.prototype.filter</code> — loop, push if callback returns truthy</li>
+    <li><code>Array.prototype.reduce</code> — handle initial value, accumulate through loop</li>
+    <li><code>Array.prototype.forEach</code> — loop, call callback, return nothing</li>
+    <li><code>Array.prototype.flat</code> — recursive with depth parameter</li>
+    <li><code>Function.prototype.bind</code> — return new function using <code>apply</code></li>
+    <li><code>Function.prototype.call</code> — attach fn to context, call, clean up</li>
+    <li><code>Function.prototype.apply</code> — same as call but args is array</li>
+    <li><code>Promise.all</code> — counter + results array, first reject rejects all</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>Coding Patterns You Must Know</h3>
+  <ul>
+    <li><strong>Debounce</strong> — clearTimeout + setTimeout in closure</li>
+    <li><strong>Throttle</strong> — boolean flag + setTimeout in closure</li>
+    <li><strong>Currying</strong> — return functions until enough args collected</li>
+    <li><strong>Infinite currying</strong> — sum(1)(2)(3)...() with recursive return</li>
+    <li><strong>Memoize</strong> — cache Map in closure, JSON.stringify args as key</li>
+    <li><strong>Once</strong> — boolean flag + cached result in closure</li>
+    <li><strong>Deep clone</strong> — recursive, handle null/Date/RegExp/Array</li>
+    <li><strong>Flatten array</strong> — recursive reduce or iterative stack</li>
+    <li><strong>Pipe / Compose</strong> — reduce / reduceRight through function array</li>
+    <li><strong>Type check without typeof</strong> — <code>Object.prototype.toString.call()</code></li>
+    <li><strong>call/apply/bind</strong> — know the difference and when to use each</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>Event Loop Execution Order Rule</h3>
+  <ul>
+    <li><strong>Step 1:</strong> All synchronous code runs first (including Promise constructor body!)</li>
+    <li><strong>Step 2:</strong> All microtasks (Promise .then/.catch, await resume, queueMicrotask)</li>
+    <li><strong>Step 3:</strong> One macrotask (setTimeout, setInterval, I/O)</li>
+    <li><strong>Step 4:</strong> All microtasks again (if any were created during step 3)</li>
+    <li><strong>Repeat</strong> steps 3-4 until all queues are empty</li>
+    <li><code>resolve()</code> inside Promise constructor does NOT stop execution of remaining sync code!</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span>🎉 Complete Interview Preparation — All Topics + Both Bonus Chapters Done!</span>
+</div>
+
+</body>
+</html>

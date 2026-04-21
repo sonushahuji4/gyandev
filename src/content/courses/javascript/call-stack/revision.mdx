@@ -1,0 +1,51 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="The two phases" subtitle="Memory Creation → Code Execution.">
+- **Phase 1** scans the whole program — variables get `undefined`, function declarations get their entire body.
+- **Phase 2** runs line by line — values assigned, functions invoked, contexts pushed.
+- Nothing in Phase 2 is executed during Phase 1; the split is strict.
+- Hoisting is the side-effect of this split, not a feature in its own right.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Every call = new context" subtitle="Functions never share their Execution Context.">
+- A function invocation creates a **brand new Execution Context** with its own Memory + Code.
+- Parameters + locals live inside that context's Variable Environment.
+- When `return` fires the context is **destroyed** and popped.
+- Two calls to the same function run in two separate contexts — no shared state.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="The Call Stack" subtitle="LIFO stack of Execution Contexts.">
+- **L**ast **I**n, **F**irst **O**ut — the most recent call is always on top.
+- GEC is pushed first, sits at the bottom for the whole program.
+- Every invocation pushes; every `return` pops.
+- Stack is empty → program is done.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="The many names" subtitle="Interviewers use all of these.">
+- **Call Stack** — the common name.
+- **Execution Context Stack** — what it literally holds.
+- **Program Stack** / **Control Stack** — classical terms.
+- **Runtime Stack** / **Machine Stack** — engine-level terms.
+- All of them mean the same thing: the LIFO stack of contexts.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Return + overflow" subtitle="Two edges of stack discipline.">
+- `return;` without a value → function returns `undefined`.
+- No return statement at all → also returns `undefined`.
+- Infinite recursion without a base case → **Stack Overflow**.
+- Error: `RangeError: Maximum call stack size exceeded` (V8 allows ~10–15K frames).
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="The Call Stack has no timer" subtitle="And no concurrency.">
+- Whatever is pushed runs *immediately* — no "wait a second".
+- `setTimeout` callbacks don't sit on the Call Stack; they wait in the callback queue.
+- Because JS is single-threaded, blocking the stack freezes the whole app.
+- This is why async I/O pushes work out to Web APIs and re-enters via the event loop.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **P**ush on call, **P**op on return — **P.P.** every Execution Context obeys.
+</Callout>

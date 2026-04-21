@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 1: Execution Context — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header .tag {
+    display: inline-block;
+    background: var(--accent);
+    color: #000;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 4px;
+    margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1.2;
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin-bottom: 8px;
+  }
+  .header p {
+    color: var(--text-dim);
+    font-size: 16px;
+    font-weight: 300;
+  }
+
+  /* Section titles */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 44px 0 20px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+  .section-title::before {
+    content: '';
+    width: 4px;
+    height: 24px;
+    background: var(--accent2);
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  /* Concept card */
+  .concept-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+  .concept-card h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 14.5px;
+    color: var(--text);
+    line-height: 1.75;
+  }
+  .concept-card ul {
+    padding-left: 20px;
+    margin-top: 8px;
+  }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+
+  .highlight {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--accent);
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    font-size: 13.5px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Key takeaway */
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px;
+    border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px;
+    font-size: 14px;
+    color: var(--green);
+    font-weight: 400;
+  }
+  .key-box strong { font-weight: 700; }
+
+  /* QA Block */
+  .qa-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .qa-q {
+    background: var(--q-bg);
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .qa-q .q-badge {
+    background: var(--red);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .qa-q .q-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: #e2e8f0;
+    line-height: 1.5;
+  }
+  .qa-a {
+    padding: 16px 24px;
+  }
+  .qa-a .a-label {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--green);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .qa-a p {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.75;
+  }
+
+  /* Code block */
+  .code-wrap {
+    margin: 12px 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #21262d;
+  }
+  .code-label {
+    background: #161b22;
+    padding: 6px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace;
+    border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg);
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.65;
+    color: #e6edf3;
+    margin: 0;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .op { color: #c9d1d9; }
+
+  /* Output block */
+  .output-block {
+    background: var(--output-bg);
+    border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px;
+    padding: 12px 18px;
+    margin: 10px 0 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .output-block .out-icon {
+    background: var(--green);
+    color: #000;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .output-block .out-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--green);
+  }
+
+  /* Diagram */
+  .diagram {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .diagram svg { max-width: 100%; }
+
+  /* Divider */
+  .divider {
+    border: none;
+    border-top: 1px dashed var(--border);
+    margin: 32px 0;
+  }
+
+  /* Footer nav */
+  .nav-footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .nav-footer span {
+    color: var(--text-dim);
+    font-size: 14px;
+  }
+  .nav-footer .next-btn {
+    background: var(--accent);
+    color: #000;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 24px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="tag">Topic 1 of 19</div>
+  <h1>Execution Context</h1>
+  <p>The foundation of how JavaScript works under the hood</p>
+</div>
+
+<!-- ─── CORE CONCEPTS ─── -->
+<div class="section-title">Core Concepts</div>
+
+<div class="concept-card">
+  <h3>What is an Execution Context?</h3>
+  <p>Everything in JavaScript happens inside the <span class="highlight">Execution Context</span>. Think of it as a sealed container where JS code runs. It has <strong>two components</strong>:</p>
+  <ul>
+    <li><strong>Memory Component (Variable Environment)</strong> — Stores all variables and functions as <em>key:value</em> pairs.</li>
+    <li><strong>Code Component (Thread of Execution)</strong> — Where code is executed <em>one line at a time</em>, in order.</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>JavaScript is Synchronous &amp; Single-Threaded</h3>
+  <ul>
+    <li><strong>Synchronous</strong> — One command executes at a time.</li>
+    <li><strong>Single-threaded</strong> — Commands run in a specific, sequential order.</li>
+  </ul>
+  <p style="margin-top:10px;">This means JS cannot move to the next line until the current one finishes executing.</p>
+</div>
+
+<!-- Diagram -->
+<div class="diagram">
+  <svg viewBox="0 0 600 260" xmlns="http://www.w3.org/2000/svg" font-family="Outfit, sans-serif">
+    <!-- Outer box -->
+    <rect x="30" y="20" width="540" height="220" rx="12" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <text x="300" y="52" text-anchor="middle" font-size="16" font-weight="700" fill="#f59e0b">Execution Context</text>
+    <!-- Divider -->
+    <line x1="300" y1="68" x2="300" y2="228" stroke="#2a2f4a" stroke-width="1.5" stroke-dasharray="6"/>
+    <!-- Memory side -->
+    <rect x="50" y="72" width="230" height="150" rx="8" fill="#1a1f36" stroke="#3b82f6" stroke-width="1.5"/>
+    <text x="165" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#3b82f6">Memory Component</text>
+    <text x="165" y="116" text-anchor="middle" font-size="10" fill="#8891b0">(Variable Environment)</text>
+    <text x="80" y="148" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">key : value</text>
+    <text x="80" y="170" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">a   : 10</text>
+    <text x="80" y="192" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">fn  : {...}</text>
+    <!-- Code side -->
+    <rect x="320" y="72" width="230" height="150" rx="8" fill="#1a1f36" stroke="#22c55e" stroke-width="1.5"/>
+    <text x="435" y="98" text-anchor="middle" font-size="13" font-weight="700" fill="#22c55e">Code Component</text>
+    <text x="435" y="116" text-anchor="middle" font-size="10" fill="#8891b0">(Thread of Execution)</text>
+    <text x="350" y="150" font-size="12" fill="#8891b0">→ line 1</text>
+    <text x="350" y="172" font-size="12" fill="#8891b0">→ line 2</text>
+    <text x="350" y="194" font-size="12" fill="#8891b0">→ line 3 ...</text>
+  </svg>
+</div>
+
+<div class="key-box">
+  <strong>Key Takeaway:</strong> Every time JS runs, an execution context is created. Memory is allocated first (Phase 1), then code runs line by line (Phase 2).
+</div>
+
+<hr class="divider">
+
+<!-- ─── INTERVIEW QUESTIONS ─── -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<!-- Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What is an Execution Context in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>An execution context is an abstract environment where JavaScript code is evaluated and executed. It consists of two parts: the <strong>Memory Component</strong> (Variable Environment) which stores all variables and function declarations as key-value pairs, and the <strong>Code Component</strong> (Thread of Execution) where the code runs one line at a time in a sequential manner.</p>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">Is JavaScript synchronous or asynchronous? Single-threaded or multi-threaded?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>JavaScript is fundamentally a <strong>synchronous, single-threaded</strong> language. It can only execute one command at a time, and each command runs in a specific sequential order. However, through browser-provided Web APIs (like setTimeout, fetch, DOM APIs), the callback queue, and the event loop, JavaScript can handle asynchronous operations — but the language itself is synchronous at its core.</p>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">What are the two components of an Execution Context?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>1. Memory Component (Variable Environment):</strong> This is where all variables and functions are stored as key-value pairs. During the memory creation phase, variables are assigned <code>undefined</code> and functions store their entire code.</p>
+    <p style="margin-top:8px;"><strong>2. Code Component (Thread of Execution):</strong> This is where the code is actually executed, one line at a time. It's called "thread of execution" because JS runs in a single thread.</p>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">What does "single-threaded" mean in the context of JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Single-threaded means JavaScript has only <strong>one call stack</strong> and can execute only one piece of code at a time. It cannot run multiple operations simultaneously within the language itself. Each line of code must finish before the next one begins. This is why blocking the main thread (e.g., with heavy computation) freezes the entire application.</p>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">What is the difference between "synchronous" and "single-threaded"?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Synchronous</strong> means commands are executed one at a time — the next command waits for the current one to finish. <strong>Single-threaded</strong> means there's only one thread of execution (one call stack). Together, they mean JavaScript runs one command at a time, in order, on a single thread. A language can be multi-threaded but still synchronous within each thread.</p>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">How many execution contexts can exist at a time in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Multiple execution contexts can <em>exist</em> at a time (stacked in the call stack), but only <strong>one is actively executing</strong> at any moment — the one on top of the call stack. When a function is called, a new execution context is created and pushed on top. When it returns, it is popped off, and execution resumes in the context below.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── INPUT/OUTPUT QUESTIONS ─── -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<!-- IO Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output and why?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Middle"</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">Start → Middle → End</span>
+    </div>
+    <p style="margin-top:10px;">JS is synchronous and single-threaded, so code runs line by line in order. Each <code>console.log</code> executes only after the previous one is complete.</p>
+  </div>
+</div>
+
+<!-- IO Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">10</span>;
+<span class="kw">function</span> <span class="fn">greet</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello"</span>);
+}
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+<span class="fn">greet</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Done"</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10 → Hello → Done</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Phase 1 (Memory):</strong> x = undefined, greet = entire function code. <strong>Phase 2 (Execution):</strong> x is assigned 10, console.log(x) prints 10, greet() is invoked creating a new execution context which prints "Hello", then "Done" is printed.</p>
+  </div>
+</div>
+
+<!-- IO Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output? Trace the execution context.</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">5</span>;
+<span class="kw">var</span> b = <span class="num">10</span>;
+<span class="kw">var</span> c = a + b;
+<span class="fn">console</span>.<span class="fn">log</span>(c);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">15</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Memory Phase:</strong> a = undefined, b = undefined, c = undefined. <strong>Execution Phase:</strong> a = 5, b = 10, c = 5 + 10 = 15, then 15 is printed. After execution, the GEC is popped from the call stack.</p>
+  </div>
+</div>
+
+<!-- IO Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>);
+
+<span class="kw">function</span> <span class="fn">foo</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>);
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C"</span>);
+<span class="fn">foo</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">A → C → B → D</span>
+    </div>
+    <p style="margin-top:10px;">Execution is sequential. "A" prints first, the function declaration is skipped during execution (already handled in memory phase), "C" prints, then foo() is called which prints "B", and finally "D" prints. The function only runs when <em>invoked</em>, not when declared.</p>
+  </div>
+</div>
+
+<!-- IO Q5 (tricky) -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O</span>
+    <span class="q-text">What will be the output? (Tricky)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+x = <span class="num">2</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+<span class="kw">var</span> x = <span class="num">3</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">1 → 2 → 3</span>
+    </div>
+    <p style="margin-top:10px;">JavaScript allows re-declaring variables with <code>var</code> (no error). During memory phase, x gets <code>undefined</code> once (duplicate var declarations are ignored). During execution, x is assigned 1, then 2, then 3 — each console.log prints the current value.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── QUICK REVISION ─── -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Remember These Points</h3>
+  <ul>
+    <li>Execution Context = Memory + Code</li>
+    <li>Memory Component = Variable Environment (key:value store)</li>
+    <li>Code Component = Thread of Execution (line by line)</li>
+    <li>JS is synchronous &amp; single-threaded at its core</li>
+    <li>Global Execution Context is created when a program runs</li>
+    <li>Every function invocation creates a new execution context</li>
+    <li>Two phases: Memory Creation → Code Execution</li>
+    <li>Variables get <code>undefined</code> in Phase 1; actual values in Phase 2</li>
+    <li>Functions get their <strong>entire code</strong> stored in Phase 1</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+<div class="nav-footer">
+  <span>Namaste JavaScript Interview Notes</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 2: Call Stack</span>
+</div>
+
+</body>
+</html>

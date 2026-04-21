@@ -1,0 +1,46 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  When you write an identifier, what comes back? This decision flow folds
+  both topics together — first the engine checks whether the name was
+  declared at all, then how it was declared (`var` vs `let`/`const`),
+  then whether it has a value yet. The legend below decodes each branch.
+</Callout>
+
+## Accessing an identifier — what you actually get
+
+```mermaid
+flowchart TD
+    S["<b>Access identifier <code>x</code></b><br/>reading from a scope"]
+      --> Q{"Was <code>x</code> declared?"}
+    Q -->|"<b>i</b> · No"| NDF["<b>ReferenceError</b><br/>x is not defined"]
+    Q -->|"Yes"| K{"Declared how?"}
+    K -->|"<b>ii</b> · var (global)"| WIN["Stored on <b>window</b><br/>window.x works"]
+    K -->|"<b>iii</b> · let / const (global)"| SCR["Stored in <b>Script scope</b><br/>window.x is undefined"]
+    WIN --> V{"Value assigned yet?"}
+    SCR --> V
+    V -->|"<b>iv</b> · No"| UND["Returns <b>undefined</b><br/>(Phase 1 placeholder)"]
+    V -->|"<b>v</b> · Yes"| VAL["Returns the <b>real value</b>"]
+    S -.->|"<b>vi</b> · meanwhile"| TH["<b>this</b> depends on how<br/>the function was called"]
+
+    classDef ok   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef warn fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef err  fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    classDef node fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    class S,Q,K,V node
+    class WIN,SCR,UND,TH warn
+    class VAL ok
+    class NDF err
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Never declared',        description: 'No entry in memory at all. Reading the name throws `ReferenceError: x is not defined` — it\'s an error, not a value.' },
+  { numeral: 'ii',  name: 'var at global',         description: 'Attached to the `window` object. Readable as `x`, `this.x`, and `window.x` — all three are identical.' },
+  { numeral: 'iii', name: 'let / const at global', description: 'Stored in the Script scope (separate memory). `window.x` is `undefined` — it never attaches to the global object.' },
+  { numeral: 'iv',  name: 'Declared, unassigned',  description: 'Phase 1 put the placeholder `undefined` there. Accessing it returns `undefined` — declared, just no value yet.' },
+  { numeral: 'v',   name: 'Declared + assigned',   description: 'Returns the real value written in code. This is the normal, happy path.' },
+  { numeral: 'vi',  name: 'this — orthogonal',     description: '`this` is not resolved by the scope chain. Its value depends entirely on how the function was called (global / method / arrow / new / bound).' },
+]} />

@@ -1,0 +1,623 @@
+---
+title: "Closures — The Complete Guide"
+description: The most important concept in JavaScript — closures, setTimeout patterns, data hiding, and every interview question you'll face. Function bundled with its lexical environment.
+excerpt: Function + lexical environment — closures, setTimeout patterns, and data hiding.
+course: javascript/course
+order: 8
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 16
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - closures
+  - lexical-environment
+  - settimeout
+  - data-hiding
+  - currying
+  - memoization
+---
+
+## What is a Closure?
+
+### The Definition (Memorize This)
+
+A **closure** is a function **bundled together with its lexical
+environment**. In other words, a closure gives a function access to
+variables from its outer (enclosing) scope, even after the outer
+function has finished executing and its execution context has been
+destroyed.
+
+Every function in JavaScript forms a closure. But the term is most
+useful when an inner function is returned from or passed outside its
+parent function — and it *still remembers* the parent's variables.
+
+### The Classic Example
+
+```js title="JavaScript"
+function x() {
+  var a = 7;
+  function y() {
+    console.log(a);
+  }
+  return y;
+}
+
+var z = x();
+console.log(z);  // ƒ y() { console.log(a); }
+z();             // 7 — still remembers a!
+```
+
+**What happened step by step:**
+
+1. `x()` runs, creates `a = 7` and function `y` in its execution
+   context.
+2. `x()` returns `y` — but not just the function code. It returns `y`
+   **along with its entire lexical environment** (the closure).
+3. `x()`'s execution context is **destroyed** and popped from the Call
+   Stack.
+4. `z` now holds the function `y` with its closure.
+5. When `z()` is called, `y` needs `a`. Even though `x()` is gone, `y`
+   still has a **reference** to `a` through its closure. It prints `7`.
+
+<Callout type="tip" title="Critical Understanding">
+  Closures don't store a *copy* of the variable — they store a
+  *reference* to the variable's memory location. If the variable
+  changes, the closure sees the updated value.
+</Callout>
+
+### Closures Remember References, Not Values
+
+```js title="Proof — reference, not copy"
+function outer() {
+  var a = 10;
+  function inner() {
+    console.log(a);
+  }
+  a = 100;  // change AFTER inner is defined
+  return inner;
+}
+outer()(); // 100 — NOT 10! It has the reference, which now points to 100
+```
+
+### Closures Work at Every Nesting Level
+
+```js title="Multi-level closure"
+function outest() {
+  var c = 20;
+  function outer(str) {
+    let a = 10;
+    function inner() {
+      console.log(a, c, str);
+    }
+    return inner;
+  }
+  return outer;
+}
+outest()("Hello")(); // 10 20 "Hello"
+```
+
+`inner` forms closures with **both** `outer` and `outest`. It can
+access `a` (from outer), `c` (from outest), and `str` (parameter of
+outer). The closure carries the entire scope chain.
+
+## Topic 11 — setTimeout + Closures
+
+### setTimeout Doesn't Wait — JS Waits for None
+
+```js title="setTimeout behavior"
+function x() {
+  var i = 1;
+  setTimeout(function() {
+    console.log(i);
+  }, 3000);
+  console.log("Namaste");
+}
+x();
+// Output: "Namaste" (immediately) → 1 (after 3 seconds)
+```
+
+The callback inside setTimeout forms a **closure** with `i`.
+`setTimeout` registers the callback with the timer and JS moves on — it
+doesn't block. After 3 seconds, the callback still has access to `i`
+through its closure.
+
+### The Famous Interview Question: Print 1,2,3,4,5
+
+```js title="❌ The WRONG output with var"
+function x() {
+  for (var i = 1; i <= 5; i++) {
+    setTimeout(function() {
+      console.log(i);
+    }, i * 1000);
+  }
+  console.log("Namaste");
+}
+x();
+```
+
+**Output:** `"Namaste" → 6 → 6 → 6 → 6 → 6`
+
+**Why 6 five times?** All 5 callbacks form closures over the **same**
+`i` variable (var is function-scoped — one shared `i`). By the time the
+timers expire, the loop has finished and `i = 6`. All callbacks see
+`6`.
+
+### Solution 1: Use `let` (The Easy Fix)
+
+```js title="✅ Correct — let creates new i per iteration"
+function x() {
+  for (let i = 1; i <= 5; i++) {
+    setTimeout(function() {
+      console.log(i);
+    }, i * 1000);
+  }
+}
+x();
+// Output: 1 → 2 → 3 → 4 → 5 (one per second)
+```
+
+`let` is block-scoped — each loop iteration creates a **brand new `i`**
+in a new block scope. Each callback closes over its *own* `i`.
+
+### Solution 2: Use a Wrapper Function with `var`
+
+When the interviewer says "do it without `let`":
+
+```js title="✅ Correct — closure with helper function"
+function x() {
+  for (var i = 1; i <= 5; i++) {
+    function close(j) {  // j is a NEW local variable each time
+      setTimeout(function() {
+        console.log(j);
+      }, j * 1000);
+    }
+    close(i);  // passes current i as argument → creates copy
+  }
+}
+x();
+// Output: 1 → 2 → 3 → 4 → 5
+```
+
+Each call to `close(i)` creates a new execution context with its own
+`j`. The setTimeout callback closes over this unique `j`, not the
+shared `i`. You can also use an IIFE for the same effect.
+
+### Solution 3: IIFE (Immediately Invoked Function Expression)
+
+```js title="✅ IIFE approach"
+for (var i = 1; i <= 5; i++) {
+  (function(j) {
+    setTimeout(function() {
+      console.log(j);
+    }, j * 1000);
+  })(i);
+}
+```
+
+## Topic 12 — Practical Uses of Closures
+
+Why closures matter in real-world code:
+
+- **Data Hiding / Encapsulation** — Create private variables
+  inaccessible from outside
+- **Module Pattern** — Organize code with public/private interfaces
+- **Currying** — Transform `f(a,b)` into `f(a)(b)`
+- **Memoization** — Cache function results for performance
+- **setTimeout / setInterval** — Callbacks remembering state
+- **Event Handlers** — Listeners that remember variables
+- **Iterators & Generators** — Maintain state between `next()` calls
+- **Function Factories** — Functions that create customized functions
+
+### Data Hiding with Closures — Counter Example
+
+```js title="❌ Without closure — count is exposed"
+var count = 0;
+function increment() { count++; }
+// Anyone can do: count = -1000; — no protection!
+```
+
+```js title="✅ With closure — count is private"
+function counter() {
+  var count = 0;  // private! only accessible via returned functions
+  return function increment() {
+    count++;
+    console.log(count);
+  }
+}
+var counter1 = counter();
+counter1(); // 1
+counter1(); // 2
+counter1(); // 3
+
+var counter2 = counter(); // completely independent!
+counter2(); // 1 — fresh closure, fresh count
+```
+
+### Constructor Pattern with Closures
+
+```js title="Increment + Decrement with shared private state"
+function Counter() {
+  var count = 0;
+  this.increment = function() { count++; console.log(count); };
+  this.decrement = function() { count--; console.log(count); };
+  this.getCount = function() { return count; };
+}
+var c = new Counter();
+c.increment(); // 1
+c.increment(); // 2
+c.decrement(); // 1
+console.log(c.count); // undefined — count is private!
+```
+
+### Currying with Closures
+
+```js title="Function factory"
+function multiply(x) {
+  return function(y) {
+    return x * y;
+  };
+}
+const double = multiply(2);   // x = 2 is closed over
+const triple = multiply(3);   // x = 3 is closed over
+console.log(double(5));  // 10
+console.log(triple(5));  // 15
+```
+
+### Memoization with Closures
+
+```js title="Cache expensive computation results"
+function memoize(fn) {
+  const cache = {};  // closed over — persists across calls
+  return function(...args) {
+    const key = JSON.stringify(args);
+    if (cache[key]) return cache[key];
+    cache[key] = fn(...args);
+    return cache[key];
+  };
+}
+const expensiveAdd = memoize((a, b) => {
+  console.log("computing...");
+  return a + b;
+});
+expensiveAdd(1, 2); // "computing..." → 3
+expensiveAdd(1, 2); // 3 (no "computing..." — cached!)
+```
+
+<Callout type="warning" title="Disadvantages of Closures">
+  Closed-over variables are NOT garbage collected as long as the closure
+  exists. This can lead to **memory leaks** and **overconsumption of
+  memory** if many closures hold references to large data. Modern
+  engines like V8 use smart garbage collection (only keeping variables
+  actually referenced by the closure, not the entire scope), but it's
+  still something to be aware of. Always remove event listeners when not
+  needed.
+</Callout>
+
+## Interview Questions & Answers
+
+**Q1. What is a Closure in JavaScript?**
+
+A closure is a function bundled together with references to its
+surrounding lexical environment. It gives the function access to
+variables from its outer scope even after the outer function has
+returned and its execution context has been destroyed. Technically,
+every function in JS creates a closure, but the term is most meaningful
+when inner functions reference outer variables and persist beyond the
+outer function's lifetime.
+
+**Q2. Do closures store a copy of the variable or a reference?**
+
+Closures store a **reference** to the variable, not a copy of its
+value. If the variable is modified after the closure is created (but
+before the closure is invoked), the closure will see the updated value.
+This is exactly why the `var` + `setTimeout` loop prints `6` five times
+— all callbacks reference the same `i`, which is `6` by the time they
+execute.
+
+**Q3. Explain the `var` + `setTimeout` loop problem and how to fix it.**
+
+**Problem:** `for (var i=1; i<=5; i++) { setTimeout(() => console.log(i), i*1000); }`
+prints `6` five times because `var` is function-scoped — one shared
+`i`, all callbacks close over the same reference, and by execution time
+`i = 6`.
+
+**Fix 1 — `let`:** Replace `var` with `let`. Each iteration gets a new
+block-scoped `i`.
+
+**Fix 2 — Wrapper function:** Wrap setTimeout in a function that takes
+`i` as a parameter, creating a new local copy each iteration.
+
+**Fix 3 — IIFE:** `(function(j) { setTimeout(..., j*1000); })(i)` —
+immediately invoked function creates a new scope with a copy of `i`.
+
+**Q4. What are the practical uses of closures?**
+
+Data hiding and encapsulation (private variables), module design
+pattern, currying, memoization/caching, setTimeout/setInterval
+callbacks, event handlers, iterators/generators, function factories,
+partial application, and maintaining state in asynchronous operations.
+React hooks like `useState` are also implemented using closures.
+
+**Q5. What are the disadvantages of closures?**
+
+Closures can lead to **overconsumption of memory** because closed-over
+variables are not garbage collected as long as the closure exists. This
+can cause **memory leaks** if closures are not properly cleaned up
+(e.g., event listeners not removed, timers not cleared). In extreme
+cases, excessive closures can slow down or freeze the browser. Modern
+JS engines like V8 optimize this by only retaining variables actually
+referenced by the closure, not the entire scope.
+
+**Q6. Does the order of variable declaration matter for closures?**
+
+**No.** The inner function forms a closure with the entire lexical
+environment of its parent, regardless of whether the variable was
+declared before or after the inner function definition. The closure
+captures a reference to the scope, and by the time the inner function
+executes, the variable will have been initialized.
+
+```js title="Order doesn't matter"
+function outer() {
+  function inner() { console.log(a); }
+  var a = 10; // declared AFTER inner
+  return inner;
+}
+outer()(); // 10 — works fine!
+```
+
+**Q7. Do closures work with `let` and `const` too?**
+
+**Yes.** Closures work with all variable declarations — `var`, `let`,
+`const`, and even function parameters. The closure mechanism is about
+the lexical environment, not the declaration keyword. The only
+difference is scoping behavior (block vs function scope), which affects
+*which* variable the closure captures in loops.
+
+**Q8. Can closures access variables from multiple outer scopes?**
+
+**Yes.** A closure captures the entire scope chain. If function `inner`
+is nested inside `outer` which is inside `outest`, then `inner` has
+closure over variables from both `outer` AND `outest`. Even global
+variables are accessible through the scope chain. The closure preserves
+references at every level.
+
+**Q9. What is the Garbage Collector's relationship with closures?**
+
+The Garbage Collector frees memory for variables that are no longer
+reachable. If a closure holds a reference to a variable, that variable
+cannot be garbage collected — even if the parent function has returned.
+Modern engines like V8 are smart: if a closure only uses variable `x`
+from the parent scope, variables `y` and `z` from the same scope CAN
+be garbage collected. But the referenced variables persist until the
+closure itself is garbage collected.
+
+## Input/Output Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+function outer() {
+  var a = 10;
+  function inner() { console.log(a); }
+  return inner;
+}
+outer()();
+```
+
+**Output:** `10`
+
+`outer()` returns `inner`. The second `()` calls `inner`. Closure gives
+`inner` access to `a = 10`.
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+function outer() {
+  function inner() { console.log(a); }
+  var a = 10;
+  return inner;
+}
+outer()();
+```
+
+**Output:** `10`
+
+Order doesn't matter. `inner` closes over the scope, and by the time it
+executes, `a = 10`.
+
+**I/O 3. What will be the output? (var changed after closure creation)**
+
+```js title="JavaScript"
+function outer() {
+  var a = 10;
+  function inner() { console.log(a); }
+  a = 100;
+  return inner;
+}
+outer()();
+```
+
+**Output:** `100`
+
+Closures hold **references**, not snapshots. `a` was changed to 100
+before return.
+
+**I/O 4. What will be the output? (Parameter closure)**
+
+```js title="JavaScript"
+function outer(str) {
+  let a = 10;
+  function inner() { console.log(a, str); }
+  return inner;
+}
+outer("Hello")();
+```
+
+**Output:** `10 "Hello"`
+
+Closures capture parameters too — `str` is part of the lexical
+environment.
+
+**I/O 5. What will be the output? (Conflicting variable names)**
+
+```js title="JavaScript"
+function outest() {
+  var c = 20;
+  function outer(str) {
+    let a = 10;
+    function inner() { console.log(a, c, str); }
+    return inner;
+  }
+  return outer;
+}
+let a = 100;
+outest()("Hello")();
+```
+
+**Output:** `10 20 "Hello"`
+
+The inner `a = 10` is found first in the scope chain. The global
+`let a = 100` is never reached. Closures resolve through the scope
+chain from inner → outer.
+
+**I/O 6. What will be the output? (setTimeout loop with var)**
+
+```js title="JavaScript"
+for (var i = 1; i <= 3; i++) {
+  setTimeout(function() { console.log(i); }, i * 1000);
+}
+```
+
+**Output:** `4 → 4 → 4 (at 1s, 2s, 3s)`
+
+**I/O 7. What will be the output? (setTimeout loop with let)**
+
+```js title="JavaScript"
+for (let i = 1; i <= 3; i++) {
+  setTimeout(function() { console.log(i); }, i * 1000);
+}
+```
+
+**Output:** `1 → 2 → 3 (at 1s, 2s, 3s)`
+
+**I/O 8. What will be the output? (Counter with closure)**
+
+```js title="JavaScript"
+function counter() {
+  var count = 0;
+  return function() { count++; return count; };
+}
+var c1 = counter();
+var c2 = counter();
+console.log(c1()); console.log(c1()); console.log(c1());
+console.log(c2()); console.log(c2());
+```
+
+**Output:** `1 → 2 → 3 → 1 → 2`
+
+`c1` and `c2` are **independent closures** — each has its own `count`.
+They don't share state.
+
+**I/O 9. What will be the output? (Tricky — closure over loop variable)**
+
+```js title="JavaScript"
+function createFunctions() {
+  var result = [];
+  for (var i = 0; i < 3; i++) {
+    result.push(function() { return i; });
+  }
+  return result;
+}
+var fns = createFunctions();
+console.log(fns[0]()); console.log(fns[1]()); console.log(fns[2]());
+```
+
+**Output:** `3 → 3 → 3`
+
+Same problem as setTimeout — all three functions close over the same
+`var i`, which is `3` after the loop. Fix with `let` or IIFE.
+
+**I/O 10. What will be the output? (Tricky — garbage collection)**
+
+```js title="JavaScript"
+function a() {
+  var x = 0, z = 10;
+  return function b() {
+    console.log(x);
+  }
+}
+var y = a();
+y();
+```
+
+**Output:** `0`
+
+`b` only references `x`, not `z`. Smart garbage collectors (like V8's)
+will free `z`'s memory since no closure needs it. Only `x` is
+preserved.
+
+**I/O 11. What will be the output? (Tricky — closure + reassignment)**
+
+```js title="JavaScript"
+function make() {
+  let name = "Mozilla";
+  function display() { console.log(name); }
+  name = "Chrome";
+  return display;
+}
+make()();
+```
+
+**Output:** `"Chrome"`
+
+Reference, not snapshot. `name` was changed to "Chrome" before return.
+The closure sees the latest value.
+
+**I/O 12. What will be the output? (Tricky — immediately invoked vs returned)**
+
+```js title="JavaScript"
+function x() {
+  var i = 1;
+  setTimeout(function() { console.log(i); }, 3000);
+  console.log("Namaste");
+}
+x();
+```
+
+**Output:** `"Namaste" (immediately) → 1 (after 3s)`
+
+JS doesn't wait for setTimeout. It registers the callback with the
+timer and moves on. After 3 seconds, the callback runs and accesses
+`i = 1` through its closure.
+
+## Quick Revision — Cheat Sheet
+
+**Closures — Everything You Need**
+
+- **Closure** = function + its lexical environment (the scope where it
+  was defined)
+- Closures capture **references** to variables, NOT copies of values
+- Inner functions have closure over outer function variables even after
+  outer returns
+- Works with `var`, `let`, `const`, and parameters
+- Declaration order doesn't matter — closure captures the scope, not a
+  snapshot
+- Multiple closures from same parent share the SAME closed-over
+  variables
+- Separate calls to the factory function create INDEPENDENT closures
+- `var` + loop + setTimeout = all callbacks see final value (shared
+  reference)
+- `let` + loop + setTimeout = each callback sees its own value (block
+  scope)
+- Fix `var` loop: use wrapper function or IIFE to create a new scope
+  per iteration
+- Uses: data hiding, module pattern, currying, memoization, callbacks,
+  event handlers
+- Disadvantage: memory not garbage collected as long as closure exists
+  → potential leaks
+- V8 is smart: only retains variables actually used by the closure
+- Always remove event listeners when done to allow garbage collection
+- React hooks (useState, useEffect) rely heavily on closures

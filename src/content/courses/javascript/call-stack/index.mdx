@@ -1,0 +1,393 @@
+---
+title: How JS is Executed & Call Stack
+description: Understanding the two-phase execution model and how the Call Stack orchestrates every function call, return, and stack overflow.
+excerpt: The two phases of execution, and the LIFO stack that keeps track of where JS is.
+course: javascript/course
+order: 2
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 12
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - call-stack
+  - execution-context
+  - fundamentals
+---
+
+## Core Concepts
+
+### The Two Phases of Execution
+
+When a JS program runs, a **Global Execution Context (GEC)** is created.
+This creation happens in **two distinct phases**:
+
+**Phase 1 — Memory Creation**
+
+JS scans the entire code (without executing) and allocates memory:
+
+- **Variables** → stored as `undefined`
+- **Function declarations** → stored with their **entire code**
+- Function expressions / arrow functions → stored as `undefined` (they are
+  variables)
+
+**Phase 2 — Code Execution**
+
+JS goes through the code **line by line** and executes it:
+
+- Variables get their **actual values** assigned
+- Function **invocations** trigger creation of a new execution context
+- `return` sends value back and **destroys** the function's context
+
+### Detailed Walkthrough — Example Code
+
+```js title="JavaScript"
+var n = 2;
+function square(num) {
+  var ans = num * num;
+  return ans;
+}
+var square2 = square(n);
+var square4 = square(4);
+```
+
+**Phase 1 — Memory Creation:**
+
+- `n` → `undefined`
+- `square` → `{...entire function code...}`
+- `square2` → `undefined`
+- `square4` → `undefined`
+
+**Phase 2 — Code Execution:**
+
+1. Line 1: `n` is assigned the value **2** (replaces undefined).
+2. Lines 2–5: Function declaration — nothing to execute, already stored
+   in memory.
+3. Line 6: `square(n)` is invoked → a **brand new execution context** is
+   created for this function call with its own Memory and Code phases.
+   Inside it: `num = 2`, `ans = 4`. The `return` sends **4** back to
+   `square2` and this function context is **deleted**.
+4. Line 7: `square(4)` is invoked → another new execution context.
+   `num = 4`, `ans = 16`. Returns **16** to `square4`, context deleted.
+5. Program finished → GEC is destroyed and popped from Call Stack.
+
+<Callout type="tip" title="Key Insight">
+  Every function call creates a completely new execution context with its
+  own two phases. When the function returns, its entire context is
+  deleted.
+</Callout>
+
+## The Call Stack
+
+### What is the Call Stack?
+
+The Call Stack is a **stack data structure** (LIFO — Last In, First Out)
+that JS uses to manage execution contexts. It keeps track of *where* the
+program is in the code.
+
+- When the program starts → **GEC is pushed** onto the stack.
+- When a function is called → its **new execution context is pushed** on
+  top.
+- When a function returns → its context is **popped off** the stack.
+- When the stack is empty → the program has finished.
+
+### Other Names for Call Stack
+
+You might hear any of these in an interview — they all refer to the same
+thing:
+
+- Execution Context Stack
+- Program Stack
+- Control Stack
+- Runtime Stack
+- Machine Stack
+
+### Stack Overflow
+
+If functions keep getting pushed onto the call stack without returning
+(e.g., infinite recursion), the stack exceeds its maximum size and throws
+a `RangeError: Maximum call stack size exceeded`. This is called a
+**Stack Overflow**.
+
+```js title="Example — Infinite Recursion"
+function boom() {
+  boom(); // calls itself forever
+}
+boom();
+// RangeError: Maximum call stack size exceeded
+```
+
+<Callout type="warning" title="Important">
+  The Call Stack has no timer. It doesn't wait for anything. Whatever is
+  pushed onto it gets executed immediately. This is why setTimeout
+  callbacks don't run inside the call stack directly — they go through
+  the callback queue and event loop (covered in Topic 15).
+</Callout>
+
+## Interview Questions & Answers
+
+**Q1. What happens when a JavaScript program is executed?**
+
+When a JS program runs, a **Global Execution Context (GEC)** is created
+and pushed onto the **Call Stack**. The GEC goes through two phases: the
+**Memory Creation Phase** (where variables are initialized as `undefined`
+and function declarations are stored entirely) and the **Code Execution
+Phase** (where code runs line by line, values are assigned, and function
+calls create new execution contexts).
+
+**Q2. Explain the Memory Creation Phase with an example.**
+
+```js title="JavaScript"
+var a = 10;
+function add(x, y) { return x + y; }
+var result = add(a, 5);
+```
+
+During the memory creation phase, JS scans the entire code without
+executing anything. It allocates: `a → undefined`,
+`add → { entire function code }`, `result → undefined`. No values are
+assigned yet — that happens in Phase 2. This is why hoisting works:
+functions are already stored before any code runs.
+
+**Q3. What is the Call Stack in JavaScript?**
+
+The Call Stack is a **LIFO (Last In, First Out)** data structure that
+keeps track of function calls and execution contexts. When the program
+starts, the GEC is pushed. Each function call pushes a new context on
+top. When a function finishes (via `return` or end of code), its context
+is popped off. The program ends when the stack is empty. It is also known
+as Execution Context Stack, Program Stack, Control Stack, Runtime Stack,
+or Machine Stack.
+
+**Q4. What happens when a function is invoked in JavaScript?**
+
+A **brand new execution context** is created for that function and pushed
+onto the Call Stack. This new context has its own Memory and Code phases.
+The function's parameters and local variables are allocated in its memory
+space. The code inside the function runs line by line. When a `return`
+statement is hit, the return value is sent back to the calling context,
+and the function's execution context is **completely deleted** from the
+stack.
+
+**Q5. What is a Stack Overflow? How does it happen?**
+
+A Stack Overflow occurs when the Call Stack exceeds its maximum size.
+This typically happens with **infinite recursion** — a function calling
+itself without a proper base case. Each call pushes a new context, and
+since none ever return, the stack grows until the engine throws a
+`RangeError: Maximum call stack size exceeded`. The exact limit varies by
+browser (Chrome's V8 typically allows ~10,000–15,000 frames).
+
+**Q6. What is the role of the `return` keyword in the context of execution contexts?**
+
+The `return` keyword does two things: (1) it sends a value back to the
+line where the function was called, and (2) it signals the JS engine to
+**delete the current function's execution context** and pop it off the
+Call Stack. Control then returns to the calling execution context. If a
+function has no explicit return, it implicitly returns `undefined`.
+
+**Q7. Can you have nested execution contexts? How deep can they go?**
+
+Yes. Every function call creates a new execution context, and if that
+function calls another function, yet another context is created on top.
+They can nest as deep as the Call Stack allows. For example: `a()` calls
+`b()` which calls `c()` → the stack would be `[GEC, a(), b(), c()]`.
+When `c()` returns, it's popped, then `b()`, then `a()`, and finally GEC
+is removed when the program ends.
+
+**Q8. What happens to the Global Execution Context when the program finishes?**
+
+Once all the code has been executed and all function calls have returned,
+the GEC is **popped off the Call Stack** and destroyed. At this point the
+Call Stack is empty and the program has finished execution. In a browser,
+the window and its global scope remain alive (the tab is still open), but
+the GEC for that particular script is done.
+
+**Q9. Why does JavaScript need a Call Stack?**
+
+JavaScript is single-threaded, so it needs a mechanism to manage which
+function is currently running and where to return after a function
+finishes. The Call Stack provides this by maintaining the **order of
+execution**. Without it, JS wouldn't know which function to resume after
+a nested call returns, or where to send a return value.
+
+**Q10. What is the difference between Global Execution Context and Function Execution Context?**
+
+**Global Execution Context (GEC):** Created once when the program starts.
+Contains global variables and functions. The `this` keyword points to the
+`window` object (in browsers). It sits at the bottom of the Call Stack.
+
+**Function Execution Context (FEC):** Created every time a function is
+invoked. Contains the function's local variables, parameters, and
+arguments. Has its own `this` binding (depends on how the function is
+called). It's pushed on top of the current stack and popped when the
+function returns.
+
+## Input/Output Interview Questions
+
+**I/O. What will be the output? Trace the call stack.**
+
+```js title="JavaScript"
+var n = 2;
+function square(num) {
+  var ans = num * num;
+  return ans;
+}
+var square2 = square(n);
+var square4 = square(4);
+console.log(square2);
+console.log(square4);
+```
+
+**Output:** `4, 16`
+
+**Call Stack Trace:** [GEC] → [GEC, square(2)] → square returns 4,
+popped → [GEC] → [GEC, square(4)] → square returns 16, popped →
+[GEC] → GEC logs 4, 16 → GEC popped → empty.
+
+**I/O. What will be the output?**
+
+```js title="JavaScript"
+function a() {
+  console.log("a start");
+  b();
+  console.log("a end");
+}
+function b() {
+  console.log("b start");
+  c();
+  console.log("b end");
+}
+function c() {
+  console.log("c");
+}
+a();
+```
+
+**Output:** `a start → b start → c → b end → a end`
+
+**Stack:** [GEC] → [GEC, a()] prints "a start" → [GEC, a(), b()]
+prints "b start" → [GEC, a(), b(), c()] prints "c" → c() popped →
+[GEC, a(), b()] prints "b end" → b() popped → [GEC, a()] prints
+"a end" → a() popped → [GEC] → done.
+
+**I/O. What will be the output?**
+
+```js title="JavaScript"
+function multiply(x, y) {
+  return x * y;
+}
+function square(n) {
+  return multiply(n, n);
+}
+function printSquare(n) {
+  var result = square(n);
+  console.log(result);
+}
+printSquare(5);
+```
+
+**Output:** `25`
+
+**Stack at deepest point:** [GEC, printSquare(5), square(5),
+multiply(5,5)]. multiply returns 25 to square, square returns 25 to
+printSquare, which logs 25.
+
+**I/O. What will be the output? (Tricky — return value)**
+
+```js title="JavaScript"
+function foo() {
+  var x = 10;
+  return;
+  var y = 20;
+}
+var result = foo();
+console.log(result);
+```
+
+**Output:** `undefined`
+
+The `return;` without a value returns `undefined`. Everything after the
+return statement (`var y = 20`) is **unreachable code** — it never
+executes. The execution context for `foo()` is destroyed after the
+return.
+
+**I/O. What will be the output? (Tricky — no explicit return)**
+
+```js title="JavaScript"
+function greet(name) {
+  var msg = "Hello " + name;
+  console.log(msg);
+}
+var x = greet("Akshay");
+console.log(x);
+```
+
+**Output:** `Hello Akshay → undefined`
+
+The function `greet` logs "Hello Akshay" but has **no return statement**,
+so it implicitly returns `undefined`. Therefore `x` is `undefined`.
+
+**I/O. What will happen here?**
+
+```js title="JavaScript"
+function recurse() {
+  console.log("running");
+  recurse();
+}
+recurse();
+```
+
+**Output:** `"running" printed many times → RangeError: Maximum call stack size exceeded`
+
+Each call to `recurse()` pushes a new execution context onto the Call
+Stack without ever popping one off (no base case, no return). The stack
+overflows. "running" prints thousands of times before the engine throws
+the error.
+
+**I/O. What is the value of `a` and `b` at each stage?**
+
+```js title="JavaScript"
+var a = 2;
+var b = 3;
+
+function swap() {
+  var temp = a;
+  a = b;
+  b = temp;
+}
+
+console.log("Before:", a, b);
+swap();
+console.log("After:", a, b);
+```
+
+**Output:** `Before: 2 3 → After: 3 2`
+
+**Memory Phase:** a=undefined, b=undefined, swap=fn.
+**Execution:** a=2, b=3. swap() is called — a new context is created.
+Inside swap, `temp` is a local variable. But `a` and `b` are accessed
+from the global scope (no local declaration with var inside swap), so
+the global values are swapped.
+
+## Quick Revision — Cheat Sheet
+
+**Remember These Points**
+
+- JS creates a **Global Execution Context** when the program runs
+- **Two phases:** Memory Creation (scan & allocate) → Code Execution (run
+  line by line)
+- Variables → `undefined` in Phase 1; functions → entire code in Phase 1
+- Every function **invocation** creates a new execution context
+- `return` = send value back + delete the function's execution context
+- No explicit return → implicitly returns `undefined`
+- Call Stack = LIFO stack managing execution contexts
+- GEC is always at the **bottom** of the stack
+- Stack Overflow = too many contexts pushed without popping (infinite
+  recursion)
+- Call Stack has **no timer** — it executes whatever is pushed
+  immediately
+- Other names: Execution Context Stack, Program Stack, Control Stack,
+  Runtime Stack, Machine Stack

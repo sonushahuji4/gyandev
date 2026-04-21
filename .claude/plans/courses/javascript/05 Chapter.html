@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 5 & 6: window, this, undefined vs not defined — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --orange: #fb923c;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+    --error-bg: #1a0f0f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header .tag {
+    display: inline-block; background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 4px; margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 32px; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, #a78bfa 0%, #3b82f6 50%, #22d3ee 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 16px; font-weight: 300; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin: 44px 0 20px; font-size: 20px; font-weight: 700; color: var(--accent2);
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 24px;
+    background: var(--accent2); border-radius: 2px; flex-shrink: 0;
+  }
+  .topic-divider {
+    margin: 56px 0 0;
+    padding: 20px 0 0;
+    border-top: 2px solid var(--accent);
+  }
+  .topic-divider h2 {
+    font-size: 26px; font-weight: 800;
+    background: linear-gradient(135deg, #fb923c 0%, #ef4444 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 4px;
+  }
+  .topic-divider p { color: var(--text-dim); font-size: 14px; }
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .concept-card h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent);
+    margin-bottom: 10px; letter-spacing: 0.5px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 14.5px; color: var(--text); line-height: 1.75;
+  }
+  .concept-card ul, .concept-card ol { padding-left: 20px; margin-top: 8px; }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+  .highlight {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    padding: 2px 7px; border-radius: 4px; font-weight: 600;
+    font-size: 13.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--green);
+  }
+  .key-box strong { font-weight: 700; }
+  .warn-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%);
+    border-left: 3px solid var(--red);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--red);
+  }
+  .info-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-left: 3px solid var(--accent2);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--accent2);
+  }
+  .qa-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 20px; overflow: hidden;
+  }
+  .qa-q {
+    background: var(--q-bg); padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-q .q-badge {
+    background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .qa-q .q-text { font-size: 15px; font-weight: 600; color: #e2e8f0; line-height: 1.5; }
+  .qa-a { padding: 16px 24px; }
+  .qa-a .a-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .qa-a p { font-size: 14px; color: var(--text); line-height: 1.75; }
+  .qa-a p + p { margin-top: 8px; }
+  .code-wrap {
+    margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #21262d;
+  }
+  .code-label {
+    background: #161b22; padding: 6px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-dim); letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    line-height: 1.65; color: #e6edf3; margin: 0;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .output-block {
+    background: var(--output-bg); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .output-block .out-icon {
+    background: var(--green); color: #000; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .output-block .out-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green);
+  }
+  .error-block {
+    background: var(--error-bg); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .error-block .err-icon {
+    background: var(--red); color: #fff; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .error-block .err-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--red);
+  }
+  .diagram {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;
+    overflow-x: auto;
+  }
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 16px 0;
+  }
+  .compare-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px; position: relative; overflow: hidden;
+  }
+  .compare-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .compare-card.c1::before { background: var(--green); }
+  .compare-card.c2::before { background: var(--red); }
+  .compare-card.c3::before { background: var(--accent); }
+  .compare-card.c4::before { background: var(--purple); }
+  .compare-card h4 {
+    font-size: 14px; font-weight: 700; margin-bottom: 8px;
+  }
+  .compare-card.c1 h4 { color: var(--green); }
+  .compare-card.c2 h4 { color: var(--red); }
+  .compare-card.c3 h4 { color: var(--accent); }
+  .compare-card.c4 h4 { color: var(--purple); }
+  .compare-card p { font-size: 13.5px; line-height: 1.65; }
+  .compare-card code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px;
+  }
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+  .nav-footer {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
+  }
+  .nav-footer span { font-size: 14px; }
+  .three-col { grid-template-columns: 1fr 1fr 1fr; }
+  @media (max-width: 700px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .three-col { grid-template-columns: 1fr; }
+    .header h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TOPIC 5: SHORTEST JS PROGRAM, WINDOW & THIS   -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="header">
+  <div class="tag">Topics 5 &amp; 6 of 19</div>
+  <h1>window, this, undefined vs not defined</h1>
+  <p>The global object, the this keyword, and two commonly confused concepts</p>
+</div>
+
+<!-- ─── TOPIC 5 CORE CONCEPTS ─── -->
+<div class="section-title">Topic 5 — The Shortest JS Program, window &amp; this</div>
+
+<div class="concept-card">
+  <h3>The Shortest JS Program Is an Empty File</h3>
+  <p>Even an <strong>empty JavaScript file</strong> triggers the JS engine to do significant work:</p>
+  <ul>
+    <li>Creates a <strong>Global Execution Context (GEC)</strong></li>
+    <li>Creates the <span class="highlight">window</span> object (the global object in browsers)</li>
+    <li>Creates the <span class="highlight">this</span> keyword, pointing to <code>window</code> at the global level</li>
+    <li>Sets up the memory space and execution thread</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>The <code>window</code> Object</h3>
+  <p>The <code>window</code> object is the <strong>global object</strong> in browser environments. It is created by the JS engine along with the GEC. It contains:</p>
+  <ul>
+    <li>All Web APIs — <code>setTimeout</code>, <code>setInterval</code>, <code>fetch</code>, <code>console</code>, <code>alert</code>, DOM APIs, etc.</li>
+    <li>All global variables declared with <code>var</code></li>
+    <li>All global function declarations</li>
+    <li>Browser-specific properties — <code>window.location</code>, <code>window.document</code>, <code>window.navigator</code>, etc.</li>
+  </ul>
+  <p style="margin-top:10px;">In Node.js, the global object is <code>global</code> (or <code>globalThis</code> in modern JS, which works in both browser and Node).</p>
+</div>
+
+<div class="concept-card">
+  <h3>The <code>this</code> Keyword at Global Level</h3>
+  <p>At the global level (outside any function), <code>this</code> refers to the <code>window</code> object:</p>
+  <div class="code-wrap">
+    <div class="code-label">Browser Console</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span> === <span class="fn">window</span>); <span class="cm">// true</span></pre>
+  </div>
+  <p style="margin-top:8px;">Inside functions, <code>this</code> behaves differently depending on how the function is called — this is a deep topic covered separately, but the key rule for now: at the global level, <code>this === window</code>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Global Variables &amp; the <code>window</code> Object</h3>
+  <p>Variables declared with <code>var</code> in the global scope get <strong>attached to the window object</strong>:</p>
+  <div class="code-wrap">
+    <div class="code-label">var — attached to window</div>
+    <pre><span class="kw">var</span> x = <span class="num">10</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);          <span class="cm">// 10</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x);     <span class="cm">// 10</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.x);   <span class="cm">// 10</span>
+<span class="cm">// All three are identical</span></pre>
+  </div>
+  <p style="margin-top:10px;">However, <code>let</code> and <code>const</code> do <strong>NOT</strong> attach to the window object:</p>
+  <div class="code-wrap">
+    <div class="code-label">let/const — NOT on window</div>
+    <pre><span class="kw">let</span> a = <span class="num">10</span>;
+<span class="kw">const</span> b = <span class="num">20</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.a);  <span class="cm">// undefined (not attached!)</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.b);  <span class="cm">// undefined (not attached!)</span>
+<span class="fn">console</span>.<span class="fn">log</span>(a);         <span class="cm">// 10 (accessible via Script scope)</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>The <code>this</code> Keyword in Different Contexts</h3>
+  <p>Here's a comprehensive summary of how <code>this</code> behaves in various situations:</p>
+  <ul>
+    <li><strong>Global level:</strong> <code>this === window</code> (browser) or <code>global</code> (Node.js)</li>
+    <li><strong>Regular function (non-strict):</strong> <code>this === window</code></li>
+    <li><strong>Regular function (strict mode):</strong> <code>this === undefined</code></li>
+    <li><strong>Object method:</strong> <code>this === the object</code> that owns the method</li>
+    <li><strong>Arrow function:</strong> <code>this</code> is inherited from the enclosing lexical scope (no own <code>this</code>)</li>
+    <li><strong>Constructor (new keyword):</strong> <code>this === the new object</code> being created</li>
+    <li><strong>Event handler:</strong> <code>this === the DOM element</code> that received the event</li>
+    <li><strong>call/apply/bind:</strong> <code>this === whatever you explicitly pass</code></li>
+  </ul>
+</div>
+
+<div class="key-box">
+  <strong>Key Rule:</strong> The value of <code>this</code> is determined by <em>how</em> a function is called, not where it's defined. The only exception is arrow functions, which inherit <code>this</code> from their lexical scope.
+</div>
+
+<div class="concept-card">
+  <h3>The <code>globalThis</code> — Modern Universal Global Object</h3>
+  <p>Since different environments have different global objects (<code>window</code> in browsers, <code>global</code> in Node, <code>self</code> in web workers), ES2020 introduced <span class="highlight">globalThis</span> as a universal way to access the global object:</p>
+  <div class="code-wrap">
+    <div class="code-label">Works everywhere</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">globalThis</span>); <span class="cm">// window (in browser) or global (in Node)</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">globalThis</span> === <span class="fn">window</span>); <span class="cm">// true (in browser)</span></pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── TOPIC 5 INTERVIEW QUESTIONS ─── -->
+<div class="section-title">Topic 5 — Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What is the shortest JavaScript program?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>An <strong>empty file</strong>. Even without any code, the JS engine creates a Global Execution Context, the <code>window</code> global object (in browsers), and the <code>this</code> keyword pointing to <code>window</code>. It sets up the entire execution infrastructure.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">What is the <code>window</code> object?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>The <code>window</code> object is the global object provided by the browser's JS runtime environment. It is created automatically by the JS engine along with the GEC. It serves as the top-level container for all Web APIs (like <code>setTimeout</code>, <code>fetch</code>, <code>console</code>, DOM manipulation), global variables (declared with <code>var</code>), and browser-specific properties. In Node.js, the equivalent is the <code>global</code> object. The modern cross-environment way to reference it is <code>globalThis</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">What does <code>this</code> refer to at the global level?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>At the global level in a browser, <code>this</code> refers to the <code>window</code> object, so <code>this === window</code> is <code>true</code>. In Node.js modules, <code>this</code> at the top level refers to <code>module.exports</code> (an empty object), not the <code>global</code> object — which is a subtle difference.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">Why do global <code>var</code> variables appear on <code>window</code> but <code>let</code>/<code>const</code> don't?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><code>var</code> declarations at the global scope are stored in the <strong>Global Object (window)</strong> itself — this is by design from the early days of JS. <code>let</code> and <code>const</code> are stored in a separate memory space called the <strong>Script scope</strong> (or declarative environment record), which is NOT part of the <code>window</code> object. This was an intentional improvement in ES6 to avoid polluting the global object and to support block scoping.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">How does <code>this</code> behave inside a regular function vs an arrow function?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Regular function:</strong> <code>this</code> is determined by how the function is <em>called</em>. In non-strict mode, a standalone call gives <code>this === window</code>. In strict mode, it's <code>undefined</code>. As a method on an object, <code>this</code> is the object.</p>
+    <p><strong>Arrow function:</strong> Arrow functions do NOT have their own <code>this</code>. They <em>inherit</em> <code>this</code> from the enclosing lexical scope at the time they are defined. This makes them useful for callbacks where you want to preserve the outer <code>this</code>.</p>
+    <div class="code-wrap">
+      <div class="code-label">Example</div>
+      <pre><span class="kw">const</span> obj = {
+  name: <span class="str">"Akshay"</span>,
+  regular: <span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name); },
+  arrow: () =&gt; { <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name); }
+};
+obj.regular(); <span class="cm">// "Akshay" — this = obj</span>
+obj.arrow();   <span class="cm">// undefined — this = window (inherited from global)</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">What is <code>globalThis</code> and why was it introduced?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><code>globalThis</code> is a standardized way (ES2020) to access the global object across any JavaScript environment. Before it, you needed <code>window</code> (browser), <code>global</code> (Node.js), or <code>self</code> (web workers). <code>globalThis</code> resolves to the correct global object regardless of the environment, making code more portable.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q7</span>
+    <span class="q-text">Are <code>console.log</code>, <code>setTimeout</code>, <code>alert</code> part of JavaScript itself?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>No! These are <strong>Web APIs</strong> provided by the browser (or runtime environment), not part of the JavaScript language specification (ECMAScript). They are properties of the <code>window</code> object. We can call them without writing <code>window.</code> because the JS engine automatically looks up the global object. So <code>console.log()</code> is really <code>window.console.log()</code>. In Node.js, similar APIs are provided by the Node runtime.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── TOPIC 5 I/O QUESTIONS ─── -->
+<div class="section-title">Topic 5 — Input/Output Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 1</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">10</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">10 → 10 → 10</span>
+    </div>
+    <p style="margin-top:10px;">Global <code>var x = 10</code> is attached to <code>window</code>. At global level, <code>this === window</code>. So all three access the same value.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 2</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">let</span> a = <span class="num">10</span>;
+<span class="kw">const</span> b = <span class="num">20</span>;
+<span class="kw">var</span> c = <span class="num">30</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.a);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.b);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">window</span>.c);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined → undefined → 30</span>
+    </div>
+    <p style="margin-top:10px;"><code>let</code> and <code>const</code> live in Script scope, not on <code>window</code>. Only <code>var</code> gets attached to the global object.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 3</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">test</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>);
+}
+<span class="fn">test</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT (non-strict)</span>
+      <span class="out-text">Window {...} (the global window object)</span>
+    </div>
+    <p style="margin-top:10px;">In non-strict mode, a standalone function call has <code>this === window</code>. In strict mode (<code>"use strict"</code>), it would be <code>undefined</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 4</span>
+    <span class="q-text">What will be the output? (Tricky — this in arrow vs regular)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> name = <span class="str">"Global"</span>;
+
+<span class="kw">const</span> obj = {
+  name: <span class="str">"Object"</span>,
+  getName: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name);
+  },
+  getNameArrow: () =&gt; {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.name);
+  }
+};
+
+obj.getName();
+obj.getNameArrow();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"Object" → "Global"</span>
+    </div>
+    <p style="margin-top:10px;"><code>getName</code> is a regular function — <code>this</code> = the calling object (<code>obj</code>). <code>getNameArrow</code> is an arrow function — it inherits <code>this</code> from the enclosing scope (global), so <code>this.name</code> = <code>window.name</code> = <code>"Global"</code> (because <code>var name</code> attaches to window).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 5</span>
+    <span class="q-text">What will be the output? (this inside nested function)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">100</span>;
+
+<span class="kw">const</span> obj = {
+  x: <span class="num">200</span>,
+  getX: <span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x);  <span class="cm">// A</span>
+
+    <span class="kw">function</span> <span class="fn">inner</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x);  <span class="cm">// B</span>
+    }
+    <span class="fn">inner</span>();
+  }
+};
+obj.getX();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">200 → 100</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Line A:</strong> <code>getX</code> is called as a method of <code>obj</code>, so <code>this = obj</code>, <code>this.x = 200</code>. <strong>Line B:</strong> <code>inner()</code> is a standalone function call (not <code>obj.inner()</code>), so in non-strict mode <code>this = window</code>, <code>this.x = 100</code>. This is a classic <code>this</code> gotcha — nested regular functions lose the object's <code>this</code>.</p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════ -->
+<!-- TOPIC 6: UNDEFINED VS NOT DEFINED              -->
+<!-- ═══════════════════════════════════════════════ -->
+
+<div class="topic-divider">
+  <h2>Topic 6 — undefined vs not defined</h2>
+  <p>Two concepts that sound similar but are fundamentally different</p>
+</div>
+
+<div class="section-title">Core Concepts</div>
+
+<div class="compare-grid">
+  <div class="compare-card c1">
+    <h4><code>undefined</code></h4>
+    <p>Memory is <strong>allocated</strong> for the variable, but <strong>no value</strong> has been assigned yet. It's the default value during the memory creation phase of hoisting.</p>
+    <p style="margin-top:8px;"><code>typeof undefined</code> → <code>"undefined"</code></p>
+    <p style="margin-top:4px;">It is a <strong>primitive value</strong> and a <strong>type</strong>.</p>
+  </div>
+  <div class="compare-card c2">
+    <h4><code>not defined</code></h4>
+    <p>The variable was <strong>never declared</strong> anywhere in the code. No memory was ever allocated for it. Accessing it throws a <code>ReferenceError</code>.</p>
+    <p style="margin-top:8px;">This is an <strong>error</strong>, not a value.</p>
+    <p style="margin-top:4px;"><code>ReferenceError: x is not defined</code></p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>The Three States of a Variable</h3>
+  <div class="code-wrap">
+    <div class="code-label">JavaScript</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(x);   <span class="cm">// undefined  — declared but not yet assigned</span>
+<span class="kw">var</span> x = <span class="num">25</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);   <span class="cm">// 25         — declared and assigned</span>
+<span class="fn">console</span>.<span class="fn">log</span>(a);   <span class="cm">// ReferenceError: a is not defined — never declared</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>JavaScript Is Loosely / Weakly Typed</h3>
+  <p>JS does NOT attach variables to any specific data type. A variable can hold any type and change types freely:</p>
+  <div class="code-wrap">
+    <div class="code-label">Dynamic typing</div>
+    <pre><span class="kw">var</span> a = <span class="num">5</span>;         <span class="cm">// number</span>
+a = <span class="str">"hello"</span>;       <span class="cm">// now a string</span>
+a = <span class="kw">true</span>;          <span class="cm">// now a boolean</span>
+a = [<span class="num">1</span>, <span class="num">2</span>, <span class="num">3</span>];     <span class="cm">// now an array</span>
+a = <span class="kw">null</span>;          <span class="cm">// now null</span></pre>
+  </div>
+  <p style="margin-top:8px;">This flexibility is why JS is called a "loosely typed" or "dynamically typed" language. TypeScript was created to add static type checking on top of JS.</p>
+</div>
+
+<div class="concept-card">
+  <h3><code>undefined</code> vs <code>null</code> — Another Common Confusion</h3>
+  <ul>
+    <li><code>undefined</code> → Variable exists but has <strong>no value assigned</strong> (JS sets this automatically)</li>
+    <li><code>null</code> → Explicitly assigned by the programmer to mean <strong>"intentionally empty / no value"</strong></li>
+    <li><code>typeof undefined</code> → <code>"undefined"</code></li>
+    <li><code>typeof null</code> → <code>"object"</code> (this is a historical bug in JS, never fixed for backward compatibility)</li>
+    <li><code>undefined == null</code> → <code>true</code> (loose equality)</li>
+    <li><code>undefined === null</code> → <code>false</code> (strict equality — different types)</li>
+  </ul>
+</div>
+
+<div class="warn-box">
+  <strong>Best Practice:</strong> Never manually assign <code>undefined</code> to a variable. Let JS handle it. If you want to explicitly indicate "no value," use <code>null</code> instead. This keeps the semantic meaning clear: <code>undefined</code> = "JS hasn't assigned a value yet," <code>null</code> = "programmer intentionally set no value."
+</div>
+
+<div class="concept-card">
+  <h3>All the Ways You Can Get <code>undefined</code></h3>
+  <ul>
+    <li>Variable declared but not assigned: <code>var x; console.log(x);</code> → <code>undefined</code></li>
+    <li>Accessing a <code>var</code> before its assignment (hoisting): <code>console.log(x); var x = 5;</code></li>
+    <li>Function with no return statement: <code>function f() {} console.log(f());</code> → <code>undefined</code></li>
+    <li>Function with bare <code>return;</code>: returns <code>undefined</code></li>
+    <li>Missing function parameter: <code>function f(a,b) {} f(1);</code> → <code>b</code> is <code>undefined</code></li>
+    <li>Accessing non-existent object property: <code>({}).foo</code> → <code>undefined</code></li>
+    <li>Array element at non-existent index: <code>[1,2][5]</code> → <code>undefined</code></li>
+    <li><code>void</code> operator: <code>void 0</code> → <code>undefined</code></li>
+  </ul>
+</div>
+
+<hr class="divider">
+
+<!-- ─── TOPIC 6 INTERVIEW QUESTIONS ─── -->
+<div class="section-title">Topic 6 — Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What is the difference between <code>undefined</code> and "not defined" in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><code>undefined</code> means a variable has been <strong>declared</strong> but has not been <strong>assigned a value</strong> yet. Memory is allocated for it during hoisting, and the placeholder value <code>undefined</code> is stored. "Not defined" means the variable was <strong>never declared</strong> anywhere in the code — no memory exists for it. Accessing an undeclared variable throws <code>ReferenceError: x is not defined</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">What is the difference between <code>undefined</code> and <code>null</code>?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><code>undefined</code> is the default value JS assigns to variables that are declared but not initialized — it's the engine saying "this exists but has no value." <code>null</code> is an explicit assignment by the programmer meaning "intentionally no value." They are different types (<code>typeof undefined</code> → <code>"undefined"</code>, <code>typeof null</code> → <code>"object"</code>), but loosely equal: <code>undefined == null</code> is <code>true</code>, while <code>undefined === null</code> is <code>false</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">Why is <code>typeof null</code> equal to <code>"object"</code>?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>This is a <strong>historical bug</strong> from the very first implementation of JavaScript. In the original implementation, values were represented as a type tag + value, and <code>null</code> was represented as the null pointer (<code>0x00</code>), which had the same type tag as objects. This was never fixed to maintain backward compatibility. It is universally acknowledged as a mistake, but changing it now would break too much existing code.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">Is JavaScript statically typed or dynamically typed? Explain.</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>JavaScript is <strong>dynamically typed</strong> (also called loosely/weakly typed). Variables are not bound to any data type at declaration time. A single variable can hold a number, then be reassigned to a string, then to an object. Type checking happens at <strong>runtime</strong>, not at compile time. This provides flexibility but can lead to type-related bugs, which is why TypeScript (a statically typed superset of JS) was created.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">Should you ever assign <code>undefined</code> to a variable? Why or why not?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>No.</strong> You should never manually assign <code>undefined</code> because it defeats its purpose. <code>undefined</code> is meant to be a signal from the JS engine that a variable exists but hasn't been given a value yet. If you want to indicate "no value," use <code>null</code>. Manually assigning <code>undefined</code> makes it impossible to distinguish between "programmer set no value" and "JS engine hasn't assigned a value yet," which makes debugging harder.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">How can you safely check if a variable is declared?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Use <code>typeof</code>. It returns <code>"undefined"</code> for both undeclared variables AND declared-but-unassigned variables, without throwing an error:</p>
+    <div class="code-wrap">
+      <div class="code-label">Safe check</div>
+      <pre><span class="kw">if</span> (<span class="kw">typeof</span> myVar !== <span class="str">"undefined"</span>) {
+  <span class="cm">// myVar exists and has a value</span>
+}
+<span class="cm">// This works even if myVar was never declared — no ReferenceError!</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q7</span>
+    <span class="q-text">What are all the falsy values in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>There are exactly <strong>8 falsy values</strong> in JavaScript. Both <code>undefined</code> and <code>null</code> are among them:</p>
+    <p><code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code> (BigInt zero), <code>""</code> (empty string), <code>null</code>, <code>undefined</code>, <code>NaN</code></p>
+    <p style="margin-top:6px;">Everything else is truthy — including <code>"0"</code>, <code>"false"</code>, empty arrays <code>[]</code>, empty objects <code>{}</code>, and <code>-1</code>.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── TOPIC 6 I/O QUESTIONS ─── -->
+<div class="section-title">Topics 5 &amp; 6 — Input/Output Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 1</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(x);
+<span class="kw">var</span> x = <span class="num">25</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+<span class="fn">console</span>.<span class="fn">log</span>(a);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 1</span>
+      <span class="out-text">undefined</span>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 3</span>
+      <span class="out-text">25</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 4</span>
+      <span class="err-text">ReferenceError: a is not defined</span>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 2</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a;
+<span class="fn">console</span>.<span class="fn">log</span>(a);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> a);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> b);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined → "undefined" → "undefined"</span>
+    </div>
+    <p style="margin-top:10px;"><code>a</code> is declared but unassigned → <code>undefined</code>. <code>typeof a</code> → <code>"undefined"</code>. <code>typeof b</code> → <code>"undefined"</code> even though <code>b</code> was never declared! This is a special behavior of <code>typeof</code> — it doesn't throw ReferenceError for undeclared variables.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 3</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">undefined</span> == <span class="kw">null</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">undefined</span> === <span class="kw">null</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> <span class="kw">undefined</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> <span class="kw">null</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">true → false → "undefined" → "object"</span>
+    </div>
+    <p style="margin-top:10px;">Loose equality treats them as equal, strict equality does not (different types). <code>typeof null</code> returns <code>"object"</code> — the infamous JS bug.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 4</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x;
+<span class="fn">console</span>.<span class="fn">log</span>(x === <span class="kw">undefined</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(x === <span class="kw">null</span>);
+
+x = <span class="kw">null</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(x === <span class="kw">undefined</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(x === <span class="kw">null</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">true → false → false → true</span>
+    </div>
+    <p style="margin-top:10px;">Initially <code>x</code> is <code>undefined</code> (declared, no value). After <code>x = null</code>, it's explicitly <code>null</code>. Strict equality distinguishes between them.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 5</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">test</span>(a, b) {
+  <span class="fn">console</span>.<span class="fn">log</span>(a);
+  <span class="fn">console</span>.<span class="fn">log</span>(b);
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> b);
+}
+<span class="fn">test</span>(<span class="num">5</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">5 → undefined → "undefined"</span>
+    </div>
+    <p style="margin-top:10px;">Parameter <code>b</code> was not passed any argument, so it defaults to <code>undefined</code> in the function's variable environment.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 6</span>
+    <span class="q-text">What will be the output? (Tricky — void operator)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">void</span> <span class="num">0</span>);
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">void</span>(<span class="str">"hello"</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">void</span> <span class="num">0</span> === <span class="kw">undefined</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined → undefined → true</span>
+    </div>
+    <p style="margin-top:10px;">The <code>void</code> operator evaluates any expression and always returns <code>undefined</code>. <code>void 0</code> is sometimes used as a reliable way to get <code>undefined</code> (in case someone has shadowed the global <code>undefined</code> variable, though this is rare in modern JS).</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 7</span>
+    <span class="q-text">What will be the output? (Tricky — object property vs variable)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> obj = { a: <span class="num">1</span> };
+<span class="fn">console</span>.<span class="fn">log</span>(obj.a);
+<span class="fn">console</span>.<span class="fn">log</span>(obj.b);
+<span class="fn">console</span>.<span class="fn">log</span>(obj.b === <span class="kw">undefined</span>);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">1 → undefined → true</span>
+    </div>
+    <p style="margin-top:10px;">Accessing a <strong>non-existent property</strong> on an object returns <code>undefined</code> — it does NOT throw ReferenceError. This is different from accessing an undeclared variable. Objects silently return <code>undefined</code> for missing properties.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 8</span>
+    <span class="q-text">What will be the output? (Tricky — falsy values)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(Boolean(<span class="kw">undefined</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(Boolean(<span class="kw">null</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(Boolean(<span class="num">0</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(Boolean(<span class="str">""</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(Boolean(<span class="str">"0"</span>));
+<span class="fn">console</span>.<span class="fn">log</span>(Boolean([]));
+<span class="fn">console</span>.<span class="fn">log</span>(Boolean({}));</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">false → false → false → false → true → true → true</span>
+    </div>
+    <p style="margin-top:10px;"><code>undefined</code>, <code>null</code>, <code>0</code>, <code>""</code> are falsy. But <code>"0"</code> (non-empty string), <code>[]</code> (empty array), and <code>{}</code> (empty object) are all <strong>truthy</strong>. This is a very common interview trap.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── QUICK REVISION ─── -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Topic 5 — window &amp; this</h3>
+  <ul>
+    <li>Shortest JS program = empty file (still creates GEC + window + this)</li>
+    <li><code>window</code> = global object in browsers, contains all Web APIs</li>
+    <li>At global level: <code>this === window</code> → <code>true</code></li>
+    <li><code>var</code> in global scope → attached to <code>window</code></li>
+    <li><code>let</code> / <code>const</code> → NOT on <code>window</code> (separate Script scope)</li>
+    <li><code>console.log</code>, <code>setTimeout</code>, <code>alert</code> → Web APIs on <code>window</code>, not JS itself</li>
+    <li><code>globalThis</code> → universal global object (ES2020)</li>
+    <li>Regular function <code>this</code> → determined by <em>how it's called</em></li>
+    <li>Arrow function <code>this</code> → inherited from enclosing lexical scope</li>
+    <li>Nested regular function inside method → loses object's <code>this</code> (becomes window/undefined)</li>
+  </ul>
+</div>
+
+<div class="concept-card">
+  <h3>Topic 6 — undefined vs not defined</h3>
+  <ul>
+    <li><code>undefined</code> = declared, no value assigned (placeholder from hoisting)</li>
+    <li><code>not defined</code> = never declared, throws <code>ReferenceError</code></li>
+    <li><code>null</code> = intentionally empty, assigned by programmer</li>
+    <li><code>typeof null</code> → <code>"object"</code> (historical bug)</li>
+    <li><code>undefined == null</code> → <code>true</code> / <code>undefined === null</code> → <code>false</code></li>
+    <li>Never assign <code>undefined</code> manually — use <code>null</code> instead</li>
+    <li><code>typeof</code> is safe on undeclared variables (no ReferenceError)</li>
+    <li>Missing object property → <code>undefined</code> (no error)</li>
+    <li>Missing function parameter → <code>undefined</code></li>
+    <li>8 falsy values: <code>false, 0, -0, 0n, "", null, undefined, NaN</code></li>
+    <li>Empty arrays <code>[]</code> and objects <code>{}</code> are <strong>truthy</strong>!</li>
+    <li>JS is dynamically/loosely typed — variables can change types freely</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topic 4: Functions &amp; Variable Environments</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 7: Scope Chain &amp; Lexical Environment</span>
+</div>
+
+</body>
+</html>

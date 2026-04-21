@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JavaScript Complete Revision Guide — All 25 Episodes + Bonus</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0d16;--surface:#12162a;--surface2:#181d35;--border:#252a45;--text:#c8d0e8;--dim:#7880a0;--accent:#f59e0b;--blue:#3b82f6;--green:#22c55e;--red:#ef4444;--purple:#a78bfa;--cyan:#22d3ee;--orange:#fb923c;--pink:#f472b6;--code:#0d1117}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);line-height:1.7;padding:0 16px 80px;max-width:900px;margin:0 auto}
+.hero{padding:40px 0 24px;text-align:center;border-bottom:1px solid var(--border);margin-bottom:32px}
+.hero h1{font-size:28px;font-weight:800;background:linear-gradient(135deg,#ef4444,#f59e0b,#22c55e,#3b82f6,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px}
+.hero p{color:var(--dim);font-size:14px}
+.toc{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:24px 0 32px}
+.toc a{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--cyan);text-decoration:none;transition:all 0.15s;display:block;line-height:1.4}
+.toc a:hover{border-color:var(--cyan);background:var(--surface2)}
+.toc a small{display:block;color:var(--dim);font-size:10.5px;margin-top:2px}
+
+/* SECTIONS */
+.section{margin:0 0 8px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.section-header{background:var(--surface);padding:14px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;user-select:none;transition:background 0.15s}
+.section-header:hover{background:var(--surface2)}
+.section-header .num{background:var(--blue);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;flex-shrink:0;min-width:28px;text-align:center}
+.section-header .num.bonus{background:var(--red)}
+.section-header h2{font-size:15px;font-weight:700;color:#e2e8f0;flex:1}
+.section-header .arrow{color:var(--dim);font-size:18px;transition:transform 0.2s;flex-shrink:0}
+.section.open .section-header .arrow{transform:rotate(90deg)}
+.section-body{display:none;padding:16px 20px 20px;background:var(--bg)}
+.section.open .section-body{display:block}
+
+/* CONTENT ELEMENTS */
+.rule{background:var(--surface);border-left:3px solid var(--accent);padding:12px 16px;border-radius:0 8px 8px 0;margin:10px 0;font-size:13px;line-height:1.7}
+.rule strong{color:var(--accent);font-weight:700}
+.rule code{font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(245,158,11,0.1);padding:1px 5px;border-radius:3px;color:var(--accent)}
+.flow{display:flex;align-items:center;gap:0;margin:10px 0;flex-wrap:wrap}
+.fb{padding:8px 12px;border-radius:6px;font-size:11.5px;font-weight:600;text-align:center;line-height:1.3;min-width:70px}
+.fa{color:var(--dim);font-size:16px;padding:0 3px;flex-shrink:0}
+.fb-b{background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.3);color:var(--blue)}
+.fb-g{background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.3);color:var(--green)}
+.fb-r{background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:var(--red)}
+.fb-o{background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.3);color:var(--accent)}
+.fb-p{background:rgba(167,139,250,0.12);border:1px solid rgba(167,139,250,0.3);color:var(--purple)}
+.fb-c{background:rgba(34,211,238,0.12);border:1px solid rgba(34,211,238,0.3);color:var(--cyan)}
+.fb-gray{background:rgba(120,128,160,0.12);border:1px solid rgba(120,128,160,0.3);color:var(--dim)}
+.mini-code{background:var(--code);border:1px solid #21262d;border-radius:6px;padding:10px 14px;margin:8px 0;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.6;color:#e6edf3;overflow-x:auto;white-space:pre}
+.kw{color:#ff7b72}.str{color:#a5d6ff}.fn{color:#d2a8ff}.cm{color:#6e7681;font-style:italic}.num{color:#79c0ff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.6}
+.card h4{font-size:12.5px;font-weight:700;margin-bottom:4px}
+.card p{font-size:12px;color:var(--dim)}
+.card code{font-family:'JetBrains Mono',monospace;font-size:11px;background:rgba(255,255,255,0.04);padding:1px 4px;border-radius:3px}
+.rapid{display:grid;grid-template-columns:1fr auto;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:12px;margin:10px 0}
+.rr{display:contents}
+.rr:nth-child(odd) .rq,.rr:nth-child(odd) .ra{background:var(--surface)}
+.rr:nth-child(even) .rq,.rr:nth-child(even) .ra{background:var(--surface2)}
+.rq{padding:7px 12px;border-right:1px solid var(--border);color:var(--text)}
+.ra{padding:7px 12px;color:var(--green);font-weight:600;text-align:right;min-width:110px}
+.note{font-size:12.5px;color:var(--dim);line-height:1.6;margin:6px 0}
+.note b{color:var(--text);font-weight:600}
+.sub-title{font-size:14px;font-weight:700;color:var(--cyan);margin:16px 0 8px;padding-top:12px;border-top:1px dashed var(--border)}
+@media(max-width:700px){.toc{grid-template-columns:1fr 1fr}.grid2,.grid3{grid-template-columns:1fr}.hero h1{font-size:22px}}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>JavaScript Complete Revision Guide</h1>
+  <p>All 25 Episodes + Bonus — Tap any section to expand. One look = full revision.</p>
+</div>
+
+<div class="toc" id="toc">
+  <a href="#s1" onclick="toggle('s1')">Ep 1-2 <small>Execution Context & Call Stack</small></a>
+  <a href="#s3" onclick="toggle('s3')">Ep 3-4 <small>Hoisting & Variable Env</small></a>
+  <a href="#s5" onclick="toggle('s5')">Ep 5-6 <small>window, this, undefined</small></a>
+  <a href="#s7" onclick="toggle('s7')">Ep 7 <small>Scope Chain & Lexical Env</small></a>
+  <a href="#s8" onclick="toggle('s8')">Ep 8-9 <small>let/const, TDZ, Block Scope</small></a>
+  <a href="#s10" onclick="toggle('s10')">Ep 10-12 <small>Closures Complete</small></a>
+  <a href="#s13" onclick="toggle('s13')">Ep 13-17 <small>Functions, Event Loop, Engine</small></a>
+  <a href="#s18" onclick="toggle('s18')">Ep 18-19 <small>HOF, map/filter/reduce</small></a>
+  <a href="#s20" onclick="toggle('s20')">Ep 20-21 <small>Callbacks & Promises</small></a>
+  <a href="#s22" onclick="toggle('s22')">Ep 22-23 <small>Promise Creation & async/await</small></a>
+  <a href="#s24" onclick="toggle('s24')">Ep 24-25 <small>Promise APIs & this keyword</small></a>
+  <a href="#sb1" onclick="toggle('sb1')">Bonus 1 <small>Types, Coercion, Equality</small></a>
+  <a href="#sb2" onclick="toggle('sb2')">Bonus 2 <small>Polyfills & Coding Challenges</small></a>
+  <a href="#sb3" onclick="toggle('sb3')">Bonus 3 <small>call/apply/bind & Currying</small></a>
+  <a href="#smaster" onclick="toggle('smaster')">⚡ Master <small>50 Rapid-Fire Output Qs</small></a>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- EP 1-2: EXECUTION CONTEXT & CALL STACK     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section" id="s1">
+  <div class="section-header" onclick="toggle('s1')">
+    <span class="num">1-2</span>
+    <h2>Execution Context &amp; Call Stack</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>Everything in JS runs inside an Execution Context.</strong> It has 2 components: <code>Memory</code> (Variable Environment — stores variables/functions as key:value) and <code>Code</code> (Thread of Execution — runs code line by line).</div>
+
+    <p class="sub-title">Two Phases of Execution</p>
+    <div class="flow">
+      <div class="fb fb-o">Phase 1: Memory<br><small>Allocate memory<br>var → undefined<br>function → full code</small></div>
+      <span class="fa">→</span>
+      <div class="fb fb-b">Phase 2: Code<br><small>Execute line by line<br>Assign values<br>Call functions</small></div>
+    </div>
+
+    <div class="rule"><strong>Call Stack</strong> = LIFO stack that manages execution contexts. GEC pushed first. Each function call pushes a new FEC. When function returns, its FEC is popped. When program ends, GEC is popped.</div>
+
+    <div class="flow">
+      <div class="fb fb-gray">GEC</div>
+      <span class="fa">→</span>
+      <div class="fb fb-b">a() called → push</div>
+      <span class="fa">→</span>
+      <div class="fb fb-p">b() called → push</div>
+      <span class="fa">→</span>
+      <div class="fb fb-g">b() returns → pop</div>
+      <span class="fa">→</span>
+      <div class="fb fb-g">a() returns → pop</div>
+      <span class="fa">→</span>
+      <div class="fb fb-gray">GEC pops</div>
+    </div>
+
+    <div class="note"><b>Stack Overflow</b> = when call stack exceeds its limit (e.g., infinite recursion). Each recursive call creates a new execution context.</div>
+  </div>
+</div>
+
+<!-- EP 3-4: HOISTING & VARIABLE ENV -->
+<div class="section" id="s3">
+  <div class="section-header" onclick="toggle('s3')">
+    <span class="num">3-4</span>
+    <h2>Hoisting &amp; Variable Environments</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>Hoisting</strong> = variables and functions are accessible before their declaration because memory is allocated in Phase 1. It's not "moving code to the top" — it's the memory phase running first.</div>
+
+    <div class="rapid">
+      <div class="rr"><div class="rq">var x = 10;</div><div class="ra">hoisted as undefined</div></div>
+      <div class="rr"><div class="rq">let x = 10;</div><div class="ra">hoisted but in TDZ</div></div>
+      <div class="rr"><div class="rq">const x = 10;</div><div class="ra">hoisted but in TDZ</div></div>
+      <div class="rr"><div class="rq">function foo() {}</div><div class="ra">hoisted FULLY</div></div>
+      <div class="rr"><div class="rq">var foo = function() {}</div><div class="ra">hoisted as undefined</div></div>
+      <div class="rr"><div class="rq">var foo = () => {}</div><div class="ra">hoisted as undefined</div></div>
+    </div>
+
+    <div class="rule"><strong>Variable Environment:</strong> Each execution context has its own memory space. Variables in one function can't access variables in another unless through scope chain. Parameters create local variables in the function's execution context.</div>
+
+    <div class="mini-code"><span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// undefined (var hoisted)</span>
+<span class="fn">console</span>.<span class="fn">log</span>(y); <span class="cm">// ReferenceError (let in TDZ)</span>
+<span class="fn">foo</span>();          <span class="cm">// "works!" (function fully hoisted)</span>
+<span class="fn">bar</span>();          <span class="cm">// TypeError: bar is not a function (var = undefined)</span>
+<span class="kw">var</span> x = <span class="num">10</span>; <span class="kw">let</span> y = <span class="num">20</span>;
+<span class="kw">function</span> <span class="fn">foo</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"works!"</span>); }
+<span class="kw">var</span> bar = <span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"bar"</span>); };</div>
+  </div>
+</div>
+
+<!-- EP 5-6: WINDOW, THIS, UNDEFINED -->
+<div class="section" id="s5">
+  <div class="section-header" onclick="toggle('s5')">
+    <span class="num">5-6</span>
+    <h2>window, this &amp; undefined vs not defined</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>window</strong> = the global object in browsers. At the global level, <code>this === window</code>. All <code>var</code> declarations and function declarations become properties of <code>window</code>. <code>let</code>/<code>const</code> do NOT attach to window.</div>
+
+    <div class="rule"><strong>undefined</strong> = a value JS assigns to variables during memory phase (Phase 1). It means "memory allocated but no value assigned yet." It's a <em>type</em> AND a <em>value</em>. <strong>not defined</strong> = variable doesn't exist in memory at all → ReferenceError.</div>
+
+    <div class="rapid">
+      <div class="rr"><div class="rq">var a; console.log(a);</div><div class="ra">undefined</div></div>
+      <div class="rr"><div class="rq">console.log(b);</div><div class="ra">ReferenceError: b is not defined</div></div>
+      <div class="rr"><div class="rq">typeof undefined</div><div class="ra">"undefined"</div></div>
+      <div class="rr"><div class="rq">typeof null</div><div class="ra">"object" (bug)</div></div>
+      <div class="rr"><div class="rq">undefined == null</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">undefined === null</div><div class="ra">false</div></div>
+    </div>
+
+    <div class="note"><b>Never do</b> <code>var a = undefined;</code> — let JS handle it. If you want "empty," use <code>null</code> (intentional absence of value).</div>
+
+    <p class="sub-title">this substitution</p>
+    <div class="rule">If <code>this</code> is <code>null</code>/<code>undefined</code> inside a function in <strong>non-strict mode</strong>, JS replaces it with <code>window</code>. In <strong>strict mode</strong>, it stays <code>undefined</code>. That's why <code>this</code> in a standalone function call = <code>window</code> (non-strict) or <code>undefined</code> (strict).</div>
+  </div>
+</div>
+
+<!-- EP 7: SCOPE CHAIN -->
+<div class="section" id="s7">
+  <div class="section-header" onclick="toggle('s7')">
+    <span class="num">7</span>
+    <h2>Scope Chain &amp; Lexical Environment</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>Lexical Environment</strong> = local memory + reference to parent's lexical environment. "Lexical" means "where the code is physically written." A function's lexical parent is the function/scope that encloses it in the source code.</div>
+
+    <div class="flow">
+      <div class="fb fb-p">inner() memory</div>
+      <span class="fa">→</span>
+      <div class="fb fb-b">outer() memory</div>
+      <span class="fa">→</span>
+      <div class="fb fb-gray">Global memory</div>
+      <span class="fa">→</span>
+      <div class="fb fb-r">null (end)</div>
+    </div>
+
+    <div class="rule"><strong>Scope Chain</strong> = the chain of lexical environments. When JS can't find a variable in current scope, it walks up the chain until it finds it or reaches null (ReferenceError).</div>
+
+    <div class="mini-code"><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">let</span> a = <span class="num">10</span>;
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(a); <span class="cm">// 10 → found in outer's scope via chain</span>
+  }
+  inner();
+}
+outer();</div>
+
+    <div class="note"><b>JS uses lexical (static) scoping</b>, not dynamic scoping. Scope is determined by WHERE the function is written, not where it's called from.</div>
+  </div>
+</div>
+
+<!-- EP 8-9: LET/CONST, TDZ, BLOCK SCOPE -->
+<div class="section" id="s8">
+  <div class="section-header" onclick="toggle('s8')">
+    <span class="num">8-9</span>
+    <h2>let/const, TDZ, Block Scope &amp; Shadowing</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="grid3">
+      <div class="card"><h4 style="color:var(--orange)">var</h4><p>Function-scoped. Hoisted as undefined. Attaches to window. Re-declarable. No TDZ.</p></div>
+      <div class="card"><h4 style="color:var(--blue)">let</h4><p>Block-scoped. Hoisted but in TDZ. Script memory. No re-declare. Can reassign.</p></div>
+      <div class="card"><h4 style="color:var(--green)">const</h4><p>Block-scoped. Hoisted but in TDZ. Script memory. No re-declare. No reassign. Must init at declaration.</p></div>
+    </div>
+
+    <div class="rule"><strong>TDZ (Temporal Dead Zone)</strong> = time between hoisting and initialization. Accessing let/const in TDZ → <code>ReferenceError: Cannot access before initialization</code>. Even <code>typeof</code> throws in TDZ! Proof of hoisting: error says "before initialization" not "not defined."</div>
+
+    <div class="rule"><strong>Block Scope:</strong> <code>let</code>/<code>const</code> inside <code>{ }</code> exist ONLY in that block (separate Block memory). <code>var</code> ignores blocks, leaks to function/global scope.</div>
+
+    <p class="sub-title">Shadowing &amp; Illegal Shadowing</p>
+    <div class="rule"><strong>var shadowing</strong> in a block = modifies the outer var (same memory!). <strong>let shadowing</strong> = creates new independent variable. <strong>Illegal:</strong> Can't shadow <code>let</code> with <code>var</code> in same scope → SyntaxError. But <code>var</code> inside a <em>function</em> is legal (different scope boundary).</div>
+
+    <div class="grid2">
+      <div class="card"><h4 style="color:var(--red)">SyntaxError</h4><p>Code doesn't run at all. Duplicate let/const, missing const init, illegal shadowing.</p></div>
+      <div class="card"><h4 style="color:var(--orange)">ReferenceError</h4><p>Variable in TDZ or not declared. Runtime error.</p></div>
+    </div>
+
+    <div class="mini-code"><span class="cm">// The classic: var vs let in setTimeout loop</span>
+<span class="kw">for</span>(<span class="kw">var</span> i=<span class="num">0</span>;i&lt;<span class="num">3</span>;i++) setTimeout(()=><span class="fn">console</span>.<span class="fn">log</span>(i),<span class="num">100</span>); <span class="cm">// 3,3,3</span>
+<span class="kw">for</span>(<span class="kw">let</span> i=<span class="num">0</span>;i&lt;<span class="num">3</span>;i++) setTimeout(()=><span class="fn">console</span>.<span class="fn">log</span>(i),<span class="num">100</span>); <span class="cm">// 0,1,2</span></div>
+  </div>
+</div>
+
+<!-- EP 10-12: CLOSURES -->
+<div class="section" id="s10">
+  <div class="section-header" onclick="toggle('s10')">
+    <span class="num">10-12</span>
+    <h2>Closures — The Complete Picture</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>Closure</strong> = a function bundled with its lexical environment. The function remembers variables from its outer scope even after the outer function has returned and its execution context is destroyed.</div>
+
+    <div class="mini-code"><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">return function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a); };
+}
+<span class="fn">outer</span>()(); <span class="cm">// 10 — inner still has access to a!</span></div>
+
+    <div class="rule"><strong>Key rules:</strong> Closures store <b>references</b>, not copies (if variable changes, closure sees updated value). Works with var/let/const and parameters. Declaration order doesn't matter. Multiple closures from same parent share the same variables. Separate calls to factory function → independent closures.</div>
+
+    <p class="sub-title">The Famous setTimeout + var Loop</p>
+    <div class="mini-code"><span class="cm">// Problem: var + loop + setTimeout = all print 6</span>
+<span class="kw">for</span>(<span class="kw">var</span> i=<span class="num">1</span>;i&lt;=<span class="num">5</span>;i++) setTimeout(()=><span class="fn">console</span>.<span class="fn">log</span>(i), i*<span class="num">1000</span>);
+<span class="cm">// Fix 1: let (new i per iteration)</span>
+<span class="cm">// Fix 2: IIFE — (function(j){setTimeout(()=>console.log(j),j*1000)})(i)</span>
+<span class="cm">// Fix 3: Wrapper function — close(i) { setTimeout(()=>log(i)) }</span></div>
+
+    <p class="sub-title">Uses of Closures</p>
+    <div class="note">Data hiding/encapsulation, module pattern, currying, memoization, setTimeout/setInterval, event handlers, iterators, function factories, React hooks (useState).</div>
+
+    <div class="rule"><strong>Disadvantage:</strong> Closed-over variables aren't garbage collected → memory leaks. V8 is smart: only retains variables actually referenced. Always remove event listeners when done.</div>
+  </div>
+</div>
+
+<!-- EP 13-17: FUNCTIONS, EVENT LOOP, ENGINE -->
+<div class="section" id="s13">
+  <div class="section-header" onclick="toggle('s13')">
+    <span class="num">13-17</span>
+    <h2>Functions, Callbacks, Event Loop, Engine &amp; setTimeout</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>First-class functions:</strong> Functions can be assigned to variables, passed as arguments, returned from functions, stored in data structures. This enables HOFs, callbacks, closures, currying.</div>
+
+    <div class="rule"><strong>Function Statement</strong> (declaration) = fully hoisted. <strong>Function Expression</strong> = hoisted as undefined (var) or TDZ (let/const). Only difference is hoisting. <strong>Named Function Expression:</strong> name only accessible inside the function body.</div>
+
+    <p class="sub-title">Event Loop Architecture</p>
+    <div class="flow">
+      <div class="fb fb-b">Call Stack<br><small>executes code</small></div>
+      <span class="fa">→</span>
+      <div class="fb fb-o">Web APIs<br><small>setTimeout, fetch,<br>DOM, console</small></div>
+      <span class="fa">→</span>
+      <div class="fb fb-p">Microtask Queue<br><small>Promises, queueMicrotask<br>MutationObserver</small></div>
+      <span class="fa">+</span>
+      <div class="fb fb-c">Callback Queue<br><small>setTimeout, setInterval<br>events, I/O</small></div>
+      <span class="fa">→</span>
+      <div class="fb fb-g">Event Loop<br><small>checks stack empty?<br>pushes from queues</small></div>
+    </div>
+
+    <div class="rule"><strong>Execution order:</strong> Sync code → ALL microtasks (promises) → ONE macrotask (setTimeout) → ALL microtasks → ONE macrotask → repeat. <b>Microtasks ALWAYS have priority.</b></div>
+
+    <div class="mini-code"><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Start"</span>);                         <span class="cm">// 1. sync</span>
+setTimeout(() => <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Timeout"</span>), <span class="num">0</span>);  <span class="cm">// 4. macrotask</span>
+Promise.resolve().then(() => <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Promise"</span>)); <span class="cm">// 3. microtask</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"End"</span>);                           <span class="cm">// 2. sync</span>
+<span class="cm">// Start → End → Promise → Timeout</span></div>
+
+    <p class="sub-title">JS Engine (V8)</p>
+    <div class="flow">
+      <div class="fb fb-gray">Code</div>
+      <span class="fa">→</span>
+      <div class="fb fb-o">Parsing<br><small>tokens → AST</small></div>
+      <span class="fa">→</span>
+      <div class="fb fb-b">Ignition<br><small>interpreter<br>→ bytecode</small></div>
+      <span class="fa">↔</span>
+      <div class="fb fb-p">TurboFan<br><small>compiler<br>→ machine code</small></div>
+      <span class="fa">+</span>
+      <div class="fb fb-g">Orinoco<br><small>garbage collector<br>mark & sweep</small></div>
+    </div>
+
+    <div class="rule"><strong>setTimeout trust issue:</strong> <code>setTimeout(fn, 5000)</code> guarantees a <b>minimum</b> delay of 5s, not exact. If call stack is busy, callback waits. <code>setTimeout(fn, 0)</code> → still runs AFTER all sync code (goes through queue + event loop).</div>
+  </div>
+</div>
+
+<!-- EP 18-19: HOF, MAP/FILTER/REDUCE -->
+<div class="section" id="s18">
+  <div class="section-header" onclick="toggle('s18')">
+    <span class="num">18-19</span>
+    <h2>Higher-Order Functions, map, filter &amp; reduce</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>HOF</strong> = a function that takes a function as argument OR returns a function. Enables functional programming, DRY code, abstraction.</div>
+
+    <div class="grid3">
+      <div class="card"><h4 style="color:var(--blue)">map(cb)</h4><p>Transforms every element. Returns new array of <b>same length</b>. Chainable.</p></div>
+      <div class="card"><h4 style="color:var(--green)">filter(cb)</h4><p>Tests elements. Returns new array of elements where cb returns <b>truthy</b>. ≤ original length.</p></div>
+      <div class="card"><h4 style="color:var(--orange)">reduce(cb, init)</h4><p>Accumulates to <b>single value</b> (any type). Most flexible. Can replace map + filter.</p></div>
+    </div>
+
+    <div class="rule"><strong>map vs forEach:</strong> map returns new array (chainable). forEach returns undefined (for side effects). Neither mutates original.</div>
+
+    <div class="rule"><strong>Polyfill pattern:</strong> <code>Array.prototype.myMap = function(cb) { const r=[]; for(let i=0;i&lt;this.length;i++) r.push(cb(this[i],i,this)); return r; }</code></div>
+
+    <div class="mini-code"><span class="cm">// Classic gotcha:</span>
+[<span class="str">"1"</span>,<span class="str">"2"</span>,<span class="str">"3"</span>].map(parseInt); <span class="cm">// [1, NaN, NaN]</span>
+<span class="cm">// Because: parseInt("1",0)=1, parseInt("2",1)=NaN, parseInt("3",2)=NaN</span>
+<span class="cm">// Fix: .map(x => parseInt(x)) or .map(Number)</span></div>
+
+    <div class="rule"><strong>Always provide initial value to reduce!</strong> Without it: first element = initial acc, starts from index 1. Empty array without init → TypeError.</div>
+  </div>
+</div>
+
+<!-- EP 20-21: CALLBACKS & PROMISES -->
+<div class="section" id="s20">
+  <div class="section-header" onclick="toggle('s20')">
+    <span class="num">20-21</span>
+    <h2>Callbacks &amp; Promises</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>Callback Good:</strong> Enables async programming in synchronous JS. Foundation of everything.<br><strong>Callback Bad:</strong> (1) <b>Callback Hell</b> — nested callbacks → pyramid of doom → unreadable. (2) <b>Inversion of Control</b> — passing function to another function → lose control → might be called twice, never, or with wrong data.</div>
+
+    <div class="grid2">
+      <div class="card" style="border-color:rgba(239,68,68,0.3)"><h4 style="color:var(--red)">❌ Callback: PASSING</h4><p>"Here's my function, I trust you to call it correctly." We give away control.</p></div>
+      <div class="card" style="border-color:rgba(34,197,94,0.3)"><h4 style="color:var(--green)">✅ Promise: ATTACHING</h4><p>"Give me a promise, I'll attach my function." We keep control. Called once. Immutable.</p></div>
+    </div>
+
+    <div class="rule"><strong>Promise</strong> = object representing eventual completion/failure of async operation. Placeholder for future value. 3 states: <b>Pending</b> → <b>Fulfilled</b> (resolve called) / <b>Rejected</b> (reject called). Settlement is permanent. Result is immutable.</div>
+
+    <div class="rule"><strong>Promise guarantees</strong> that fix Inversion of Control: (1) .then called exactly <b>once</b>. (2) Result is <b>immutable</b>. (3) Callback WILL run when data is ready. (4) Errors propagate to .catch automatically.</div>
+
+    <div class="rule"><strong>Promise Chaining</strong> solves callback hell: <code>.then()</code> returns new promise → flat, readable code. <b>Always return from .then!</b> (otherwise next .then gets undefined). One <code>.catch</code> at end catches errors from any step above.</div>
+  </div>
+</div>
+
+<!-- EP 22-23: CREATING PROMISES & ASYNC/AWAIT -->
+<div class="section" id="s22">
+  <div class="section-header" onclick="toggle('s22')">
+    <span class="num">22-23</span>
+    <h2>Creating Promises &amp; async/await</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>Creating:</strong> <code>new Promise((resolve, reject) => { ... })</code>. Executor runs <b>synchronously</b>. Call <code>resolve(value)</code> for success, <code>reject(error)</code> for failure. Return the promise to the consumer. <code>resolve()</code> does NOT stop execution — code after it still runs!</div>
+
+    <div class="rule"><strong>.catch placement matters:</strong> A .catch only handles errors from steps <b>above</b> it. Steps below .catch still run. Multiple .catch blocks = selective error handling. .then AFTER .catch runs because catch returns a resolved promise.</div>
+
+    <p class="sub-title">async/await</p>
+    <div class="rule"><strong>async</strong> keyword: function always returns a promise. Plain values auto-wrapped. Existing promises returned as-is (no double-wrap).<br><strong>await</strong>: pauses the function (NOT the engine). Function is suspended, popped off stack. Other code runs freely. When promise resolves, function pushed back and resumes where it left off. <b>Call stack is NEVER blocked.</b></div>
+
+    <div class="rule"><strong>Timing trap:</strong> Promises start at <b>creation</b>, not at await. <code>await</code> doesn't start a promise — it waits for an already-running one. Two promises created upfront with different timers both start ticking immediately.</div>
+
+    <div class="rule"><strong>Error handling:</strong> <code>try/catch</code> inside async function (recommended) or <code>.catch()</code> on the function call. fetch needs <b>two awaits</b>: one for Response, one for .json() (body parsing).</div>
+
+    <div class="mini-code"><span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"C"</span>);
+<span class="kw">async function</span> <span class="fn">foo</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"A"</span>); <span class="kw">await</span> <span class="str">"x"</span>; <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"B"</span>); }
+<span class="fn">foo</span>(); <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"D"</span>);
+<span class="cm">// C → A → D → B  (await suspends, D runs, then B as microtask)</span></div>
+  </div>
+</div>
+
+<!-- EP 24-25: PROMISE APIs & THIS -->
+<div class="section" id="s24">
+  <div class="section-header" onclick="toggle('s24')">
+    <span class="num">24-25</span>
+    <h2>Promise APIs &amp; this keyword</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <p class="sub-title">4 Promise Static Methods</p>
+    <div class="grid2">
+      <div class="card"><h4 style="color:var(--blue)">Promise.all([p1,p2,p3])</h4><p>Waits for <b>ALL to succeed</b>. Returns [val1,val2,val3]. <b>Fail-fast:</b> first rejection → rejects immediately, ignores rest. Results in input order.<br><b>Use:</b> Dashboard needing all data — one failure = can't render.</p></div>
+      <div class="card"><h4 style="color:var(--green)">Promise.allSettled([p1,p2,p3])</h4><p>Waits for <b>ALL to finish</b> (success or failure). Never rejects. Returns [{status, value/reason},...]. <b>Safest API.</b><br><b>Use:</b> Bulk emails — want results of all, even if some fail.</p></div>
+      <div class="card"><h4 style="color:var(--orange)">Promise.race([p1,p2,p3])</h4><p>First to <b>SETTLE wins</b> (success OR failure). Returns that single result.<br><b>Use:</b> Timeout pattern — race fetch vs setTimeout rejection.</p></div>
+      <div class="card"><h4 style="color:var(--purple)">Promise.any([p1,p2,p3])</h4><p>First to <b>SUCCEED wins</b>. Ignores rejections. Only rejects if ALL fail (AggregateError with err.errors array).<br><b>Use:</b> Multiple CDN fallback — want first working server.</p></div>
+    </div>
+
+    <div class="mini-code"><span class="cm">// p1=3s, p2=1s(fail), p3=2s</span>
+Promise.all([p1,p2,p3])       <span class="cm">// ❌ rejects at 1s (p2 fail-fast)</span>
+Promise.allSettled([p1,p2,p3]) <span class="cm">// ✅ waits 3s → [{fulfilled},{rejected},{fulfilled}]</span>
+Promise.race([p1,p2,p3])      <span class="cm">// ❌ p2 settles first → rejected at 1s</span>
+Promise.any([p1,p2,p3])       <span class="cm">// ✅ skips p2 failure → p3 succeeds at 2s</span></div>
+
+    <p class="sub-title">this keyword — 5 Rules (Priority Order)</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">1. new Foo()</div><div class="ra">this = new object</div></div>
+      <div class="rr"><div class="rq">2. fn.call(obj) / apply / bind</div><div class="ra">this = obj</div></div>
+      <div class="rr"><div class="rq">3. obj.fn()</div><div class="ra">this = obj</div></div>
+      <div class="rr"><div class="rq">4. fn() standalone</div><div class="ra">window (non-strict) / undefined (strict)</div></div>
+      <div class="rr"><div class="rq">5. () => {} arrow</div><div class="ra">parent's this (can't override)</div></div>
+    </div>
+
+    <div class="rule"><strong>Arrow functions</strong> don't have own <code>this</code>. They inherit from enclosing lexical scope. <code>call/apply/bind</code> can't change arrow's this. That's why arrow inside <code>obj.method()</code> gets <code>obj</code> as this (inherits from the method), but arrow directly in object literal gets <code>window</code> (enclosing scope is global).</div>
+  </div>
+</div>
+
+<!-- BONUS 1: TYPES, COERCION, EQUALITY -->
+<div class="section" id="sb1">
+  <div class="section-header" onclick="toggle('sb1')">
+    <span class="num bonus">B1</span>
+    <h2>Data Types, Type Coercion &amp; Equality</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="rule"><strong>8 data types:</strong> 7 primitives (<code>number</code>, <code>string</code>, <code>boolean</code>, <code>undefined</code>, <code>null</code>, <code>symbol</code>, <code>bigint</code>) + 1 reference (<code>object</code> — includes arrays, functions, Date, Map, Set, etc.).</div>
+
+    <p class="sub-title">typeof surprises</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">typeof null</div><div class="ra">"object" (bug!)</div></div>
+      <div class="rr"><div class="rq">typeof []</div><div class="ra">"object" (use Array.isArray)</div></div>
+      <div class="rr"><div class="rq">typeof NaN</div><div class="ra">"number" (!)</div></div>
+      <div class="rr"><div class="rq">typeof function(){}</div><div class="ra">"function"</div></div>
+      <div class="rr"><div class="rq">typeof typeof 1</div><div class="ra">"string"</div></div>
+    </div>
+
+    <p class="sub-title">Type coercion with +</p>
+    <div class="rule"><code>+</code> with any string → <b>string concatenation</b> (string wins). <code>-</code> <code>*</code> <code>/</code> <code>%</code> → <b>numeric conversion</b> (number wins).</div>
+    <div class="rapid">
+      <div class="rr"><div class="rq">"5" + 5</div><div class="ra">"55"</div></div>
+      <div class="rr"><div class="rq">"5" - 3</div><div class="ra">2</div></div>
+      <div class="rr"><div class="rq">"5" + 3 + 2</div><div class="ra">"532"</div></div>
+      <div class="rr"><div class="rq">3 + 2 + "5"</div><div class="ra">"55"</div></div>
+      <div class="rr"><div class="rq">true + 1</div><div class="ra">2</div></div>
+      <div class="rr"><div class="rq">null + 1</div><div class="ra">1</div></div>
+      <div class="rr"><div class="rq">undefined + 1</div><div class="ra">NaN</div></div>
+    </div>
+
+    <p class="sub-title">== vs === (Loose vs Strict)</p>
+    <div class="rule"><code>==</code> coerces types then compares. <code>===</code> no coercion — type AND value must match. <b>Always use ===</b>.</div>
+    <div class="rapid">
+      <div class="rr"><div class="rq">5 == "5"</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">5 === "5"</div><div class="ra">false</div></div>
+      <div class="rr"><div class="rq">null == undefined</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">null === undefined</div><div class="ra">false</div></div>
+      <div class="rr"><div class="rq">NaN === NaN</div><div class="ra">false (!)</div></div>
+      <div class="rr"><div class="rq">[] == false</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">[] == ![]</div><div class="ra">true (!!)</div></div>
+    </div>
+
+    <p class="sub-title">8 Falsy Values (memorize!)</p>
+    <div class="rule"><code>false</code>, <code>0</code>, <code>-0</code>, <code>0n</code>, <code>""</code>, <code>null</code>, <code>undefined</code>, <code>NaN</code>. Everything else is truthy — including <code>"0"</code>, <code>"false"</code>, <code>[]</code>, <code>{}</code>!</div>
+
+    <div class="rule"><code>||</code> returns first <b>truthy</b>. <code>&&</code> returns first <b>falsy</b>. <code>??</code> returns first non-null/undefined (keeps 0 and "").</div>
+  </div>
+</div>
+
+<!-- BONUS 2: POLYFILLS & CODING -->
+<div class="section" id="sb2">
+  <div class="section-header" onclick="toggle('sb2')">
+    <span class="num bonus">B2</span>
+    <h2>Polyfills &amp; Coding Challenges</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <p class="sub-title">Polyfills to memorize</p>
+    <div class="grid2">
+      <div class="card"><h4 style="color:var(--cyan)">myMap</h4><p>Loop, push <code>cb(this[i],i,this)</code>, return new array.</p></div>
+      <div class="card"><h4 style="color:var(--cyan)">myFilter</h4><p>Loop, if <code>cb()</code> truthy → push element.</p></div>
+      <div class="card"><h4 style="color:var(--cyan)">myReduce</h4><p>Handle init value, loop, <code>acc = cb(acc,curr,i,arr)</code>.</p></div>
+      <div class="card"><h4 style="color:var(--cyan)">myBind</h4><p>Store <code>this</code> (original fn), return closure using <code>apply(context, [...boundArgs,...newArgs])</code>.</p></div>
+      <div class="card"><h4 style="color:var(--cyan)">myCall</h4><p>Attach fn to context with Symbol key, call as method, delete, return result.</p></div>
+      <div class="card"><h4 style="color:var(--cyan)">Promise.all</h4><p>Counter + results array. <code>results[index]=value</code>. First reject → reject all.</p></div>
+    </div>
+
+    <p class="sub-title">Coding patterns to know</p>
+    <div class="grid2">
+      <div class="card"><h4 style="color:var(--green)">Debounce</h4><p>clearTimeout + setTimeout in closure. Wait for user to STOP. Use: search input.</p></div>
+      <div class="card"><h4 style="color:var(--green)">Throttle</h4><p>Boolean flag + setTimeout in closure. Max once per interval. Use: scroll events.</p></div>
+      <div class="card"><h4 style="color:var(--green)">Curry</h4><p>Check <code>args.length >= fn.length</code> → call or return collecting function.</p></div>
+      <div class="card"><h4 style="color:var(--green)">Deep Clone</h4><p>Recursive. Handle null, Date, RegExp, Array, Object. <code>hasOwnProperty</code> check.</p></div>
+      <div class="card"><h4 style="color:var(--green)">Flatten Array</h4><p>Recursive reduce with Array.isArray check. Or iterative stack.</p></div>
+      <div class="card"><h4 style="color:var(--green)">Memoize</h4><p>Map cache in closure. <code>JSON.stringify(args)</code> as key.</p></div>
+    </div>
+
+    <div class="mini-code"><span class="cm">// Infinite currying: sum(1)(2)(3)...(n)()</span>
+<span class="kw">function</span> <span class="fn">sum</span>(a) {
+  <span class="kw">return function</span>(b) {
+    <span class="kw">if</span> (b !== <span class="kw">undefined</span>) <span class="kw">return</span> sum(a + b);
+    <span class="kw">return</span> a;
+  };
+}
+sum(<span class="num">1</span>)(<span class="num">2</span>)(<span class="num">3</span>)(); <span class="cm">// 6</span></div>
+  </div>
+</div>
+
+<!-- BONUS 3: CALL/APPLY/BIND & CURRYING -->
+<div class="section" id="sb3">
+  <div class="section-header" onclick="toggle('sb3')">
+    <span class="num bonus">B3</span>
+    <h2>call/apply/bind Deep Patterns</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="grid3">
+      <div class="card"><h4 style="color:var(--cyan)">call(ctx, a, b)</h4><p>Invoke NOW. Comma args. Returns result.</p></div>
+      <div class="card"><h4 style="color:var(--orange)">apply(ctx, [a,b])</h4><p>Invoke NOW. Array args. Returns result.</p></div>
+      <div class="card"><h4 style="color:var(--green)">bind(ctx, a)</h4><p>Returns NEW function. Partial application. Does NOT call.</p></div>
+    </div>
+
+    <div class="rule"><strong>bind is permanent</strong> — call/apply/second bind can't override it. Only <code>new</code> overrides bind. Arrow functions ignore call/apply/bind for <code>this</code>. Primitives as context → auto-boxed to objects (non-strict).</div>
+
+    <div class="rule"><strong>Method borrowing:</strong> <code>person1.greet.call(person2)</code>. <strong>Constructor chaining:</strong> <code>Animal.call(this, name)</code>. <strong>Array-like conversion:</strong> <code>Array.prototype.slice.call(arguments)</code>. <strong>Math trick:</strong> <code>Math.max.apply(null, arr)</code>.</div>
+
+    <div class="rule"><strong>setTimeout loses this:</strong> <code>setTimeout(obj.fn, 1000)</code> → <code>this=window</code>. Fix: <code>setTimeout(obj.fn.bind(obj), 1000)</code> or arrow function.</div>
+
+    <div class="mini-code"><span class="cm">// The nested function trap:</span>
+<span class="kw">const</span> obj = { x: <span class="num">200</span>, getX() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x);        <span class="cm">// 200 (method call)</span>
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x); } <span class="cm">// undefined! (standalone)</span>
+  inner();
+  <span class="kw">const</span> arrow = () => <span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">this</span>.x); <span class="cm">// 200 (inherits from getX)</span>
+  arrow();
+}};
+obj.getX();</div>
+  </div>
+</div>
+
+<!-- MASTER: 50 RAPID-FIRE -->
+<div class="section" id="smaster">
+  <div class="section-header" onclick="toggle('smaster')">
+    <span class="num bonus">⚡</span>
+    <h2>50 Rapid-Fire Output Questions</h2>
+    <span class="arrow">▸</span>
+  </div>
+  <div class="section-body">
+    <div class="note">Cover the answer column. Predict the output. Check. If wrong, understand why before moving on.</div>
+
+    <p class="sub-title">Hoisting &amp; Scope</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">console.log(a); var a = 5;</div><div class="ra">undefined</div></div>
+      <div class="rr"><div class="rq">console.log(a); let a = 5;</div><div class="ra">ReferenceError (TDZ)</div></div>
+      <div class="rr"><div class="rq">foo(); function foo(){console.log("hi")}</div><div class="ra">"hi"</div></div>
+      <div class="rr"><div class="rq">foo(); var foo = function(){console.log("hi")}</div><div class="ra">TypeError</div></div>
+      <div class="rr"><div class="rq">let a=1; {let a=2; console.log(a)} console.log(a)</div><div class="ra">2 → 1</div></div>
+      <div class="rr"><div class="rq">var a=100; {var a=10;} console.log(a)</div><div class="ra">10 (var leaks!)</div></div>
+    </div>
+
+    <p class="sub-title">Closures &amp; setTimeout</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">for(var i=0;i&lt;3;i++) setTimeout(()=>log(i),100)</div><div class="ra">3, 3, 3</div></div>
+      <div class="rr"><div class="rq">for(let i=0;i&lt;3;i++) setTimeout(()=>log(i),100)</div><div class="ra">0, 1, 2</div></div>
+      <div class="rr"><div class="rq">function a(){var x=10; return ()=>x;} a()()</div><div class="ra">10</div></div>
+      <div class="rr"><div class="rq">function a(){var x=10; function b(){log(x)} x=100; return b} a()()</div><div class="ra">100 (reference!)</div></div>
+    </div>
+
+    <p class="sub-title">Type Coercion &amp; Equality</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">"5" + 5</div><div class="ra">"55"</div></div>
+      <div class="rr"><div class="rq">"5" - 3</div><div class="ra">2</div></div>
+      <div class="rr"><div class="rq">"5" + 3 + 2</div><div class="ra">"532"</div></div>
+      <div class="rr"><div class="rq">3 + 2 + "5"</div><div class="ra">"55"</div></div>
+      <div class="rr"><div class="rq">+"" </div><div class="ra">0</div></div>
+      <div class="rr"><div class="rq">+true</div><div class="ra">1</div></div>
+      <div class="rr"><div class="rq">+null</div><div class="ra">0</div></div>
+      <div class="rr"><div class="rq">+undefined</div><div class="ra">NaN</div></div>
+      <div class="rr"><div class="rq">5 == "5"</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">5 === "5"</div><div class="ra">false</div></div>
+      <div class="rr"><div class="rq">null == undefined</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">null == 0</div><div class="ra">false</div></div>
+      <div class="rr"><div class="rq">null >= 0</div><div class="ra">true (!)</div></div>
+      <div class="rr"><div class="rq">NaN === NaN</div><div class="ra">false</div></div>
+      <div class="rr"><div class="rq">0.1 + 0.2 === 0.3</div><div class="ra">false</div></div>
+      <div class="rr"><div class="rq">[] == false</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">[] == ![]</div><div class="ra">true</div></div>
+      <div class="rr"><div class="rq">"10" > "9"</div><div class="ra">false (lexicographic)</div></div>
+    </div>
+
+    <p class="sub-title">Event Loop &amp; Promises</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">log("A"); setTimeout(()=>log("B"),0); Promise.resolve().then(()=>log("C")); log("D")</div><div class="ra">A→D→C→B</div></div>
+      <div class="rr"><div class="rq">new Promise(r=>{log(1);r();log(2)}).then(()=>log(3)); log(4)</div><div class="ra">1→2→4→3</div></div>
+      <div class="rr"><div class="rq">async function f(){log("A"); await "x"; log("B")} log("C"); f(); log("D")</div><div class="ra">C→A→D→B</div></div>
+      <div class="rr"><div class="rq">setTimeout(()=>log(1),0); queueMicrotask(()=>log(2)); Promise.resolve().then(()=>log(3))</div><div class="ra">2→3→1</div></div>
+    </div>
+
+    <p class="sub-title">this &amp; call/apply/bind</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">function f(){log(this)} f()</div><div class="ra">window (non-strict)</div></div>
+      <div class="rr"><div class="rq">"use strict"; function f(){log(this)} f()</div><div class="ra">undefined</div></div>
+      <div class="rr"><div class="rq">const o={a:5,f(){return this.a}}; o.f()</div><div class="ra">5</div></div>
+      <div class="rr"><div class="rq">const o={a:5,f(){return this.a}}; const g=o.f; g()</div><div class="ra">undefined (lost this!)</div></div>
+      <div class="rr"><div class="rq">const bound=f.bind({x:1}); bound.call({x:2}); log(bound())</div><div class="ra">bind wins (x=1)</div></div>
+      <div class="rr"><div class="rq">const o={x:10,f:()=>this.x}; o.f()</div><div class="ra">undefined (arrow=global)</div></div>
+    </div>
+
+    <p class="sub-title">map/filter/reduce Gotchas</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">["1","2","3"].map(parseInt)</div><div class="ra">[1, NaN, NaN]</div></div>
+      <div class="rr"><div class="rq">[1,2,3].map(x=>x*2)</div><div class="ra">[2, 4, 6]</div></div>
+      <div class="rr"><div class="rq">const a=[1,2,3].forEach(x=>x*2); log(a)</div><div class="ra">undefined</div></div>
+      <div class="rr"><div class="rq">[0,1,"",null,42,"0",false].filter(Boolean)</div><div class="ra">[1, 42, "0"]</div></div>
+      <div class="rr"><div class="rq">[1,2,3].reduce((a,c)=>a+c)</div><div class="ra">6 (no init → first el)</div></div>
+    </div>
+
+    <p class="sub-title">Miscellaneous Traps</p>
+    <div class="rapid">
+      <div class="rr"><div class="rq">let a={};let b={key:"b"};let c={key:"c"};a[b]=123;a[c]=456;a[b]</div><div class="ra">456 (both keys = "[object Object]")</div></div>
+      <div class="rr"><div class="rq">typeof typeof 1</div><div class="ra">"string"</div></div>
+      <div class="rr"><div class="rq">[] + []</div><div class="ra">"" (empty string)</div></div>
+      <div class="rr"><div class="rq">[] + {}</div><div class="ra">"[object Object]"</div></div>
+      <div class="rr"><div class="rq">!![]</div><div class="ra">true (arrays are truthy)</div></div>
+      <div class="rr"><div class="rq">console.log(1 && 2 && 3)</div><div class="ra">3 (last truthy)</div></div>
+      <div class="rr"><div class="rq">console.log(0 || "" || "hi" || 0)</div><div class="ra">"hi" (first truthy)</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggle(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const wasOpen = el.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.section.open').forEach(s => s.classList.remove('open'));
+  // Open clicked (if it was closed)
+  if (!wasOpen) el.classList.toggle('open');
+  // Scroll into view
+  setTimeout(() => el.scrollIntoView({behavior:'smooth', block:'start'}), 100);
+}
+// Open first section by default
+document.getElementById('s1').classList.add('open');
+</script>
+
+</body>
+</html>

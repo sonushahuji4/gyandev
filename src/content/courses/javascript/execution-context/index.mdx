@@ -1,0 +1,199 @@
+---
+title: Execution Context
+description: The foundation of how JavaScript works under the hood — memory and code components, the two-phase model, and the sealed container every JS program runs inside.
+excerpt: Memory + Code — the sealed container every JS program runs inside.
+course: javascript/course
+order: 1
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 6
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - execution-context
+  - fundamentals
+  - single-threaded
+---
+
+## Core Concepts
+
+### What is an Execution Context?
+
+Everything in JavaScript happens inside the **Execution Context**. Think of
+it as a sealed container where JS code runs. It has **two components**:
+
+- **Memory Component (Variable Environment)** — Stores all variables and
+  functions as *key:value* pairs.
+- **Code Component (Thread of Execution)** — Where code is executed *one
+  line at a time*, in order.
+
+### JavaScript is Synchronous & Single-Threaded
+
+- **Synchronous** — One command executes at a time.
+- **Single-threaded** — Commands run in a specific, sequential order.
+
+This means JS cannot move to the next line until the current one finishes
+executing.
+
+<Callout type="tip" title="Key Takeaway">
+  Every time JS runs, an execution context is created. Memory is allocated
+  first (Phase 1), then code runs line by line (Phase 2).
+</Callout>
+
+## Interview Questions & Answers
+
+**Q1. What is an Execution Context in JavaScript?**
+
+An execution context is an abstract environment where JavaScript code is
+evaluated and executed. It consists of two parts: the **Memory Component**
+(Variable Environment) which stores all variables and function declarations
+as key-value pairs, and the **Code Component** (Thread of Execution) where
+the code runs one line at a time in a sequential manner.
+
+**Q2. Is JavaScript synchronous or asynchronous? Single-threaded or multi-threaded?**
+
+JavaScript is fundamentally a **synchronous, single-threaded** language. It
+can only execute one command at a time, and each command runs in a specific
+sequential order. However, through browser-provided Web APIs (like
+setTimeout, fetch, DOM APIs), the callback queue, and the event loop,
+JavaScript can handle asynchronous operations — but the language itself is
+synchronous at its core.
+
+**Q3. What are the two components of an Execution Context?**
+
+**1. Memory Component (Variable Environment):** This is where all variables
+and functions are stored as key-value pairs. During the memory creation
+phase, variables are assigned `undefined` and functions store their entire
+code.
+
+**2. Code Component (Thread of Execution):** This is where the code is
+actually executed, one line at a time. It's called "thread of execution"
+because JS runs in a single thread.
+
+**Q4. What does "single-threaded" mean in the context of JavaScript?**
+
+Single-threaded means JavaScript has only **one call stack** and can
+execute only one piece of code at a time. It cannot run multiple operations
+simultaneously within the language itself. Each line of code must finish
+before the next one begins. This is why blocking the main thread (e.g.,
+with heavy computation) freezes the entire application.
+
+**Q5. What is the difference between "synchronous" and "single-threaded"?**
+
+**Synchronous** means commands are executed one at a time — the next
+command waits for the current one to finish. **Single-threaded** means
+there's only one thread of execution (one call stack). Together, they mean
+JavaScript runs one command at a time, in order, on a single thread. A
+language can be multi-threaded but still synchronous within each thread.
+
+**Q6. How many execution contexts can exist at a time in JavaScript?**
+
+Multiple execution contexts can *exist* at a time (stacked in the call
+stack), but only **one is actively executing** at any moment — the one on
+top of the call stack. When a function is called, a new execution context
+is created and pushed on top. When it returns, it is popped off, and
+execution resumes in the context below.
+
+## Input/Output Interview Questions
+
+**I/O. What will be the output and why?**
+
+```js title="JavaScript"
+console.log("Start");
+console.log("Middle");
+console.log("End");
+```
+
+**Output:** `Start → Middle → End`
+
+JS is synchronous and single-threaded, so code runs line by line in order.
+Each `console.log` executes only after the previous one is complete.
+
+**I/O. What will be the output?**
+
+```js title="JavaScript"
+var x = 10;
+function greet() {
+  console.log("Hello");
+}
+console.log(x);
+greet();
+console.log("Done");
+```
+
+**Output:** `10 → Hello → Done`
+
+**Phase 1 (Memory):** x = undefined, greet = entire function code.
+**Phase 2 (Execution):** x is assigned 10, console.log(x) prints 10,
+greet() is invoked creating a new execution context which prints "Hello",
+then "Done" is printed.
+
+**I/O. What will be the output? Trace the execution context.**
+
+```js title="JavaScript"
+var a = 5;
+var b = 10;
+var c = a + b;
+console.log(c);
+```
+
+**Output:** `15`
+
+**Memory Phase:** a = undefined, b = undefined, c = undefined.
+**Execution Phase:** a = 5, b = 10, c = 5 + 10 = 15, then 15 is printed.
+After execution, the GEC is popped from the call stack.
+
+**I/O. What will be the output?**
+
+```js title="JavaScript"
+console.log("A");
+
+function foo() {
+  console.log("B");
+}
+
+console.log("C");
+foo();
+console.log("D");
+```
+
+**Output:** `A → C → B → D`
+
+Execution is sequential. "A" prints first, the function declaration is
+skipped during execution (already handled in memory phase), "C" prints,
+then foo() is called which prints "B", and finally "D" prints. The
+function only runs when *invoked*, not when declared.
+
+**I/O. What will be the output? (Tricky)**
+
+```js title="JavaScript"
+var x = 1;
+console.log(x);
+x = 2;
+console.log(x);
+var x = 3;
+console.log(x);
+```
+
+**Output:** `1 → 2 → 3`
+
+JavaScript allows re-declaring variables with `var` (no error). During
+memory phase, x gets `undefined` once (duplicate var declarations are
+ignored). During execution, x is assigned 1, then 2, then 3 — each
+console.log prints the current value.
+
+## Quick Revision — Cheat Sheet
+
+**Remember These Points**
+
+- Execution Context = Memory + Code
+- Memory Component = Variable Environment (key:value store)
+- Code Component = Thread of Execution (line by line)
+- JS is synchronous & single-threaded at its core
+- Global Execution Context is created when a program runs
+- Every function invocation creates a new execution context
+- Two phases: Memory Creation → Code Execution
+- Variables get `undefined` in Phase 1; actual values in Phase 2
+- Functions get their **entire code** stored in Phase 1

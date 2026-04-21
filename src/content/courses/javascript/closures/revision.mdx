@@ -1,0 +1,52 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="What a closure actually is" subtitle="Function + its lexical environment.">
+- A **closure** = function bundled with the lexical environment where it was *defined*.
+- Every function in JS forms a closure — the term matters most when the inner function outlives its parent.
+- The parent's Execution Context is destroyed, but closed-over variables live on through the closure's reference.
+- Closures carry the entire scope chain — inner function can see outer, grandparent, ..., all the way to global.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Reference, not copy" subtitle="Closures track the live variable.">
+- Closures do **not** snapshot values — they hold a reference to the variable's memory.
+- Changes to the variable after the closure is created are visible when the closure runs.
+- This is exactly why `var` + setTimeout loop prints the final `i`, not the iteration value.
+- Same for `let` reassignment: `let name = "A"; … name = "B"; return display;` → closure sees `"B"`.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="The setTimeout loop classic" subtitle="Why `var` prints 6, 6, 6, 6, 6.">
+- `for (var i=1; i<=5; i++) setTimeout(…, i*1000)` → one shared `i` (function scope). All callbacks see final `i = 6`.
+- **Fix 1:** swap `var` → `let`. Each iteration creates a fresh block-scoped `i`; each closure gets its own.
+- **Fix 2:** wrap in a helper `function close(j) { setTimeout(…, j*1000) } close(i)` — `j` is a new local per call.
+- **Fix 3:** IIFE `(function(j){ setTimeout(…, j*1000); })(i)` — same idea, inline.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Data hiding & factories" subtitle="The productive use of closures.">
+- Private state: `function counter(){ var count=0; return ()=>{ count++; return count; } }` — `count` is unreachable from outside.
+- Each call to the factory returns an **independent** closure → `counter1` and `counter2` do not share state.
+- **Currying:** `multiply(2)(5) === 10` — the outer arg is closed over by the inner function.
+- **Memoization:** a cache `const cache = {}` trapped in the closure persists across every call to the returned function.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Closure + Garbage Collection" subtitle="The only real downside.">
+- A closed-over variable cannot be GC'd while the closure is alive → **memory leak risk**.
+- Classic pitfall: event listeners that close over large objects and never get removed.
+- V8 is smart: only variables *actually referenced* by the closure are retained. Unused siblings can be collected.
+- Hygiene: remove listeners when done, clear intervals, null out closure references when you're finished with them.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Everywhere in modern JS" subtitle="Where you already use closures.">
+- `setTimeout` / `setInterval` callbacks — they close over their arguments and outer variables.
+- Event handlers — every `button.addEventListener(…)` callback is a closure.
+- React hooks — `useState` returns setter functions that close over internal state.
+- Iterators, generators, partial application, module pattern — all powered by closures.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **F.L.E.E.** — **F**unction **L**ives **E**ven after **E**xit.
+  The parent returns, its EC pops, but the closure's variables
+  survive — that's the whole story.
+</Callout>

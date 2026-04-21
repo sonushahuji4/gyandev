@@ -1,0 +1,43 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  What happens when the engine hits each declaration kind? This diagram
+  is a decision flow from the Memory Creation Phase — the single source
+  of truth for whether a name shows up as `undefined`, a full function,
+  or an error. The legend below decodes each branch.
+</Callout>
+
+## Hoisting — what each declaration gets in Phase 1
+
+```mermaid
+flowchart TD
+    S["<b>Phase 1 begins</b><br/>scan every declaration"]
+      --> Q{"Declaration kind?"}
+    Q -->|"<b>i</b> · var x = …"| A["<b>undefined</b><br/>access before = undefined"]
+    Q -->|"<b>ii</b> · function foo() {}"| B["<b>Entire function body</b><br/>callable before the line"]
+    Q -->|"<b>iii</b> · var fn = function/arrow"| C["<b>undefined</b> (the var)<br/>calling it = TypeError"]
+    Q -->|"<b>iv</b> · let / const"| D["<b>TDZ</b><br/>access before = ReferenceError"]
+    Q -->|"<b>v</b> · class"| E["<b>TDZ</b><br/>new before = ReferenceError"]
+    Q -->|"<b>vi</b> · never declared"| F["<b>Not in memory</b><br/>access = ReferenceError: is not defined"]
+
+    classDef ok   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef warn fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef err  fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    classDef node fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    class S,Q node
+    class A warn
+    class B ok
+    class C,D,E,F err
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'var',                 description: 'Hoisted as `undefined`. Safe to read before the line — you get undefined, not an error.' },
+  { numeral: 'ii',  name: 'function declaration', description: 'Hoisted with the whole body. Callable before the line — this is why.' },
+  { numeral: 'iii', name: 'function / arrow expr', description: 'The `var` holds `undefined`; invoking it throws TypeError: is not a function.' },
+  { numeral: 'iv',  name: 'let / const',         description: 'Hoisted, but held in the Temporal Dead Zone. Access = ReferenceError: Cannot access before initialization.' },
+  { numeral: 'v',   name: 'class',               description: 'Same TDZ rule as let/const. `new MyClass()` before the class line = ReferenceError.' },
+  { numeral: 'vi',  name: 'never declared',      description: 'No entry in memory at all. Reading the name = ReferenceError: x is not defined.' },
+]} />

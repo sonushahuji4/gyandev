@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topics 10–12: Closures — The Complete Guide — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a; --surface: #141829; --surface2: #1a1f36; --border: #2a2f4a;
+    --text: #cdd6f4; --text-dim: #8891b0; --accent: #f59e0b; --accent2: #3b82f6;
+    --green: #22c55e; --red: #ef4444; --purple: #a78bfa; --cyan: #22d3ee;
+    --orange: #fb923c; --pink: #f472b6; --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14; --error-bg: #1a0f0f;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); line-height:1.7; padding:0 20px 80px; max-width:860px; margin:0 auto; }
+  .header { padding:48px 0 32px; border-bottom:1px solid var(--border); margin-bottom:40px; }
+  .header .tag { display:inline-block; background:var(--accent); color:#000; font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; padding:4px 12px; border-radius:4px; margin-bottom:16px; }
+  .header h1 { font-size:36px; font-weight:800; line-height:1.15; background:linear-gradient(135deg,#f59e0b 0%,#ef4444 40%,#a78bfa 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:8px; }
+  .header p { color:var(--text-dim); font-size:16px; font-weight:300; }
+  .section-title { display:flex; align-items:center; gap:12px; margin:44px 0 20px; font-size:20px; font-weight:700; color:var(--accent2); }
+  .section-title::before { content:''; width:4px; height:24px; background:var(--accent2); border-radius:2px; flex-shrink:0; }
+  .topic-divider { margin:56px 0 0; padding:20px 0 0; border-top:2px solid var(--purple); }
+  .topic-divider h2 { font-size:24px; font-weight:800; background:linear-gradient(135deg,#a78bfa 0%,#22d3ee 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; margin-bottom:4px; }
+  .topic-divider p { color:var(--text-dim); font-size:14px; }
+  .concept-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:24px 28px; margin-bottom:16px; }
+  .concept-card h3 { font-size:15px; font-weight:700; color:var(--accent); margin-bottom:10px; }
+  .concept-card p,.concept-card li { font-size:14.5px; color:var(--text); line-height:1.75; }
+  .concept-card ul,.concept-card ol { padding-left:20px; margin-top:8px; }
+  .concept-card li { margin-bottom:6px; }
+  .concept-card li::marker { color:var(--accent); }
+  .highlight { background:rgba(245,158,11,0.12); color:var(--accent); padding:2px 7px; border-radius:4px; font-weight:600; font-size:13.5px; font-family:'JetBrains Mono',monospace; }
+  .key-box { background:linear-gradient(135deg,rgba(34,197,94,0.08) 0%,rgba(34,197,94,0.03) 100%); border-left:3px solid var(--green); padding:14px 20px; border-radius:0 8px 8px 0; margin:12px 0 16px; font-size:14px; color:var(--green); }
+  .key-box strong { font-weight:700; }
+  .warn-box { background:linear-gradient(135deg,rgba(239,68,68,0.08) 0%,rgba(239,68,68,0.03) 100%); border-left:3px solid var(--red); padding:14px 20px; border-radius:0 8px 8px 0; margin:12px 0 16px; font-size:14px; color:var(--red); }
+  .info-box { background:linear-gradient(135deg,rgba(59,130,246,0.08) 0%,rgba(59,130,246,0.03) 100%); border-left:3px solid var(--accent2); padding:14px 20px; border-radius:0 8px 8px 0; margin:12px 0 16px; font-size:14px; color:var(--accent2); }
+  .qa-block { background:var(--surface); border:1px solid var(--border); border-radius:12px; margin-bottom:20px; overflow:hidden; }
+  .qa-q { background:var(--q-bg); padding:16px 24px; border-bottom:1px solid var(--border); display:flex; gap:10px; align-items:flex-start; }
+  .qa-q .q-badge { background:var(--red); color:#fff; font-size:10px; font-weight:700; padding:3px 8px; border-radius:4px; flex-shrink:0; margin-top:2px; }
+  .qa-q .q-text { font-size:15px; font-weight:600; color:#e2e8f0; line-height:1.5; }
+  .qa-a { padding:16px 24px; }
+  .qa-a .a-label { font-size:10px; font-weight:700; color:var(--green); letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; }
+  .qa-a p { font-size:14px; color:var(--text); line-height:1.75; }
+  .qa-a p+p { margin-top:8px; }
+  .code-wrap { margin:12px 0; border-radius:8px; overflow:hidden; border:1px solid #21262d; }
+  .code-label { background:#161b22; padding:6px 14px; font-size:11px; font-weight:600; color:var(--text-dim); font-family:'JetBrains Mono',monospace; border-bottom:1px solid #21262d; }
+  pre { background:var(--code-bg); padding:16px 18px; overflow-x:auto; font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.65; color:#e6edf3; margin:0; }
+  .kw { color:#ff7b72; } .str { color:#a5d6ff; } .fn { color:#d2a8ff; } .cm { color:#8b949e; font-style:italic; } .num { color:#79c0ff; }
+  .output-block { background:var(--output-bg); border:1px solid rgba(34,197,94,0.2); border-radius:8px; padding:12px 18px; margin:10px 0 6px; display:flex; align-items:center; gap:10px; }
+  .output-block .out-icon { background:var(--green); color:#000; font-size:9px; font-weight:800; padding:3px 7px; border-radius:4px; flex-shrink:0; }
+  .output-block .out-text { font-family:'JetBrains Mono',monospace; font-size:13px; color:var(--green); }
+  .error-block { background:var(--error-bg); border:1px solid rgba(239,68,68,0.2); border-radius:8px; padding:12px 18px; margin:10px 0 6px; display:flex; align-items:center; gap:10px; }
+  .error-block .err-icon { background:var(--red); color:#fff; font-size:9px; font-weight:800; padding:3px 7px; border-radius:4px; flex-shrink:0; }
+  .error-block .err-text { font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--red); }
+  .divider { border:none; border-top:1px dashed var(--border); margin:32px 0; }
+  .nav-footer { margin-top:48px; padding-top:24px; border-top:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+  .nav-footer span { font-size:14px; }
+  .uses-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:16px 0; }
+  .use-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:16px 20px; }
+  .use-card h4 { font-size:13px; font-weight:700; color:var(--cyan); margin-bottom:6px; }
+  .use-card p { font-size:13px; line-height:1.6; }
+  .diagram { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:24px; margin:16px 0; text-align:center; overflow-x:auto; }
+  @media(max-width:700px) { .uses-grid { grid-template-columns:1fr; } .header h1 { font-size:26px; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="tag">Topics 10, 11 &amp; 12 of 19</div>
+  <h1>Closures — The Complete Guide</h1>
+  <p>The most important concept in JavaScript — closures, setTimeout patterns, data hiding, and every interview question you'll face</p>
+</div>
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 10: CLOSURES FUNDAMENTALS            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">What is a Closure?</div>
+
+<div class="concept-card">
+  <h3>The Definition (Memorize This)</h3>
+  <p>A <span class="highlight">closure</span> is a function <strong>bundled together with its lexical environment</strong>. In other words, a closure gives a function access to variables from its outer (enclosing) scope, even after the outer function has finished executing and its execution context has been destroyed.</p>
+  <p style="margin-top:10px;">Every function in JavaScript forms a closure. But the term is most useful when an inner function is returned from or passed outside its parent function — and it <em>still remembers</em> the parent's variables.</p>
+</div>
+
+<div class="concept-card">
+  <h3>The Classic Example</h3>
+  <div class="code-wrap">
+    <div class="code-label">JavaScript</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">var</span> a = <span class="num">7</span>;
+  <span class="kw">function</span> <span class="fn">y</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(a);
+  }
+  <span class="kw">return</span> y;
+}
+
+<span class="kw">var</span> z = <span class="fn">x</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(z);  <span class="cm">// ƒ y() { console.log(a); }</span>
+<span class="fn">z</span>();             <span class="cm">// 7 — still remembers a!</span></pre>
+  </div>
+  <p style="margin-top:12px;"><strong>What happened step by step:</strong></p>
+  <ol style="padding-left:20px; margin-top:8px;">
+    <li><code>x()</code> runs, creates <code>a = 7</code> and function <code>y</code> in its execution context.</li>
+    <li><code>x()</code> returns <code>y</code> — but not just the function code. It returns <code>y</code> <strong>along with its entire lexical environment</strong> (the closure).</li>
+    <li><code>x()</code>'s execution context is <strong>destroyed</strong> and popped from the Call Stack.</li>
+    <li><code>z</code> now holds the function <code>y</code> with its closure.</li>
+    <li>When <code>z()</code> is called, <code>y</code> needs <code>a</code>. Even though <code>x()</code> is gone, <code>y</code> still has a <strong>reference</strong> to <code>a</code> through its closure. It prints <code>7</code>.</li>
+  </ol>
+</div>
+
+<!-- Closure Diagram -->
+<div class="diagram">
+  <svg viewBox="0 0 680 250" xmlns="http://www.w3.org/2000/svg" font-family="Outfit, sans-serif">
+    <!-- The returned function -->
+    <rect x="40" y="30" width="280" height="190" rx="12" fill="none" stroke="#f59e0b" stroke-width="2"/>
+    <text x="180" y="58" text-anchor="middle" font-size="14" font-weight="700" fill="#f59e0b">z (returned function y)</text>
+
+    <!-- Function code -->
+    <rect x="60" y="72" width="240" height="50" rx="6" fill="#1a1f36" stroke="#2a2f4a"/>
+    <text x="180" y="93" text-anchor="middle" font-size="12" fill="#d2a8ff" font-family="JetBrains Mono, monospace">function y() {</text>
+    <text x="180" y="110" text-anchor="middle" font-size="12" fill="#d2a8ff" font-family="JetBrains Mono, monospace">  console.log(a);</text>
+
+    <!-- Closure envelope -->
+    <rect x="60" y="134" width="240" height="70" rx="6" fill="rgba(34,197,94,0.08)" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5"/>
+    <text x="180" y="158" text-anchor="middle" font-size="12" font-weight="700" fill="#22c55e">Closure (Lexical Env of x)</text>
+    <text x="180" y="180" text-anchor="middle" font-size="13" fill="#e6edf3" font-family="JetBrains Mono, monospace">a: 7</text>
+    <text x="180" y="196" text-anchor="middle" font-size="10" fill="#8891b0">Preserved even after x() is gone</text>
+
+    <!-- x() destroyed -->
+    <rect x="400" y="60" width="240" height="130" rx="10" fill="none" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="6"/>
+    <text x="520" y="90" text-anchor="middle" font-size="13" font-weight="700" fill="#ef4444">x() Execution Context</text>
+    <text x="520" y="115" text-anchor="middle" font-size="12" fill="#8b949e">DESTROYED ✗</text>
+    <text x="520" y="140" text-anchor="middle" font-size="11" fill="#8b949e">Popped from Call Stack</text>
+    <text x="520" y="162" text-anchor="middle" font-size="11" fill="#8b949e">But a = 7 lives on in closure!</text>
+
+    <!-- Arrow -->
+    <path d="M320 160 L390 130" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="4" marker-end="url(#arrowG)"/>
+    <defs><marker id="arrowG" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#22c55e"/></marker></defs>
+  </svg>
+</div>
+
+<div class="key-box">
+  <strong>Critical Understanding:</strong> Closures don't store a <em>copy</em> of the variable — they store a <em>reference</em> to the variable's memory location. If the variable changes, the closure sees the updated value.
+</div>
+
+<div class="concept-card">
+  <h3>Closures Remember References, Not Values</h3>
+  <div class="code-wrap">
+    <div class="code-label">Proof — reference, not copy</div>
+    <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">function</span> <span class="fn">inner</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(a);
+  }
+  a = <span class="num">100</span>;  <span class="cm">// change AFTER inner is defined</span>
+  <span class="kw">return</span> inner;
+}
+<span class="fn">outer</span>()(); <span class="cm">// 100 — NOT 10! It has the reference, which now points to 100</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Closures Work at Every Nesting Level</h3>
+  <div class="code-wrap">
+    <div class="code-label">Multi-level closure</div>
+    <pre><span class="kw">function</span> <span class="fn">outest</span>() {
+  <span class="kw">var</span> c = <span class="num">20</span>;
+  <span class="kw">function</span> <span class="fn">outer</span>(str) {
+    <span class="kw">let</span> a = <span class="num">10</span>;
+    <span class="kw">function</span> <span class="fn">inner</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(a, c, str);
+    }
+    <span class="kw">return</span> inner;
+  }
+  <span class="kw">return</span> outer;
+}
+<span class="fn">outest</span>()(<span class="str">"Hello"</span>)(); <span class="cm">// 10 20 "Hello"</span></pre>
+  </div>
+  <p style="margin-top:10px;"><code>inner</code> forms closures with <strong>both</strong> <code>outer</code> and <code>outest</code>. It can access <code>a</code> (from outer), <code>c</code> (from outest), and <code>str</code> (parameter of outer). The closure carries the entire scope chain.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 11: setTimeout + CLOSURES            -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 11 — setTimeout + Closures</h2>
+  <p>The most asked closure interview question of all time</p>
+</div>
+
+<div class="concept-card">
+  <h3>setTimeout Doesn't Wait — JS Waits for None</h3>
+  <div class="code-wrap">
+    <div class="code-label">setTimeout behavior</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">var</span> i = <span class="num">1</span>;
+  <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(i);
+  }, <span class="num">3000</span>);
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste"</span>);
+}
+<span class="fn">x</span>();
+<span class="cm">// Output: "Namaste" (immediately) → 1 (after 3 seconds)</span></pre>
+  </div>
+  <p style="margin-top:10px;">The callback inside setTimeout forms a <strong>closure</strong> with <code>i</code>. setTimeout registers the callback with the timer and JS moves on — it doesn't block. After 3 seconds, the callback still has access to <code>i</code> through its closure.</p>
+</div>
+
+<div class="concept-card">
+  <h3>The Famous Interview Question: Print 1,2,3,4,5</h3>
+  <div class="code-wrap">
+    <div class="code-label">❌ The WRONG output with var</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">1</span>; i &lt;= <span class="num">5</span>; i++) {
+    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(i);
+    }, i * <span class="num">1000</span>);
+  }
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste"</span>);
+}
+<span class="fn">x</span>();</pre>
+  </div>
+  <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Namaste" → 6 → 6 → 6 → 6 → 6</span></div>
+  <p style="margin-top:10px;"><strong>Why 6 five times?</strong> All 5 callbacks form closures over the <strong>same</strong> <code>i</code> variable (var is function-scoped — one shared <code>i</code>). By the time the timers expire, the loop has finished and <code>i = 6</code>. All callbacks see <code>6</code>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Solution 1: Use <code>let</code> (The Easy Fix)</h3>
+  <div class="code-wrap">
+    <div class="code-label">✅ Correct — let creates new i per iteration</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">1</span>; i &lt;= <span class="num">5</span>; i++) {
+    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(i);
+    }, i * <span class="num">1000</span>);
+  }
+}
+<span class="fn">x</span>();
+<span class="cm">// Output: 1 → 2 → 3 → 4 → 5 (one per second)</span></pre>
+  </div>
+  <p style="margin-top:10px;"><code>let</code> is block-scoped — each loop iteration creates a <strong>brand new <code>i</code></strong> in a new block scope. Each callback closes over its <em>own</em> <code>i</code>.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Solution 2: Use a Wrapper Function with <code>var</code></h3>
+  <p>When the interviewer says "do it without <code>let</code>":</p>
+  <div class="code-wrap">
+    <div class="code-label">✅ Correct — closure with helper function</div>
+    <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">1</span>; i &lt;= <span class="num">5</span>; i++) {
+    <span class="kw">function</span> <span class="fn">close</span>(j) {  <span class="cm">// j is a NEW local variable each time</span>
+      <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+        <span class="fn">console</span>.<span class="fn">log</span>(j);
+      }, j * <span class="num">1000</span>);
+    }
+    <span class="fn">close</span>(i);  <span class="cm">// passes current i as argument → creates copy</span>
+  }
+}
+<span class="fn">x</span>();
+<span class="cm">// Output: 1 → 2 → 3 → 4 → 5</span></pre>
+  </div>
+  <p style="margin-top:10px;">Each call to <code>close(i)</code> creates a new execution context with its own <code>j</code>. The setTimeout callback closes over this unique <code>j</code>, not the shared <code>i</code>. You can also use an IIFE for the same effect.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Solution 3: IIFE (Immediately Invoked Function Expression)</h3>
+  <div class="code-wrap">
+    <div class="code-label">✅ IIFE approach</div>
+    <pre><span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">1</span>; i &lt;= <span class="num">5</span>; i++) {
+  (<span class="kw">function</span>(j) {
+    <span class="fn">setTimeout</span>(<span class="kw">function</span>() {
+      <span class="fn">console</span>.<span class="fn">log</span>(j);
+    }, j * <span class="num">1000</span>);
+  })(i);
+}</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- TOPIC 12: USES + DATA HIDING               -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="topic-divider">
+  <h2>Topic 12 — Practical Uses of Closures</h2>
+  <p>Why closures matter in real-world code</p>
+</div>
+
+<div class="uses-grid">
+  <div class="use-card"><h4>Data Hiding / Encapsulation</h4><p>Create private variables inaccessible from outside</p></div>
+  <div class="use-card"><h4>Module Pattern</h4><p>Organize code with public/private interfaces</p></div>
+  <div class="use-card"><h4>Currying</h4><p>Transform <code>f(a,b)</code> into <code>f(a)(b)</code></p></div>
+  <div class="use-card"><h4>Memoization</h4><p>Cache function results for performance</p></div>
+  <div class="use-card"><h4>setTimeout / setInterval</h4><p>Callbacks remembering state</p></div>
+  <div class="use-card"><h4>Event Handlers</h4><p>Listeners that remember variables</p></div>
+  <div class="use-card"><h4>Iterators &amp; Generators</h4><p>Maintain state between <code>next()</code> calls</p></div>
+  <div class="use-card"><h4>Function Factories</h4><p>Functions that create customized functions</p></div>
+</div>
+
+<div class="concept-card">
+  <h3>Data Hiding with Closures — Counter Example</h3>
+  <div class="code-wrap">
+    <div class="code-label">❌ Without closure — count is exposed</div>
+    <pre><span class="kw">var</span> count = <span class="num">0</span>;
+<span class="kw">function</span> <span class="fn">increment</span>() { count++; }
+<span class="cm">// Anyone can do: count = -1000; — no protection!</span></pre>
+  </div>
+  <div class="code-wrap">
+    <div class="code-label">✅ With closure — count is private</div>
+    <pre><span class="kw">function</span> <span class="fn">counter</span>() {
+  <span class="kw">var</span> count = <span class="num">0</span>;  <span class="cm">// private! only accessible via returned functions</span>
+  <span class="kw">return</span> <span class="kw">function</span> <span class="fn">increment</span>() {
+    count++;
+    <span class="fn">console</span>.<span class="fn">log</span>(count);
+  }
+}
+<span class="kw">var</span> counter1 = <span class="fn">counter</span>();
+counter1(); <span class="cm">// 1</span>
+counter1(); <span class="cm">// 2</span>
+counter1(); <span class="cm">// 3</span>
+
+<span class="kw">var</span> counter2 = <span class="fn">counter</span>(); <span class="cm">// completely independent!</span>
+counter2(); <span class="cm">// 1 — fresh closure, fresh count</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Constructor Pattern with Closures</h3>
+  <div class="code-wrap">
+    <div class="code-label">Increment + Decrement with shared private state</div>
+    <pre><span class="kw">function</span> <span class="fn">Counter</span>() {
+  <span class="kw">var</span> count = <span class="num">0</span>;
+  <span class="kw">this</span>.increment = <span class="kw">function</span>() { count++; <span class="fn">console</span>.<span class="fn">log</span>(count); };
+  <span class="kw">this</span>.decrement = <span class="kw">function</span>() { count--; <span class="fn">console</span>.<span class="fn">log</span>(count); };
+  <span class="kw">this</span>.getCount = <span class="kw">function</span>() { <span class="kw">return</span> count; };
+}
+<span class="kw">var</span> c = <span class="kw">new</span> <span class="fn">Counter</span>();
+c.increment(); <span class="cm">// 1</span>
+c.increment(); <span class="cm">// 2</span>
+c.decrement(); <span class="cm">// 1</span>
+<span class="fn">console</span>.<span class="fn">log</span>(c.count); <span class="cm">// undefined — count is private!</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Currying with Closures</h3>
+  <div class="code-wrap">
+    <div class="code-label">Function factory</div>
+    <pre><span class="kw">function</span> <span class="fn">multiply</span>(x) {
+  <span class="kw">return</span> <span class="kw">function</span>(y) {
+    <span class="kw">return</span> x * y;
+  };
+}
+<span class="kw">const</span> double = <span class="fn">multiply</span>(<span class="num">2</span>);   <span class="cm">// x = 2 is closed over</span>
+<span class="kw">const</span> triple = <span class="fn">multiply</span>(<span class="num">3</span>);   <span class="cm">// x = 3 is closed over</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">double</span>(<span class="num">5</span>));  <span class="cm">// 10</span>
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">triple</span>(<span class="num">5</span>));  <span class="cm">// 15</span></pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Memoization with Closures</h3>
+  <div class="code-wrap">
+    <div class="code-label">Cache expensive computation results</div>
+    <pre><span class="kw">function</span> <span class="fn">memoize</span>(fn) {
+  <span class="kw">const</span> cache = {};  <span class="cm">// closed over — persists across calls</span>
+  <span class="kw">return</span> <span class="kw">function</span>(...args) {
+    <span class="kw">const</span> key = JSON.stringify(args);
+    <span class="kw">if</span> (cache[key]) <span class="kw">return</span> cache[key];
+    cache[key] = fn(...args);
+    <span class="kw">return</span> cache[key];
+  };
+}
+<span class="kw">const</span> expensiveAdd = <span class="fn">memoize</span>((a, b) =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"computing..."</span>);
+  <span class="kw">return</span> a + b;
+});
+expensiveAdd(<span class="num">1</span>, <span class="num">2</span>); <span class="cm">// "computing..." → 3</span>
+expensiveAdd(<span class="num">1</span>, <span class="num">2</span>); <span class="cm">// 3 (no "computing..." — cached!)</span></pre>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Disadvantages of Closures:</strong> Closed-over variables are NOT garbage collected as long as the closure exists. This can lead to <strong>memory leaks</strong> and <strong>overconsumption of memory</strong> if many closures hold references to large data. Modern engines like V8 use smart garbage collection (only keeping variables actually referenced by the closure, not the entire scope), but it's still something to be aware of. Always remove event listeners when not needed.
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INTERVIEW QUESTIONS                        -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q1</span><span class="q-text">What is a Closure in JavaScript?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>A closure is a function bundled together with references to its surrounding lexical environment. It gives the function access to variables from its outer scope even after the outer function has returned and its execution context has been destroyed. Technically, every function in JS creates a closure, but the term is most meaningful when inner functions reference outer variables and persist beyond the outer function's lifetime.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q2</span><span class="q-text">Do closures store a copy of the variable or a reference?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Closures store a <strong>reference</strong> to the variable, not a copy of its value. If the variable is modified after the closure is created (but before the closure is invoked), the closure will see the updated value. This is exactly why the <code>var</code> + <code>setTimeout</code> loop prints <code>6</code> five times — all callbacks reference the same <code>i</code>, which is <code>6</code> by the time they execute.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q3</span><span class="q-text">Explain the <code>var</code> + <code>setTimeout</code> loop problem and how to fix it.</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Problem:</strong> <code>for (var i=1; i<=5; i++) { setTimeout(() => console.log(i), i*1000); }</code> prints <code>6</code> five times because <code>var</code> is function-scoped — one shared <code>i</code>, all callbacks close over the same reference, and by execution time <code>i = 6</code>.</p>
+    <p><strong>Fix 1 — <code>let</code>:</strong> Replace <code>var</code> with <code>let</code>. Each iteration gets a new block-scoped <code>i</code>.</p>
+    <p><strong>Fix 2 — Wrapper function:</strong> Wrap setTimeout in a function that takes <code>i</code> as a parameter, creating a new local copy each iteration.</p>
+    <p><strong>Fix 3 — IIFE:</strong> <code>(function(j) { setTimeout(..., j*1000); })(i)</code> — immediately invoked function creates a new scope with a copy of <code>i</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q4</span><span class="q-text">What are the practical uses of closures?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Data hiding and encapsulation (private variables), module design pattern, currying, memoization/caching, setTimeout/setInterval callbacks, event handlers, iterators/generators, function factories, partial application, and maintaining state in asynchronous operations. React hooks like <code>useState</code> are also implemented using closures.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q5</span><span class="q-text">What are the disadvantages of closures?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>Closures can lead to <strong>overconsumption of memory</strong> because closed-over variables are not garbage collected as long as the closure exists. This can cause <strong>memory leaks</strong> if closures are not properly cleaned up (e.g., event listeners not removed, timers not cleared). In extreme cases, excessive closures can slow down or freeze the browser. Modern JS engines like V8 optimize this by only retaining variables actually referenced by the closure, not the entire scope.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q6</span><span class="q-text">Does the order of variable declaration matter for closures?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>No.</strong> The inner function forms a closure with the entire lexical environment of its parent, regardless of whether the variable was declared before or after the inner function definition. The closure captures a reference to the scope, and by the time the inner function executes, the variable will have been initialized.</p>
+    <div class="code-wrap"><div class="code-label">Order doesn't matter</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a); }
+  <span class="kw">var</span> a = <span class="num">10</span>; <span class="cm">// declared AFTER inner</span>
+  <span class="kw">return</span> inner;
+}
+<span class="fn">outer</span>()(); <span class="cm">// 10 — works fine!</span></pre>
+    </div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q7</span><span class="q-text">Do closures work with <code>let</code> and <code>const</code> too?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Yes.</strong> Closures work with all variable declarations — <code>var</code>, <code>let</code>, <code>const</code>, and even function parameters. The closure mechanism is about the lexical environment, not the declaration keyword. The only difference is scoping behavior (block vs function scope), which affects <em>which</em> variable the closure captures in loops.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q8</span><span class="q-text">Can closures access variables from multiple outer scopes?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p><strong>Yes.</strong> A closure captures the entire scope chain. If function <code>inner</code> is nested inside <code>outer</code> which is inside <code>outest</code>, then <code>inner</code> has closure over variables from both <code>outer</code> AND <code>outest</code>. Even global variables are accessible through the scope chain. The closure preserves references at every level.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">Q9</span><span class="q-text">What is the Garbage Collector's relationship with closures?</span></div>
+  <div class="qa-a"><div class="a-label">Answer</div>
+    <p>The Garbage Collector frees memory for variables that are no longer reachable. If a closure holds a reference to a variable, that variable cannot be garbage collected — even if the parent function has returned. Modern engines like V8 are smart: if a closure only uses variable <code>x</code> from the parent scope, variables <code>y</code> and <code>z</code> from the same scope CAN be garbage collected. But the referenced variables persist until the closure itself is garbage collected.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- INPUT/OUTPUT QUESTIONS                     -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 1</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a); }
+  <span class="kw">return</span> inner;
+}
+<span class="fn">outer</span>()();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">10</span></div>
+    <p style="margin-top:10px;"><code>outer()</code> returns <code>inner</code>. The second <code>()</code> calls <code>inner</code>. Closure gives <code>inner</code> access to <code>a = 10</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 2</span><span class="q-text">What will be the output?</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a); }
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">return</span> inner;
+}
+<span class="fn">outer</span>()();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">10</span></div>
+    <p style="margin-top:10px;">Order doesn't matter. <code>inner</code> closes over the scope, and by the time it executes, <code>a = 10</code>.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 3</span><span class="q-text">What will be the output? (var changed after closure creation)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="kw">var</span> a = <span class="num">10</span>;
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a); }
+  a = <span class="num">100</span>;
+  <span class="kw">return</span> inner;
+}
+<span class="fn">outer</span>()();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">100</span></div>
+    <p style="margin-top:10px;">Closures hold <strong>references</strong>, not snapshots. <code>a</code> was changed to 100 before return.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 4</span><span class="q-text">What will be the output? (Parameter closure)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>(str) {
+  <span class="kw">let</span> a = <span class="num">10</span>;
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a, str); }
+  <span class="kw">return</span> inner;
+}
+<span class="fn">outer</span>(<span class="str">"Hello"</span>)();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">10 "Hello"</span></div>
+    <p style="margin-top:10px;">Closures capture parameters too — <code>str</code> is part of the lexical environment.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 5</span><span class="q-text">What will be the output? (Conflicting variable names)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">outest</span>() {
+  <span class="kw">var</span> c = <span class="num">20</span>;
+  <span class="kw">function</span> <span class="fn">outer</span>(str) {
+    <span class="kw">let</span> a = <span class="num">10</span>;
+    <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(a, c, str); }
+    <span class="kw">return</span> inner;
+  }
+  <span class="kw">return</span> outer;
+}
+<span class="kw">let</span> a = <span class="num">100</span>;
+<span class="fn">outest</span>()(<span class="str">"Hello"</span>)();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">10 20 "Hello"</span></div>
+    <p style="margin-top:10px;">The inner <code>a = 10</code> is found first in the scope chain. The global <code>let a = 100</code> is never reached. Closures resolve through the scope chain from inner → outer.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 6</span><span class="q-text">What will be the output? (setTimeout loop with var)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">1</span>; i &lt;= <span class="num">3</span>; i++) {
+  <span class="fn">setTimeout</span>(<span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(i); }, i * <span class="num">1000</span>);
+}</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">4 → 4 → 4 (at 1s, 2s, 3s)</span></div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 7</span><span class="q-text">What will be the output? (setTimeout loop with let)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">1</span>; i &lt;= <span class="num">3</span>; i++) {
+  <span class="fn">setTimeout</span>(<span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(i); }, i * <span class="num">1000</span>);
+}</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">1 → 2 → 3 (at 1s, 2s, 3s)</span></div>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 8</span><span class="q-text">What will be the output? (Counter with closure)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">counter</span>() {
+  <span class="kw">var</span> count = <span class="num">0</span>;
+  <span class="kw">return</span> <span class="kw">function</span>() { count++; <span class="kw">return</span> count; };
+}
+<span class="kw">var</span> c1 = <span class="fn">counter</span>();
+<span class="kw">var</span> c2 = <span class="fn">counter</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">c1</span>()); <span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">c1</span>()); <span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">c1</span>());
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">c2</span>()); <span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">c2</span>());</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">1 → 2 → 3 → 1 → 2</span></div>
+    <p style="margin-top:10px;"><code>c1</code> and <code>c2</code> are <strong>independent closures</strong> — each has its own <code>count</code>. They don't share state.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 9</span><span class="q-text">What will be the output? (Tricky — closure over loop variable)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">createFunctions</span>() {
+  <span class="kw">var</span> result = [];
+  <span class="kw">for</span> (<span class="kw">var</span> i = <span class="num">0</span>; i &lt; <span class="num">3</span>; i++) {
+    result.push(<span class="kw">function</span>() { <span class="kw">return</span> i; });
+  }
+  <span class="kw">return</span> result;
+}
+<span class="kw">var</span> fns = <span class="fn">createFunctions</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(fns[<span class="num">0</span>]()); <span class="fn">console</span>.<span class="fn">log</span>(fns[<span class="num">1</span>]()); <span class="fn">console</span>.<span class="fn">log</span>(fns[<span class="num">2</span>]());</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">3 → 3 → 3</span></div>
+    <p style="margin-top:10px;">Same problem as setTimeout — all three functions close over the same <code>var i</code>, which is <code>3</code> after the loop. Fix with <code>let</code> or IIFE.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 10</span><span class="q-text">What will be the output? (Tricky — garbage collection)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">a</span>() {
+  <span class="kw">var</span> x = <span class="num">0</span>, z = <span class="num">10</span>;
+  <span class="kw">return</span> <span class="kw">function</span> <span class="fn">b</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(x);
+  }
+}
+<span class="kw">var</span> y = <span class="fn">a</span>();
+<span class="fn">y</span>();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">0</span></div>
+    <p style="margin-top:10px;"><code>b</code> only references <code>x</code>, not <code>z</code>. Smart garbage collectors (like V8's) will free <code>z</code>'s memory since no closure needs it. Only <code>x</code> is preserved.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 11</span><span class="q-text">What will be the output? (Tricky — closure + reassignment)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">make</span>() {
+  <span class="kw">let</span> name = <span class="str">"Mozilla"</span>;
+  <span class="kw">function</span> <span class="fn">display</span>() { <span class="fn">console</span>.<span class="fn">log</span>(name); }
+  name = <span class="str">"Chrome"</span>;
+  <span class="kw">return</span> display;
+}
+<span class="fn">make</span>()();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Chrome"</span></div>
+    <p style="margin-top:10px;">Reference, not snapshot. <code>name</code> was changed to "Chrome" before return. The closure sees the latest value.</p>
+  </div>
+</div>
+
+<div class="qa-block">
+  <div class="qa-q"><span class="q-badge">I/O 12</span><span class="q-text">What will be the output? (Tricky — immediately invoked vs returned)</span></div>
+  <div class="qa-a">
+    <div class="code-wrap"><div class="code-label">JavaScript</div>
+      <pre><span class="kw">function</span> <span class="fn">x</span>() {
+  <span class="kw">var</span> i = <span class="num">1</span>;
+  <span class="fn">setTimeout</span>(<span class="kw">function</span>() { <span class="fn">console</span>.<span class="fn">log</span>(i); }, <span class="num">3000</span>);
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste"</span>);
+}
+<span class="fn">x</span>();</pre>
+    </div>
+    <div class="output-block"><span class="out-icon">OUTPUT</span><span class="out-text">"Namaste" (immediately) → 1 (after 3s)</span></div>
+    <p style="margin-top:10px;">JS doesn't wait for setTimeout. It registers the callback with the timer and moves on. After 3 seconds, the callback runs and accesses <code>i = 1</code> through its closure.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ═══════════════════════════════════════════ -->
+<!-- QUICK REVISION                             -->
+<!-- ═══════════════════════════════════════════ -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Closures — Everything You Need</h3>
+  <ul>
+    <li><strong>Closure</strong> = function + its lexical environment (the scope where it was defined)</li>
+    <li>Closures capture <strong>references</strong> to variables, NOT copies of values</li>
+    <li>Inner functions have closure over outer function variables even after outer returns</li>
+    <li>Works with <code>var</code>, <code>let</code>, <code>const</code>, and parameters</li>
+    <li>Declaration order doesn't matter — closure captures the scope, not a snapshot</li>
+    <li>Multiple closures from same parent share the SAME closed-over variables</li>
+    <li>Separate calls to the factory function create INDEPENDENT closures</li>
+    <li><code>var</code> + loop + setTimeout = all callbacks see final value (shared reference)</li>
+    <li><code>let</code> + loop + setTimeout = each callback sees its own value (block scope)</li>
+    <li>Fix <code>var</code> loop: use wrapper function or IIFE to create a new scope per iteration</li>
+    <li>Uses: data hiding, module pattern, currying, memoization, callbacks, event handlers</li>
+    <li>Disadvantage: memory not garbage collected as long as closure exists → potential leaks</li>
+    <li>V8 is smart: only retains variables actually used by the closure</li>
+    <li>Always remove event listeners when done to allow garbage collection</li>
+    <li>React hooks (useState, useEffect) rely heavily on closures</li>
+  </ul>
+</div>
+
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topics 8 &amp; 9: let, const, Block Scope</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 13: First Class Functions</span>
+</div>
+
+</body>
+</html>

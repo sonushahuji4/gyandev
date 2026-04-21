@@ -1,0 +1,50 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="What hoisting really is" subtitle="A consequence of Phase 1, not magic.">
+- **Not a physical move** — declarations stay where they are in source.
+- Phase 1 (Memory Creation) scans the entire code and allocates memory.
+- Only **declarations** are hoisted — assignments stay in Phase 2.
+- Happens in **every** Execution Context (global *and* function scope).
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="var vs function declaration" subtitle="The two classic behaviours.">
+- `var x = 10` → `x` hoisted as **undefined**; usable before the line.
+- `function foo() {}` → hoisted as **entire function body**; callable before the line.
+- Same-name collision → function wins during memory phase; later var assignment overwrites.
+- Duplicate function declarations → **last one wins**.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Function expressions + arrows" subtitle="Treated as variables, not functions.">
+- `var fn = function() {}` / `var fn = () => {}` → hoisted as `undefined`.
+- Calling before the assignment line → **TypeError: is not a function**.
+- Why TypeError? You're invoking `undefined()`.
+- Switch to `let`/`const` and the error becomes ReferenceError (TDZ).
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="let, const & class" subtitle="Hoisted, but into the Temporal Dead Zone.">
+- `let` / `const` / `class` are hoisted — but unreachable until the declaration line runs.
+- Accessing them in the TDZ → `ReferenceError: Cannot access 'x' before initialization`.
+- Different from `undefined` (var) and from "not defined" (never declared at all).
+- Classes share the TDZ rule — `new Animal()` before the class line throws too.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Three errors, three meanings" subtitle="Which one fires, and why.">
+- **undefined** — var was hoisted, no value yet. (`console.log(x)` before `var x = 7`.)
+- **TypeError: is not a function** — variable exists, but holds something non-callable.
+- **ReferenceError: x is not defined** — the identifier was never declared at all.
+- **ReferenceError: Cannot access before initialization** — let/const/class in TDZ.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Tricky corners" subtitle="The bits interviewers love.">
+- Named function expression — the name is usable **inside** the function only (good for recursion).
+- `function a() {}` after `return` inside a function still hoists — shadows globals.
+- Block-scoped `function` declarations are hoisted *only* within the block in modern strict mode.
+- `console.log(fn)` prints the whole function body — a live proof of Phase 1.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **V**ar → undefined. **F**n → full body. **L**et → TDZ. Remember **V-F-L**.
+</Callout>

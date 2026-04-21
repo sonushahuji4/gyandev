@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Topic 3: Hoisting in JavaScript — Namaste JS Interview Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0c0f1a;
+    --surface: #141829;
+    --surface2: #1a1f36;
+    --border: #2a2f4a;
+    --text: #cdd6f4;
+    --text-dim: #8891b0;
+    --accent: #f59e0b;
+    --accent2: #3b82f6;
+    --green: #22c55e;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --orange: #fb923c;
+    --code-bg: #0d1117;
+    --q-bg: linear-gradient(135deg, #1e1434 0%, #1a1230 100%);
+    --output-bg: #0f1a14;
+    --error-bg: #1a0f0f;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    padding: 0 20px 80px;
+    max-width: 860px;
+    margin: 0 auto;
+  }
+  .header {
+    padding: 48px 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 40px;
+  }
+  .header .tag {
+    display: inline-block; background: var(--accent); color: #000;
+    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; padding: 4px 12px; border-radius: 4px; margin-bottom: 16px;
+  }
+  .header h1 {
+    font-size: 34px; font-weight: 800; line-height: 1.2;
+    background: linear-gradient(135deg, #fb923c 0%, #f59e0b 50%, #fbbf24 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;
+  }
+  .header p { color: var(--text-dim); font-size: 16px; font-weight: 300; }
+  .section-title {
+    display: flex; align-items: center; gap: 12px;
+    margin: 44px 0 20px; font-size: 20px; font-weight: 700; color: var(--accent2);
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 24px;
+    background: var(--accent2); border-radius: 2px; flex-shrink: 0;
+  }
+  .concept-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px 28px; margin-bottom: 16px;
+  }
+  .concept-card h3 {
+    font-size: 15px; font-weight: 700; color: var(--accent);
+    margin-bottom: 10px; letter-spacing: 0.5px;
+  }
+  .concept-card p, .concept-card li {
+    font-size: 14.5px; color: var(--text); line-height: 1.75;
+  }
+  .concept-card ul, .concept-card ol { padding-left: 20px; margin-top: 8px; }
+  .concept-card li { margin-bottom: 6px; }
+  .concept-card li::marker { color: var(--accent); }
+  .highlight {
+    background: rgba(245,158,11,0.12); color: var(--accent);
+    padding: 2px 7px; border-radius: 4px; font-weight: 600;
+    font-size: 13.5px; font-family: 'JetBrains Mono', monospace;
+  }
+  .key-box {
+    background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 100%);
+    border-left: 3px solid var(--green);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--green);
+  }
+  .key-box strong { font-weight: 700; }
+  .warn-box {
+    background: linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.03) 100%);
+    border-left: 3px solid var(--red);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--red);
+  }
+  .info-box {
+    background: linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(59,130,246,0.03) 100%);
+    border-left: 3px solid var(--accent2);
+    padding: 14px 20px; border-radius: 0 8px 8px 0;
+    margin: 12px 0 16px; font-size: 14px; color: var(--accent2);
+  }
+  .qa-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; margin-bottom: 20px; overflow: hidden;
+  }
+  .qa-q {
+    background: var(--q-bg); padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .qa-q .q-badge {
+    background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+    padding: 3px 8px; border-radius: 4px; flex-shrink: 0; margin-top: 2px;
+    letter-spacing: 0.5px;
+  }
+  .qa-q .q-text { font-size: 15px; font-weight: 600; color: #e2e8f0; line-height: 1.5; }
+  .qa-a { padding: 16px 24px; }
+  .qa-a .a-label {
+    font-size: 10px; font-weight: 700; color: var(--green);
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .qa-a p { font-size: 14px; color: var(--text); line-height: 1.75; }
+  .qa-a p + p { margin-top: 8px; }
+  .code-wrap {
+    margin: 12px 0; border-radius: 8px; overflow: hidden; border: 1px solid #21262d;
+  }
+  .code-label {
+    background: #161b22; padding: 6px 14px; font-size: 11px; font-weight: 600;
+    color: var(--text-dim); letter-spacing: 0.5px;
+    font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid #21262d;
+  }
+  pre {
+    background: var(--code-bg); padding: 16px 18px; overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace; font-size: 13px;
+    line-height: 1.65; color: #e6edf3; margin: 0;
+  }
+  .kw { color: #ff7b72; }
+  .str { color: #a5d6ff; }
+  .fn { color: #d2a8ff; }
+  .cm { color: #8b949e; font-style: italic; }
+  .num { color: #79c0ff; }
+  .output-block {
+    background: var(--output-bg); border: 1px solid rgba(34,197,94,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .output-block .out-icon {
+    background: var(--green); color: #000; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .output-block .out-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--green);
+  }
+  .error-block {
+    background: var(--error-bg); border: 1px solid rgba(239,68,68,0.2);
+    border-radius: 8px; padding: 12px 18px; margin: 10px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .error-block .err-icon {
+    background: var(--red); color: #fff; font-size: 9px; font-weight: 800;
+    padding: 3px 7px; border-radius: 4px; letter-spacing: 0.5px; flex-shrink: 0;
+  }
+  .error-block .err-text {
+    font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: var(--red);
+  }
+  .compare-grid {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin: 16px 0;
+  }
+  .compare-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 18px; position: relative; overflow: hidden;
+  }
+  .compare-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .compare-card.c1::before { background: var(--green); }
+  .compare-card.c2::before { background: var(--accent); }
+  .compare-card.c3::before { background: var(--red); }
+  .compare-card h4 {
+    font-size: 13px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.5px;
+  }
+  .compare-card.c1 h4 { color: var(--green); }
+  .compare-card.c2 h4 { color: var(--accent); }
+  .compare-card.c3 h4 { color: var(--red); }
+  .compare-card p { font-size: 13px; line-height: 1.65; }
+  .compare-card code {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    background: rgba(255,255,255,0.05); padding: 1px 5px; border-radius: 3px;
+  }
+  .divider { border: none; border-top: 1px dashed var(--border); margin: 32px 0; }
+  .nav-footer {
+    margin-top: 48px; padding-top: 24px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .nav-footer span { font-size: 14px; }
+  .diagram {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px; margin: 16px 0; text-align: center;
+  }
+  @media (max-width: 700px) {
+    .compare-grid { grid-template-columns: 1fr; }
+    .header h1 { font-size: 26px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="tag">Topic 3 of 19</div>
+  <h1>Hoisting in JavaScript</h1>
+  <p>Why you can use variables and functions before declaring them — and why it sometimes breaks</p>
+</div>
+
+<!-- ─── CORE CONCEPTS ─── -->
+<div class="section-title">Core Concepts</div>
+
+<div class="concept-card">
+  <h3>What is Hoisting?</h3>
+  <p><strong>Hoisting</strong> is JavaScript's default behavior of moving <em>declarations</em> (not assignments) to the top of their scope during the <strong>Memory Creation Phase</strong> of the Execution Context. This means you can access variables and call functions <em>before</em> the line where they are written in code.</p>
+  <p style="margin-top:8px;">Hoisting is NOT a physical movement of code. It's a consequence of how the JS engine allocates memory in Phase 1 before executing any code in Phase 2.</p>
+</div>
+
+<!-- Comparison grid -->
+<div class="compare-grid">
+  <div class="compare-card c1">
+    <h4>Function Declaration</h4>
+    <p>Hoisted with <strong>entire code</strong>. Can be called before declaration.</p>
+    <p style="margin-top:6px;"><code>function foo() {}</code></p>
+    <p style="margin-top:6px; color: #22c55e;">✓ Fully hoisted</p>
+  </div>
+  <div class="compare-card c2">
+    <h4>var Variable</h4>
+    <p>Hoisted with value <code>undefined</code>. Accessing before assignment gives <code>undefined</code>.</p>
+    <p style="margin-top:6px;"><code>var x = 10;</code></p>
+    <p style="margin-top:6px; color: #f59e0b;">⚠ Partially hoisted</p>
+  </div>
+  <div class="compare-card c3">
+    <h4>Function Expression</h4>
+    <p>Treated as a <strong>variable</strong>. Hoisted as <code>undefined</code>. Calling before assignment → <strong>TypeError</strong>.</p>
+    <p style="margin-top:6px;"><code>var fn = function() {}</code></p>
+    <p style="margin-top:6px; color: #ef4444;">✗ Not usable before</p>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>How Hoisting Works Under the Hood</h3>
+  <p>Remember the two phases from Topic 2:</p>
+  <ol>
+    <li><strong>Memory Creation Phase:</strong> JS scans the code, finds all declarations, and allocates memory. Variables declared with <code>var</code> get <span class="highlight">undefined</span>. Function declarations get their <span class="highlight">complete function body</span>.</li>
+    <li><strong>Code Execution Phase:</strong> JS runs line by line. When it reaches <code>var x = 7</code>, it replaces <code>undefined</code> with <code>7</code>. Function declarations are skipped (already stored).</li>
+  </ol>
+  <p style="margin-top:10px;">This is why <code>console.log(x)</code> before <code>var x = 7</code> gives <code>undefined</code> (not an error) — memory for <code>x</code> was already allocated in Phase 1.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Classic Example — The Proof</h3>
+  <div class="code-wrap">
+    <div class="code-label">JavaScript</div>
+    <pre><span class="fn">getName</span>();          <span class="cm">// "Namaste Javascript"  ✓ works!</span>
+<span class="fn">console</span>.<span class="fn">log</span>(x);      <span class="cm">// undefined             ✓ no error, just undefined</span>
+
+<span class="kw">var</span> x = <span class="num">7</span>;
+<span class="kw">function</span> <span class="fn">getName</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste Javascript"</span>);
+}</pre>
+  </div>
+  <p style="margin-top:10px;">In most other languages, calling <code>getName()</code> or accessing <code>x</code> before they're defined would crash the program. In JS, hoisting makes this possible (though the behavior is different for var vs functions).</p>
+</div>
+
+<div class="key-box">
+  <strong>Key Rule:</strong> Only <em>declarations</em> are hoisted, not <em>initializations</em>. <code>var x = 7</code> is split into <code>var x</code> (hoisted as undefined) and <code>x = 7</code> (happens during execution).
+</div>
+
+<div class="concept-card">
+  <h3>Function Expression vs Function Declaration — Hoisting Difference</h3>
+  <div class="code-wrap">
+    <div class="code-label">Function Declaration — Fully Hoisted</div>
+    <pre><span class="fn">greet</span>();  <span class="cm">// "Hello!" — works because entire function is hoisted</span>
+
+<span class="kw">function</span> <span class="fn">greet</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello!"</span>);
+}</pre>
+  </div>
+  <div class="code-wrap">
+    <div class="code-label">Function Expression — Hoisted as undefined</div>
+    <pre><span class="fn">greet</span>();  <span class="cm">// TypeError: greet is not a function</span>
+
+<span class="kw">var</span> greet = <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hello!"</span>);
+};</pre>
+  </div>
+  <p style="margin-top:10px;"><strong>Why TypeError?</strong> During memory creation, <code>greet</code> is a <code>var</code> so it's stored as <code>undefined</code>. Calling <code>undefined()</code> throws TypeError — you're trying to invoke something that is not a function.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Arrow Functions &amp; Hoisting</h3>
+  <p>Arrow functions behave <strong>exactly like function expressions</strong> during hoisting. They are variables assigned a function value, so they are hoisted as <code>undefined</code>.</p>
+  <div class="code-wrap">
+    <div class="code-label">Arrow Function — Same behavior as function expression</div>
+    <pre><span class="fn">sayHi</span>();  <span class="cm">// TypeError: sayHi is not a function</span>
+
+<span class="kw">var</span> sayHi = () =&gt; {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Hi!"</span>);
+};</pre>
+  </div>
+  <p style="margin-top:8px;">If declared with <code>let</code> or <code>const</code> instead, it would throw a <strong>ReferenceError</strong> (Temporal Dead Zone) instead of TypeError. More on this in Topic 8.</p>
+</div>
+
+<div class="concept-card">
+  <h3>Hoisting with let &amp; const (Preview)</h3>
+  <p><code>let</code> and <code>const</code> <strong>are hoisted</strong>, but they live in the <strong>Temporal Dead Zone (TDZ)</strong> — you get a <code>ReferenceError</code> if you try to access them before their declaration line. This is covered in depth in Topic 8, but it's important to know for hoisting questions.</p>
+  <div class="code-wrap">
+    <div class="code-label">let/const — ReferenceError, not undefined</div>
+    <pre><span class="fn">console</span>.<span class="fn">log</span>(a);  <span class="cm">// ReferenceError: Cannot access 'a' before initialization</span>
+<span class="kw">let</span> a = <span class="num">10</span>;
+
+<span class="fn">console</span>.<span class="fn">log</span>(b);  <span class="cm">// ReferenceError: Cannot access 'b' before initialization</span>
+<span class="kw">const</span> b = <span class="num">20</span>;</pre>
+  </div>
+</div>
+
+<div class="concept-card">
+  <h3>Hoisting with Class Declarations</h3>
+  <p>Classes are hoisted like <code>let</code>/<code>const</code> — they exist in the TDZ. Accessing before declaration throws a <code>ReferenceError</code>.</p>
+  <div class="code-wrap">
+    <div class="code-label">Class — also in TDZ</div>
+    <pre><span class="kw">const</span> obj = <span class="kw">new</span> <span class="fn">Animal</span>(); <span class="cm">// ReferenceError: Cannot access 'Animal' before initialization</span>
+
+<span class="kw">class</span> <span class="fn">Animal</span> {
+  <span class="fn">constructor</span>(name) {
+    <span class="kw">this</span>.name = name;
+  }
+}</pre>
+  </div>
+</div>
+
+<div class="warn-box">
+  <strong>Common Confusion:</strong> <code>undefined</code> (var before assignment) vs <code>ReferenceError: x is not defined</code> (variable never declared at all) vs <code>ReferenceError: Cannot access before initialization</code> (let/const in TDZ). These are three <em>different</em> behaviors.
+</div>
+
+<hr class="divider">
+
+<!-- ─── HOISTING SUMMARY DIAGRAM ─── -->
+<div class="section-title">Hoisting Behavior Summary</div>
+
+<div class="diagram">
+  <svg viewBox="0 0 700 330" xmlns="http://www.w3.org/2000/svg" font-family="Outfit, sans-serif">
+    <!-- Table headers -->
+    <rect x="20" y="15" width="660" height="40" rx="8" fill="#1a1f36"/>
+    <text x="120" y="41" text-anchor="middle" font-size="12" font-weight="700" fill="#f59e0b">Declaration Type</text>
+    <text x="310" y="41" text-anchor="middle" font-size="12" font-weight="700" fill="#f59e0b">Hoisted Value</text>
+    <text x="520" y="41" text-anchor="middle" font-size="12" font-weight="700" fill="#f59e0b">Access Before Declaration</text>
+
+    <!-- Row 1: var -->
+    <rect x="20" y="62" width="660" height="42" rx="4" fill="#141829" stroke="#2a2f4a" stroke-width="0.5"/>
+    <text x="120" y="88" text-anchor="middle" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">var x = 10</text>
+    <text x="310" y="88" text-anchor="middle" font-size="12" fill="#f59e0b" font-family="JetBrains Mono, monospace">undefined</text>
+    <text x="520" y="88" text-anchor="middle" font-size="12" fill="#22c55e">✓ Returns undefined</text>
+
+    <!-- Row 2: function declaration -->
+    <rect x="20" y="110" width="660" height="42" rx="4" fill="#141829" stroke="#2a2f4a" stroke-width="0.5"/>
+    <text x="120" y="136" text-anchor="middle" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">function foo(){}</text>
+    <text x="310" y="136" text-anchor="middle" font-size="12" fill="#22c55e" font-family="JetBrains Mono, monospace">Entire function</text>
+    <text x="520" y="136" text-anchor="middle" font-size="12" fill="#22c55e">✓ Fully works</text>
+
+    <!-- Row 3: function expression (var) -->
+    <rect x="20" y="158" width="660" height="42" rx="4" fill="#141829" stroke="#2a2f4a" stroke-width="0.5"/>
+    <text x="120" y="184" text-anchor="middle" font-size="11" fill="#cdd6f4" font-family="JetBrains Mono, monospace">var fn = function(){}</text>
+    <text x="310" y="184" text-anchor="middle" font-size="12" fill="#f59e0b" font-family="JetBrains Mono, monospace">undefined</text>
+    <text x="520" y="184" text-anchor="middle" font-size="12" fill="#ef4444">✗ TypeError</text>
+
+    <!-- Row 4: arrow function (var) -->
+    <rect x="20" y="206" width="660" height="42" rx="4" fill="#141829" stroke="#2a2f4a" stroke-width="0.5"/>
+    <text x="120" y="232" text-anchor="middle" font-size="11" fill="#cdd6f4" font-family="JetBrains Mono, monospace">var fn = () =&gt; {}</text>
+    <text x="310" y="232" text-anchor="middle" font-size="12" fill="#f59e0b" font-family="JetBrains Mono, monospace">undefined</text>
+    <text x="520" y="232" text-anchor="middle" font-size="12" fill="#ef4444">✗ TypeError</text>
+
+    <!-- Row 5: let/const -->
+    <rect x="20" y="254" width="660" height="42" rx="4" fill="#141829" stroke="#2a2f4a" stroke-width="0.5"/>
+    <text x="120" y="280" text-anchor="middle" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">let / const</text>
+    <text x="310" y="280" text-anchor="middle" font-size="12" fill="#a78bfa" font-family="JetBrains Mono, monospace">TDZ (hoisted)</text>
+    <text x="520" y="280" text-anchor="middle" font-size="12" fill="#ef4444">✗ ReferenceError</text>
+
+    <!-- Row 6: class -->
+    <rect x="20" y="302" width="660" height="42" rx="4" fill="#141829" stroke="#2a2f4a" stroke-width="0.5"/>
+    <text x="120" y="328" text-anchor="middle" font-size="12" fill="#cdd6f4" font-family="JetBrains Mono, monospace">class MyClass{}</text>
+    <text x="310" y="328" text-anchor="middle" font-size="12" fill="#a78bfa" font-family="JetBrains Mono, monospace">TDZ (hoisted)</text>
+    <text x="520" y="328" text-anchor="middle" font-size="12" fill="#ef4444">✗ ReferenceError</text>
+  </svg>
+</div>
+
+<hr class="divider">
+
+<!-- ─── INTERVIEW QUESTIONS ─── -->
+<div class="section-title">Interview Questions &amp; Answers</div>
+
+<!-- Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q1</span>
+    <span class="q-text">What is Hoisting in JavaScript?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Hoisting is JavaScript's mechanism of moving <em>declarations</em> to the top of their scope during the memory creation phase of the execution context. Variables declared with <code>var</code> are initialized as <code>undefined</code>, while function declarations are stored with their complete function body. This allows you to use variables and call functions before their actual line of declaration in code. It's not a physical movement — it's a result of how the JS engine allocates memory before execution.</p>
+  </div>
+</div>
+
+<!-- Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q2</span>
+    <span class="q-text">Why does <code>console.log(x)</code> before <code>var x = 7</code> print <code>undefined</code> and not throw an error?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Because during the memory creation phase, the JS engine scans the code and finds <code>var x</code>. It allocates memory for <code>x</code> and initializes it with the placeholder value <code>undefined</code>. When the code execution phase begins and reaches <code>console.log(x)</code>, memory for <code>x</code> already exists with the value <code>undefined</code> — so it prints that. Later, when execution reaches <code>x = 7</code>, the value is updated from <code>undefined</code> to <code>7</code>.</p>
+  </div>
+</div>
+
+<!-- Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q3</span>
+    <span class="q-text">What is the difference between hoisting of function declarations and function expressions?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>Function declarations</strong> are fully hoisted — their entire code is stored in memory during Phase 1. You can call them before the line where they appear.</p>
+    <p><strong>Function expressions</strong> (whether using <code>function</code> keyword or arrow syntax) are treated as variables. If declared with <code>var</code>, they are hoisted as <code>undefined</code>. Calling them before assignment throws <strong>TypeError: is not a function</strong> because you're trying to invoke <code>undefined</code>. If declared with <code>let</code>/<code>const</code>, they throw <strong>ReferenceError</strong> due to the Temporal Dead Zone.</p>
+  </div>
+</div>
+
+<!-- Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q4</span>
+    <span class="q-text">What is the difference between <code>TypeError</code> and <code>ReferenceError</code> in the context of hoisting?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p><strong>TypeError:</strong> The variable exists in memory (hoisted), but its current value doesn't support the operation. For example, calling <code>undefined()</code> when a function expression hasn't been assigned yet. The JS engine says "I found this variable, but it's not a function."</p>
+    <p><strong>ReferenceError:</strong> The variable either doesn't exist at all (<code>x is not defined</code>) or exists but is in the Temporal Dead Zone (<code>Cannot access 'x' before initialization</code> for let/const). The JS engine says "I can't find this variable in any accessible scope."</p>
+  </div>
+</div>
+
+<!-- Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q5</span>
+    <span class="q-text">Does hoisting actually move code to the top of the file?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>No. Hoisting is <strong>not a physical movement</strong> of code. The source code stays exactly where it is. What actually happens is that the JS engine does a <em>first pass</em> (memory creation phase) where it scans for declarations and allocates memory for them before executing any code. The term "hoisting" is just a conceptual way to explain this behavior — as if declarations were lifted to the top.</p>
+  </div>
+</div>
+
+<!-- Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q6</span>
+    <span class="q-text">Are arrow functions hoisted?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Arrow functions are <strong>never function declarations</strong> — they are always expressions assigned to a variable. So they follow the hoisting rules of whatever keyword is used to declare the variable: with <code>var</code> they're hoisted as <code>undefined</code> (TypeError if called); with <code>let</code>/<code>const</code> they're in the TDZ (ReferenceError if accessed). The arrow function itself is never hoisted as a complete function.</p>
+  </div>
+</div>
+
+<!-- Q7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q7</span>
+    <span class="q-text">What happens when a variable and a function have the same name?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>During the memory creation phase, the variable is first stored as <code>undefined</code>, then the function declaration <strong>overwrites</strong> it with the function body (function declarations take priority over variable declarations during hoisting). During execution, if a value is assigned to the variable, it overwrites the function. This can lead to confusing behavior:</p>
+    <div class="code-wrap">
+      <div class="code-label">Example</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> a); <span class="cm">// "function" — function overwrote var in memory phase</span>
+<span class="kw">var</span> a = <span class="num">10</span>;
+<span class="kw">function</span> <span class="fn">a</span>() { <span class="kw">return</span> <span class="num">20</span>; }
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> a); <span class="cm">// "number" — var assignment overwrote function</span></pre>
+    </div>
+  </div>
+</div>
+
+<!-- Q8 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q8</span>
+    <span class="q-text">What is the output of <code>console.log(getName)</code> (not calling it, just logging)?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(getName);
+
+<span class="kw">function</span> <span class="fn">getName</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste JavaScript"</span>);
+}</pre>
+    </div>
+    <p>It prints the <strong>entire function code</strong>: <code>ƒ getName() { console.log("Namaste JavaScript"); }</code>. This proves that during hoisting, the complete function body is stored in memory, not just <code>undefined</code>.</p>
+  </div>
+</div>
+
+<!-- Q9 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q9</span>
+    <span class="q-text">Does hoisting happen inside functions too, or only at the global level?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>Hoisting happens in <strong>every execution context</strong> — both global and function-level. When a function is invoked, a new execution context is created with its own memory creation phase. So variables declared with <code>var</code> inside a function are hoisted to the top of <em>that function's scope</em>, and nested function declarations inside are also fully hoisted within that function's context.</p>
+    <div class="code-wrap">
+      <div class="code-label">Hoisting inside a function</div>
+      <pre><span class="kw">function</span> <span class="fn">outer</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// undefined (hoisted within outer's scope)</span>
+  <span class="fn">inner</span>();         <span class="cm">// "inner called" (function hoisted within outer)</span>
+  <span class="kw">var</span> x = <span class="num">5</span>;
+  <span class="kw">function</span> <span class="fn">inner</span>() { <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"inner called"</span>); }
+}
+<span class="fn">outer</span>();</pre>
+    </div>
+  </div>
+</div>
+
+<!-- Q10 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">Q10</span>
+    <span class="q-text">What happens if a variable is used but never declared anywhere in the code?</span>
+  </div>
+  <div class="qa-a">
+    <div class="a-label">Answer</div>
+    <p>If a variable is never declared (not with <code>var</code>, <code>let</code>, or <code>const</code>) and you try to access it, JavaScript throws <code>ReferenceError: x is not defined</code>. This is different from <code>undefined</code> — "not defined" means the variable was never declared at all, while <code>undefined</code> means it was declared but no value was assigned yet.</p>
+    <div class="code-wrap">
+      <div class="code-label">Example</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(x); <span class="cm">// ReferenceError: x is not defined</span>
+<span class="cm">// No var x, let x, or const x anywhere in the code</span></pre>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── INPUT/OUTPUT QUESTIONS ─── -->
+<div class="section-title">Input/Output Interview Questions</div>
+
+<!-- IO Q1 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 1</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">getName</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(x);
+
+<span class="kw">var</span> x = <span class="num">7</span>;
+<span class="kw">function</span> <span class="fn">getName</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste Javascript"</span>);
+}</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"Namaste Javascript" → undefined</span>
+    </div>
+    <p style="margin-top:10px;"><code>getName</code> is a function declaration → fully hoisted, so the call works. <code>x</code> is declared with <code>var</code> → hoisted as <code>undefined</code>, so it logs <code>undefined</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q2 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 2</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">getName</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(getName);
+
+<span class="kw">var</span> getName = <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"Namaste Javascript"</span>);
+}</pre>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">ERROR</span>
+      <span class="err-text">TypeError: getName is not a function</span>
+    </div>
+    <p style="margin-top:10px;">This is a <strong>function expression</strong>, not a declaration. <code>getName</code> is a <code>var</code> so it's hoisted as <code>undefined</code>. Calling <code>undefined()</code> throws TypeError. Line 2 never executes because the error stops execution.</p>
+  </div>
+</div>
+
+<!-- IO Q3 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 3</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(a);
+<span class="fn">console</span>.<span class="fn">log</span>(b);
+
+<span class="kw">var</span> a = <span class="num">10</span>;
+<span class="kw">let</span> b = <span class="num">20</span>;</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 1</span>
+      <span class="out-text">undefined</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 2</span>
+      <span class="err-text">ReferenceError: Cannot access 'b' before initialization</span>
+    </div>
+    <p style="margin-top:10px;"><code>var a</code> → hoisted as undefined. <code>let b</code> → hoisted but in TDZ, so accessing it throws ReferenceError. <strong>Wait</strong> — actually line 1 prints <code>undefined</code> successfully, but line 2 crashes. So the output is: <code>undefined</code> then error.</p>
+  </div>
+</div>
+
+<!-- IO Q4 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 4</span>
+    <span class="q-text">What will be the output? (Tricky!)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">1</span>;
+<span class="kw">function</span> <span class="fn">x</span>() {}
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"number"</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Memory Phase:</strong> <code>x</code> is first set to <code>undefined</code> (var), then the function declaration overwrites it with the function body. <strong>Execution Phase:</strong> <code>x = 1</code> runs and overwrites the function with the number <code>1</code>. The function declaration line does nothing in Phase 2 (already handled). So <code>typeof x</code> is <code>"number"</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q5 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 5</span>
+    <span class="q-text">What will be the output? (Tricky!)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> x);
+<span class="kw">function</span> <span class="fn">x</span>() {}
+<span class="kw">var</span> x = <span class="num">1</span>;
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> x);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"function" → "number"</span>
+    </div>
+    <p style="margin-top:10px;"><strong>Memory Phase:</strong> <code>var x</code> hoists as <code>undefined</code>, then <code>function x</code> overwrites it with the function body. <strong>Execution Phase:</strong> Line 1 — <code>typeof x</code> is <code>"function"</code>. Line 2 — function declaration, already processed, skip. Line 3 — <code>x = 1</code>, now x is a number. Line 4 — <code>typeof x</code> is <code>"number"</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q6 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 6</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> a = <span class="num">1</span>;
+<span class="kw">function</span> <span class="fn">b</span>() {
+  a = <span class="num">10</span>;
+  <span class="kw">return</span>;
+  <span class="kw">function</span> <span class="fn">a</span>() {}
+}
+<span class="fn">b</span>();
+<span class="fn">console</span>.<span class="fn">log</span>(a);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">1</span>
+    </div>
+    <p style="margin-top:10px;">This is a classic tricky question! Inside <code>b()</code>, there is a function declaration <code>function a() {}</code>. Even though it's after <code>return</code>, <strong>function declarations are hoisted during memory phase</strong> regardless of position. So inside b's scope, <code>a</code> is a local variable (the hoisted function). When <code>a = 10</code> runs, it modifies the <strong>local</strong> <code>a</code>, not the global one. The global <code>a</code> remains <code>1</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q7 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 7</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">foo</span>();
+<span class="fn">bar</span>();
+
+<span class="kw">function</span> <span class="fn">foo</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"foo"</span>);
+}
+
+<span class="kw">var</span> bar = <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"bar"</span>);
+}</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 1</span>
+      <span class="out-text">"foo"</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 2</span>
+      <span class="err-text">TypeError: bar is not a function</span>
+    </div>
+    <p style="margin-top:10px;"><code>foo</code> is a function declaration → fully hoisted → call works. <code>bar</code> is a function expression with <code>var</code> → hoisted as <code>undefined</code> → calling <code>undefined()</code> throws TypeError. "bar" is never printed.</p>
+  </div>
+</div>
+
+<!-- IO Q8 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 8</span>
+    <span class="q-text">What will be the output?</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">foo</span>());
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="fn">bar</span>());
+
+<span class="kw">function</span> <span class="fn">foo</span>() {
+  <span class="kw">return</span> <span class="str">"hello"</span>;
+}
+
+<span class="kw">function</span> <span class="fn">bar</span>() {
+  <span class="kw">return</span> <span class="str">"world"</span>;
+}</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"hello" → "world"</span>
+    </div>
+    <p style="margin-top:10px;">Both are function declarations → both fully hoisted. <code>foo()</code> returns <code>"hello"</code>, <code>bar()</code> returns <code>"world"</code>. Both log successfully.</p>
+  </div>
+</div>
+
+<!-- IO Q9 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 9</span>
+    <span class="q-text">What will be the output? (Tricky — duplicate function declarations)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">foo</span>();
+
+<span class="kw">function</span> <span class="fn">foo</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"first"</span>);
+}
+
+<span class="kw">function</span> <span class="fn">foo</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"second"</span>);
+}
+
+<span class="fn">foo</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"second" → "second"</span>
+    </div>
+    <p style="margin-top:10px;">During memory creation phase, the first <code>foo</code> function is stored, then the second one <strong>overwrites</strong> it. By the time execution starts, only the second definition exists. Both calls at line 1 and the end print <code>"second"</code>.</p>
+  </div>
+</div>
+
+<!-- IO Q10 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 10</span>
+    <span class="q-text">What will be the output? (Advanced)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> x = <span class="num">21</span>;
+<span class="kw">var</span> <span class="fn">fun</span> = <span class="kw">function</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(x);
+  <span class="kw">var</span> x = <span class="num">20</span>;
+};
+<span class="fn">fun</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">undefined</span>
+    </div>
+    <p style="margin-top:10px;">When <code>fun()</code> is called, its own execution context is created. In <strong>fun's memory phase</strong>, it finds <code>var x = 20</code> and hoists <code>x</code> as <code>undefined</code> within the function scope. So <code>console.log(x)</code> accesses the <strong>local</strong> <code>x</code> (which is <code>undefined</code>), NOT the global <code>x = 21</code>. The local declaration <em>shadows</em> the global one. This is hoisting inside a function scope.</p>
+  </div>
+</div>
+
+<!-- IO Q11 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 11</span>
+    <span class="q-text">What will be the output? (Named function expression)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="kw">var</span> b = <span class="kw">function</span> <span class="fn">xyz</span>() {
+  <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"b called"</span>);
+};
+<span class="fn">b</span>();
+<span class="fn">xyz</span>();</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">LINE 4</span>
+      <span class="out-text">"b called"</span>
+    </div>
+    <div class="error-block">
+      <span class="err-icon">LINE 5</span>
+      <span class="err-text">ReferenceError: xyz is not defined</span>
+    </div>
+    <p style="margin-top:10px;"><code>xyz</code> is a <strong>named function expression</strong>. The name <code>xyz</code> is NOT created in the outer scope — it's only accessible inside the function body itself (useful for recursion). In the outer scope, only <code>b</code> holds the reference. So <code>b()</code> works, but <code>xyz()</code> throws ReferenceError.</p>
+  </div>
+</div>
+
+<!-- IO Q12 -->
+<div class="qa-block">
+  <div class="qa-q">
+    <span class="q-badge">I/O 12</span>
+    <span class="q-text">What will be the output? (Conditional function declaration)</span>
+  </div>
+  <div class="qa-a">
+    <div class="code-wrap">
+      <div class="code-label">JavaScript</div>
+      <pre><span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> foo);
+
+<span class="kw">if</span> (<span class="kw">true</span>) {
+  <span class="kw">function</span> <span class="fn">foo</span>() {
+    <span class="fn">console</span>.<span class="fn">log</span>(<span class="str">"inside"</span>);
+  }
+}
+
+<span class="fn">console</span>.<span class="fn">log</span>(<span class="kw">typeof</span> foo);</pre>
+    </div>
+    <div class="output-block">
+      <span class="out-icon">OUTPUT</span>
+      <span class="out-text">"undefined" → "function"</span>
+    </div>
+    <p style="margin-top:10px;">In modern JS (strict mode or modern browsers), function declarations inside blocks are <strong>block-scoped</strong>. Before the block runs, <code>foo</code> is <code>undefined</code> in the outer scope. After the block executes, <code>foo</code> becomes available. Note: This behavior can vary across environments and strict vs non-strict mode — a common interview gotcha.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── QUICK REVISION ─── -->
+<div class="section-title">Quick Revision — Cheat Sheet</div>
+
+<div class="concept-card">
+  <h3>Remember These Points</h3>
+  <ul>
+    <li>Hoisting = memory allocation in Phase 1, NOT physical code movement</li>
+    <li><code>var</code> → hoisted as <span class="highlight">undefined</span></li>
+    <li>Function declarations → hoisted with <span class="highlight">entire code</span></li>
+    <li>Function expressions &amp; arrow functions → hoisted as <span class="highlight">undefined</span> (if var) or TDZ (if let/const)</li>
+    <li><code>let</code> / <code>const</code> / <code>class</code> → hoisted but in <strong>Temporal Dead Zone</strong></li>
+    <li>Only <strong>declarations</strong> are hoisted, not initializations</li>
+    <li>Accessing undeclared variable → <code>ReferenceError: x is not defined</code></li>
+    <li>Calling <code>undefined()</code> → <code>TypeError: is not a function</code></li>
+    <li>Accessing let/const in TDZ → <code>ReferenceError: Cannot access before initialization</code></li>
+    <li>If var and function have same name → function wins during hoisting, but var assignment wins during execution</li>
+    <li>Duplicate function declarations → last one wins</li>
+    <li>Named function expressions → name only accessible inside the function body, not outside</li>
+    <li>Hoisting happens in <strong>every</strong> execution context, not just global</li>
+    <li>Local <code>var</code> inside a function shadows global variable even before assignment (logs <code>undefined</code>, not the global value)</li>
+  </ul>
+</div>
+
+<!-- Footer -->
+<div class="nav-footer">
+  <span style="color: var(--accent); font-weight: 600;">← Topic 2: Call Stack</span>
+  <span style="color: var(--accent); font-weight: 600;">Next → Topic 4: Functions &amp; Variable Environments</span>
+</div>
+
+</body>
+</html>

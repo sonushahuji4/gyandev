@@ -1,0 +1,54 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="var vs let vs const" subtitle="The one-card comparison.">
+- **`var`** — function scope, hoisted as `undefined`, on `window`, re-declare ✓, re-assign ✓.
+- **`let`** — block scope, hoisted into **TDZ**, Script scope (not on window), re-declare ✗, re-assign ✓.
+- **`const`** — block scope, hoisted into TDZ, Script scope, re-declare ✗, re-assign ✗, must init at declaration.
+- Rule of thumb: **`const` > `let` > avoid `var`**.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="The Temporal Dead Zone" subtitle="Hoisted, but unreachable.">
+- TDZ = period from scope entry until the `let`/`const` declaration line runs.
+- Any access inside TDZ throws `ReferenceError: Cannot access 'x' before initialization`.
+- The message itself proves `let`/`const` ARE hoisted — if not, error would say *is not defined*.
+- Even `typeof x` throws in TDZ — unlike undeclared variables, where `typeof` safely returns `"undefined"`.
+- **Shrink TDZ to zero:** declare + initialize at the top of each scope.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Memory spaces" subtitle="Where each declaration actually lives.">
+- **Global** — where top-level `var` lives, attached to `window`.
+- **Script** — where top-level `let` / `const` live, NOT on `window`.
+- **Block** — where block-level `let` / `const` live; destroyed when the `{ }` closes.
+- **Local** — function's own memory. DevTools' Scope panel shows all four separately.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="const is not immutable" subtitle="The binding is frozen, not the value.">
+- `const` prevents **reassigning the binding**, not mutating the object.
+- `const obj = { a: 1 }; obj.a = 2;` → fine. `obj = {}` → TypeError.
+- `const arr = [1,2]; arr.push(3);` → fine. `arr = [4]` → TypeError.
+- For true immutability use `Object.freeze()` — and remember it's shallow.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Block scope & shadowing" subtitle="Why var and let behave so differently.">
+- `let` / `const` in `{ }` create a **new** Block-scope binding — outer variable untouched.
+- `var` in `{ }` is the **same** variable as outer — block assignment overwrites global memory.
+- **Illegal shadowing:** `let a = …; { var a = …; }` → SyntaxError (var tries to live in the same scope).
+- **Legal:** `var` shadowing `let` *inside a function* (function scope boundary isolates it).
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Three error types" subtitle="Which error fires at which stage.">
+- **SyntaxError** — code never runs. Duplicate `let`, missing `const` initializer.
+- **ReferenceError** — runtime. TDZ access, or reading an undeclared identifier.
+- **TypeError** — runtime. Reassigning a `const`, calling `undefined()`.
+- `var` + `setTimeout` loop → all callbacks see final `i`; swap to `let` → each iteration gets its own.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **T.D.Z.** — **T**hree declarations, **D**ifferent scopes, **Z**ero
+  access in the dead zone. Or remember the three errors in order:
+  **S**yntax (code won't run) → **R**eference (wrong name) → **T**ype
+  (wrong use).
+</Callout>

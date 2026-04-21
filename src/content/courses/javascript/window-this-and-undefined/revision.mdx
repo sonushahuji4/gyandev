@@ -1,0 +1,53 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="The shortest JS program" subtitle="An empty file still does a lot.">
+- Even an empty file creates the **Global Execution Context**.
+- The `window` object is created — the global object in browsers.
+- `this` is created and points to `window` at the global level.
+- Memory space + execution thread are set up, ready for your code.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="window & the global scope" subtitle="Where var lives, where let/const don't.">
+- `var x = 10` at global scope → attached to `window`. `window.x === 10`.
+- `let` / `const` at global scope → **Script scope**, NOT on `window`.
+- Web APIs (`console.log`, `setTimeout`, `alert`, `fetch`) are properties of `window` — they're not part of JS itself.
+- `globalThis` (ES2020) = universal global object: `window` in browser, `global` in Node.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="this — the eight contexts" subtitle="How a function is called decides this.">
+- **Global** → `this === window` (browser) or `global` (Node).
+- **Regular function standalone** → `window` (non-strict) or `undefined` (strict).
+- **Object method** → the owning object.
+- **Arrow function** → **no own this** — inherited from the enclosing lexical scope.
+- **Constructor (new)** → the new object. **Event handler** → the DOM element. **call/apply/bind** → whatever you pass.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="undefined vs not defined" subtitle="A value vs an error.">
+- **`undefined`** — declared, no value yet. Memory allocated. It's a type. `typeof undefined === "undefined"`.
+- **`not defined`** — never declared. No memory. Access → `ReferenceError: x is not defined`.
+- Three states: *declared + assigned* (value), *declared only* (`undefined`), *never declared* (error).
+- `typeof` is safe on undeclared variables — still returns `"undefined"`, no error.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="undefined vs null" subtitle="Engine default vs programmer intent.">
+- `undefined` = JS hasn't assigned a value. `null` = programmer *chose* no value.
+- `typeof null` → `"object"` — a historical bug, preserved for back-compat.
+- `undefined == null` → **true** (loose). `undefined === null` → **false** (types differ).
+- **Never assign `undefined` manually** — use `null` when you mean "empty."
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Falsy & truthy" subtitle="The 8 falsy values — and the traps.">
+- **Falsy:** `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`.
+- **Truthy traps:** `"0"`, `"false"`, `[]` (empty array), `{}` (empty object) are all **truthy**.
+- Missing object property → `undefined` (no error). Missing function arg → `undefined`.
+- `void 0` → a reliable way to get `undefined` if something has shadowed it.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **W**indow, **T**his, **U**ndefined → **W-T-U**. *Window* hosts vars,
+  *This* follows the call, *Undefined* is the engine's silence — while
+  *not defined* is its shout.
+</Callout>

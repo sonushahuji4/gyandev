@@ -1,0 +1,46 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  The scope chain is a single reference pointer per scope — from the
+  innermost function outward to global, then `null`. This diagram traces
+  the lookup for an identifier inside nested functions, visiting each
+  lexical environment until it finds the value or runs out of chain. The
+  legend below decodes each hop.
+</Callout>
+
+## The Scope Chain — variable lookup walks outward
+
+```mermaid
+flowchart TD
+    S["<b>i · Need variable <code>x</code></b><br/>lookup starts in current EC"]
+      --> C{"<b>ii</b> · In <b>local memory</b>?"}
+    C -->|"Yes"| H["<b>vi</b> · Return value (or <code>undefined</code>)"]
+    C -->|"No"| P1{"<b>iii</b> · Outer parent's memory?"}
+    P1 -->|"Yes"| H
+    P1 -->|"No"| P2{"<b>iv</b> · Grandparent's memory? ...up the chain"}
+    P2 -->|"Yes"| H
+    P2 -->|"No"| G{"<b>v</b> · Found in Global scope?"}
+    G -->|"Yes"| H
+    G -->|"No — outer ref is null"| E["<b>vii</b> · ReferenceError<br/>x is not defined"]
+
+    classDef ok   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef warn fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef err  fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    classDef node fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    class S,C,P1,P2,G node
+    class H ok
+    class E err
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Lookup starts',        description: 'Any identifier reference triggers a lookup inside the currently executing function\'s lexical environment.' },
+  { numeral: 'ii',  name: 'Local memory',         description: 'First check the function\'s own variables and parameters. Found here → stop, return the value.' },
+  { numeral: 'iii', name: 'Parent\'s environment', description: 'Follow the outer environment reference to the function where this one was *lexically written* — not where it was called.' },
+  { numeral: 'iv',  name: 'Climb the chain',      description: 'Repeat outward through each ancestor lexical environment. Inner → outer → grandparent → ... — one hop per level.' },
+  { numeral: 'v',   name: 'Global scope',         description: 'The end of every chain. Global\'s outer reference is `null`. If it\'s not here, it isn\'t anywhere.' },
+  { numeral: 'vi',  name: 'Hit',                  description: 'Variable found. Stops immediately at the first match — outer occurrences are shadowed.' },
+  { numeral: 'vii', name: 'Miss',                 description: 'Chain exhausted with no match. `ReferenceError: x is not defined` is thrown.' },
+]} />
