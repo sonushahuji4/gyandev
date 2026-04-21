@@ -2,11 +2,13 @@
 /**
  * HomeHero — H1 + tagline + CTAs. Owns the document's single H1.
  *
- * Per home.md Step 6: CTA target is hardcoded to `/courses/nodejs` (roadmap
- * Q#29 — Phase 2 extracts `featuredCourseSlug` into a `site.yml`-style config).
+ * Design direction (PR-Sprint-7 DevNotes revamp): minimalist, typography-
+ * forward hero on a warm near-black background with a serif-italic accent word.
+ * `Instrument Serif` is loaded only on this page via `includeSerif={true}` on
+ * PageShell (ratification R2); all other text remains Inter.
  *
- * Serif display typeface (Instrument Serif) is enabled only on this page via
- * `includeSerif={true}` on PageShell, per ratification R2.
+ * The primary CTA target is hardcoded to `/courses/nodejs` — roadmap Q#29
+ * (Phase 2 extracts `featuredCourseSlug` into a site-level config).
  */
 import { courseUrl } from '../../../lib/routes';
 
@@ -15,19 +17,24 @@ const FEATURED_COURSE_LABEL = 'Node.js';
 ---
 
 <header class="home-hero">
-  <p class="home-hero__badge">Deep notes for developers</p>
+  <p class="home-hero__overline">CLEAR · DEEP · SHAREABLE</p>
+
   <h1 class="home-hero__title">
-    Learn how things<br />actually work
+    Notes that actually <em class="home-hero__accent">stick.</em>
   </h1>
+
   <p class="home-hero__tagline">
-    JavaScript, Node.js, System Design, DSA — the nuances textbooks skip.
+    Every chapter, three ways: a <strong>deep read</strong> when you have an hour, a
+    <strong>quick revision</strong> before the interview, and a <strong>flow diagram</strong>
+    for the moments you just need to recall.
   </p>
+
   <div class="home-hero__ctas">
     <a class="home-hero__cta home-hero__cta--primary" href={courseUrl(FEATURED_COURSE_SLUG)}>
       Start with {FEATURED_COURSE_LABEL} →
     </a>
     <a class="home-hero__cta home-hero__cta--secondary" href="/courses">
-      All courses
+      Browse all courses
     </a>
   </div>
 </header>
@@ -37,40 +44,46 @@ const FEATURED_COURSE_LABEL = 'Node.js';
     display: flex;
     flex-direction: column;
     gap: 1.25rem;
-    padding: 3rem 0 2.5rem;
+    padding: 3.5rem 0 2.5rem;
     text-align: left;
+    max-width: 44rem;
   }
 
-  .home-hero__badge {
-    align-self: flex-start;
+  .home-hero__overline {
     margin: 0;
-    padding: 0.25rem 0.625rem;
     font-size: 0.75rem;
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.18em;
     text-transform: uppercase;
     color: var(--color-text-muted);
-    background: var(--color-surface-muted);
-    border: 1px solid var(--color-border);
-    border-radius: 999px;
   }
 
   .home-hero__title {
     margin: 0;
     font-family: var(--font-serif), Georgia, serif;
     font-weight: 400;
-    font-size: clamp(2.5rem, 6vw, 4.5rem);
-    line-height: 1.05;
-    letter-spacing: -0.01em;
+    font-size: clamp(2.75rem, 7vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.015em;
     color: var(--color-text);
   }
 
+  .home-hero__accent {
+    font-style: italic;
+    color: var(--color-accent);
+    font-weight: 400;
+  }
+
   .home-hero__tagline {
-    max-width: 40ch;
+    max-width: 40rem;
     margin: 0;
     color: var(--color-text-muted);
-    font-size: 1.125rem;
-    line-height: 1.55;
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+  .home-hero__tagline strong {
+    color: var(--color-text);
+    font-weight: 500;
   }
 
   .home-hero__ctas {
@@ -84,29 +97,31 @@ const FEATURED_COURSE_LABEL = 'Node.js';
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-height: 2.75rem;
-    padding: 0.625rem 1.125rem;
-    border-radius: 0.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
     font-weight: 500;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     text-decoration: none;
-    transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+    transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
   }
 
   .home-hero__cta--primary {
     background: var(--color-accent);
-    color: var(--color-accent-contrast, #fff);
+    color: var(--color-accent-fg);
     border: 1px solid var(--color-accent);
   }
   .home-hero__cta--primary:hover,
   .home-hero__cta--primary:focus-visible {
-    background: var(--color-accent-strong, var(--color-accent));
+    background: var(--color-accent-hover);
+    border-color: var(--color-accent-hover);
+    color: var(--color-accent-fg);
   }
 
   .home-hero__cta--secondary {
     background: transparent;
     color: var(--color-text);
-    border: 1px solid var(--color-border-strong, var(--color-border));
+    border: 1px solid var(--color-border-strong);
   }
   .home-hero__cta--secondary:hover,
   .home-hero__cta--secondary:focus-visible {
@@ -115,8 +130,11 @@ const FEATURED_COURSE_LABEL = 'Node.js';
 
   @media (min-width: 48rem) {
     .home-hero {
-      padding: 4rem 0 3rem;
+      padding: 4.5rem 0 3rem;
       gap: 1.5rem;
+    }
+    .home-hero__tagline {
+      font-size: 1.0625rem;
     }
   }
 </style>

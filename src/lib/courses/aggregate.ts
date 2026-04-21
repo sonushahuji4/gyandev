@@ -24,6 +24,13 @@ export interface CourseStats {
   /** Sum of `readingMinutes` across published chapters only. */
   totalReadingMinutes: number;
   /**
+   * Sum of `readingMinutes` across each chapter's `revision.mdx` sibling view
+   * (from the `chapterViews` collection). Used by the DevNotes-style card
+   * meta row: `"12h full · 62m revision"`. Zero when no revision siblings
+   * declare `readingMinutes`.
+   */
+  revisionReadingMinutes: number;
+  /**
    * Slug of the first (lowest-order) published chapter, for Start / Resume
    * links. Undefined when the course has no published chapters yet.
    * Example: `"closures"` for `src/content/courses/javascript/closures/index.mdx`.
@@ -44,6 +51,7 @@ const EMPTY_STATS: CourseStats = {
   chapterCount: 0,
   publishedChapters: 0,
   totalReadingMinutes: 0,
+  revisionReadingMinutes: 0,
 };
 
 /**
@@ -89,20 +97,62 @@ function referencedCourseSlug(chapter: CollectionEntry<'chapters'>): string {
  * you need stats for every course (one walk vs. N walks).
  */
 export async function getChapterStats(courseSlug: string): Promise<CourseStats> {
-  const chapters = await getCollection('chapters');
+  const [chapters, views] = await Promise.all([
+    getCollection('chapters'),
+    getCollection('chapterViews'),
+  ]);
   const forCourse = chapters.filter((ch) => referencedCourseSlug(ch) === courseSlug);
-  return aggregateChapters(forCourse);
+  const revisionMinutesBySlug = revisionMinutesBySlugFrom(views);
+  return aggregateChapters(forCourse, revisionMinutesBySlug);
 }
 
-function aggregateChapters(entries: CollectionEntry<'chapters'>[]): CourseStats {
+function aggregateChapters(
+  entries: CollectionEntry<'chapters'>[],
+  revisionMinutesBySlug: Map<string, number>,
+): CourseStats {
   const published = entries.filter((e) => e.data.status === 'published');
   const firstPublished = [...published].sort((a, b) => a.data.order - b.data.order)[0];
+  const revisionMinutes = published.reduce((sum, e) => {
+    const chapterKey = chapterKeyOf(e);
+    return sum + (chapterKey ? (revisionMinutesBySlug.get(chapterKey) ?? 0) : 0);
+  }, 0);
   return {
     chapterCount: entries.length,
     publishedChapters: published.length,
     totalReadingMinutes: published.reduce((sum, e) => sum + e.data.readingMinutes, 0),
+    revisionReadingMinutes: revisionMinutes,
     firstChapterSlug: firstPublished ? chapterSlugOf(firstPublished) : undefined,
   };
+}
+
+/** `"<courseSlug>/<chapterSlug>"` lookup key used to pair chapters to views. */
+function chapterKeyOf(chapter: CollectionEntry<'chapters'>): string | undefined {
+  const parts = chapter.id.split('/');
+  // Accept `<courseSlug>/<chapterSlug>/index` (3 parts) or
+  // `<courseSlug>/<chapterSlug>` (2 parts).
+  if (parts.length >= 3) return `${parts[0]}/${parts[parts.length - 2]}`;
+  if (parts.length === 2) return `${parts[0]}/${parts[1]}`;
+  return undefined;
+}
+
+/**
+ * Build `{courseSlug}/{chapterSlug}` → revision readingMinutes. The
+ * `chapterViews` entry id is like `<courseSlug>/<chapterSlug>/revision`;
+ * entries that don't override `readingMinutes` contribute 0.
+ */
+function revisionMinutesBySlugFrom(
+  views: CollectionEntry<'chapterViews'>[],
+): Map<string, number> {
+  const result = new Map<string, number>();
+  for (const v of views) {
+    const parts = v.id.split('/');
+    if (parts.length < 3) continue;
+    if (parts[parts.length - 1] !== 'revision') continue;
+    const key = `${parts[0]}/${parts[parts.length - 2]}`;
+    const minutes = v.data.readingMinutes ?? 0;
+    result.set(key, (result.get(key) ?? 0) + minutes);
+  }
+  return result;
 }
 
 /**
@@ -133,13 +183,16 @@ export function sortCourses(
  * null-check.
  */
 export async function getCoursesWithStats(): Promise<CourseWithStats[]> {
-  const [courses, chapters] = await Promise.all([
+  const [courses, chapters, views] = await Promise.all([
     getAllCourses(),
     getCollection('chapters'),
+    getCollection('chapterViews'),
   ]);
 
+  const revisionMinutesBySlug = revisionMinutesBySlugFrom(views);
+
   // Group chapters by the course slug their frontmatter references. Astro
-  // normalizes `course: javascript` to the entry id `"javascript/course"`, so
+  // normalizes `course: nodejs` to the entry id `"nodejs/course"`, so
   // the first path segment is the URL-safe course slug.
   const groups = new Map<string, CollectionEntry<'chapters'>[]>();
   for (const ch of chapters) {
@@ -151,7 +204,7 @@ export async function getCoursesWithStats(): Promise<CourseWithStats[]> {
 
   const statsBySlug = new Map<string, CourseStats>();
   for (const [slug, entries] of groups) {
-    statsBySlug.set(slug, aggregateChapters(entries));
+    statsBySlug.set(slug, aggregateChapters(entries, revisionMinutesBySlug));
   }
 
   return sortCourses(courses).map((course) => {

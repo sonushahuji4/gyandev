@@ -1,20 +1,32 @@
 ---
 /**
- * CourseCard — single catalog tile.
+ * CourseCard — single catalog tile (DevNotes-style revamp, Sprint 7).
  *
- * Promoted to `src/components/ui/` in PR-4.2 when the home page became the
- * second consumer (roadmap §9). Consumers: all-courses CourseGrid, home
- * page. Do not move back — further consumers should import from here.
+ * Layout, left to right, top to bottom:
+ *   ┌ letter badge ─────────────── chapter count ─┐
+ *   │  JS                          42  CHAPTERS   │
+ *   │                                             │
+ *   │  Course title                               │
+ *   │  Two- or three-line description...          │
+ *   │                                             │
+ *   │  12h full · 62m revision                    │
+ *   └─────────────────────────────────────────────┘
+ *
+ * `course.data.icon` is interpreted as short letter badge text — `"N"`,
+ * `"JS"`, `"TS"`, `"DSA"`, `"NX"`. Legacy asset paths (leading slash) fall
+ * back to an `<img>` so any stale content keeps rendering.
  *
  * Render modes:
- *   - `status === 'published'`  → full-area `<a>` wrapping the tile.
- *   - otherwise (coming-soon / draft) → `<div aria-disabled="true">`, no link,
- *     no tabstop. Spec §10 + roadmap a11y baseline.
+ *   - `status === 'published'`  → full-area `<a>`.
+ *   - otherwise (coming-soon / draft) → `<div aria-disabled="true">`; the card
+ *     is visible but not focusable, meta row is replaced by a "Coming soon"
+ *     badge, and the whole card dims.
  *
- * Progress slot is rendered empty and flipped visible by
- * `src/scripts/progress-hydrate.ts`. The `data-course-slug` / `data-chapter-count`
- * / `data-course-status` attributes are the hydration contract — keep them in
- * sync with that script.
+ * Progress slot is rendered hidden and flipped visible by
+ * `src/scripts/progress-hydrate.ts`. The `data-course-slug` /
+ * `data-chapter-count` / `data-course-status` attributes are the hydration
+ * contract — keep in sync with that script and `home-hydrate.ts`'s
+ * chapter-count lookup on the continue card.
  */
 import type { CollectionEntry } from 'astro:content';
 import { courseUrl } from '../../lib/routes';
@@ -24,31 +36,35 @@ export interface Props {
   course: CollectionEntry<'courses'>;
   slug: string;
   stats: CourseStats;
-  /** First row of the grid — opt out of lazy image loading (LCP candidate). */
+  /** First row of the grid — opt out of lazy image loading for legacy icons. */
   priority?: boolean;
 }
 
 const { course, slug, stats, priority = false } = Astro.props;
-const { title, description, difficulty, icon, status } = course.data;
+const { title, description, difficulty, icon, status, estimatedHours } = course.data;
 
 const isPublished = status === 'published';
 const isComingSoon = status === 'coming-soon';
 const href = isPublished ? courseUrl(slug) : undefined;
 
-const chapterLabel =
-  stats.publishedChapters === 1 ? '1 chapter' : `${stats.publishedChapters} chapters`;
-const hours = Math.round((stats.totalReadingMinutes / 60) * 10) / 10;
-const hoursLabel =
-  stats.totalReadingMinutes <= 0
-    ? null
-    : hours < 1
-      ? `~${stats.totalReadingMinutes} min`
-      : `~${hours} hr${hours === 1 ? '' : 's'}`;
+const isLegacyImageIcon = typeof icon === 'string' && icon.startsWith('/');
+const badgeText = !isLegacyImageIcon ? (icon ?? title.slice(0, 2).toUpperCase()) : '';
 
-// Coerce the Phase-2 filter hint once at render time — cheap and keeps the
-// attribute out of the published bundle if it ever gets dropped.
+const chapterCount = isPublished ? stats.publishedChapters : 0;
+const hoursFromChapters = Math.round(stats.totalReadingMinutes / 60);
+const hoursLabel = isPublished
+  ? hoursFromChapters > 0
+    ? `${hoursFromChapters}h full`
+    : null
+  : estimatedHours
+    ? `~${estimatedHours}h full`
+    : null;
+
+const revisionMinutes = stats.revisionReadingMinutes;
+const revisionLabel =
+  isPublished && revisionMinutes > 0 ? `${revisionMinutes}m revision` : null;
+
 const filterTags = [difficulty].filter(Boolean).join(',');
-
 const Wrapper = isPublished ? 'a' : 'div';
 ---
 
@@ -67,10 +83,10 @@ const Wrapper = isPublished ? 'a' : 'div';
     data-course-status={status}
     data-tags={filterTags}
   >
-    <div class="course-card__header">
-      {icon && (
+    <div class="course-card__head">
+      {isLegacyImageIcon ? (
         <img
-          class="course-card__icon"
+          class="course-card__badge-img"
           src={icon}
           alt=""
           width="48"
@@ -79,25 +95,33 @@ const Wrapper = isPublished ? 'a' : 'div';
           decoding="async"
           aria-hidden="true"
         />
+      ) : (
+        <span class="course-card__badge" aria-hidden="true">{badgeText}</span>
       )}
-      <h2 class="course-card__title">{title}</h2>
-      {isComingSoon && (
-        <span class="course-card__badge">Coming soon</span>
+      {isComingSoon ? (
+        <span class="course-card__pill">Coming soon</span>
+      ) : (
+        <span class="course-card__count">
+          <span class="course-card__count-n">{chapterCount}</span>
+          <span class="course-card__count-label">Chapters</span>
+        </span>
       )}
     </div>
 
+    <h3 class="course-card__title">{title}</h3>
+
     <p class="course-card__desc">{description}</p>
 
-    <p class="course-card__stats" aria-label={`${chapterLabel}${hoursLabel ? `, ${hoursLabel}` : ''}, ${difficulty}`}>
-      <span>{chapterLabel}</span>
-      {hoursLabel && (
-        <>
-          <span aria-hidden="true">·</span>
-          <span>{hoursLabel}</span>
-        </>
+    <p
+      class="course-card__meta"
+      aria-label={`${chapterCount} chapters${hoursLabel ? `, ${hoursLabel}` : ''}${revisionLabel ? `, ${revisionLabel}` : ''}, ${difficulty}`}
+    >
+      {hoursLabel && <span>{hoursLabel}</span>}
+      {hoursLabel && revisionLabel && <span class="course-card__meta-sep" aria-hidden="true">·</span>}
+      {revisionLabel && <span>{revisionLabel}</span>}
+      {!hoursLabel && !revisionLabel && (
+        <span class="course-card__meta-dim">{isComingSoon ? 'Coming soon' : difficulty}</span>
       )}
-      <span aria-hidden="true">·</span>
-      <span class="course-card__difficulty">{difficulty}</span>
     </p>
 
     <span class="course-card__progress" hidden></span>
@@ -113,97 +137,150 @@ const Wrapper = isPublished ? 'a' : 'div';
   }
 
   .course-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     width: 100%;
-    gap: 0.625rem;
-    padding: 1.25rem;
+    gap: 0.875rem;
+    padding: 1.125rem 1.25rem 1.25rem;
     background: var(--color-surface);
     border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
     color: var(--color-text);
     text-decoration: none;
-    transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+    transition:
+      border-color 150ms ease,
+      background 150ms ease,
+      transform 150ms ease;
   }
   .course-card:hover,
   .course-card:focus-visible {
     border-color: var(--color-border-strong);
-    box-shadow: 0 2px 14px -4px rgb(0 0 0 / 0.08);
   }
-  a.course-card:hover {
+  a.course-card:hover,
+  a.course-card:focus-visible {
     text-decoration: none;
   }
   .course-card--inactive {
-    opacity: 0.7;
+    opacity: 0.55;
     cursor: default;
   }
   .course-card--inactive:hover,
   .course-card--inactive:focus-visible {
-    box-shadow: none;
     border-color: var(--color-border);
   }
 
-  .course-card__header {
+  /* ---------- Head row: badge + chapter count ---------- */
+  .course-card__head {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: 0.75rem;
-    flex-wrap: wrap;
+    min-height: 1.875rem;
   }
-  .course-card__icon {
-    width: 2.5rem;
-    height: 2.5rem;
-    border-radius: 0.5rem;
+
+  .course-card__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.875rem;
+    height: 1.875rem;
+    padding: 0 0.4375rem;
+    border-radius: 0.375rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    line-height: 1;
+  }
+  .course-card__badge-img {
+    width: 1.875rem;
+    height: 1.875rem;
+    border-radius: 0.375rem;
     background: var(--color-surface-muted);
     padding: 0.25rem;
-    flex-shrink: 0;
   }
-  .course-card__title {
-    font-size: 1.1875rem;
-    font-weight: 600;
-    margin: 0;
+
+  .course-card__count {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4375rem;
+    color: var(--color-text-muted);
+    font-family: var(--font-serif), Georgia, serif;
+  }
+  .course-card__count-n {
+    font-size: 1.375rem;
+    font-weight: 400;
+    line-height: 1;
     color: var(--color-text);
-    line-height: 1.25;
+    letter-spacing: -0.01em;
   }
-  .course-card__badge {
-    margin-left: auto;
-    font-size: 0.75rem;
+  .course-card__count-label {
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
     font-weight: 500;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
-    padding: 0.1875rem 0.5rem;
+  }
+
+  .course-card__pill {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.25rem 0.5rem;
     border-radius: 999px;
     background: var(--color-surface-muted);
     color: var(--color-text-muted);
     border: 1px solid var(--color-border);
   }
 
-  .course-card__desc {
-    color: var(--color-text-muted);
+  /* ---------- Body ---------- */
+  .course-card__title {
     margin: 0;
-    font-size: 0.9375rem;
-    line-height: 1.55;
-    flex: 1;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--color-text);
   }
 
-  .course-card__stats {
+  .course-card__desc {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    line-height: 1.55;
+    flex: 1;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .course-card__meta {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.375rem;
+    gap: 0.4375rem;
     align-items: center;
     margin: 0;
     font-size: 0.8125rem;
     color: var(--color-text-muted);
+    letter-spacing: 0.01em;
   }
-  .course-card__stats span[aria-hidden="true"] {
+  .course-card__meta-sep {
     opacity: 0.5;
   }
-  .course-card__difficulty {
+  .course-card__meta-dim {
     text-transform: capitalize;
   }
 
   .course-card__progress {
-    display: inline-block;
-    font-size: 0.8125rem;
+    position: absolute;
+    right: 1.25rem;
+    bottom: 1.25rem;
+    font-size: 0.75rem;
     font-weight: 500;
     color: var(--color-accent);
   }

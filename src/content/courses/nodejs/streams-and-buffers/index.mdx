@@ -1,0 +1,50 @@
+---
+title: Streams & Buffers
+description: Why Node moves bytes in streams, what backpressure is, and how Buffer differs from a string — the model behind every I/O API in the standard library.
+course: nodejs/course
+order: 3
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 16
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - streams
+  - buffers
+  - io
+---
+
+{/* TODO(content): expand with worked examples of pipe, backpressure, and async iterators. */}
+
+## Buffers
+
+A `Buffer` is a fixed-size chunk of raw bytes outside V8's heap. Strings are UTF-16 in
+JavaScript; buffers are whatever encoding you choose. Most Node APIs hand you buffers
+because that's what the OS handed Node.
+
+```js
+const b = Buffer.from('hello', 'utf8');
+b.length;       // 5
+b.toString();   // 'hello'
+```
+
+## Streams
+
+A stream is an async iterator over chunks. The four flavors: **Readable**, **Writable**,
+**Duplex**, **Transform**. You read from a Readable, write to a Writable, and `pipe`
+connects them.
+
+```js
+import { createReadStream, createWriteStream } from 'node:fs';
+createReadStream('in.log').pipe(createWriteStream('out.log'));
+```
+
+## Backpressure
+
+If the consumer is slow, a naive loop fills memory. Streams solve this: `write()` returns
+`false` when the internal buffer is full, and you pause the producer until `'drain'`.
+`pipe` handles this for you.
+
+> Placeholder chapter — full worked examples and benchmarks coming soon.

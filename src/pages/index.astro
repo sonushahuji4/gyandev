@@ -1,40 +1,49 @@
 ---
 /**
- * Home page `/` — PR-4.2.
+ * Home page `/` — DevNotes-style revamp (Sprint 7).
  *
- * Composition (top → bottom per spec §3):
- *   Hero → ContinueReadingCard (JS-revealed) → All Courses grid →
- *   FeaturedStrip → RecentlyUpdatedList.
+ * Composition (top → bottom):
+ *   Hero → ContinueReadingCard (JS-revealed) → All Courses → Featured Chapters
+ *
+ * `RecentlyUpdatedList` is not mounted on the current design — the prototype
+ * replaces it with the Featured Chapters grid. The component remains in
+ * `src/components/pages/home/` for future reuse (e.g. `/tracks` or a sidebar)
+ * without a churn delete.
  *
  * Ratifications:
  *   - R1: client-side storage goes through `storage.ts` — see
  *     `src/scripts/home-hydrate.ts` (Continue card + ?q= interceptor).
  *   - R2: `includeSerif={true}` is set here ONLY; no other page sets it.
  *
- * JSON-LD: `websiteSchema()` emits WebSite + SearchAction; the SearchAction
- * `urlTemplate` points at `/search?q=` which the search modal will honor once
- * PR-5.1 wires Pagefind. The home-level `?q=` interceptor opens the modal
- * pre-filled so the schema claim isn't misleading.
+ * JSON-LD: `websiteSchema()` emits WebSite + SearchAction; the `?q=`
+ * interceptor in `home-hydrate.ts` opens the SearchModal pre-filled so the
+ * schema claim isn't misleading.
  */
 import PageShell from '../components/layout/PageShell.astro';
 import HomeHero from '../components/pages/home/HomeHero.astro';
 import ContinueReadingCard from '../components/pages/home/ContinueReadingCard.astro';
 import FeaturedStrip from '../components/pages/home/FeaturedStrip.astro';
-import RecentlyUpdatedList from '../components/pages/home/RecentlyUpdatedList.astro';
 import CourseGrid from '../components/pages/all-courses/CourseGrid.astro';
 
 import { getCoursesWithStats } from '../lib/courses/aggregate';
 import { getFeaturedChapters } from '../lib/home/featured';
-import { getRecentlyUpdatedChapters } from '../lib/home/recent';
 import { canonicalFor } from '../lib/routes';
 import { websiteSchema } from '../lib/seo/jsonld';
 import { ogImageUrl } from '../lib/seo/og';
 
-const [coursesWithStats, featured, recent] = await Promise.all([
+const [coursesWithStats, featured] = await Promise.all([
   getCoursesWithStats(),
   getFeaturedChapters(),
-  getRecentlyUpdatedChapters(5),
 ]);
+
+const publishedCount = coursesWithStats.filter(
+  ({ course }) => course.data.status === 'published',
+).length;
+const comingCount = coursesWithStats.length - publishedCount;
+const countsLine =
+  comingCount > 0
+    ? `${coursesWithStats.length} deep dives planned — ${publishedCount} live, ${comingCount} coming soon`
+    : `${coursesWithStats.length} deep ${coursesWithStats.length === 1 ? 'dive' : 'dives'} & counting`;
 
 const canonical = canonicalFor('/');
 const jsonLd = [websiteSchema()];
@@ -47,6 +56,7 @@ const jsonLd = [websiteSchema()];
   ogImage={ogImageUrl('home')}
   jsonLd={jsonLd}
   includeSerif={true}
+  mainMaxWidth="full"
 >
   <HomeHero />
 
@@ -55,16 +65,17 @@ const jsonLd = [websiteSchema()];
   {coursesWithStats.length > 0 && (
     <section class="home-section" aria-labelledby="home-courses-heading">
       <div class="home-section__head">
-        <h2 id="home-courses-heading" class="home-section__title">All Courses</h2>
-        <p class="home-section__sub">Pick your path.</p>
+        <div class="home-section__heading-stack">
+          <p class="home-section__overline">All Courses</p>
+          <h2 id="home-courses-heading" class="home-section__title">{countsLine}</h2>
+        </div>
+        <a class="home-section__link" href="/courses">View all →</a>
       </div>
       <CourseGrid courses={coursesWithStats} />
     </section>
   )}
 
   {featured.length > 0 && <FeaturedStrip chapters={featured} />}
-
-  {recent.length > 0 && <RecentlyUpdatedList entries={recent} />}
 </PageShell>
 
 <script>
@@ -74,22 +85,61 @@ const jsonLd = [websiteSchema()];
 
 <style>
   .home-section {
-    margin-top: 3rem;
+    margin-top: 3.5rem;
   }
   .home-section__head {
     display: flex;
     flex-direction: column;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  @media (min-width: 48rem) {
+    .home-section__head {
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+  }
+  .home-section__heading-stack {
+    display: flex;
+    flex-direction: column;
     gap: 0.25rem;
-    margin-bottom: 1.25rem;
+    min-width: 0;
+  }
+  .home-section__overline {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
   }
   .home-section__title {
     margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-  .home-section__sub {
-    margin: 0;
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.0625rem;
     color: var(--color-text-muted);
-    font-size: 0.9375rem;
+    line-height: 1.4;
+  }
+  .home-section__link {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.4375rem 0.875rem;
+    border: 1px solid var(--color-border-strong);
+    border-radius: 0.375rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+  .home-section__link:hover,
+  .home-section__link:focus-visible {
+    background: var(--color-surface-muted);
+    border-color: var(--color-text-muted);
   }
 </style>

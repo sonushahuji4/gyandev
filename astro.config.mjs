@@ -83,12 +83,19 @@ export default defineConfig({
       // Per seo.md §4.8 + spec §8: exclude non-canonical routes.
       // `/revision` and `/flow` tabs point canonical to Full Notes; `/404` and
       // `/search` aren't content; `/og/*` are image endpoints, not pages.
+      // Coming-soon courses are served with `noindex` and should stay out of
+      // the sitemap entirely (Sprint 7 launch strategy — Node.js live first).
+      // The list mirrors `status: 'coming-soon'` in `src/content/courses/*/course.mdx`;
+      // when a course flips to `published`, drop its slug from this set.
       filter: (page) => {
         if (page.endsWith('/revision') || page.endsWith('/revision/')) return false;
         if (page.endsWith('/flow') || page.endsWith('/flow/')) return false;
         if (page.endsWith('/404') || page.endsWith('/404/')) return false;
         if (page.endsWith('/search') || page.endsWith('/search/')) return false;
         if (page.includes('/og/')) return false;
+        const COMING_SOON = new Set(['javascript', 'reactjs', 'typescript', 'nextjs', 'dsa']);
+        const m = page.match(/\/courses\/([^/?#]+)\/?$/);
+        if (m && COMING_SOON.has(m[1])) return false;
         return true;
       },
       // Priority hierarchy per spec §8 table.

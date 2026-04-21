@@ -2,14 +2,23 @@
 /**
  * ContinueReadingCard — SSR renders a skeleton; `home-hydrate.ts` flips it
  * visible only when `lastReadKey()` has data and the session dismiss flag
- * isn't set. See home.md Step 7.
+ * isn't set.
+ *
+ * DevNotes revamp (Sprint 7): the card now shows
+ *   - overline: "CONTINUE WHERE YOU LEFT OFF"
+ *   - primary: "<Course> · <Chapter Title>"
+ *   - subtitle: "Chapter {n} of {total} · Paused mid-{view}"
+ *   - a thin progress bar (green fill)
+ *   - a right arrow / resume link
  *
  * Hydration contract (do not rename without updating `home-hydrate.ts`):
- *   #continue-card                         — the wrapper (starts `hidden`)
- *   [data-continue-course]                 — course label text node
- *   [data-continue-title]                  — chapter title text node
- *   [data-continue-meta]                   — reading-time text node
- *   [data-continue-resume]                 — resume anchor (href set by JS)
+ *   #continue-card                         — wrapper (starts `hidden`)
+ *   [data-continue-course]                 — course label
+ *   [data-continue-title]                  — chapter title
+ *   [data-continue-position]               — "Chapter X of Y"
+ *   [data-continue-status]                 — "Paused mid-<view>"
+ *   [data-continue-bar]                    — inner fill of the progress bar
+ *   [data-continue-resume]                 — whole-card resume anchor
  *   [data-continue-dismiss]                — dismiss button
  */
 ---
@@ -20,20 +29,27 @@
   aria-labelledby="continue-card-heading"
   hidden
 >
-  <div class="continue-card__inner">
-    <h2 id="continue-card-heading" class="continue-card__heading">
-      <span aria-hidden="true">👋</span> Continue where you left off
-    </h2>
-    <p class="continue-card__title" data-continue-title></p>
-    <p class="continue-card__meta">
-      <span class="continue-card__course" data-continue-course></span>
-      <span class="continue-card__dot" aria-hidden="true">·</span>
-      <span data-continue-meta></span>
-    </p>
-    <a class="continue-card__resume" href="#" data-continue-resume>
-      Resume →
-    </a>
-  </div>
+  <a class="continue-card__link" href="#" data-continue-resume aria-labelledby="continue-card-heading">
+    <div class="continue-card__body">
+      <p id="continue-card-heading" class="continue-card__overline">
+        Continue where you left off
+      </p>
+      <p class="continue-card__title">
+        <span class="continue-card__course" data-continue-course></span>
+        <span class="continue-card__sep" aria-hidden="true">·</span>
+        <span data-continue-title></span>
+      </p>
+      <p class="continue-card__meta">
+        <span data-continue-position></span>
+        <span class="continue-card__sep" aria-hidden="true">·</span>
+        <span class="continue-card__status" data-continue-status>Paused mid-Full Notes</span>
+      </p>
+      <div class="continue-card__bar" aria-hidden="true">
+        <span class="continue-card__fill" data-continue-bar style="width: 0%"></span>
+      </div>
+    </div>
+    <span class="continue-card__arrow" aria-hidden="true">→</span>
+  </a>
   <button
     type="button"
     class="continue-card__dismiss"
@@ -47,86 +63,123 @@
 <style>
   .continue-card {
     position: relative;
-    display: flex;
-    gap: 1rem;
-    align-items: flex-start;
-    padding: 1.25rem 1.5rem;
-    margin: 1.5rem 0;
-    background: var(--color-surface);
+    display: block;
+    margin: 1.5rem 0 0;
+    background: transparent;
     border: 1px solid var(--color-border);
-    border-radius: 0.75rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
   }
   .continue-card[hidden] {
     display: none;
   }
 
-  .continue-card__inner {
-    flex: 1;
+  .continue-card__link {
     display: flex;
-    flex-direction: column;
-    gap: 0.375rem;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    color: inherit;
+    text-decoration: none;
+    transition: background 150ms ease;
+  }
+  .continue-card__link:hover,
+  .continue-card__link:focus-visible {
+    background: var(--color-surface-muted);
+    text-decoration: none;
   }
 
-  .continue-card__heading {
-    margin: 0;
-    font-size: 0.8125rem;
+  .continue-card__body {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .continue-card__overline {
+    margin: 0 0 0.125rem;
+    font-size: 0.6875rem;
     font-weight: 500;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: var(--color-text-muted);
   }
 
   .continue-card__title {
     margin: 0;
-    font-size: 1.125rem;
-    font-weight: 600;
+    font-size: 0.9375rem;
+    font-weight: 500;
     color: var(--color-text);
+    line-height: 1.4;
+  }
+  .continue-card__course {
+    color: var(--color-text);
+  }
+  .continue-card__sep {
+    color: var(--color-text-muted);
+    margin: 0 0.3em;
+    opacity: 0.7;
   }
 
   .continue-card__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.375rem;
-    align-items: center;
-    margin: 0;
-    font-size: 0.875rem;
+    margin: 0 0 0.375rem;
+    font-size: 0.8125rem;
     color: var(--color-text-muted);
-  }
-  .continue-card__course {
-    text-transform: capitalize;
-  }
-  .continue-card__dot {
-    opacity: 0.5;
+    line-height: 1.4;
   }
 
-  .continue-card__resume {
-    margin-top: 0.25rem;
-    align-self: flex-start;
-    font-weight: 500;
-    color: var(--color-accent);
-    text-decoration: none;
+  .continue-card__bar {
+    position: relative;
+    height: 2px;
+    width: min(24rem, 100%);
+    background: var(--color-border);
+    border-radius: 999px;
+    overflow: hidden;
   }
-  .continue-card__resume:hover,
-  .continue-card__resume:focus-visible {
-    text-decoration: underline;
+  .continue-card__fill {
+    display: block;
+    height: 100%;
+    background: var(--color-accent);
+    transition: width 300ms ease;
+  }
+
+  .continue-card__arrow {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+    transition: transform 150ms ease, color 150ms ease;
+  }
+  .continue-card__link:hover .continue-card__arrow,
+  .continue-card__link:focus-visible .continue-card__arrow {
+    color: var(--color-text);
+    transform: translateX(2px);
   }
 
   .continue-card__dismiss {
-    flex-shrink: 0;
-    min-width: 2.75rem;
-    min-height: 2.75rem;
-    padding: 0.25rem 0.5rem;
+    position: absolute;
+    top: 0.375rem;
+    right: 0.375rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    padding: 0;
     background: transparent;
     border: 1px solid transparent;
-    border-radius: 0.375rem;
+    border-radius: 0.25rem;
     color: var(--color-text-muted);
-    font-size: 1.375rem;
+    font-size: 1rem;
     line-height: 1;
     cursor: pointer;
+    opacity: 0;
+    transition: opacity 150ms ease, background 150ms ease, color 150ms ease;
+  }
+  .continue-card:hover .continue-card__dismiss,
+  .continue-card__dismiss:focus-visible {
+    opacity: 1;
   }
   .continue-card__dismiss:hover,
   .continue-card__dismiss:focus-visible {
-    background: var(--color-surface-muted);
+    background: var(--color-surface);
     color: var(--color-text);
     border-color: var(--color-border);
   }

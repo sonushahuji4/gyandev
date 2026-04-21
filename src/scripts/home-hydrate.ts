@@ -19,8 +19,12 @@ import {
   dismissKey,
   get,
   lastReadKey,
+  prefsKey,
+  progressKey,
   set,
+  type ActiveTabPref,
   type LastReadData,
+  type ProgressData,
 } from '../lib/storage';
 
 type HydrationRoots = {
@@ -29,7 +33,9 @@ type HydrationRoots = {
   resumeLink: HTMLAnchorElement | null;
   courseEl: HTMLElement | null;
   titleEl: HTMLElement | null;
-  metaEl: HTMLElement | null;
+  positionEl: HTMLElement | null;
+  statusEl: HTMLElement | null;
+  barEl: HTMLElement | null;
 };
 
 function getRoots(): HydrationRoots {
@@ -40,8 +46,34 @@ function getRoots(): HydrationRoots {
     resumeLink: card?.querySelector<HTMLAnchorElement>('[data-continue-resume]') ?? null,
     courseEl: card?.querySelector<HTMLElement>('[data-continue-course]') ?? null,
     titleEl: card?.querySelector<HTMLElement>('[data-continue-title]') ?? null,
-    metaEl: card?.querySelector<HTMLElement>('[data-continue-meta]') ?? null,
+    positionEl: card?.querySelector<HTMLElement>('[data-continue-position]') ?? null,
+    statusEl: card?.querySelector<HTMLElement>('[data-continue-status]') ?? null,
+    barEl: card?.querySelector<HTMLElement>('[data-continue-bar]') ?? null,
   };
+}
+
+/**
+ * Look up the published chapter count for a course from the course card on
+ * the same page. `CourseCard` renders `data-course-slug` + `data-chapter-count`
+ * so we don't need a second collection fetch. Returns `0` when the card isn't
+ * on the page (unknown total).
+ */
+function findCourseChapterCount(courseSlug: string): number {
+  const card = document.querySelector<HTMLElement>(
+    `[data-course-slug="${CSS.escape(courseSlug)}"]`,
+  );
+  const raw = card?.getAttribute('data-chapter-count');
+  const n = raw ? Number.parseInt(raw, 10) : 0;
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function formatActiveTab(tab: ActiveTabPref | null): string {
+  switch (tab) {
+    case 'revision': return 'Paused mid-Revision';
+    case 'flow':     return 'Paused mid-Flow';
+    case 'full':
+    default:         return 'Paused mid-Full Notes';
+  }
 }
 
 function hideCard(card: HTMLElement): void {
@@ -68,10 +100,37 @@ function hydrateContinue(): void {
   if (roots.titleEl) {
     roots.titleEl.textContent = data.chapterTitle || 'Resume';
   }
-  if (roots.metaEl) {
-    const minutes = Number.isFinite(data.readingMinutes) ? data.readingMinutes : 0;
-    roots.metaEl.textContent = minutes > 0 ? `${minutes} min read` : '';
+
+  // Read-count + total → "Chapter X of Y" and progress-bar width. When we can't
+  // recover either piece (total unknown because the course card isn't on the
+  // page, or progress list empty) we hide the position line but still render
+  // the rest of the card.
+  const progress = get<ProgressData>(progressKey(data.courseSlug));
+  const readCount = Array.isArray(progress?.read) ? progress.read.length : 0;
+  const total = findCourseChapterCount(data.courseSlug);
+  const currentPos = Math.min(Math.max(readCount + 1, 1), Math.max(total, 1));
+
+  if (roots.positionEl) {
+    if (total > 0) {
+      roots.positionEl.textContent = `Chapter ${currentPos} of ${total}`;
+    } else {
+      roots.positionEl.textContent = data.chapterTitle ? 'In progress' : '';
+    }
   }
+
+  if (roots.statusEl) {
+    const activeTab = get<ActiveTabPref>(prefsKey('activeTab'));
+    roots.statusEl.textContent = formatActiveTab(activeTab);
+  }
+
+  if (roots.barEl) {
+    const pct =
+      total > 0
+        ? Math.min(100, Math.round(((readCount + 0.5) / total) * 100))
+        : 12; // first-visit fallback — a thin sliver, not zero.
+    roots.barEl.style.width = `${pct}%`;
+  }
+
   if (roots.resumeLink) {
     roots.resumeLink.href = `/courses/${data.courseSlug}/${data.chapterSlug}`;
   }

@@ -1,0 +1,29 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+## The phases in order
+
+1. Timers
+2. Pending callbacks
+3. Idle / prepare (internal)
+4. Poll
+5. Check (`setImmediate`)
+6. Close
+
+## Between every phase
+
+- `process.nextTick` queue drains first
+- Microtask queue drains second
+- Then the next phase runs
+
+## Common gotchas
+
+- `setTimeout(fn, 0)` vs `setImmediate(fn)` order depends on where you call them.
+- Recursive `process.nextTick` starves I/O — the loop can't advance.
+- Mixing callbacks and promises: promises are microtasks, callbacks are phase-bound.
+
+## If you remember nothing else
+
+> Six phases. nextTick + microtasks run between every single one.

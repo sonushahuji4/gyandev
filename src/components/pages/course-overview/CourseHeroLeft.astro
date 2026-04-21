@@ -22,6 +22,9 @@ export interface Props {
 const { course, publishedChapters, totalReadingMinutes } = Astro.props;
 const { title, description, difficulty, icon } = course.data;
 
+const isLegacyImageIcon = typeof icon === 'string' && icon.startsWith('/');
+const badgeText = !isLegacyImageIcon ? (icon ?? title.slice(0, 2).toUpperCase()) : '';
+
 const chapterLabel =
   publishedChapters === 1 ? '1 chapter' : `${publishedChapters} chapters`;
 
@@ -41,7 +44,7 @@ const statsAriaLabel = [
 ---
 
 <div class="course-hero-left">
-  {icon && (
+  {isLegacyImageIcon ? (
     <img
       class="course-hero-left__icon"
       src={icon}
@@ -53,6 +56,8 @@ const statsAriaLabel = [
       decoding="async"
       aria-hidden="true"
     />
+  ) : (
+    badgeText && <span class="course-hero-left__badge" aria-hidden="true">{badgeText}</span>
   )}
 
   <div class="course-hero-left__body">
@@ -100,6 +105,31 @@ const statsAriaLabel = [
     .course-hero-left__icon {
       width: 5rem;
       height: 5rem;
+    }
+  }
+
+  .course-hero-left__badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3rem;
+    height: 3rem;
+    padding: 0 0.625rem;
+    border-radius: 0.625rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: 0.01em;
+    flex-shrink: 0;
+  }
+  @media (min-width: 40rem) {
+    .course-hero-left__badge {
+      min-width: 3.75rem;
+      height: 3.75rem;
+      font-size: 1.25rem;
     }
   }
 

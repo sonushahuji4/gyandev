@@ -61,7 +61,20 @@ const courses = defineCollection({
     order: z.number().int().nonnegative(),
     status: z.enum(COURSE_STATUS).default('draft'),
     difficulty: z.enum(DIFFICULTY),
+    /**
+     * Short letter/badge text (e.g. `"N"`, `"JS"`, `"DSA"`) rendered inside
+     * the CourseCard corner badge. Max 3 chars keeps the badge square.
+     * Legacy `/images/...` paths still validate; CourseCard detects the leading
+     * slash and renders an `<img>` instead of the letter variant.
+     */
     icon: z.string().optional(),
+    /**
+     * Curator estimate of total reading hours. Used by CourseCard for
+     * coming-soon courses (no chapters yet → computed stats would be zero).
+     * Published courses prefer the computed `totalReadingMinutes` from
+     * aggregate.ts; `estimatedHours` is a fallback / sanity label.
+     */
+    estimatedHours: z.number().positive().optional(),
     learningObjectives: z.array(z.string()).default([]),
     prerequisites: z.array(z.string()).default([]),
     related: z.array(reference('courses')).default([]),

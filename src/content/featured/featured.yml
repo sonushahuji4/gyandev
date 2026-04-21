@@ -10,17 +10,17 @@
 # documented in `docs/EDITORIAL.md` — produced in Sprint 6 per roadmap Q#19.
 # Update this file to rotate featured chapters between cadence reviews.
 
-- id: javascript-closures
-  courseSlug: javascript
-  chapterSlug: closures
+- id: nodejs-event-loop-deep-dive
+  courseSlug: nodejs
+  chapterSlug: event-loop-deep-dive
   position: 1
 
-- id: javascript-event-loop
-  courseSlug: javascript
-  chapterSlug: event-loop
+- id: nodejs-v8-internals
+  courseSlug: nodejs
+  chapterSlug: v8-internals
   position: 2
 
-- id: javascript-promises
-  courseSlug: javascript
-  chapterSlug: promises
+- id: nodejs-streams-and-buffers
+  courseSlug: nodejs
+  chapterSlug: streams-and-buffers
   position: 3

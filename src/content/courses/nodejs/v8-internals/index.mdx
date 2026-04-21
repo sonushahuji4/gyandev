@@ -1,0 +1,33 @@
+---
+title: V8 Internals
+description: How V8 parses, compiles, and optimizes JavaScript — and the runtime model you need before the event loop makes sense.
+course: nodejs/course
+order: 1
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 12
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - v8
+  - runtime
+  - compiler
+---
+
+{/* TODO(content): flesh out V8 internals — Ignition, TurboFan, hidden classes, inline caches. */}
+
+## What V8 actually is
+
+V8 is the JavaScript engine Node.js embeds. It takes source text and turns it into machine
+code through a pipeline: parser → bytecode (Ignition) → optimized native code (TurboFan)
+for hot paths.
+
+## Why you care
+
+You don't need to read V8's source to write Node well. But knowing that hidden classes
+exist, that property access has inline caches, and that optimized code can be deoptimized
+by shape changes — that's what separates "Node works" from "Node stays fast under load".
+
+> Placeholder chapter — full deep-dive coming soon.

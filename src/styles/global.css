@@ -22,20 +22,23 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  /* ---------- Colors (semantic — light mode base) ---------- */
-  --color-bg: #faf7f0;
-  --color-surface: #ffffff;
-  --color-surface-muted: #f2ecdc;
-  --color-text: #1a1a1a;
-  --color-text-muted: #5b5649;
-  --color-border: #e5ddc8;
-  --color-border-strong: #c9bfa3;
-  --color-accent: #2d5016;
-  --color-accent-hover: #3a6620;
-  --color-accent-fg: #faf7f0;
-  --color-focus: #2d5016;
+  /* ---------- Colors (semantic — light mode base) ----------
+   * DevNotes-style direction: warm cream background, ink-dark text, muted
+   * olive accent. Dark mode (below) swaps to near-black warm + cream text.
+   */
+  --color-bg: #f5efe1;
+  --color-surface: #fbf7ec;
+  --color-surface-muted: #ede5d0;
+  --color-text: #1a1915;
+  --color-text-muted: #6b6556;
+  --color-border: #dfd5bb;
+  --color-border-strong: #c1b693;
+  --color-accent: #6a8a4f;           /* olive-green CTA + progress bar */
+  --color-accent-hover: #587640;
+  --color-accent-fg: #0a0908;        /* text on accent fills */
+  --color-focus: #6a8a4f;
   --color-danger: #b91c1c;
-  --color-backdrop: rgb(0 0 0 / 0.5);
+  --color-backdrop: rgb(10 9 8 / 0.45);
 
   /* ---------- Fonts (resolve to fallback stack until PR-1.4) ---------- */
   --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -63,19 +66,19 @@
 }
 
 @layer base {
-  /* ---------- Dark palette override (single token swap) ---------- */
+  /* ---------- Dark palette override (DevNotes-style near-black + cream) ---------- */
   html.dark {
-    --color-bg: #131210;
-    --color-surface: #1b1914;
-    --color-surface-muted: #221f19;
-    --color-text: #ebe7da;
-    --color-text-muted: #a19b87;
-    --color-border: #322d22;
-    --color-border-strong: #4a4230;
-    --color-accent: #8fb36b;
-    --color-accent-hover: #a3c281;
-    --color-accent-fg: #131210;
-    --color-focus: #8fb36b;
+    --color-bg: #0a0908;
+    --color-surface: #141210;
+    --color-surface-muted: #1c1a17;
+    --color-text: #e8e2d4;
+    --color-text-muted: #8a8580;
+    --color-border: #2a2824;
+    --color-border-strong: #3a3631;
+    --color-accent: #8fb87a;          /* progress bar + primary CTA green */
+    --color-accent-hover: #a2c98d;
+    --color-accent-fg: #0a0908;
+    --color-focus: #8fb87a;
     --color-danger: #f87171;
     --color-backdrop: rgb(0 0 0 / 0.7);
   }

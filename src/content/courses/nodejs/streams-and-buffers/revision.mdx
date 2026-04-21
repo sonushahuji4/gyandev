@@ -1,0 +1,27 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+## Buffers
+
+- Fixed-size bytes outside V8's heap.
+- Encodings are chosen at read-time: `utf8`, `hex`, `base64`, `binary`.
+- `Buffer.alloc(n)` zero-fills; `Buffer.allocUnsafe(n)` doesn't — cheaper, dirtier.
+
+## Streams at a glance
+
+- **Readable** — source (file, socket, `process.stdin`).
+- **Writable** — sink (`process.stdout`, socket, file).
+- **Duplex** — both.
+- **Transform** — Duplex where output is a function of input.
+
+## Backpressure rule
+
+- `write()` returns `false` when buffered data passes `highWaterMark`.
+- Pause the producer; resume on `'drain'`.
+- `pipe` + `pipeline` handle this for you — prefer them over manual `write`.
+
+## If you remember nothing else
+
+> Streams move bytes lazily. Backpressure is how you don't OOM.

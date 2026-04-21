@@ -1,0 +1,27 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+## The pipeline
+
+- **Parser** → AST
+- **Ignition** → bytecode + interpret
+- **TurboFan** → optimized machine code for hot functions
+- **Deopt** → back to bytecode when assumptions break
+
+## Hidden classes
+
+- Every object has a hidden "shape" describing its property layout.
+- Adding properties in a different order → different shape → slower property access.
+- Prefer stable shapes — initialize all fields in the constructor.
+
+## Inline caches
+
+- V8 remembers the shape at each property-access site.
+- Same shape every call → fast monomorphic path.
+- Many shapes → megamorphic, falls back to a slow lookup.
+
+## If you remember nothing else
+
+> V8 loves code whose shapes don't change. Churn shapes, lose speed.

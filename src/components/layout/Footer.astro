@@ -1,43 +1,53 @@
 ---
 /**
- * Footer — global site footer (PR-6.1). Resolves the blocker from
- * `.claude/specs/pages/legal.md` §3.4 (legal pages need to be linked from
- * every page footer).
+ * Footer — global site footer. DevNotes-style revamp (Sprint 7):
  *
- * Mounted by the two composition layers: `PageShell` (home, all-courses,
- * course-overview, about, privacy, terms, 404) and `ChapterShell` (the
- * three chapter tabs). Deliberately NOT mounted in `BaseLayout` so the
- * layout file stays minimal per PHASE-1-ROADMAP §7 File Ownership.
+ *   GyanDev.                     CONTENT         PROJECT         LEGAL
+ *   One-line tagline             All courses     Contribute      About
+ *                                Tracks          GitHub          Privacy
+ *                                Review          Changelog       Terms
+ *                                RSS feed        Report issue    License
  *
- * Data: reads `site/about` for author socials. Any social left unset in
- * `about.yml` is silently skipped — the block just shortens rather than
- * 404-ing. RSS + Atom links are literal (the feed endpoints are owned by
- * seo.md, not about.yml).
+ *   © 2026 GyanDev · Built with Astro on Cloudflare Pages
+ *                                          CC BY-SA 4.0 (prose) · MIT (code)
  *
- * Build-time only: no client JS, no hydration. Links marked with
- * `rel="noopener noreferrer"` on external URLs.
+ * Mounted by `PageShell` (home, all-courses, course-overview, about, privacy,
+ * terms, 404) and `ChapterShell` (chapter tabs). Deliberately NOT mounted in
+ * `BaseLayout` so the layout file stays minimal per PHASE-1-ROADMAP §7.
+ *
+ * Data: reads `site/about` for author socials; missing socials silently drop.
+ * Build-time only, no hydration.
  */
 
 import { getEntry } from 'astro:content';
 
 const about = await getEntry('site', 'about');
 
-// Graceful fallback: if about.yml is missing (shouldn't happen in prod, but
-// keeps the footer building on a partial checkout), fall back to the repo
-// URL literal so the footer still lists a way to find us.
 const socials = about?.data.author.socials ?? {};
 const githubUrl = socials.github ?? 'https://github.com/sonushahuji4';
-const twitterUrl = socials.twitter;
-const linkedinUrl = socials.linkedin;
 
-// `/contributing` is a Phase-2 page (see PHASE-1-ROADMAP §4 Sprint 6 PR-6.4
-// and specs/shared/website-overview.md). Linking now so the footer doesn't
-// need a churn commit once CONTRIBUTING lands.
-const NAV_LINKS: { href: string; label: string }[] = [
-  { href: '/',             label: 'Home' },
-  { href: '/courses',      label: 'All Courses' },
-  { href: '/about',        label: 'About' },
-  { href: '/contributing', label: 'Contributing' },
+// `/contributing` + `/changelog` + `/tracks` + `/review` + `/bookmarks` are
+// Phase-2 pages. Linking now so the footer doesn't need churn commits once
+// they ship.
+const CONTENT_LINKS: { href: string; label: string }[] = [
+  { href: '/courses',   label: 'All Courses' },
+  { href: '/tracks',    label: 'Tracks' },
+  { href: '/review',    label: 'Review' },
+  { href: '/rss.xml',   label: 'RSS Feed' },
+];
+
+const PROJECT_LINKS: { href: string; label: string; external?: boolean }[] = [
+  { href: '/contributing', label: 'Contribute' },
+  { href: githubUrl,       label: 'GitHub',       external: true },
+  { href: '/changelog',    label: 'Changelog' },
+  { href: 'https://github.com/sonushahuji4/gyandev/issues', label: 'Report Issue', external: true },
+];
+
+const LEGAL_LINKS: { href: string; label: string; external?: boolean }[] = [
+  { href: '/about',   label: 'About' },
+  { href: '/privacy', label: 'Privacy' },
+  { href: '/terms',   label: 'Terms' },
+  { href: 'https://creativecommons.org/licenses/by-sa/4.0/', label: 'License', external: true },
 ];
 
 const currentYear = new Date().getFullYear();
@@ -46,86 +56,84 @@ const currentYear = new Date().getFullYear();
 <footer class="site-footer" aria-label="Site footer">
   <div class="site-footer__inner">
     <div class="site-footer__grid">
-      {/* Column 1 — About */}
-      <section class="site-footer__col site-footer__col--about" aria-labelledby="footer-about-heading">
-        <h2 id="footer-about-heading" class="site-footer__brand">
-          <span class="site-footer__brand-mark" aria-hidden="true">G</span>
-          <span class="site-footer__brand-word">GyanDev</span>
+      <section class="site-footer__col site-footer__col--brand" aria-labelledby="footer-brand-heading">
+        <h2 id="footer-brand-heading" class="site-footer__wordmark">
+          <span class="site-footer__wordmark-text">GyanDev</span><span class="site-footer__wordmark-dot">.</span>
         </h2>
-        <p class="site-footer__tagline">Deep notes for modern developers</p>
-        <p class="site-footer__desc">
-          Free, open-source technical education. Every chapter in three
-          synchronized views: Full Notes, Quick Revision, Flow Diagram.
+        <p class="site-footer__tagline">
+          Clear, deeply-researched notes for modern engineers. Free and open-source,
+          licensed under CC BY-SA 4.0.
         </p>
       </section>
 
-      {/* Column 2 — Navigation */}
-      <nav class="site-footer__col site-footer__col--nav" aria-labelledby="footer-nav-heading">
-        <h2 id="footer-nav-heading" class="site-footer__heading">Explore</h2>
+      <nav class="site-footer__col" aria-labelledby="footer-content-heading">
+        <h3 id="footer-content-heading" class="site-footer__heading">Content</h3>
         <ul class="site-footer__links">
-          {NAV_LINKS.map((link) => (
+          {CONTENT_LINKS.map((link) => (
             <li><a href={link.href}>{link.label}</a></li>
           ))}
         </ul>
       </nav>
 
-      {/* Column 3 — Connect */}
-      <nav class="site-footer__col site-footer__col--connect" aria-labelledby="footer-connect-heading">
-        <h2 id="footer-connect-heading" class="site-footer__heading">Connect</h2>
+      <nav class="site-footer__col" aria-labelledby="footer-project-heading">
+        <h3 id="footer-project-heading" class="site-footer__heading">Project</h3>
         <ul class="site-footer__links">
-          <li>
-            <a href={githubUrl} rel="noopener noreferrer" target="_blank">GitHub</a>
-          </li>
-          {twitterUrl && (
+          {PROJECT_LINKS.map((link) => (
             <li>
-              <a href={twitterUrl} rel="noopener noreferrer" target="_blank">Twitter / X</a>
+              {link.external ? (
+                <a href={link.href} rel="noopener noreferrer" target="_blank">{link.label}</a>
+              ) : (
+                <a href={link.href}>{link.label}</a>
+              )}
             </li>
-          )}
-          {linkedinUrl && (
+          ))}
+        </ul>
+      </nav>
+
+      <nav class="site-footer__col" aria-labelledby="footer-legal-heading">
+        <h3 id="footer-legal-heading" class="site-footer__heading">Legal</h3>
+        <ul class="site-footer__links">
+          {LEGAL_LINKS.map((link) => (
             <li>
-              <a href={linkedinUrl} rel="noopener noreferrer" target="_blank">LinkedIn</a>
+              {link.external ? (
+                <a href={link.href} rel="noopener noreferrer" target="_blank">{link.label}</a>
+              ) : (
+                <a href={link.href}>{link.label}</a>
+              )}
             </li>
-          )}
-          <li><a href="/rss.xml">RSS feed</a></li>
-          <li><a href="/atom.xml">Atom feed</a></li>
+          ))}
         </ul>
       </nav>
     </div>
 
     <div class="site-footer__bottom">
       <p class="site-footer__copyright">
-        © {currentYear} GyanDev. Content
-        {' '}<a href="https://creativecommons.org/licenses/by-sa/4.0/" rel="noopener noreferrer" target="_blank">CC BY-SA 4.0</a>{' '}
-        · Code
-        {' '}<a href="https://opensource.org/licenses/MIT" rel="noopener noreferrer" target="_blank">MIT</a>.
+        © {currentYear} GyanDev · Built with Astro on Cloudflare Pages
       </p>
-      <ul class="site-footer__legal" aria-label="Legal">
-        <li><a href="/privacy">Privacy</a></li>
-        <li aria-hidden="true" class="site-footer__sep">·</li>
-        <li><a href="/terms">Terms</a></li>
-      </ul>
+      <p class="site-footer__license">
+        CC BY-SA 4.0 (prose) · MIT (code)
+      </p>
     </div>
   </div>
 </footer>
 
 <style>
   .site-footer {
-    background: var(--color-surface-muted);
+    background: transparent;
     border-top: 1px solid var(--color-border);
     color: var(--color-text-muted);
-    margin-top: 3rem;
+    margin-top: 4rem;
   }
 
   .site-footer__inner {
     max-width: 80rem;
     margin: 0 auto;
-    padding: 2rem 1rem;
+    padding: 2.5rem 1rem 2rem;
   }
-  @media (min-width: 40rem) { .site-footer__inner { padding: 2rem 1.25rem; } }
-  @media (min-width: 48rem) { .site-footer__inner { padding: 2.5rem 1.5rem; } }
-  @media (min-width: 64rem) { .site-footer__inner { padding: 3rem 2rem; } }
+  @media (min-width: 40rem) { .site-footer__inner { padding: 2.5rem 1.25rem 2rem; } }
+  @media (min-width: 48rem) { .site-footer__inner { padding: 3rem 1.5rem 2.25rem; } }
+  @media (min-width: 64rem) { .site-footer__inner { padding: 3.5rem 2rem 2.5rem; } }
 
-  /* Mobile: single column. Tablet: 2 cols. Desktop: 3 cols. */
   .site-footer__grid {
     display: grid;
     grid-template-columns: 1fr;
@@ -136,68 +144,49 @@ const currentYear = new Date().getFullYear();
       grid-template-columns: 1fr 1fr;
       gap: 2rem 3rem;
     }
-    /* About spans full width on tablet so Nav + Connect sit side-by-side. */
-    .site-footer__col--about { grid-column: 1 / -1; }
+    .site-footer__col--brand { grid-column: 1 / -1; }
   }
   @media (min-width: 64rem) {
     .site-footer__grid {
-      grid-template-columns: 2fr 1fr 1fr;
+      grid-template-columns: 1.6fr 1fr 1fr 1fr;
       gap: 3rem;
     }
-    .site-footer__col--about { grid-column: auto; }
+    .site-footer__col--brand { grid-column: auto; }
   }
 
-  .site-footer__col {
-    min-width: 0;
-  }
+  .site-footer__col { min-width: 0; }
 
-  /* ---------- Column 1: About ---------- */
-  .site-footer__brand {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin: 0 0 0.5rem;
-    font-size: 1rem;
-    font-weight: 600;
+  /* ---------- Brand column ---------- */
+  .site-footer__wordmark {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.25rem;
     color: var(--color-text);
     letter-spacing: -0.01em;
+    line-height: 1;
   }
-  .site-footer__brand-mark {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    background: var(--color-accent);
-    color: var(--color-accent-fg);
-    border-radius: 6px;
-    font-family: var(--font-mono);
-    font-weight: 700;
-    font-size: 0.9rem;
+  .site-footer__wordmark-dot {
+    color: var(--color-accent);
   }
-  .site-footer__brand-word { font-size: 1rem; }
 
   .site-footer__tagline {
-    margin: 0 0 0.5rem;
-    color: var(--color-text);
-    font-size: 0.9375rem;
-    font-weight: 500;
-  }
-  .site-footer__desc {
     margin: 0;
-    font-size: 0.875rem;
+    max-width: 22rem;
+    font-size: 0.8125rem;
     line-height: 1.55;
-    max-width: 34rem;
+    color: var(--color-text-muted);
   }
 
-  /* ---------- Columns 2 + 3: link lists ---------- */
+  /* ---------- Link columns ---------- */
   .site-footer__heading {
-    margin: 0 0 0.75rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
+    margin: 0 0 0.875rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--color-text);
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
   }
   .site-footer__links {
     list-style: none;
@@ -205,14 +194,13 @@ const currentYear = new Date().getFullYear();
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.375rem;
+    gap: 0.5rem;
   }
   .site-footer__links a {
     display: inline-block;
-    padding: 0.25rem 0;
-    color: var(--color-text-muted);
+    color: var(--color-text);
     text-decoration: none;
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
   }
   .site-footer__links a:hover,
@@ -224,13 +212,14 @@ const currentYear = new Date().getFullYear();
 
   /* ---------- Bottom bar ---------- */
   .site-footer__bottom {
-    margin-top: 2rem;
-    padding-top: 1.5rem;
+    margin-top: 2.25rem;
+    padding-top: 1.25rem;
     border-top: 1px solid var(--color-border);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    font-size: 0.8125rem;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
   }
   @media (min-width: 48rem) {
     .site-footer__bottom {
@@ -241,43 +230,10 @@ const currentYear = new Date().getFullYear();
     }
   }
 
-  .site-footer__copyright {
+  .site-footer__copyright,
+  .site-footer__license {
     margin: 0;
-    color: var(--color-text-muted);
     line-height: 1.5;
-  }
-  .site-footer__copyright a {
-    color: var(--color-text-muted);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-  .site-footer__copyright a:hover,
-  .site-footer__copyright a:focus-visible {
-    color: var(--color-accent);
-  }
-
-  .site-footer__legal {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  .site-footer__legal a {
-    color: var(--color-text-muted);
-    text-decoration: none;
-    padding: 0.25rem 0;
-  }
-  .site-footer__legal a:hover,
-  .site-footer__legal a:focus-visible {
-    color: var(--color-accent);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-  .site-footer__sep {
-    color: var(--color-border-strong);
   }
 
   @media print {

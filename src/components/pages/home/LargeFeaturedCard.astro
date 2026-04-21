@@ -1,0 +1,140 @@
+---
+/**
+ * LargeFeaturedCard — the hero-sized tile that anchors the "Featured Chapters"
+ * grid on `/`. Pairs with three smaller `ChapterCard`s on the right at ≥ lg.
+ *
+ * Difference from ChapterCard:
+ *   - Larger serif title (clamp)
+ *   - Longer excerpt (no line-clamp)
+ *   - Extra meta slot — "Updated <relative>" next to difficulty + reading time
+ */
+import type { CollectionEntry } from 'astro:content';
+import { chapterUrl } from '../../../lib/routes';
+
+export interface Props {
+  chapter: CollectionEntry<'chapters'>;
+  course: CollectionEntry<'courses'>;
+  courseSlug: string;
+  chapterSlug: string;
+}
+
+const { chapter, course, courseSlug, chapterSlug } = Astro.props;
+const { title, description, difficulty, readingMinutes, updated } = chapter.data;
+
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+const diffMs = +updated - Date.now();
+const ONE_DAY = 86_400_000;
+const absoluteLabel = updated.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+const updatedLabel =
+  Math.abs(diffMs) < ONE_DAY * 30
+    ? rtf.format(Math.round(diffMs / ONE_DAY), 'day')
+    : `Updated ${absoluteLabel}`;
+
+const courseIcon = (course.data.icon ?? '').startsWith('/') ? '' : (course.data.icon ?? '');
+---
+
+<a class="large-featured" href={chapterUrl(courseSlug, chapterSlug)}>
+  <p class="large-featured__overline">
+    {courseIcon && <span class="large-featured__icon" aria-hidden="true">{courseIcon}</span>}
+    {course.data.title} · Chapter {chapter.data.order}
+  </p>
+  <h3 class="large-featured__title">{title}</h3>
+  <p class="large-featured__excerpt">{description}</p>
+  <p class="large-featured__meta">
+    <span class="large-featured__difficulty">{difficulty}</span>
+    <span aria-hidden="true">·</span>
+    <span>{readingMinutes} min read</span>
+    <span aria-hidden="true">·</span>
+    <time datetime={updated.toISOString()}>{updatedLabel}</time>
+  </p>
+</a>
+
+<style>
+  .large-featured {
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    height: 100%;
+    padding: 1.75rem 1.75rem 1.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    color: inherit;
+    text-decoration: none;
+    transition: border-color 150ms ease, background 150ms ease;
+  }
+  .large-featured:hover,
+  .large-featured:focus-visible {
+    border-color: var(--color-border-strong);
+    text-decoration: none;
+  }
+
+  .large-featured__overline {
+    margin: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4375rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+  }
+  .large-featured__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.125rem;
+    height: 1.125rem;
+    padding: 0 0.25rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 0.25rem;
+    font-family: var(--font-mono);
+    font-size: 0.5625rem;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: 0;
+  }
+
+  .large-featured__title {
+    margin: 0;
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    line-height: 1.1;
+    color: var(--color-text);
+    letter-spacing: -0.01em;
+  }
+
+  .large-featured__excerpt {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    max-width: 36rem;
+    flex: 1;
+  }
+
+  .large-featured__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0;
+    padding-top: 0.5rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+  }
+  .large-featured__difficulty {
+    text-transform: capitalize;
+    padding: 0.125rem 0.4375rem;
+    border-radius: 0.25rem;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+  }
+  .large-featured__meta span[aria-hidden="true"] {
+    opacity: 0.5;
+  }
+</style>

@@ -16,10 +16,13 @@ export interface Props {
 
 const { course } = Astro.props;
 const { title, description, icon } = course.data;
+
+const isLegacyImageIcon = typeof icon === 'string' && icon.startsWith('/');
+const badgeText = !isLegacyImageIcon ? (icon ?? title.slice(0, 2).toUpperCase()) : '';
 ---
 
 <section class="coming-soon-hero" aria-labelledby="coming-soon-heading">
-  {icon && (
+  {isLegacyImageIcon ? (
     <img
       class="coming-soon-hero__icon"
       src={icon}
@@ -31,6 +34,8 @@ const { title, description, icon } = course.data;
       decoding="async"
       aria-hidden="true"
     />
+  ) : (
+    <span class="coming-soon-hero__badge-letter" aria-hidden="true">{badgeText}</span>
   )}
 
   <p class="coming-soon-hero__badge">Coming soon</p>
@@ -66,6 +71,22 @@ const { title, description, icon } = course.data;
     border-radius: 1rem;
     background: var(--color-surface-muted);
     padding: 0.5rem;
+  }
+  .coming-soon-hero__badge-letter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 3.5rem;
+    height: 3.5rem;
+    padding: 0 0.75rem;
+    border-radius: 0.75rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    font-family: var(--font-mono);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--color-text);
+    letter-spacing: 0.01em;
   }
   .coming-soon-hero__badge {
     margin: 0;

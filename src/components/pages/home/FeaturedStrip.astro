@@ -1,10 +1,19 @@
 ---
 /**
- * FeaturedStrip — "Featured Reads" section (home.md Step 8). Responsive grid
- * of ChapterCards: 1 col (mobile, with optional horizontal scroll-snap),
- * 2 col (tablet), 3 col (desktop).
+ * FeaturedStrip — "Featured Chapters" section on the home page.
+ *
+ * DevNotes-style layout (Sprint 7):
+ *   - First entry renders as a hero-sized `LargeFeaturedCard` on the left
+ *     (spans both rows at lg+).
+ *   - Remaining entries render as small `ChapterCard`s in a 1-column
+ *     stack on the right at lg+. On mobile everything stacks.
+ *
+ * When there's exactly one featured entry we just show the large card. When
+ * there are zero entries the home page hides the section entirely (it calls
+ * this component only when chapters.length > 0).
  */
 import ChapterCard from './ChapterCard.astro';
+import LargeFeaturedCard from './LargeFeaturedCard.astro';
 import type { FeaturedChapter } from '../../../lib/home/featured';
 
 export interface Props {
@@ -12,76 +21,101 @@ export interface Props {
 }
 
 const { chapters } = Astro.props;
+
+const [hero, ...rest] = chapters;
+const sideCards = rest.slice(0, 3);
 ---
 
-<section class="featured-strip" aria-labelledby="featured-heading">
-  <div class="featured-strip__head">
-    <h2 id="featured-heading" class="featured-strip__title">Featured Reads</h2>
-    <p class="featured-strip__sub">Hand-picked chapters worth your time.</p>
+<section class="featured-chapters" aria-labelledby="featured-heading">
+  <div class="featured-chapters__head">
+    <p class="featured-chapters__overline">Featured Chapters</p>
+    <h2 id="featured-heading" class="featured-chapters__sub">Editor's picks, across courses</h2>
   </div>
-  <ul class="featured-strip__list" role="list">
-    {chapters.map(({ chapter, course, courseSlug, chapterSlug }) => (
-      <ChapterCard
-        chapter={chapter}
-        course={course}
-        courseSlug={courseSlug}
-        chapterSlug={chapterSlug}
+
+  <div class:list={['featured-chapters__grid', sideCards.length > 0 && 'featured-chapters__grid--split']}>
+    {hero && (
+      <LargeFeaturedCard
+        chapter={hero.chapter}
+        course={hero.course}
+        courseSlug={hero.courseSlug}
+        chapterSlug={hero.chapterSlug}
       />
-    ))}
-  </ul>
+    )}
+
+    {sideCards.length > 0 && (
+      <ul class="featured-chapters__side" role="list">
+        {sideCards.map(({ chapter, course, courseSlug, chapterSlug }) => (
+          <ChapterCard
+            chapter={chapter}
+            course={course}
+            courseSlug={courseSlug}
+            chapterSlug={chapterSlug}
+          />
+        ))}
+      </ul>
+    )}
+  </div>
 </section>
 
 <style>
-  .featured-strip {
-    margin-top: 3rem;
+  .featured-chapters {
+    margin-top: 3.5rem;
   }
 
-  .featured-strip__head {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
+  .featured-chapters__head {
     margin-bottom: 1.25rem;
   }
-  .featured-strip__title {
-    margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
-  }
-  .featured-strip__sub {
-    margin: 0;
+  .featured-chapters__overline {
+    margin: 0 0 0.25rem;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
     color: var(--color-text-muted);
-    font-size: 0.9375rem;
+  }
+  .featured-chapters__sub {
+    margin: 0;
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 1.0625rem;
+    color: var(--color-text-muted);
   }
 
-  .featured-strip__list {
+  .featured-chapters__grid {
     display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: 85%;
+    grid-template-columns: 1fr;
     gap: 1rem;
-    padding: 0.25rem 0 1rem;
-    margin: 0;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
   }
-  .featured-strip__list > :global(.chapter-card-cell) {
-    scroll-snap-align: start;
+
+  .featured-chapters__side {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   @media (min-width: 48rem) {
-    .featured-strip__list {
-      grid-auto-flow: row;
-      grid-auto-columns: initial;
+    .featured-chapters__grid {
+      gap: 1.25rem;
+    }
+    .featured-chapters__side {
       grid-template-columns: repeat(2, 1fr);
       gap: 1.25rem;
-      overflow: visible;
-      scroll-snap-type: none;
     }
   }
+
   @media (min-width: 64rem) {
-    .featured-strip__list {
-      grid-template-columns: repeat(3, 1fr);
+    .featured-chapters__grid--split {
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
       gap: 1.5rem;
+      align-items: stretch;
+    }
+    .featured-chapters__side {
+      grid-template-columns: 1fr;
+      gap: 1rem;
     }
   }
 </style>

@@ -1,0 +1,45 @@
+---
+title: Event Loop, Deep Dive
+description: libuv phases, timers, I/O callbacks, poll, check, close — and where `process.nextTick` and microtasks slot in between every phase.
+course: nodejs/course
+order: 2
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 14
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - event-loop
+  - libuv
+  - async
+---
+
+{/* TODO(content): expand into full libuv phase walkthrough with interleaved examples. */}
+
+## The six phases
+
+libuv cycles through six phases on every tick:
+
+1. **Timers** — `setTimeout` / `setInterval` callbacks whose thresholds elapsed.
+2. **Pending callbacks** — I/O callbacks deferred from a previous iteration.
+3. **Idle, prepare** — internal.
+4. **Poll** — wait for new I/O events; most callbacks fire here.
+5. **Check** — `setImmediate` callbacks.
+6. **Close** — `'close'` events on sockets/handles.
+
+Between every phase the engine drains `process.nextTick` and then the microtask queue.
+
+## Why ordering bites
+
+```js
+setTimeout(() => console.log('timeout'), 0);
+setImmediate(() => console.log('immediate'));
+```
+
+In the main module, the order is non-deterministic — depends on how long the current tick
+took. Inside an I/O callback, `setImmediate` always wins because poll → check is the
+fixed order.
+
+> Placeholder chapter — full deep-dive with benchmarks coming soon.
