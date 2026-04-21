@@ -1,0 +1,143 @@
+---
+/**
+ * RecentlyUpdatedList — top-5 by `updated` desc (home.md Step 10).
+ *
+ * Relative time is computed at build time via `Intl.RelativeTimeFormat`. The
+ * visible staleness guard (recomputing on `astro:page-load`) is Phase 1.5 per
+ * home.md §11 — we still emit `<time datetime>` so a Phase-1.5 script can flip
+ * the text client-side without HTML changes.
+ */
+import { chapterUrl } from '../../../lib/routes';
+import type { RecentChapter } from '../../../lib/home/recent';
+
+export interface Props {
+  entries: RecentChapter[];
+}
+
+const { entries } = Astro.props;
+
+const rtf = new Intl.RelativeTimeFormat('en', { numeric: 'auto' });
+const NOW = Date.now();
+const UNITS: [Intl.RelativeTimeFormatUnit, number][] = [
+  ['year', 31_536_000_000],
+  ['month', 2_592_000_000],
+  ['week', 604_800_000],
+  ['day', 86_400_000],
+  ['hour', 3_600_000],
+  ['minute', 60_000],
+];
+
+function relativeTime(date: Date): string {
+  const diff = +date - NOW;
+  for (const [unit, ms] of UNITS) {
+    if (Math.abs(diff) >= ms) return rtf.format(Math.round(diff / ms), unit);
+  }
+  return rtf.format(Math.round(diff / 1000), 'second');
+}
+---
+
+<section class="recent-list" aria-labelledby="recent-heading">
+  <div class="recent-list__head">
+    <h2 id="recent-heading" class="recent-list__title">Recently Updated</h2>
+    <p class="recent-list__sub">What's new and freshly revised.</p>
+  </div>
+  <ol class="recent-list__items" role="list">
+    {entries.map(({ chapter, courseSlug, chapterSlug, course, isNew }) => (
+      <li class="recent-row">
+        <span
+          class:list={['recent-row__dot', isNew ? 'recent-row__dot--new' : 'recent-row__dot--updated']}
+          aria-hidden="true"
+        ></span>
+        <a class="recent-row__link" href={chapterUrl(courseSlug, chapterSlug)}>
+          {chapter.data.title}
+        </a>
+        <span class="recent-row__course"> — {course.data.title}</span>
+        <span class="sr-only">{isNew ? 'new, ' : 'updated, '}</span>
+        <time class="recent-row__time" datetime={chapter.data.updated.toISOString()}>
+          {relativeTime(chapter.data.updated)}
+        </time>
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .recent-list {
+    margin-top: 3rem;
+  }
+
+  .recent-list__head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .recent-list__title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .recent-list__sub {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .recent-list__items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    counter-reset: none;
+  }
+
+  .recent-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.625rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .recent-row:last-child {
+    border-bottom: 0;
+  }
+
+  .recent-row__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .recent-row__dot--new {
+    background: var(--color-accent);
+  }
+  .recent-row__dot--updated {
+    background: var(--color-text-muted);
+    opacity: 0.6;
+  }
+
+  .recent-row__link {
+    color: var(--color-text);
+    font-weight: 500;
+    text-decoration: none;
+  }
+  .recent-row__link:hover,
+  .recent-row__link:focus-visible {
+    text-decoration: underline;
+  }
+
+  .recent-row__course {
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .recent-row__time {
+    margin-left: auto;
+    color: var(--color-text-muted);
+    font-size: 0.8125rem;
+    white-space: nowrap;
+  }
+</style>

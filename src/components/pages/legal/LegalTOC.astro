@@ -1,0 +1,84 @@
+---
+/**
+ * LegalTOC — inline anchor list rendered from Astro's auto-generated
+ * `headings` export on the MDX entry. Depth-2 headings only (numbered
+ * sections); depth-3 sub-headings are skipped.
+ *
+ * No IntersectionObserver / scroll-sync — legal pages are short enough that
+ * a plain anchor list is the whole job. Contrast with the chapter plan,
+ * which adds a sticky right-TOC with scroll sync in PR-5.1.
+ *
+ * Accessibility:
+ *   - wrapped in `<nav aria-label="Contents">` per WAI-ARIA landmarks
+ *   - `<ol>` + real `<a href="#...">` links (semantic + keyboard-reachable)
+ *   - sticky on desktop (lg / `min-width: 64rem`) per spec §3
+ */
+
+import type { MarkdownHeading } from 'astro';
+
+export interface Props {
+  headings: MarkdownHeading[];
+}
+
+const items = Astro.props.headings.filter((h) => h.depth === 2);
+---
+
+{
+  items.length > 0 && (
+    <nav class="legal-toc" aria-label="Contents">
+      <h2 class="legal-toc__label">Contents</h2>
+      <ol>
+        {items.map((h) => (
+          <li>
+            <a href={`#${h.slug}`}>{h.text}</a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  )
+}
+
+<style>
+  .legal-toc {
+    margin: 0 0 2rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-surface-muted, #f2ecdc);
+    border: 1px solid var(--color-border, #e5ddc8);
+    border-radius: 0.5rem;
+  }
+  .legal-toc__label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.5rem;
+    padding: 0;
+    border: 0;
+    /* Strong text against the muted surface — `--color-text` passes WCAG AA
+       on `--color-surface-muted` in both light and dark design-system themes. */
+    color: var(--color-text, #1a1a1a);
+  }
+  .legal-toc ol {
+    margin: 0;
+    padding-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .legal-toc a {
+    color: var(--color-text, inherit);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .legal-toc a:hover,
+  .legal-toc a:focus-visible {
+    color: var(--color-text, #1a1a1a);
+  }
+
+  @media (min-width: 64rem) {
+    .legal-toc {
+      position: sticky;
+      top: 1rem;
+    }
+  }
+</style>

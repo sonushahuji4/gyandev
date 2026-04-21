@@ -1,0 +1,152 @@
+---
+/**
+ * BaseLayout — root HTML shell used by every page on GyanDev.
+ *
+ * Owns: <!doctype>, <html lang/data-theme>, charset + viewport, the pre-paint
+ * theme script, the skip link, the <main id="main"> landmark, a11y live region,
+ * and named slots for page-specific head content, header, and footer.
+ *
+ * All SEO meta/link tags are produced by `<SEO />` (PR-1.5) from a single
+ * `buildMeta()` call — no page writes raw meta/link tags. JSON-LD schemas are
+ * rendered by `<JsonLd />` when the `jsonLd` prop is passed.
+ *
+ * Wired primitives:
+ *   - Pre-paint theme-init script (PR-1.2)
+ *   - <SkipLink /> as the first focusable element (PR-1.3)
+ *   - <LiveRegion /> singleton for announce() (PR-1.3)
+ *   - `keybindings.ts` + `view-transition-a11y.ts` — imported as client
+ *     modules so Astro bundles them and they run on first load + every
+ *     subsequent `astro:page-load`.
+ *   - <SEO /> + <JsonLd /> (PR-1.5)
+ *
+ * `<ClientRouter />` is mounted by `ChapterShell` (not here) so the ~6 KB
+ * Astro transitions runtime stays off non-chapter pages. PR-5.1's bundle
+ * gate caps the home page at 5 KB JS — mounting ClientRouter globally
+ * would blow that budget. The trade-off is intentional: hard navs on
+ * home/about/courses, animated swaps with `transition:persist` only on
+ * chapter ↔ chapter (the actual UX win per chapter.md §3.4).
+ */
+
+import '../styles/global.css';
+import '../styles/fonts.css';
+
+import SkipLink from '../components/a11y/SkipLink.astro';
+import LiveRegion from '../components/a11y/LiveRegion.astro';
+import FontPreload from '../components/performance/FontPreload.astro';
+import CriticalCSS from '../components/performance/CriticalCSS.astro';
+import SEO from '../components/seo/SEO.astro';
+import JsonLd from '../components/seo/JsonLd.astro';
+import { THEME_INIT } from '../scripts/theme-init';
+import type { ArticleMeta } from '../lib/seo/meta';
+
+interface Props {
+  title: string;
+  description: string;
+  /** Absolute canonical URL — build via `canonicalFor()` from `src/lib/routes.ts`. */
+  canonical: string;
+  noindex?: boolean;
+  /** Comma-separated robots directives appended to the base value, e.g. `"max-image-preview:large"`. */
+  robotsExtra?: string;
+  /** Absolute OG image URL. Falls back to `/og/default.png` inside buildMeta(). */
+  ogImage?: string;
+  /** Accessible description for the OG image. Defaults to `title`. */
+  ogImageAlt?: string;
+  /** OG type — defaults to `'website'`; chapter Full Notes use `'article'`. */
+  ogType?: 'website' | 'article';
+  /** Twitter creator handle override, e.g. `@sonushahuji4`. */
+  twitterCreator?: string;
+  /** Present on chapter Full Notes only. */
+  article?: ArticleMeta;
+  /** JSON-LD schema(s) to embed — typed factories from `src/lib/seo/jsonld.ts`. */
+  jsonLd?: object | object[];
+  /** Per PHASE-1-ROADMAP §2.R2, only home sets this `true` — forwards to
+   *  `<FontPreload>` so the display serif is preloaded only where it paints. */
+  includeSerif?: boolean;
+  /** Page scope consumed by keybindings (e.g. `"chapter"` gates arrow-key nav). */
+  pageScope?: string;
+  /** Extra `data-*` attrs to spread onto `<main>` (chapter slug, course label, etc.). */
+  pageData?: Record<string, string>;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  noindex = false,
+  robotsExtra,
+  ogImage,
+  ogImageAlt,
+  ogType,
+  twitterCreator,
+  article,
+  jsonLd,
+  includeSerif = false,
+  pageScope,
+  pageData,
+} = Astro.props;
+
+// Spread `pageData` keys onto `<main>` as `data-<key>` attrs so client
+// scripts (e.g. `chapter-hydrate.ts`) can read context from one source.
+const mainDataAttrs: Record<string, string> = {};
+if (pageData) {
+  for (const [key, value] of Object.entries(pageData)) {
+    mainDataAttrs[`data-${key}`] = value;
+  }
+}
+---
+
+<!doctype html>
+<html lang="en" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    {/*
+      Pre-paint theme script (PR-1.2). Must stay inline + synchronous so the
+      `.dark` class + `data-theme` attribute are set before first paint.
+    */}
+    <script is:inline set:html={THEME_INIT} />
+
+    <SEO
+      title={title}
+      description={description}
+      canonical={canonical}
+      noindex={noindex}
+      robotsExtra={robotsExtra}
+      ogImage={ogImage}
+      ogImageAlt={ogImageAlt}
+      ogType={ogType}
+      twitterCreator={twitterCreator}
+      article={article}
+    />
+
+    {jsonLd && <JsonLd schema={jsonLd} />}
+
+    <FontPreload includeSerif={includeSerif} />
+    <CriticalCSS />
+
+    <slot name="head" />
+  </head>
+  <body>
+    <SkipLink />
+
+    <slot name="header" />
+
+    <main id="main" data-page={pageScope} {...mainDataAttrs}>
+      <slot />
+    </main>
+
+    <slot name="footer" />
+
+    <LiveRegion />
+
+    {/*
+      A11y scripts — bundled by Astro, loaded once, survive ClientRouter swaps
+      because module state is preserved across `astro:page-load`.
+    */}
+    <script>
+      import '../lib/a11y/keybindings';
+      import '../lib/a11y/view-transition-a11y';
+    </script>
+  </body>
+</html>

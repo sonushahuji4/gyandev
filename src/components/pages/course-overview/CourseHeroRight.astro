@@ -1,0 +1,153 @@
+---
+/**
+ * Course hero — right column (PR-4.1).
+ *
+ * Renders two CTAs:
+ *   1. **Resume CTA**: points to `chapterUrl(course, firstChapterSlug)` at
+ *      first paint. The hydration script (`course-overview-hydrate.ts`)
+ *      rewrites `href` to the first unread chapter and flips `hidden` based
+ *      on per-course localStorage state (per spec §3.4):
+ *        - no progress  → hidden
+ *        - in progress  → visible, href = next unread chapter
+ *        - 100% read    → hidden, completion banner revealed by `#complete-banner`
+ *   2. **Start CTA**: always rendered; hidden at 100% completion.
+ *
+ * Both CTAs are real `<a href>` so the page is functional without JS. `hidden`
+ * starts true on Resume so there's no flash between SSR and hydration at
+ * zero-progress — the common case.
+ *
+ * `data-cta`, `data-course-slug`, `data-url-base` are the hydration contract;
+ * keep them in sync with `course-overview-hydrate.ts`.
+ */
+import { chapterUrl, courseUrl } from '../../../lib/routes';
+
+export interface Props {
+  courseSlug: string;
+  /** Published first-chapter slug. When undefined, both CTAs render hidden. */
+  firstChapterSlug?: string;
+}
+
+const { courseSlug, firstChapterSlug } = Astro.props;
+
+const startHref = firstChapterSlug ? chapterUrl(courseSlug, firstChapterSlug) : undefined;
+const resumeHref = startHref;
+const urlBase = courseUrl(courseSlug);
+const hasChapters = Boolean(firstChapterSlug);
+---
+
+<div class="course-hero-right" data-course-slug={courseSlug}>
+  <div class="course-hero-right__ctas">
+    <a
+      class="course-hero-right__btn course-hero-right__btn--primary"
+      data-cta="resume"
+      data-course-slug={courseSlug}
+      data-url-base={urlBase}
+      href={resumeHref}
+      hidden
+    >
+      <span class="course-hero-right__btn-label" data-cta-label>Resume</span>
+      <span aria-hidden="true">→</span>
+    </a>
+
+    <a
+      class="course-hero-right__btn course-hero-right__btn--secondary"
+      data-cta="start"
+      href={startHref}
+      hidden={!hasChapters}
+    >
+      Start Chapter 1
+    </a>
+  </div>
+
+  <div
+    id="complete-banner"
+    class="course-hero-right__banner"
+    role="status"
+    hidden
+  >
+    <p class="course-hero-right__banner-title">Course complete</p>
+    <p class="course-hero-right__banner-body">You&apos;ve read every chapter. Revisit anytime.</p>
+  </div>
+</div>
+
+<style>
+  .course-hero-right {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: flex-start;
+    width: 100%;
+  }
+  @media (min-width: 64rem) {
+    .course-hero-right {
+      align-items: flex-end;
+    }
+  }
+
+  .course-hero-right__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .course-hero-right__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    border: 1px solid transparent;
+    min-height: 2.75rem;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .course-hero-right__btn[hidden] {
+    display: none;
+  }
+
+  .course-hero-right__btn--primary {
+    background: var(--color-accent, #17150f);
+    color: var(--color-surface, #fafaf7);
+    border-color: var(--color-accent, #17150f);
+  }
+  .course-hero-right__btn--primary:hover,
+  .course-hero-right__btn--primary:focus-visible {
+    background: var(--color-accent-hover, #000);
+    border-color: var(--color-accent-hover, #000);
+  }
+
+  .course-hero-right__btn--secondary {
+    background: transparent;
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+  .course-hero-right__btn--secondary:hover,
+  .course-hero-right__btn--secondary:focus-visible {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface-muted);
+  }
+
+  .course-hero-right__banner {
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface-muted);
+    max-width: 22rem;
+  }
+  .course-hero-right__banner[hidden] {
+    display: none;
+  }
+  .course-hero-right__banner-title {
+    margin: 0 0 0.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+    font-size: 0.9375rem;
+  }
+  .course-hero-right__banner-body {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+</style>

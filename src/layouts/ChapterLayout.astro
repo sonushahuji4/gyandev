@@ -1,0 +1,147 @@
+---
+/**
+ * ChapterLayout — wraps `ChapterShell` and threads the per-tab SEO,
+ * JSON-LD, and OG props for each of the three chapter routes.
+ *
+ * Per-tab contract (chapter.md §3, spec §9):
+ *
+ *   tab='full'      indexable, canonical=self, TechArticle + Breadcrumb JSON-LD
+ *   tab='revision'  noindex, canonical → Full Notes URL, no JSON-LD
+ *   tab='flow'      noindex, canonical → Full Notes URL, no JSON-LD
+ *
+ * The route file resolves `Content`, `prev/next`, JSON-LD factories, etc.
+ * and passes them in. This layout owns the title/description string
+ * formatting + the ChapterFooter + ChapterComments rendering so the three
+ * route files stay near-identical.
+ */
+import type { MarkdownHeading } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+
+import ChapterShell from '../components/layout/ChapterShell.astro';
+import ChapterHeader from '../components/pages/chapter/ChapterHeader.astro';
+import ChapterFooter from '../components/pages/chapter/ChapterFooter.astro';
+import ChapterComments from '../components/pages/chapter/ChapterComments.astro';
+import { canonicalFor, chapterUrl } from '../lib/routes';
+import type { ViewAvailability } from '../lib/chapter/availabilityOf';
+import type { PrevNextItem } from '../lib/chapter/prevNext';
+import type { SidebarChapterRef } from '../components/layout/LeftSidebar.astro';
+import type { ArticleMeta } from '../lib/seo/meta';
+
+interface Props {
+  chapter: CollectionEntry<'chapters'>;
+  course: CollectionEntry<'courses'>;
+  courseSlug: string;
+  chapterSlug: string;
+  tab: 'full' | 'revision' | 'flow';
+  availability: ViewAvailability;
+  /** Sidebar refs from `bundle.chapters` — already sorted by season+order. */
+  chapters: SidebarChapterRef[];
+  /** Astro `<Content />` headings — drives the right TOC. */
+  headings: MarkdownHeading[];
+  prev: PrevNextItem | null;
+  next: PrevNextItem | null;
+  /** GitHub edit URL pointing at the THIS-tab MDX file. */
+  editUrl: string;
+  /** GitHub issue template URL for the chapter. */
+  reportIssueUrl: string;
+  /** OG image — same per chapter (all three tabs share). */
+  ogImage: string;
+  /** Per-view reading minutes (Revision can override). */
+  displayedReadingMinutes: number;
+  /** Per-view updated date (Revision/Flow can override). */
+  displayedUpdated: Date;
+  /** TechArticle + Breadcrumb factories (Full Notes only). */
+  jsonLd?: object[];
+  /** Article OG meta — Full Notes only. */
+  article?: ArticleMeta;
+}
+
+const {
+  chapter,
+  course,
+  courseSlug,
+  chapterSlug,
+  tab,
+  availability,
+  chapters,
+  headings,
+  prev,
+  next,
+  editUrl,
+  reportIssueUrl,
+  ogImage,
+  displayedReadingMinutes,
+  displayedUpdated,
+  jsonLd,
+  article,
+} = Astro.props;
+
+const isFull = tab === 'full';
+
+// Per spec §9: canonical always points to Full Notes regardless of which tab
+// is rendering. Title varies by tab; description does not (chapter description
+// applies to all three views).
+const canonical = canonicalFor(chapterUrl(courseSlug, chapterSlug));
+const titleSuffix = isFull
+  ? `${chapter.data.title}`
+  : tab === 'revision'
+    ? `${chapter.data.title} — Quick Revision`
+    : `${chapter.data.title} — Flow Diagram`;
+const fullTitle = `${titleSuffix} — ${course.data.title}`;
+---
+
+<ChapterShell
+  title={fullTitle}
+  description={chapter.data.description}
+  canonical={canonical}
+  noindex={!isFull}
+  course={course}
+  chapter={chapter}
+  chapters={chapters}
+  courseSlug={courseSlug}
+  chapterSlug={chapterSlug}
+  activeTab={tab}
+  availability={availability}
+  headings={headings}
+  ogImage={ogImage}
+  ogImageAlt={chapter.data.title}
+  ogType={isFull ? 'article' : 'website'}
+  article={isFull ? article : undefined}
+  jsonLd={isFull ? jsonLd : undefined}
+  robotsExtra={isFull ? 'max-image-preview:large' : undefined}
+  pageData={{
+    course: courseSlug,
+    chapter: chapterSlug,
+    'chapter-title': chapter.data.title,
+    'course-label': course.data.title,
+    'reading-minutes': String(displayedReadingMinutes),
+    'active-tab': tab,
+  }}
+>
+  <ChapterHeader
+    chapter={chapter}
+    course={course}
+    tab={tab}
+    editUrl={editUrl}
+    displayedReadingMinutes={displayedReadingMinutes}
+    displayedUpdated={displayedUpdated}
+  />
+
+  <slot />
+
+  <ChapterFooter
+    prev={prev}
+    next={next}
+    courseSlug={courseSlug}
+    editUrl={editUrl}
+    reportIssueUrl={reportIssueUrl}
+  />
+
+  <ChapterComments term={`${courseSlug}/${chapterSlug}`} />
+</ChapterShell>
+
+{/* Hydration scripts — Astro bundles + dedupes per-route. */}
+<script>
+  import '../scripts/chapter-hydrate';
+  import '../scripts/chapter-toc';
+</script>

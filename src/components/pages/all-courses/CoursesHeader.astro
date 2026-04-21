@@ -1,0 +1,78 @@
+---
+/**
+ * CoursesHeader — breadcrumbs + H1 + tagline + stats bar for `/courses`.
+ * Props are computed at build time by the page via `getCoursesWithStats()`
+ * (spec §3 Section 1).
+ *
+ * The stats bar is plain prose, not a live counter: it reflects the shipped
+ * catalog, not per-user progress. Personalized numbers come from the progress
+ * badge on each card (hydrated client-side).
+ */
+import Breadcrumbs from '../../seo/Breadcrumbs.astro';
+import { canonicalFor } from '../../../lib/routes';
+
+export interface Props {
+  courseCount: number;
+  chapterCount: number;
+  totalHours: number;
+}
+
+const { courseCount, chapterCount, totalHours } = Astro.props;
+
+const breadcrumbItems = [
+  { name: 'Home', url: canonicalFor('/') },
+  { name: 'Courses', url: canonicalFor('/courses') },
+];
+
+const plural = (n: number, singular: string, plural?: string): string =>
+  `${n} ${n === 1 ? singular : plural ?? `${singular}s`}`;
+---
+
+<header class="courses-header">
+  <Breadcrumbs items={breadcrumbItems} />
+
+  <h1>All Courses</h1>
+  <p class="courses-header__tagline">Everything we teach, in depth.</p>
+
+  <p class="courses-header__stats" aria-label="Catalog totals">
+    <span>{plural(courseCount, 'course')}</span>
+    <span aria-hidden="true">·</span>
+    <span>{plural(chapterCount, 'chapter')}</span>
+    <span aria-hidden="true">·</span>
+    <span>~{plural(totalHours, 'hour')} total</span>
+  </p>
+</header>
+
+<style>
+  .courses-header {
+    margin: 0 0 2rem;
+  }
+  .courses-header h1 {
+    font-size: var(--text-h1);
+    font-weight: 600;
+    margin: 0.75rem 0 0.25rem;
+    color: var(--color-text);
+  }
+  .courses-header__tagline {
+    color: var(--color-text-muted);
+    margin: 0 0 0.75rem;
+    font-size: 1.0625rem;
+  }
+  .courses-header__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    margin: 0;
+  }
+  .courses-header__stats span[aria-hidden="true"] {
+    opacity: 0.6;
+  }
+  @media (min-width: 48rem) {
+    .courses-header {
+      margin: 0 0 2.5rem;
+    }
+  }
+</style>

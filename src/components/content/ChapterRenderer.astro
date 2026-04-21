@@ -1,0 +1,42 @@
+---
+/**
+ * ChapterRenderer — the single MDX renderer used by every chapter view.
+ *
+ * Per PHASE-1-ROADMAP §9, this component is created at the shared
+ * `src/components/content/` path directly (no page-scope → ui promotion
+ * step) because any future prose route (docs, blog) will use the same
+ * MDX component map.
+ *
+ * The map is intentionally small in Phase 1 — Shiki rendering of code
+ * fences is handled by `rehype-pretty-code` at build time (see
+ * `astro.config.mjs`), so no per-element override is needed for `<pre>`.
+ *
+ * Custom components authors can use without importing in every MDX:
+ *   - `<Figure>` — pass-through to FigureDescribed for accessible diagrams
+ *   - `<MermaidCaption>` — Flow-only Mermaid wrapper (chapter component)
+ *
+ * Authors still need an explicit `import` for components that take
+ * non-trivial props or live outside the chapter scope; the map handles
+ * the universal cases.
+ */
+import FigureDescribed from '../a11y/FigureDescribed.astro';
+import MermaidCaption from '../pages/chapter/MermaidCaption.astro';
+
+interface Props {
+  /** The MDX `<Content />` factory returned by `await render(entry)`. */
+  Content: any;
+  /** Optional per-call overrides merged onto the default map. */
+  components?: Record<string, any>;
+}
+
+const { Content, components = {} } = Astro.props;
+
+const defaultMap: Record<string, any> = {
+  Figure: FigureDescribed,
+  MermaidCaption,
+};
+
+const merged = { ...defaultMap, ...components };
+---
+
+<Content components={merged} />

@@ -1,0 +1,79 @@
+---
+/**
+ * ChapterComments — wraps GiscusLazy with the chapter-specific config and
+ * theme bridge.
+ *
+ * Per chapter.md §3.7: one Giscus thread per chapter, shared across all
+ * three tabs. `term` is `<courseSlug>/<chapterSlug>` (Giscus
+ * `mapping="specific"`), so revision/flow comments land on the same
+ * Discussion as Full Notes.
+ *
+ * Repo + category come from `PUBLIC_GISCUS_*` env vars (set via
+ * `.env.example`). The lazy mount + theme sync are owned by `GiscusLazy`
+ * (PR-1.4); this wrapper just supplies the per-chapter `term` and gates
+ * rendering when env vars aren't present.
+ */
+import GiscusLazy from '../../performance/GiscusLazy.astro';
+
+interface Props {
+  /** `<courseSlug>/<chapterSlug>` — drives Giscus mapping="specific". */
+  term: string;
+}
+
+const { term } = Astro.props;
+
+const repo = import.meta.env.PUBLIC_GISCUS_REPO;
+const repoId = import.meta.env.PUBLIC_GISCUS_REPO_ID;
+const categoryId = import.meta.env.PUBLIC_GISCUS_CATEGORY_ID;
+
+const ready = Boolean(repo && repoId && categoryId);
+---
+
+{ready ? (
+  <GiscusLazy
+    repo={repo}
+    repoId={repoId}
+    categoryId={categoryId}
+  />
+) : (
+  <section class="comments-disabled" aria-label="Comments">
+    <h2>Comments</h2>
+    <p class="comments-disabled__hint">
+      Comments are disabled in this environment. Set
+      <code>PUBLIC_GISCUS_REPO</code>, <code>PUBLIC_GISCUS_REPO_ID</code>, and
+      <code>PUBLIC_GISCUS_CATEGORY_ID</code> to enable.
+    </p>
+  </section>
+)}
+
+{ready && (
+  <script is:inline define:vars={{ term }}>
+    // Stash the chapter term where PR-5.1 mount logic can read it once
+    // GiscusLazy fires its `giscus:ready` event. Shared across tabs because
+    // term is computed identically for full/revision/flow.
+    const root = document.getElementById('comments');
+    if (root) root.dataset.giscusTerm = term;
+  </script>
+)}
+
+<style>
+  .comments-disabled {
+    margin-top: 3rem;
+    padding: 1.5rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface-muted);
+  }
+  .comments-disabled h2 { margin: 0 0 0.5rem; font-size: 1.1rem; }
+  .comments-disabled__hint {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+  .comments-disabled code {
+    font-size: 0.8rem;
+    padding: 0.05em 0.35em;
+    background: var(--color-bg);
+    border-radius: 4px;
+  }
+</style>

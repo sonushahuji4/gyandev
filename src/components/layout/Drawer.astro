@@ -1,0 +1,117 @@
+---
+/**
+ * Mobile left-side navigation drawer.
+ *
+ * Uses native `<dialog showModal()>` so we inherit focus-trap, `::backdrop`,
+ * and Esc-to-close without hand-rolling ARIA. Callers target the drawer by
+ * `id` and invoke `document.getElementById(id)?.showModal()`.
+ *
+ * Slot: drawer contents (usually the primary nav + theme toggle for mobile).
+ */
+
+interface Props {
+  id: string;
+  ariaLabel: string;
+}
+
+const { id, ariaLabel } = Astro.props;
+---
+
+<dialog
+  id={id}
+  class="drawer"
+  aria-label={ariaLabel}
+  data-drawer
+>
+  <div class="drawer__inner">
+    <div class="drawer__header">
+      <button
+        type="button"
+        class="drawer__close"
+        data-drawer-close
+        aria-label="Close menu"
+      >
+        ✕
+      </button>
+    </div>
+    <div class="drawer__content">
+      <slot />
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    margin: 0;
+    width: min(280px, 85vw);
+    max-width: 85vw;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 0;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 0;
+    border-right: 1px solid var(--color-border);
+    transform: translateX(-100%);
+    transition: transform 200ms ease-out;
+  }
+  .drawer[open] {
+    transform: translateX(0);
+  }
+  .drawer::backdrop {
+    background: var(--color-backdrop);
+  }
+  .drawer__inner {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+  .drawer__header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .drawer__close {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .drawer__close:hover {
+    background: var(--color-surface-muted);
+  }
+  .drawer__content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+</style>
+
+<script>
+  function bind(root: Document | HTMLElement): void {
+    for (const dialog of root.querySelectorAll<HTMLDialogElement>('dialog[data-drawer]')) {
+      if (dialog.dataset.drawerBound === 'true') continue;
+      dialog.dataset.drawerBound = 'true';
+
+      // Close on any [data-drawer-close] click.
+      for (const btn of dialog.querySelectorAll<HTMLButtonElement>('[data-drawer-close]')) {
+        btn.addEventListener('click', () => dialog.close());
+      }
+
+      // Click on ::backdrop (outside the inner panel) closes too.
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+    }
+  }
+
+  bind(document);
+  document.addEventListener('astro:page-load', () => bind(document));
+</script>

@@ -1,0 +1,71 @@
+---
+/**
+ * LegalLayout — shared layout for /privacy and /terms, created in PR-2.2
+ * (`.claude/plans/pages/legal.md` Step 7).
+ *
+ * Composition:
+ *   PageShell (BaseLayout + TopNav + constrained main)
+ *     → <article class="prose legal">
+ *         → LegalHeader (breadcrumbs, H1, "Last updated" <time>)
+ *         → LegalTOC (anchors for depth-2 headings)
+ *         → <slot />  ← MDX body rendered by the page
+ *         → LegalContact (email templated from frontmatter)
+ *
+ * Both pages are indexable (`noindex={false}`) per spec §10 and the user's
+ * PR-2.2 brief — legal pages are public-facing, search-discoverable content.
+ *
+ * The `<BreadcrumbList>` JSON-LD is emitted by `<Breadcrumbs>` inside
+ * `<LegalHeader>`. No other JSON-LD is added per plan §3.5.
+ */
+
+import PageShell from '../components/layout/PageShell.astro';
+import LegalHeader from '../components/pages/legal/LegalHeader.astro';
+import LegalTOC from '../components/pages/legal/LegalTOC.astro';
+import LegalContact from '../components/pages/legal/LegalContact.astro';
+import { canonicalFor } from '../lib/routes';
+import { ogImageUrl } from '../lib/seo/og';
+import type { CollectionEntry } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
+
+import '../styles/prose.css';
+
+export interface Props {
+  entry: CollectionEntry<'legal'>;
+  headings: MarkdownHeading[];
+  slug: 'privacy' | 'terms';
+}
+
+const { entry, headings, slug } = Astro.props;
+const { data } = entry;
+const canonical = canonicalFor(`/${slug}`);
+---
+
+<PageShell
+  title={`${data.title} — GyanDev`}
+  description={data.description}
+  canonical={canonical}
+  ogImage={ogImageUrl(slug)}
+>
+  <article class="prose legal">
+    <LegalHeader title={data.title} updated={data.updated} slug={slug} />
+    <LegalTOC headings={headings} />
+    <div class="legal__body">
+      <slot />
+    </div>
+    <LegalContact
+      email={data.contact.email}
+      responseTime={data.contact.responseTime}
+    />
+  </article>
+</PageShell>
+
+<style>
+  .legal {
+    /* Plan §3 + spec §7: single-column prose, max-width 720px. PageShell
+       already constrains to `--content-max`; the double rule here makes
+       the layout self-contained if a future page wraps `LegalLayout`
+       without PageShell. */
+    max-width: 45rem;
+    margin: 0 auto;
+  }
+</style>

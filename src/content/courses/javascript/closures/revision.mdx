@@ -1,0 +1,25 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+## What it is
+
+- A **closure** = function + the lexical environment it was defined in.
+- The inner function still sees outer scope after the outer function has returned.
+- The captured variables live as long as the closure does.
+
+## Why it matters
+
+- **Private state** — the only handle on the variable is the function you returned.
+- **Factory pattern** — configure once, return a specialized function.
+- **Stateful callbacks** — handlers, timers, and `.then` blocks remember their context.
+
+## The interview gotcha
+
+- A closure captures the **whole enclosing scope**, not just the variables it references.
+- Long-lived closures (event listeners, globals) keep that scope alive — easy memory leak.
+
+## If you remember nothing else
+
+> Inner functions remember outer variables. That memory has a cost.

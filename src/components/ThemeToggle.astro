@@ -1,0 +1,141 @@
+---
+/**
+ * Three-state theme toggle: Light → Dark → System → Light.
+ *
+ * Writes through `storage.ts` (R1 — no string keys here) and mirrors the state
+ * on `<html>`: `.dark` class for Tailwind + `data-theme` for astro-mermaid.
+ *
+ * No framework island — the control is a vanilla `<button>` with an inline
+ * script. Reading the initial state happens post-paint; the pre-paint theme
+ * is set by `theme-init.ts` inline in <head>, which has already run before
+ * this script executes, so there's no FOUC to worry about.
+ *
+ * Dispatches `CustomEvent('theme-change', { detail: { theme, resolved } })`
+ * on `document` so downstream mounts (Giscus, Mermaid) can react without
+ * polling the attribute.
+ */
+---
+
+<button
+  type="button"
+  class="theme-toggle"
+  data-theme-toggle
+  aria-label="Toggle color theme"
+  aria-live="polite"
+>
+  <span data-theme-icon="light" aria-hidden="true">☀</span>
+  <span data-theme-icon="dark" aria-hidden="true">☾</span>
+  <span data-theme-icon="system" aria-hidden="true">⌂</span>
+  <span class="sr-only" data-theme-label>System theme</span>
+</button>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0 0.5rem;
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    transition: background-color 150ms ease, border-color 150ms ease;
+  }
+  .theme-toggle:hover {
+    background: var(--color-surface-muted);
+    border-color: var(--color-border-strong);
+  }
+  .theme-toggle [data-theme-icon] {
+    display: none;
+  }
+  .theme-toggle[data-theme-state="light"] [data-theme-icon="light"],
+  .theme-toggle[data-theme-state="dark"] [data-theme-icon="dark"],
+  .theme-toggle[data-theme-state="system"] [data-theme-icon="system"] {
+    display: inline;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+
+<script>
+  import { get, set, prefsKey, type ThemePref } from '../lib/storage';
+
+  const STATES: ThemePref[] = ['light', 'dark', 'system'];
+  const LABELS: Record<ThemePref, string> = {
+    light: 'Light theme',
+    dark: 'Dark theme',
+    system: 'System theme',
+  };
+
+  function currentPref(): ThemePref {
+    const stored = get<ThemePref>(prefsKey('theme'));
+    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored;
+    return 'system';
+  }
+
+  function resolve(pref: ThemePref): 'light' | 'dark' {
+    if (pref === 'light' || pref === 'dark') return pref;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function apply(pref: ThemePref): void {
+    const resolved = resolve(pref);
+    const root = document.documentElement;
+    root.classList.toggle('dark', resolved === 'dark');
+    root.setAttribute('data-theme', resolved);
+
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
+      btn.dataset.themeState = pref;
+      btn.setAttribute('aria-pressed', String(pref !== 'system'));
+      const label = btn.querySelector<HTMLElement>('[data-theme-label]');
+      if (label) label.textContent = LABELS[pref];
+    }
+
+    document.dispatchEvent(
+      new CustomEvent('theme-change', { detail: { theme: pref, resolved } })
+    );
+  }
+
+  function cycle(current: ThemePref): ThemePref {
+    return STATES[(STATES.indexOf(current) + 1) % STATES.length];
+  }
+
+  function init(): void {
+    const pref = currentPref();
+    apply(pref);
+
+    for (const btn of document.querySelectorAll<HTMLButtonElement>('[data-theme-toggle]')) {
+      if (btn.dataset.themeBound === 'true') continue;
+      btn.dataset.themeBound = 'true';
+      btn.addEventListener('click', () => {
+        const next = cycle(currentPref());
+        set(prefsKey('theme'), next);
+        apply(next);
+      });
+    }
+  }
+
+  // System-preference change: re-apply if user has selected "system".
+  const mq = window.matchMedia('(prefers-color-scheme: dark)');
+  const systemListener = (): void => {
+    if (currentPref() === 'system') apply('system');
+  };
+  if (mq.addEventListener) mq.addEventListener('change', systemListener);
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

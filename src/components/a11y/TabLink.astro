@@ -1,0 +1,81 @@
+---
+/**
+ * One tab inside a `<TabList>`. Two render modes:
+ *
+ *   - enabled  → `<a role="tab" href="…">`                (default)
+ *   - disabled → `<span role="tab" aria-disabled="true">` (non-focusable)
+ *
+ * The disabled branch is the Session-3 extension (roadmap Q#21): when a
+ * chapter view (e.g. Flow) is not yet authored, we render the tab visually
+ * but make it non-focusable so keyboard users can skip it without a dead
+ * click. Phase-1.5 may revisit if screen-reader feedback suggests the
+ * tab should still be focusable-but-disabled.
+ */
+
+interface Props {
+  href: string;
+  active: boolean;
+  label: string;
+  disabled?: boolean;
+  class?: string;
+}
+
+const {
+  href,
+  active,
+  label,
+  disabled = false,
+  class: className,
+} = Astro.props;
+
+// Roving tabindex: active tab is focusable (0), others are -1 so only one
+// tablist stop appears in the page Tab order.
+const tabindex = disabled ? undefined : active ? 0 : -1;
+---
+
+{disabled ? (
+  <span
+    role="tab"
+    aria-selected="false"
+    aria-disabled="true"
+    class:list={['tab', 'tab--disabled', className]}
+  >
+    {label}
+  </span>
+) : (
+  <a
+    role="tab"
+    href={href}
+    aria-selected={active}
+    aria-current={active ? 'page' : undefined}
+    tabindex={tabindex}
+    class:list={['tab', { 'tab--active': active }, className]}
+  >
+    {label}
+  </a>
+)}
+
+<style>
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    border-bottom: 2px solid transparent;
+    font-size: 0.95rem;
+    white-space: nowrap;
+  }
+  .tab:hover { color: var(--color-text); }
+  .tab--active {
+    color: var(--color-accent);
+    border-bottom-color: var(--color-accent);
+    font-weight: 500;
+  }
+  .tab--disabled {
+    color: var(--color-text-muted);
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+</style>

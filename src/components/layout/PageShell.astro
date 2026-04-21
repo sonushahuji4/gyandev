@@ -1,0 +1,98 @@
+---
+/**
+ * Generic page shell used by home, all-courses, about, privacy, terms, 404.
+ *
+ * Composition: BaseLayout → TopNav → main (constrained column) → footer slot.
+ * The footer itself is added by PR-6.1 (global footer).
+ *
+ * `includeSerif` is forwarded to BaseLayout per PHASE-1-ROADMAP §2.R2. Only
+ * `home.astro` sets it true so the display serif preload cost doesn't hit
+ * every page.
+ *
+ * SEO props (`ogImage`, `ogImageAlt`, `ogType`, `twitterCreator`, `article`,
+ * `jsonLd`) pass straight through to `<BaseLayout>`, which hands them to
+ * `<SEO />` / `<JsonLd />` (PR-1.5).
+ */
+
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TopNav from './TopNav.astro';
+import type { ArticleMeta } from '../../lib/seo/meta';
+
+interface Props {
+  title: string;
+  description: string;
+  canonical: string;
+  noindex?: boolean;
+  robotsExtra?: string;
+  ogImage?: string;
+  ogImageAlt?: string;
+  ogType?: 'website' | 'article';
+  twitterCreator?: string;
+  article?: ArticleMeta;
+  jsonLd?: object | object[];
+  includeSerif?: boolean;
+  /** Constrain main content to 720px (default) or let it span full width. */
+  mainMaxWidth?: 'content' | 'full';
+}
+
+const {
+  title,
+  description,
+  canonical,
+  noindex = false,
+  robotsExtra,
+  ogImage,
+  ogImageAlt,
+  ogType,
+  twitterCreator,
+  article,
+  jsonLd,
+  includeSerif = false,
+  mainMaxWidth = 'content',
+} = Astro.props;
+
+const currentPath = Astro.url.pathname;
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  noindex={noindex}
+  robotsExtra={robotsExtra}
+  ogImage={ogImage}
+  ogImageAlt={ogImageAlt}
+  ogType={ogType}
+  twitterCreator={twitterCreator}
+  article={article}
+  jsonLd={jsonLd}
+  includeSerif={includeSerif}
+>
+  <slot name="head" slot="head" />
+
+  <TopNav slot="header" currentPath={currentPath} />
+
+  <div class:list={['page-shell', `page-shell--${mainMaxWidth}`]}>
+    <slot />
+  </div>
+
+  <slot name="footer" slot="footer" />
+</BaseLayout>
+
+<style>
+  .page-shell {
+    width: 100%;
+    margin: 0 auto;
+    padding: 1rem;
+  }
+  @media (min-width: 40rem) { .page-shell { padding: 1.25rem; } }
+  @media (min-width: 48rem) { .page-shell { padding: 1.5rem; } }
+  @media (min-width: 64rem) { .page-shell { padding: 2rem; } }
+
+  .page-shell--content {
+    max-width: var(--content-max);
+  }
+  .page-shell--full {
+    max-width: 80rem;
+  }
+</style>

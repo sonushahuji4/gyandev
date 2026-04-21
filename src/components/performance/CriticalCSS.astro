@@ -1,0 +1,35 @@
+---
+/**
+ * CriticalCSS — slot for inlined above-the-fold styles.
+ *
+ * Performance plan Steps 4 + 5. Stub in Phase 1: Astro's `inlineStylesheets:
+ * 'auto'` already inlines small stylesheets automatically, so `global.css` is
+ * injected into `<head>` by the framework for every route and this component
+ * stays empty. The slot + prop surface exists so a page can push an extra
+ * block of critical CSS without editing BaseLayout when real critical-path
+ * extraction lands (tracked in performance.md Open Questions).
+ *
+ * What IS already critical (covered by `global.css` inline):
+ *   - `@theme` tokens and the `html.dark` palette swap (first paint must not
+ *     flash the wrong theme — the pre-paint script in BaseLayout sets
+ *     `html.dark` before this CSS evaluates).
+ *   - `body` typography + background + `min-height: 100dvh`.
+ *   - `:focus-visible` ring (a11y baseline).
+ *   - Header positioning helpers (`--nav-h`, `scroll-padding-top`).
+ *
+ * Phase 1.5+ extension: build-time critical-path extractor (e.g. Penthouse /
+ * `critters`) can populate `styles` per-route to ship render-blocking CSS
+ * under ~14 KB while deferring the rest via `<link rel="preload" as="style"
+ * onload="...">`. Not needed until LCP regresses.
+ */
+
+interface Props {
+  /** Pre-minified CSS string to inline verbatim in `<head>`. Optional. */
+  styles?: string;
+}
+
+const { styles } = Astro.props;
+---
+
+{styles && <style set:html={styles} />}
+<slot />

@@ -1,0 +1,26 @@
+# Featured home-page picks — curated by hand (PR-4.2, home.md Step 2).
+#
+# Each entry is a single chapter to surface in the home "Featured Reads" strip.
+# `courseSlug` + `chapterSlug` must match the folder layout under
+# `src/content/courses/<courseSlug>/<chapterSlug>/index.mdx`. `position`
+# controls display order (ascending); `src/lib/home/featured.ts` rejects
+# duplicates at build time.
+#
+# Editorial cadence (launch with 3 entries, refresh roughly monthly) is
+# documented in `docs/EDITORIAL.md` — produced in Sprint 6 per roadmap Q#19.
+# Update this file to rotate featured chapters between cadence reviews.
+
+- id: javascript-closures
+  courseSlug: javascript
+  chapterSlug: closures
+  position: 1
+
+- id: javascript-event-loop
+  courseSlug: javascript
+  chapterSlug: event-loop
+  position: 2
+
+- id: javascript-promises
+  courseSlug: javascript
+  chapterSlug: promises
+  position: 3

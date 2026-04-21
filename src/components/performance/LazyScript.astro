@@ -1,0 +1,94 @@
+---
+/**
+ * LazyScript — mounts a third-party `<script src>` only when the placeholder
+ * intersects the viewport.
+ *
+ * Performance plan Step 7. Use case: deferred analytics pixels, social
+ * embeds, any heavyweight external widget where the network + parse cost is
+ * wasteful above the fold.
+ *
+ * Usage:
+ *
+ *   <LazyScript
+ *     src="https://example.com/widget.js"
+ *     dataAttributes={{ 'data-foo': '1', 'data-bar': 'x' }}
+ *     rootMargin="400px"
+ *   />
+ *
+ * Why a `src` prop + `dataAttributes` map (rather than a slot):
+ *   - The inline bootstrap must build the `<script>` element at runtime; a
+ *     simple props surface keeps the SSR output deterministic and free of
+ *     `<template>` hydration gotchas.
+ *   - `data-*` attributes on script tags are the canonical config channel
+ *     for most third parties (Giscus, Plausible, etc.). Handing them through
+ *     a typed map avoids stringly-typed attribute spread.
+ *
+ * Fallback (performance.md Risk §11): if `IntersectionObserver` is missing
+ * we mount immediately. Degraded UX beats missing UX.
+ */
+
+export interface Props {
+  /** Fully-qualified URL of the third-party script to load lazily. */
+  src: string;
+  /** Optional `data-*` attributes forwarded onto the injected `<script>`. */
+  dataAttributes?: Record<string, string | number | boolean>;
+  /** IntersectionObserver rootMargin. Default `'200px'` — starts fetch before the user scrolls to the section. */
+  rootMargin?: string;
+  /** Unique id for the placeholder root. Generated if omitted. */
+  id?: string;
+  /** Load the script with `async` (default) or `defer`. */
+  strategy?: 'async' | 'defer';
+}
+
+const {
+  src,
+  dataAttributes = {},
+  rootMargin = '200px',
+  id = 'lazy-' + Math.random().toString(36).slice(2, 10),
+  strategy = 'async',
+} = Astro.props;
+---
+
+<div id={id} data-lazy-root={rootMargin}>
+  <slot />
+</div>
+
+<script
+  is:inline
+  define:vars={{ id, src, dataAttributes, strategy }}
+>
+  (() => {
+    const root = document.getElementById(id);
+    if (!root) return;
+
+    const mount = () => {
+      if (root.dataset.lazyMounted) return;
+      root.dataset.lazyMounted = '1';
+      const s = document.createElement('script');
+      s.src = src;
+      s.crossOrigin = 'anonymous';
+      if (strategy === 'defer') s.defer = true;
+      else s.async = true;
+      for (const [k, v] of Object.entries(dataAttributes || {})) {
+        s.setAttribute(k, String(v));
+      }
+      root.appendChild(s);
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+      mount();
+      return;
+    }
+
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          mount();
+        }
+      },
+      { rootMargin: root.dataset.lazyRoot || '200px' },
+    );
+    io.observe(root);
+  })();
+</script>

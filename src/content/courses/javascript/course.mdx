@@ -1,0 +1,28 @@
+---
+title: JavaScript
+description: A working developer's deep tour of the JavaScript language — how scopes, closures, the event loop, and promises actually work, not just how to use them.
+order: 1
+status: published
+difficulty: intermediate
+icon: /images/courses/javascript.svg
+learningObjectives:
+  - Read a piece of async code and predict the exact order its callbacks, microtasks, and tasks run
+  - Explain what a closure captures, what it costs, and when it leaks
+  - Use the module, iterator, generator, and async-iterator protocols without reaching for library magic
+  - Debug Promise chains by reading state, not stack traces
+  - Pick between `for`, `for…of`, `forEach`, `map`, and streams based on cost, not habit
+  - Spot the common engine-level foot-guns (hoisting edge cases, `this` drift, hidden coercions)
+  - Write code that holds up under strict mode, modules, and modern bundlers without surprise breakage
+prerequisites:
+  - Comfortable with basic JavaScript syntax (variables, functions, conditionals, arrays, objects)
+  - Familiarity with the browser devtools console OR a Node REPL
+updated: 2026-04-21
+---
+
+This course is the one we wish we had when we stopped being JavaScript beginners and started
+shipping non-trivial code. Every chapter is built around a mental model — the event loop,
+lexical scope, the promise state machine — and then walks through the language features that
+fall out of it.
+
+Each chapter ships as three views: **Full Notes** for the deep read, **Quick Revision** for
+pre-interview skimming, and a **Flow Diagram** so you can see the moving parts.

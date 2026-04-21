@@ -1,0 +1,159 @@
+---
+/**
+ * AboutLayout — editorial prose layout for `/about`.
+ *
+ * Shape: single-column, max-width 720px, no sidebars. Headings use the
+ * display serif (`var(--font-serif)`); the serif is preloaded because
+ * this layout passes `includeSerif={true}` to `PageShell` (PHASE-1-ROADMAP
+ * §2.R2 — only home and about set this).
+ *
+ * Owns composition only — page section components live under
+ * `src/components/pages/about/`. The `<slot />` is reserved for any
+ * route-specific additions (Phase 2 press/sponsors etc.). In Phase 1 the
+ * page passes nothing to the slot; all sections are rendered by the
+ * layout directly in canonical spec order.
+ *
+ * SEO: consumes `personSchema` + `aboutPageSchema` from `jsonld.ts`. The
+ * Person is wrapped as the `AboutPage.about` (schema.org AboutPage's
+ * primary subject slot) rather than as a separate top-level schema — the
+ * `aboutPageSchema` factory already nests it correctly.
+ */
+
+import PageShell from '../components/layout/PageShell.astro';
+import Breadcrumbs from '../components/seo/Breadcrumbs.astro';
+import AboutHero from '../components/pages/about/AboutHero.astro';
+import WhyThisExists from '../components/pages/about/WhyThisExists.astro';
+import ThreeTabExplanation from '../components/pages/about/ThreeTabExplanation.astro';
+import AuthorCard from '../components/pages/about/AuthorCard.astro';
+import LicenseSection from '../components/pages/about/LicenseSection.astro';
+import ContributeSection from '../components/pages/about/ContributeSection.astro';
+import ContactSection from '../components/pages/about/ContactSection.astro';
+import ChangelogSection from '../components/pages/about/ChangelogSection.astro';
+import { aboutPageSchema, personSchema } from '../lib/seo/jsonld';
+import { canonicalFor } from '../lib/routes';
+import { ogImageUrl } from '../lib/seo/og';
+import type { AuthorData } from '../components/pages/about/AuthorCard.astro';
+
+interface SiteData {
+  author: AuthorData;
+  contact: {
+    email: string;
+    responseTime?: string;
+  };
+  changelog?: Array<{ date: string; event: string }>;
+}
+
+export interface Props {
+  title: string;
+  description: string;
+  site: SiteData;
+  /** If `true`, `AuthorCard` renders the initials fallback even when
+   *  `author.avatar` is set (used when the image file hasn't been provided
+   *  yet). */
+  avatarMissing?: boolean;
+}
+
+const { title, description, site, avatarMissing = false } = Astro.props;
+
+const canonical = canonicalFor('/about');
+
+const sameAs = Object.values(site.author.socials).filter(
+  (url): url is string => typeof url === 'string' && url.length > 0,
+);
+
+const person = personSchema({
+  name: site.author.name,
+  jobTitle: site.author.role,
+  url: canonical,
+  description: site.author.bio,
+  sameAs: sameAs.length > 0 ? sameAs : undefined,
+});
+
+const aboutPage = aboutPageSchema({
+  url: canonical,
+  name: title,
+  description,
+  about: person,
+});
+
+const jsonLd = [person, aboutPage];
+---
+
+<PageShell
+  title={title}
+  description={description}
+  canonical={canonical}
+  ogImage={ogImageUrl('about')}
+  jsonLd={jsonLd}
+  includeSerif={true}
+  mainMaxWidth="content"
+>
+  <article class="about">
+    <Breadcrumbs
+      items={[
+        { name: 'Home', url: canonicalFor('/') },
+        { name: 'About', url: canonical },
+      ]}
+    />
+
+    <AboutHero />
+    <WhyThisExists />
+    <ThreeTabExplanation />
+    <AuthorCard author={site.author} avatarMissing={avatarMissing} />
+    <LicenseSection />
+    <ContributeSection />
+    <ContactSection
+      email={site.contact.email}
+      responseTime={site.contact.responseTime}
+      githubUrl={site.author.socials.github}
+    />
+    <ChangelogSection entries={site.changelog} />
+
+    <slot />
+  </article>
+</PageShell>
+
+<style>
+  /* AboutLayout owns its own prose tuning — spec §4: max-width 720px,
+     generous vertical rhythm, serif headings, 1.6 line-height body.
+     Scoped to `.about` so it doesn't leak into other PageShell consumers. */
+  .about {
+    max-width: 45rem; /* 720px — matches --content-max */
+    margin: 0 auto;
+    padding-top: 0.5rem;
+  }
+
+  .about :global(h2) {
+    font-family: var(--font-serif);
+    font-size: var(--text-h2);
+    font-weight: 500;
+    line-height: 1.2;
+    letter-spacing: -0.005em;
+    margin: 0 0 0.75rem;
+    color: var(--color-text);
+  }
+
+  .about :global(h3) {
+    font-family: var(--font-sans);
+    font-size: var(--text-h3);
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0 0 0.5rem;
+  }
+
+  .about :global(p),
+  .about :global(li) {
+    color: var(--color-text);
+    line-height: 1.65;
+  }
+
+  .about :global(a) {
+    color: var(--color-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+  .about :global(a:hover),
+  .about :global(a:focus-visible) {
+    color: var(--color-accent-hover);
+  }
+</style>

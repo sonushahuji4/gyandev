@@ -1,0 +1,56 @@
+---
+/**
+ * ContributeSection — actionable ways to contribute. Spec §3 Section 6.
+ *
+ * Note: `CONTRIBUTING.md` is authored in Sprint 6 (PR-6.4 per Q#16 in
+ * PHASE-1-ROADMAP §6). The link here will 404 until then — documented as
+ * acceptable in the roadmap.
+ */
+
+const REPO_URL = 'https://github.com/sonushahuji4/gyandev';
+const CONTRIBUTING_URL = `${REPO_URL}/blob/main/CONTRIBUTING.md`;
+const ISSUES_URL = `${REPO_URL}/issues/new`;
+---
+
+<section class="contribute" aria-labelledby="contribute-h">
+  <h2 id="contribute-h">How to contribute</h2>
+  <p>
+    GyanDev improves when readers push back. If you spot something wrong, unclear,
+    or missing — here's how to help fix it.
+  </p>
+  <ul class="contribute__list">
+    <li>
+      <strong>Found a typo or technical error?</strong> Hit the "Edit on GitHub"
+      link on any chapter and open a pull request. Small fixes ship in hours.
+    </li>
+    <li>
+      <strong>Have a correction or question?</strong>
+      <a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">Open an issue</a>
+      with a link to the chapter and what needs to change.
+    </li>
+    <li>
+      <strong>Want to write a chapter?</strong> Read the
+      <a href={CONTRIBUTING_URL} target="_blank" rel="noopener noreferrer">
+        contributing guide
+      </a> for the editorial voice, structure, and review process.
+    </li>
+    <li>
+      <strong>Not a writer?</strong> A star on GitHub or sharing the site with
+      a colleague helps more than it should.
+    </li>
+  </ul>
+</section>
+
+<style>
+  .contribute {
+    margin: 0 0 3rem;
+  }
+  .contribute__list {
+    list-style: disc;
+    padding-left: 1.25rem;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+</style>

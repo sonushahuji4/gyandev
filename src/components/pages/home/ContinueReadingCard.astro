@@ -1,0 +1,133 @@
+---
+/**
+ * ContinueReadingCard — SSR renders a skeleton; `home-hydrate.ts` flips it
+ * visible only when `lastReadKey()` has data and the session dismiss flag
+ * isn't set. See home.md Step 7.
+ *
+ * Hydration contract (do not rename without updating `home-hydrate.ts`):
+ *   #continue-card                         — the wrapper (starts `hidden`)
+ *   [data-continue-course]                 — course label text node
+ *   [data-continue-title]                  — chapter title text node
+ *   [data-continue-meta]                   — reading-time text node
+ *   [data-continue-resume]                 — resume anchor (href set by JS)
+ *   [data-continue-dismiss]                — dismiss button
+ */
+---
+
+<section
+  id="continue-card"
+  class="continue-card"
+  aria-labelledby="continue-card-heading"
+  hidden
+>
+  <div class="continue-card__inner">
+    <h2 id="continue-card-heading" class="continue-card__heading">
+      <span aria-hidden="true">👋</span> Continue where you left off
+    </h2>
+    <p class="continue-card__title" data-continue-title></p>
+    <p class="continue-card__meta">
+      <span class="continue-card__course" data-continue-course></span>
+      <span class="continue-card__dot" aria-hidden="true">·</span>
+      <span data-continue-meta></span>
+    </p>
+    <a class="continue-card__resume" href="#" data-continue-resume>
+      Resume →
+    </a>
+  </div>
+  <button
+    type="button"
+    class="continue-card__dismiss"
+    aria-label="Dismiss resume card"
+    data-continue-dismiss
+  >
+    ×
+  </button>
+</section>
+
+<style>
+  .continue-card {
+    position: relative;
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+  }
+  .continue-card[hidden] {
+    display: none;
+  }
+
+  .continue-card__inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+
+  .continue-card__heading {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+
+  .continue-card__title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text);
+  }
+
+  .continue-card__meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    align-items: center;
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+  .continue-card__course {
+    text-transform: capitalize;
+  }
+  .continue-card__dot {
+    opacity: 0.5;
+  }
+
+  .continue-card__resume {
+    margin-top: 0.25rem;
+    align-self: flex-start;
+    font-weight: 500;
+    color: var(--color-accent);
+    text-decoration: none;
+  }
+  .continue-card__resume:hover,
+  .continue-card__resume:focus-visible {
+    text-decoration: underline;
+  }
+
+  .continue-card__dismiss {
+    flex-shrink: 0;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    padding: 0.25rem 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 0.375rem;
+    color: var(--color-text-muted);
+    font-size: 1.375rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .continue-card__dismiss:hover,
+  .continue-card__dismiss:focus-visible {
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    border-color: var(--color-border);
+  }
+</style>

@@ -1,0 +1,122 @@
+---
+/**
+ * HomeHero — H1 + tagline + CTAs. Owns the document's single H1.
+ *
+ * Per home.md Step 6: CTA target is hardcoded to `/courses/nodejs` (roadmap
+ * Q#29 — Phase 2 extracts `featuredCourseSlug` into a `site.yml`-style config).
+ *
+ * Serif display typeface (Instrument Serif) is enabled only on this page via
+ * `includeSerif={true}` on PageShell, per ratification R2.
+ */
+import { courseUrl } from '../../../lib/routes';
+
+const FEATURED_COURSE_SLUG = 'nodejs';
+const FEATURED_COURSE_LABEL = 'Node.js';
+---
+
+<header class="home-hero">
+  <p class="home-hero__badge">Deep notes for developers</p>
+  <h1 class="home-hero__title">
+    Learn how things<br />actually work
+  </h1>
+  <p class="home-hero__tagline">
+    JavaScript, Node.js, System Design, DSA — the nuances textbooks skip.
+  </p>
+  <div class="home-hero__ctas">
+    <a class="home-hero__cta home-hero__cta--primary" href={courseUrl(FEATURED_COURSE_SLUG)}>
+      Start with {FEATURED_COURSE_LABEL} →
+    </a>
+    <a class="home-hero__cta home-hero__cta--secondary" href="/courses">
+      All courses
+    </a>
+  </div>
+</header>
+
+<style>
+  .home-hero {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 3rem 0 2.5rem;
+    text-align: left;
+  }
+
+  .home-hero__badge {
+    align-self: flex-start;
+    margin: 0;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+  }
+
+  .home-hero__title {
+    margin: 0;
+    font-family: var(--font-serif), Georgia, serif;
+    font-weight: 400;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    line-height: 1.05;
+    letter-spacing: -0.01em;
+    color: var(--color-text);
+  }
+
+  .home-hero__tagline {
+    max-width: 40ch;
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.125rem;
+    line-height: 1.55;
+  }
+
+  .home-hero__ctas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  .home-hero__cta {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.625rem 1.125rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    text-decoration: none;
+    transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+  }
+
+  .home-hero__cta--primary {
+    background: var(--color-accent);
+    color: var(--color-accent-contrast, #fff);
+    border: 1px solid var(--color-accent);
+  }
+  .home-hero__cta--primary:hover,
+  .home-hero__cta--primary:focus-visible {
+    background: var(--color-accent-strong, var(--color-accent));
+  }
+
+  .home-hero__cta--secondary {
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border-strong, var(--color-border));
+  }
+  .home-hero__cta--secondary:hover,
+  .home-hero__cta--secondary:focus-visible {
+    background: var(--color-surface-muted);
+  }
+
+  @media (min-width: 48rem) {
+    .home-hero {
+      padding: 4rem 0 3rem;
+      gap: 1.5rem;
+    }
+  }
+</style>

@@ -1,0 +1,40 @@
+---
+/**
+ * ChapterContent — wraps the rendered MDX body with the right Pagefind
+ * boundary for each tab.
+ *
+ * Per chapter.md §3.5: only Full Notes wraps in `<article data-pagefind-body>`.
+ * Revision + Flow render plain `<article>` so Pagefind ignores them
+ * (avoids duplicate hits for the same chapter).
+ *
+ * `data-pagefind-filter="course:<title>"` lets Pagefind UI surface the
+ * "Filter by course" facet ratified in seo.md §10.
+ */
+interface Props {
+  /** The MDX `<Content />` factory returned by `await render(entry)`. */
+  Content: any;
+  /** Per-tab Pagefind boundary — only `'full'` is indexed. */
+  tab: 'full' | 'revision' | 'flow';
+  /** Course title used for Pagefind's filter facet. */
+  courseTitle: string;
+}
+
+import ChapterRenderer from '../../content/ChapterRenderer.astro';
+
+const { Content, tab, courseTitle } = Astro.props;
+const isFull = tab === 'full';
+---
+
+{isFull ? (
+  <article
+    class="prose"
+    data-pagefind-body
+    data-pagefind-filter={`course:${courseTitle}`}
+  >
+    <ChapterRenderer Content={Content} />
+  </article>
+) : (
+  <article class={`prose prose--${tab}`}>
+    <ChapterRenderer Content={Content} />
+  </article>
+)}

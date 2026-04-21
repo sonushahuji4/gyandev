@@ -1,0 +1,22 @@
+---
+/**
+ * Singleton `aria-live` region — announces dynamic state changes to screen
+ * readers. Mount exactly once, as the last child of `<body>` in BaseLayout.
+ *
+ * Writers call `announce()` from `src/lib/a11y/announce.ts`; that helper
+ * looks up `#a11y-announcer` by id and sets its text content.
+ *
+ * Why `aria-live="polite"` by default: assertive interrupts the user, which
+ * is rarely what we want. Callers that need interruption pass
+ * `announce(msg, { assertive: true })` and the helper flips the attribute
+ * before writing.
+ */
+---
+
+<div
+  id="a11y-announcer"
+  class="sr-only"
+  aria-live="polite"
+  aria-atomic="true"
+  role="status"
+></div>

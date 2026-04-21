@@ -1,2 +1,194 @@
+/**
+ * GyanDev global stylesheet — Tailwind v4 CSS-first config + design tokens.
+ *
+ * Owner: PR-1.2 (responsive-breakpoints.md). No other plan edits this file.
+ *
+ * Layers:
+ *   1. `@import "tailwindcss"` — v4 single-entry import (no `tailwind.config.js`).
+ *   2. `@custom-variant dark` — activates `dark:` utilities under `html.dark`.
+ *   3. `@theme` — semantic design tokens. Tailwind auto-generates `bg-bg`,
+ *      `text-text`, `text-text-muted`, `border-border`, etc. from these.
+ *   4. `@layer base` — element reset + dark-mode overrides + focus ring +
+ *      reduced-motion override.
+ *
+ * Font names here (Inter / JetBrains Mono / Instrument Serif) resolve to
+ * their system-font fallback stack until PR-1.4 lands `@font-face` declarations
+ * in `src/styles/fonts.css` and mounts `<FontPreload />` in BaseLayout.
+ */
+
 @import "katex/dist/katex.min.css";
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* ---------- Colors (semantic — light mode base) ---------- */
+  --color-bg: #faf7f0;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f2ecdc;
+  --color-text: #1a1a1a;
+  --color-text-muted: #5b5649;
+  --color-border: #e5ddc8;
+  --color-border-strong: #c9bfa3;
+  --color-accent: #2d5016;
+  --color-accent-hover: #3a6620;
+  --color-accent-fg: #faf7f0;
+  --color-focus: #2d5016;
+  --color-danger: #b91c1c;
+  --color-backdrop: rgb(0 0 0 / 0.5);
+
+  /* ---------- Fonts (resolve to fallback stack until PR-1.4) ---------- */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* ---------- Typography scale (clamp per spec §5) ---------- */
+  --text-h1: clamp(1.75rem, 4vw, 2.5rem);
+  --text-h2: clamp(1.375rem, 3vw, 2rem);
+  --text-h3: clamp(1.125rem, 2vw, 1.5rem);
+  --text-h4: clamp(1rem, 1.5vw, 1.125rem);
+
+  /* ---------- Layout sizing ---------- */
+  --content-max: 45rem;       /* 720px — main column cap */
+  --sidebar-w: 16.25rem;      /* 260px — LeftSidebar at lg+ */
+  --toc-w: 13.75rem;          /* 220px — RightTOC at xl+ */
+  --nav-h: 3.5rem;            /* 56px  — sticky TopNav */
+
+  /* ---------- Breakpoints (Tailwind defaults, surfaced for CSS use) ---------- */
+  --breakpoint-sm: 40rem;     /* 640px */
+  --breakpoint-md: 48rem;     /* 768px */
+  --breakpoint-lg: 64rem;     /* 1024px */
+  --breakpoint-xl: 80rem;     /* 1280px */
+  --breakpoint-2xl: 96rem;    /* 1536px */
+}
+
+@layer base {
+  /* ---------- Dark palette override (single token swap) ---------- */
+  html.dark {
+    --color-bg: #131210;
+    --color-surface: #1b1914;
+    --color-surface-muted: #221f19;
+    --color-text: #ebe7da;
+    --color-text-muted: #a19b87;
+    --color-border: #322d22;
+    --color-border-strong: #4a4230;
+    --color-accent: #8fb36b;
+    --color-accent-hover: #a3c281;
+    --color-accent-fg: #131210;
+    --color-focus: #8fb36b;
+    --color-danger: #f87171;
+    --color-backdrop: rgb(0 0 0 / 0.7);
+  }
+
+  html {
+    scroll-padding-top: var(--nav-h);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+    font-size: 1rem;            /* 16px — prevents iOS auto-zoom */
+    line-height: 1.6;
+    min-height: 100dvh;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  @media (min-width: 48rem) {
+    body { font-size: 1.125rem; line-height: 1.6; }
+  }
+
+  @media (min-width: 80rem) {
+    body { line-height: 1.65; }
+  }
+
+  /* ---------- Focus ring (a11y baseline) ---------- */
+  :focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  :focus:not(:focus-visible) { outline: none; }
+
+  /* ---------- Reduced motion (global opt-out) ---------- */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* ---------- Link default ---------- */
+  a {
+    color: var(--color-accent);
+    text-decoration-color: color-mix(in srgb, var(--color-accent) 40%, transparent);
+    text-underline-offset: 0.2em;
+  }
+  a:hover { color: var(--color-accent-hover); }
+
+  /* ---------- Code (inline) ---------- */
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+  }
+
+  /* ---------- Native dialog reset ---------- */
+  dialog {
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    padding: 0;
+    max-width: 100vw;
+    max-height: 100dvh;
+  }
+  dialog::backdrop {
+    background: var(--color-backdrop);
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    body { background: #fff; color: #000; }
+    nav, aside, dialog, .theme-toggle, .no-print { display: none !important; }
+    main { max-width: 100%; }
+    a::after { content: " (" attr(href) ")"; font-size: 0.85em; }
+  }
+}
+
+@layer utilities {
+  /**
+   * Visually hidden but still announced by assistive tech. Consumed by
+   * `VisuallyHidden.astro` and `LiveRegion.astro`. Spec §10.
+   */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /** Escape hatch: reveal sr-only content when focused (skip-link style). */
+  .not-sr-only,
+  .sr-only.focusable:focus,
+  .sr-only.focusable:focus-within {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+

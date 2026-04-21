@@ -1,0 +1,170 @@
+---
+/**
+ * CourseSidebar — desktop-only right rail (PR-4.1).
+ *
+ * Contents (spec §3 Section 6):
+ *   - Progress widget (hydrated)
+ *   - Download options placeholder (Phase 2)
+ *   - Related courses
+ *   - Contribute links (Edit course / Report issue)
+ *
+ * Rendered as `<aside aria-label="Course info">`. The two-column grid lives on
+ * the page (`.course-layout`); this component is layout-agnostic so it can be
+ * stacked below the chapter list on < lg viewports.
+ *
+ * GitHub URLs are hard-coded for Phase 1 — the repo is known
+ * (`sonushahuji4/gyandev`) and there is no other consumer of the edit/issue
+ * patterns yet. When a second consumer appears, extract to a shared helper.
+ */
+import type { CollectionEntry } from 'astro:content';
+import ProgressWidget from './ProgressWidget.astro';
+import { courseUrl } from '../../../lib/routes';
+
+export interface Props {
+  courseSlug: string;
+  total: number;
+  related: CollectionEntry<'courses'>[];
+  /** Relative path within `src/content/courses/` for the GitHub edit link. */
+  courseContentPath: string;
+}
+
+const { courseSlug, total, related, courseContentPath } = Astro.props as Props;
+
+interface RelatedItem {
+  title: string;
+  url: string;
+  difficulty: string;
+  isPublished: boolean;
+}
+const relatedItems: RelatedItem[] = related.map((r) => {
+  const slug = r.id.split('/')[0]!;
+  return {
+    title: r.data.title,
+    url: courseUrl(slug),
+    difficulty: r.data.difficulty,
+    isPublished: r.data.status === 'published',
+  };
+});
+
+const GITHUB_REPO = 'https://github.com/sonushahuji4/gyandev';
+const editUrl = `${GITHUB_REPO}/edit/main/src/content/courses/${courseContentPath}`;
+const issueUrl = `${GITHUB_REPO}/issues/new?title=${encodeURIComponent(
+  `[${courseSlug}] `,
+)}&labels=content`;
+---
+
+<aside class="course-sidebar" aria-label="Course info">
+  <ProgressWidget courseSlug={courseSlug} total={total} />
+
+  <div class="course-sidebar__block">
+    <h3 class="course-sidebar__heading">Downloads</h3>
+    <p class="course-sidebar__note">PDF bundle + MDX archive — coming in Phase 2.</p>
+  </div>
+
+  {related.length > 0 && (
+    <div class="course-sidebar__block">
+      <h3 class="course-sidebar__heading">Related</h3>
+      <ul class="course-sidebar__list">
+        {relatedItems.map((item) => (
+          <li>
+            {item.isPublished ? (
+              <a href={item.url}>{item.title}</a>
+            ) : (
+              <span class="course-sidebar__muted">{item.title}</span>
+            )}
+            <span class="course-sidebar__tag" aria-hidden="true">
+              {item.difficulty}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )}
+
+  <div class="course-sidebar__block">
+    <h3 class="course-sidebar__heading">Contribute</h3>
+    <ul class="course-sidebar__list course-sidebar__list--plain">
+      <li>
+        <a href={editUrl} rel="noopener noreferrer" target="_blank">Edit course →</a>
+      </li>
+      <li>
+        <a href={issueUrl} rel="noopener noreferrer" target="_blank">Report issue →</a>
+      </li>
+    </ul>
+  </div>
+</aside>
+
+<style>
+  .course-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    background: var(--color-surface);
+  }
+
+  .course-sidebar__block {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .course-sidebar__heading {
+    font-size: 0.875rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .course-sidebar__note {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+  }
+
+  .course-sidebar__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+  }
+  .course-sidebar__list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-size: 0.9375rem;
+  }
+  .course-sidebar__list--plain li {
+    display: block;
+  }
+
+  .course-sidebar__list a {
+    color: var(--color-text);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .course-sidebar__list a:hover,
+  .course-sidebar__list a:focus-visible {
+    color: var(--color-accent, var(--color-text));
+  }
+
+  .course-sidebar__muted {
+    color: var(--color-text-muted);
+  }
+
+  .course-sidebar__tag {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: capitalize;
+    padding: 0.0625rem 0.375rem;
+    border-radius: 999px;
+    background: var(--color-surface-muted);
+  }
+</style>

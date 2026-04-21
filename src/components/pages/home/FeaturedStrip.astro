@@ -1,0 +1,87 @@
+---
+/**
+ * FeaturedStrip — "Featured Reads" section (home.md Step 8). Responsive grid
+ * of ChapterCards: 1 col (mobile, with optional horizontal scroll-snap),
+ * 2 col (tablet), 3 col (desktop).
+ */
+import ChapterCard from './ChapterCard.astro';
+import type { FeaturedChapter } from '../../../lib/home/featured';
+
+export interface Props {
+  chapters: FeaturedChapter[];
+}
+
+const { chapters } = Astro.props;
+---
+
+<section class="featured-strip" aria-labelledby="featured-heading">
+  <div class="featured-strip__head">
+    <h2 id="featured-heading" class="featured-strip__title">Featured Reads</h2>
+    <p class="featured-strip__sub">Hand-picked chapters worth your time.</p>
+  </div>
+  <ul class="featured-strip__list" role="list">
+    {chapters.map(({ chapter, course, courseSlug, chapterSlug }) => (
+      <ChapterCard
+        chapter={chapter}
+        course={course}
+        courseSlug={courseSlug}
+        chapterSlug={chapterSlug}
+      />
+    ))}
+  </ul>
+</section>
+
+<style>
+  .featured-strip {
+    margin-top: 3rem;
+  }
+
+  .featured-strip__head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .featured-strip__title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .featured-strip__sub {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .featured-strip__list {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 85%;
+    gap: 1rem;
+    padding: 0.25rem 0 1rem;
+    margin: 0;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .featured-strip__list > :global(.chapter-card-cell) {
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 48rem) {
+    .featured-strip__list {
+      grid-auto-flow: row;
+      grid-auto-columns: initial;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+      overflow: visible;
+      scroll-snap-type: none;
+    }
+  }
+  @media (min-width: 64rem) {
+    .featured-strip__list {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+  }
+</style>

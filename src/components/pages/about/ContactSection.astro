@@ -1,0 +1,76 @@
+---
+/**
+ * ContactSection — primary contact methods sourced from `about.yml`.
+ * Spec §3 Section 7.
+ */
+
+export interface Props {
+  email: string;
+  responseTime?: string;
+  githubUrl?: string;
+}
+
+const { email, responseTime, githubUrl } = Astro.props;
+---
+
+<section class="contact" aria-labelledby="contact-h">
+  <h2 id="contact-h">Contact</h2>
+  <dl class="contact__list">
+    <div class="contact__row">
+      <dt>Email</dt>
+      <dd><a href={`mailto:${email}`}>{email}</a></dd>
+    </div>
+    {
+      githubUrl && (
+        <div class="contact__row">
+          <dt>GitHub</dt>
+          <dd>
+            <a href={githubUrl} target="_blank" rel="noopener noreferrer">
+              {githubUrl.replace(/^https?:\/\/(?:www\.)?/, '')}
+            </a>
+          </dd>
+        </div>
+      )
+    }
+    {
+      responseTime && (
+        <div class="contact__row">
+          <dt>Response time</dt>
+          <dd>{responseTime}</dd>
+        </div>
+      )
+    }
+  </dl>
+</section>
+
+<style>
+  .contact {
+    margin: 0 0 3rem;
+  }
+  .contact__list {
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .contact__row {
+    display: grid;
+    grid-template-columns: 8rem 1fr;
+    gap: 0.75rem;
+    align-items: baseline;
+  }
+  @media (max-width: 30rem) {
+    .contact__row {
+      grid-template-columns: 1fr;
+      gap: 0.125rem;
+    }
+  }
+  .contact__row dt {
+    color: var(--color-text-muted);
+    font-size: 0.95em;
+  }
+  .contact__row dd {
+    margin: 0;
+    color: var(--color-text);
+  }
+</style>

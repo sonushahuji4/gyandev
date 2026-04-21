@@ -1,0 +1,104 @@
+---
+/**
+ * ThreeTabExplanation — visual breakdown of Full Notes / Quick Revision /
+ * Flow Diagram. Spec §3 Section 3.
+ *
+ * Rendered as a definition list so screen readers announce each mode label
+ * with its description. Icons are emoji — decorative, `aria-hidden`.
+ */
+
+interface Mode {
+  icon: string;
+  label: string;
+  description: string;
+  when: string;
+}
+
+const modes: Mode[] = [
+  {
+    icon: '📖',
+    label: 'Full Notes',
+    description: 'Everything we know about the topic, written to be read end-to-end.',
+    when: 'When you have time to learn deeply — first pass through a concept, or revisiting after a long gap.',
+  },
+  {
+    icon: '⚡',
+    label: 'Quick Revision',
+    description: 'The same content compressed into bullet points, code snippets, and key terms.',
+    when: 'When you already know the material and need a fast recap — before an interview, a design review, or a refresh after months away.',
+  },
+  {
+    icon: '🔄',
+    label: 'Flow Diagram',
+    description: 'The concept reshaped as a visual flow — what connects to what, in what order.',
+    when: 'When you need to recall the shape of a system or process without reading paragraphs. Useful for whiteboarding.',
+  },
+];
+---
+
+<section class="three-tab" aria-labelledby="three-tab-h">
+  <h2 id="three-tab-h">Why three tabs per chapter</h2>
+  <p>
+    Every chapter has three synchronized views. Same content, three cognitive
+    modes — you pick what you need, when you need it.
+  </p>
+
+  <dl class="three-tab__list">
+    {
+      modes.map((mode) => (
+        <div class="three-tab__item">
+          <dt>
+            <span class="three-tab__icon" aria-hidden="true">{mode.icon}</span>
+            <span class="three-tab__label">{mode.label}</span>
+          </dt>
+          <dd>
+            <p class="three-tab__desc">{mode.description}</p>
+            <p class="three-tab__when"><strong>When to use:</strong> {mode.when}</p>
+          </dd>
+        </div>
+      ))
+    }
+  </dl>
+</section>
+
+<style>
+  .three-tab {
+    margin: 0 0 3rem;
+  }
+  .three-tab__list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin: 1.5rem 0 0;
+    padding: 0;
+  }
+  .three-tab__item {
+    border-left: 3px solid var(--color-border);
+    padding: 0.25rem 0 0.25rem 1rem;
+  }
+  .three-tab__item dt {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+  .three-tab__icon {
+    font-size: 1.25rem;
+    line-height: 1;
+  }
+  .three-tab__label {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .three-tab__item dd {
+    margin: 0;
+  }
+  .three-tab__desc {
+    margin: 0 0 0.35rem;
+  }
+  .three-tab__when {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.95em;
+  }
+</style>

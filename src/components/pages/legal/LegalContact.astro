@@ -1,0 +1,37 @@
+---
+/**
+ * LegalContact — final contact block for /privacy and /terms.
+ *
+ * Rendered by the template (not the MDX body) so the email + response-time
+ * are templated from frontmatter instead of hand-written in prose — one
+ * typo away from a dead-letter address otherwise.
+ *
+ * Per `.claude/plans/pages/legal.md` §11.4, this replaces the MDX "Contact"
+ * H2 entirely; the MDX files list 12 H2s, not 13, to avoid duplicate
+ * `#contact` anchors.
+ */
+
+export interface Props {
+  email: string;
+  responseTime?: string;
+}
+
+const { email, responseTime } = Astro.props;
+---
+
+<section class="legal-contact" aria-labelledby="contact">
+  <h2 id="contact">Contact</h2>
+  <p>
+    Questions about this page? Email
+    <a href={`mailto:${email}`}>{email}</a>.
+    {responseTime && <span>We reply {responseTime}.</span>}
+  </p>
+</section>
+
+<style>
+  .legal-contact {
+    margin-top: 2.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border, #e5ddc8);
+  }
+</style>

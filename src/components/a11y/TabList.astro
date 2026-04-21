@@ -1,0 +1,77 @@
+---
+/**
+ * ARIA tablist wrapper for the three-view chapter pattern.
+ *
+ * "Tabs without panels" variant — each tab is a real route (`<a href>`), so
+ * the "panel" is the entire `<main>` landmark (and swaps via ClientRouter).
+ * That means we do NOT emit `aria-controls`; the active panel is implicit.
+ *
+ * Keyboard: Left/Right moves focus among tabs (roving `tabindex`); Home/End
+ * jumps to first/last; Enter follows the link.
+ */
+
+interface Props {
+  label: string;
+  class?: string;
+}
+
+const { label, class: className } = Astro.props;
+---
+
+<nav role="tablist" aria-label={label} data-tablist class:list={['tablist', className]}>
+  <slot />
+</nav>
+
+<style>
+  .tablist {
+    display: inline-flex;
+    gap: 0.25rem;
+  }
+</style>
+
+<script>
+  function bindTablist(root: HTMLElement): void {
+    if (root.dataset.tablistBound === 'true') return;
+    root.dataset.tablistBound = 'true';
+
+    root.addEventListener('keydown', (event: KeyboardEvent) => {
+      const tabs = Array.from(
+        root.querySelectorAll<HTMLElement>('[role="tab"]:not([aria-disabled="true"])')
+      );
+      if (tabs.length === 0) return;
+      const current = document.activeElement as HTMLElement | null;
+      const idx = current ? tabs.indexOf(current) : -1;
+
+      let nextIdx = idx;
+      switch (event.key) {
+        case 'ArrowRight':
+        case 'ArrowDown':
+          nextIdx = (idx + 1 + tabs.length) % tabs.length;
+          break;
+        case 'ArrowLeft':
+        case 'ArrowUp':
+          nextIdx = (idx - 1 + tabs.length) % tabs.length;
+          break;
+        case 'Home':
+          nextIdx = 0;
+          break;
+        case 'End':
+          nextIdx = tabs.length - 1;
+          break;
+        default:
+          return;
+      }
+      event.preventDefault();
+      tabs[nextIdx]?.focus();
+    });
+  }
+
+  function bindAll(root: Document | HTMLElement): void {
+    for (const el of root.querySelectorAll<HTMLElement>('[data-tablist]')) {
+      bindTablist(el);
+    }
+  }
+
+  bindAll(document);
+  document.addEventListener('astro:page-load', () => bindAll(document));
+</script>

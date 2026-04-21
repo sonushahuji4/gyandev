@@ -1,0 +1,59 @@
+---
+/**
+ * ErrorHero — display block for the 404 page.
+ *
+ * SR users hear only the H1 ("This page wandered off"). The large "404"
+ * glyphs are purely decorative and carry `aria-hidden` so SR doesn't try
+ * to pronounce them. The H1 is also the focus target that
+ * `view-transition-a11y.ts` lands on after navigation.
+ */
+---
+
+<section class="error-hero">
+  <p class="error-hero__glyphs" aria-hidden="true">404</p>
+  <h1 class="error-hero__heading">This page wandered off</h1>
+  <p class="error-hero__intro">
+    We couldn't find what you were looking for.<br />
+    Try one of these:
+  </p>
+</section>
+
+<style>
+  .error-hero {
+    display: grid;
+    place-items: center;
+    text-align: center;
+    gap: 0.75rem;
+    padding: 2rem 0 1.5rem;
+  }
+
+  .error-hero__glyphs {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    color: var(--color-text-muted);
+    font-size: clamp(4.5rem, 14vw, 8rem);
+    margin: 0;
+  }
+
+  .error-hero__heading {
+    font-size: var(--text-h1);
+    font-weight: 600;
+    line-height: 1.15;
+    margin: 0;
+    color: var(--color-text);
+  }
+
+  .error-hero__intro {
+    color: var(--color-text-muted);
+    font-size: 1rem;
+    max-width: 32rem;
+    margin: 0 auto;
+  }
+
+  @media (min-width: 48rem) {
+    .error-hero { padding: 3rem 0 2rem; gap: 1rem; }
+    .error-hero__intro { font-size: 1.0625rem; }
+  }
+</style>

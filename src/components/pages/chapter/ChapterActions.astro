@@ -1,0 +1,82 @@
+---
+/**
+ * Action row in the chapter header — Mark as read, Bookmark, Edit on GitHub.
+ *
+ * Buttons are server-rendered with `aria-pressed="false"` and hydrated by
+ * `src/scripts/chapter-hydrate.ts` which reads the per-course progress +
+ * bookmarks envelopes via `progressKey()` / `bookmarksKey()` (storage.ts
+ * builders, per roadmap §2.R1).
+ */
+interface Props {
+  editUrl: string;
+}
+
+const { editUrl } = Astro.props;
+---
+
+<div class="chapter-actions" data-chapter-actions>
+  <button
+    type="button"
+    class="chapter-actions__btn"
+    data-action="mark-read"
+    aria-pressed="false"
+  >
+    <span class="chapter-actions__icon" aria-hidden="true">✓</span>
+    <span class="chapter-actions__label">Mark as read</span>
+  </button>
+
+  <button
+    type="button"
+    class="chapter-actions__btn"
+    data-action="bookmark"
+    aria-pressed="false"
+  >
+    <span class="chapter-actions__icon" aria-hidden="true">🔖</span>
+    <span class="chapter-actions__label">Bookmark</span>
+  </button>
+
+  <a
+    class="chapter-actions__btn chapter-actions__btn--link"
+    href={editUrl}
+    rel="noopener noreferrer"
+    target="_blank"
+  >
+    <span class="chapter-actions__icon" aria-hidden="true">✎</span>
+    <span class="chapter-actions__label">Edit on GitHub</span>
+  </a>
+</div>
+
+<style>
+  .chapter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .chapter-actions__btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    min-height: 2.75rem;
+    padding: 0 0.875rem;
+    background: var(--color-surface-muted);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font: inherit;
+    font-size: 0.875rem;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .chapter-actions__btn:hover {
+    border-color: var(--color-border-strong);
+    background: var(--color-surface);
+  }
+  .chapter-actions__btn[aria-pressed="true"] {
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-color: var(--color-accent);
+  }
+  .chapter-actions__icon { font-size: 1rem; line-height: 1; }
+  .chapter-actions__btn--link { text-decoration: none; }
+</style>

@@ -1,0 +1,66 @@
+---
+/**
+ * /courses — All Courses catalog (PR-3.2, spec `all-courses.md`).
+ *
+ * Build-time composition:
+ *   - `getCoursesWithStats()` → sorted (published → coming-soon/draft) list
+ *     with precomputed chapter + reading-time aggregates.
+ *   - `courseListSchema()` → JSON-LD ItemList over published courses only.
+ *   - `PageShell` (includeSerif=false) wires SEO, JsonLd, canonical, skipLink.
+ *
+ * Client-side:
+ *   - `src/scripts/progress-hydrate.ts` self-attaches to `astro:page-load`
+ *     and paints per-course progress badges from localStorage via the
+ *     ratified `progressKey(courseSlug)` builder (roadmap §2.R1).
+ */
+import PageShell from '../../components/layout/PageShell.astro';
+import CoursesHeader from '../../components/pages/all-courses/CoursesHeader.astro';
+import CourseGrid from '../../components/pages/all-courses/CourseGrid.astro';
+import CompletionBanner from '../../components/pages/all-courses/CompletionBanner.astro';
+import RequestCourseCTA from '../../components/pages/all-courses/RequestCourseCTA.astro';
+import { getCoursesWithStats } from '../../lib/courses/aggregate';
+import { courseListSchema } from '../../lib/seo/jsonld';
+import { canonicalFor, courseUrl } from '../../lib/routes';
+
+const coursesWithStats = await getCoursesWithStats();
+
+const published = coursesWithStats.filter(({ course }) => course.data.status === 'published');
+const publishedChapterTotal = published.reduce((sum, c) => sum + c.stats.publishedChapters, 0);
+const publishedMinutesTotal = published.reduce((sum, c) => sum + c.stats.totalReadingMinutes, 0);
+const totalHours = Math.max(0, Math.round(publishedMinutesTotal / 60));
+
+const jsonLd = [
+  courseListSchema(
+    published.map(({ course, slug }) => ({
+      name: course.data.title,
+      url: canonicalFor(courseUrl(slug)),
+    })),
+  ),
+];
+
+const canonical = canonicalFor('/courses');
+---
+
+<PageShell
+  title="All Courses — GyanDev"
+  description="Browse all GyanDev courses: JavaScript, Node.js, System Design, DSA, and more. Deep notes with Full Notes, Quick Revision, and Flow Diagram views."
+  canonical={canonical}
+  jsonLd={jsonLd}
+  mainMaxWidth="full"
+>
+  <CoursesHeader
+    courseCount={published.length}
+    chapterCount={publishedChapterTotal}
+    totalHours={totalHours}
+  />
+
+  <CompletionBanner />
+
+  <CourseGrid courses={coursesWithStats} />
+
+  <RequestCourseCTA />
+</PageShell>
+
+<script>
+  import '../../scripts/progress-hydrate';
+</script>

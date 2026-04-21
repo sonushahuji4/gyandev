@@ -1,0 +1,71 @@
+---
+/**
+ * RequestCourseCTA — "Want a course on something specific?" section at the
+ * bottom of `/courses` (spec §3 Section 4).
+ *
+ * Link target is the `course-request.md` issue template. That template file
+ * is tracked as a Sprint-6 blocker (PHASE-1-ROADMAP Q#24); until it lands, the
+ * deep link falls back to GitHub's generic new-issue form, so no hard 404.
+ */
+const REPO_ISSUES = 'https://github.com/sonushahuji4/gyandev/issues';
+const TEMPLATE_URL = `${REPO_ISSUES}/new?template=course-request.md`;
+---
+
+<section class="request-cta" aria-labelledby="request-cta-heading">
+  <h2 id="request-cta-heading">Want a course on something specific?</h2>
+  <p>Open an issue on GitHub and tell us what you'd read. We triage these monthly.</p>
+  <a
+    class="request-cta__link"
+    href={TEMPLATE_URL}
+    rel="noopener"
+  >
+    Suggest a course on GitHub
+    <span aria-hidden="true">→</span>
+  </a>
+</section>
+
+<style>
+  .request-cta {
+    margin: 3rem 0 0;
+    padding: 1.5rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    text-align: center;
+  }
+  .request-cta h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: var(--color-text);
+  }
+  .request-cta p {
+    color: var(--color-text-muted);
+    margin: 0 0 1rem;
+    font-size: 0.9375rem;
+  }
+  .request-cta__link {
+    display: inline-flex;
+    gap: 0.375rem;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0 1.125rem;
+    border-radius: 0.5rem;
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .request-cta__link:hover,
+  .request-cta__link:focus-visible {
+    background: var(--color-accent-hover);
+    color: var(--color-accent-fg);
+    text-decoration: none;
+  }
+  @media (min-width: 48rem) {
+    .request-cta {
+      margin-top: 4rem;
+      padding: 2rem;
+    }
+  }
+</style>

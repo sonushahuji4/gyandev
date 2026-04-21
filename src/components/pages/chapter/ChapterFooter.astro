@@ -1,0 +1,157 @@
+---
+/**
+ * Chapter footer — prev/next nav + contribute links.
+ *
+ * The prev/next anchors carry `data-prevnext`, `data-base-url`, and
+ * `data-views` so `chapter-hydrate.ts` can rewrite the href to honor the
+ * user's `prefsKey('activeTab')` preference (per chapter.md §3.8). The
+ * keybindings module (PR-1.3) targets `[data-chapter-prev]` /
+ * `[data-chapter-next]` for ←/→ navigation.
+ *
+ * Course-boundary fallback: when prev or next is null, we link back to
+ * the course overview page. Tab-pref rewriting only applies between
+ * chapters, never on the course overview link.
+ */
+import type { PrevNextItem } from '../../../lib/chapter/prevNext';
+
+interface Props {
+  prev: PrevNextItem | null;
+  next: PrevNextItem | null;
+  /** Used for the boundary fallback when prev/next is null. */
+  courseSlug: string;
+  /** Repo path of the chapter folder so report-issue links can deep-link. */
+  reportIssueUrl: string;
+  /** GitHub edit URL for THIS view's MDX file (full / revision / flow). */
+  editUrl: string;
+}
+
+const { prev, next, courseSlug, reportIssueUrl, editUrl } = Astro.props;
+
+const overviewUrl = `/courses/${courseSlug}`;
+---
+
+<footer class="chapter-footer" data-pagefind-ignore="all">
+  <nav class="chapter-footer__nav" aria-label="Previous and next chapter">
+    <div class="chapter-footer__cell" data-chapter-prev>
+      {prev ? (
+        <a
+          class="chapter-footer__link chapter-footer__link--prev"
+          href={prev.url}
+          data-prevnext="prev"
+          data-base-url={prev.url}
+          data-views={prev.views}
+        >
+          <span class="chapter-footer__arrow" aria-hidden="true">←</span>
+          <span class="chapter-footer__label">
+            <span class="chapter-footer__eyebrow">Previous</span>
+            <span class="chapter-footer__title">{prev.title}</span>
+          </span>
+        </a>
+      ) : (
+        <a class="chapter-footer__link chapter-footer__link--prev" href={overviewUrl}>
+          <span class="chapter-footer__arrow" aria-hidden="true">←</span>
+          <span class="chapter-footer__label">
+            <span class="chapter-footer__eyebrow">Back to</span>
+            <span class="chapter-footer__title">Course overview</span>
+          </span>
+        </a>
+      )}
+    </div>
+
+    <div class="chapter-footer__cell chapter-footer__cell--next" data-chapter-next>
+      {next ? (
+        <a
+          class="chapter-footer__link chapter-footer__link--next"
+          href={next.url}
+          data-prevnext="next"
+          data-base-url={next.url}
+          data-views={next.views}
+        >
+          <span class="chapter-footer__label">
+            <span class="chapter-footer__eyebrow">Next</span>
+            <span class="chapter-footer__title">{next.title}</span>
+          </span>
+          <span class="chapter-footer__arrow" aria-hidden="true">→</span>
+        </a>
+      ) : (
+        <a class="chapter-footer__link chapter-footer__link--next" href={overviewUrl}>
+          <span class="chapter-footer__label">
+            <span class="chapter-footer__eyebrow">End of course</span>
+            <span class="chapter-footer__title">Back to overview</span>
+          </span>
+          <span class="chapter-footer__arrow" aria-hidden="true">→</span>
+        </a>
+      )}
+    </div>
+  </nav>
+
+  <p class="chapter-footer__contribute">
+    Contribute:
+    <a href={editUrl} rel="noopener noreferrer" target="_blank">Edit on GitHub</a>
+    <span aria-hidden="true">·</span>
+    <a href={reportIssueUrl} rel="noopener noreferrer" target="_blank">Report an issue</a>
+  </p>
+</footer>
+
+<style>
+  .chapter-footer {
+    margin: 3rem 0 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--color-border);
+  }
+  .chapter-footer__nav {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  @media (min-width: 40rem) {
+    .chapter-footer__nav {
+      grid-template-columns: 1fr 1fr;
+    }
+    .chapter-footer__cell--next { text-align: right; }
+  }
+  .chapter-footer__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    color: var(--color-text);
+    text-decoration: none;
+    line-height: 1.3;
+    width: 100%;
+  }
+  .chapter-footer__link:hover { border-color: var(--color-accent); }
+  .chapter-footer__link--next { justify-content: flex-end; }
+  .chapter-footer__arrow {
+    font-size: 1.5rem;
+    color: var(--color-text-muted);
+    line-height: 1;
+  }
+  .chapter-footer__label {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .chapter-footer__eyebrow {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+  .chapter-footer__title {
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .chapter-footer__contribute {
+    margin: 1.5rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+  .chapter-footer__contribute a { color: var(--color-accent); text-decoration: none; }
+  .chapter-footer__contribute a:hover { text-decoration: underline; }
+</style>

@@ -1,0 +1,44 @@
+---
+/**
+ * Skip-to-main-content link — the first focusable element on every page.
+ *
+ * Hidden off-screen until it receives focus, then slides into the top-left.
+ * Activates via Enter/Space; moves focus to `<main id="main">`.
+ *
+ * Mount as the first child of `<body>` in `BaseLayout.astro`.
+ */
+
+interface Props {
+  href?: string;
+  label?: string;
+}
+
+const { href = '#main', label = 'Skip to main content' } = Astro.props;
+---
+
+<a href={href} class="skip-link">{label}</a>
+
+<style>
+  .skip-link {
+    position: absolute;
+    top: -40px;
+    left: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-radius: 4px;
+    z-index: 100;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: top 150ms ease;
+  }
+  .skip-link:focus {
+    top: 0.5rem;
+    outline: 2px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .skip-link { transition: none; }
+  }
+</style>

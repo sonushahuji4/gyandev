@@ -1,0 +1,56 @@
+---
+title: The Event Loop
+description: Call stack, task queue, microtask queue, and rendering — the four moving parts that decide when your JavaScript actually runs, and the order surprises that fall out of them.
+course: javascript/course
+order: 3
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 16
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - async
+  - event-loop
+  - runtime
+---
+
+## The moving parts
+
+The JavaScript runtime has four parts that matter for scheduling:
+
+1. **Call stack** — synchronous execution. One frame at a time.
+2. **Task queue** (macrotasks) — `setTimeout`, `setInterval`, I/O, UI events.
+3. **Microtask queue** — Promise callbacks, `queueMicrotask`, `MutationObserver`.
+4. **Render step** — the browser's chance to paint (roughly once per frame).
+
+The loop is: run the call stack to empty, drain all microtasks, maybe render, pull one
+task off the task queue, repeat.
+
+## The ordering surprise
+
+```js
+console.log('1');
+setTimeout(() => console.log('2'), 0);
+Promise.resolve().then(() => console.log('3'));
+console.log('4');
+```
+
+Output: `1 4 3 2`.
+
+`1` and `4` are synchronous. The microtask (`3`) drains before the next task (`2`), even
+though the timer was queued first. This is *why* Promise chains feel fast — they never
+wait for the task queue.
+
+## Starving the loop
+
+Because microtasks drain completely before the next task, a recursive Promise can starve
+the task queue entirely. Rendering, input events, and timers all stall until the
+microtask queue is empty. Rule of thumb: don't await in a tight unbounded loop.
+
+## Why this lives in every language you touch
+
+Node.js has the same four parts with different names (libuv phases, `process.nextTick`,
+microtasks). Deno, Bun, browsers — they all share this shape. Once you see it, async code
+stops being magic.

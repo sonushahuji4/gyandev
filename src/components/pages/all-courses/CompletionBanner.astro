@@ -1,0 +1,43 @@
+---
+/**
+ * CompletionBanner — hidden by default; flipped visible by
+ * `src/scripts/progress-hydrate.ts` when every published course is complete.
+ *
+ * Spec §11: edge-case celebration. Rendered unconditionally so there is no
+ * layout shift when the script runs — the banner reserves zero space while
+ * `hidden`, and its appearance on completion happens at load time, before the
+ * user scrolls into the grid.
+ */
+---
+
+<div
+  id="all-complete-banner"
+  class="completion-banner"
+  role="status"
+  hidden
+>
+  <strong>🎉 You've completed every course on GyanDev.</strong>
+  <span>Thanks for reading — we'll have more soon.</span>
+</div>
+
+<style>
+  .completion-banner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+    padding: 0.875rem 1rem;
+    margin: 0 0 1.5rem;
+    background: color-mix(in srgb, var(--color-accent) 10%, var(--color-surface));
+    border: 1px solid color-mix(in srgb, var(--color-accent) 30%, var(--color-border));
+    border-radius: 0.625rem;
+    color: var(--color-text);
+    font-size: 0.9375rem;
+  }
+  .completion-banner[hidden] {
+    display: none;
+  }
+  .completion-banner span {
+    color: var(--color-text-muted);
+  }
+</style>

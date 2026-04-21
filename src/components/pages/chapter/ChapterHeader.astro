@@ -1,0 +1,140 @@
+---
+/**
+ * Chapter header — H1 (chapter title), badges, subtitle, meta line, actions.
+ *
+ * Per PHASE-1-ROADMAP §2.R3 the H1 lives INSIDE the swapped content (this
+ * component) — `view-transition-a11y.ts` lands focus on it after every
+ * ClientRouter swap so screen readers announce the new view.
+ *
+ * `tab` is informational only — the H1 is always the chapter title (per
+ * spec §12). The Revision/Flow tabs do not retitle the page.
+ *
+ * `displayedReadingMinutes` lets the per-view MDX override the chapter's
+ * `readingMinutes` (Quick Revision is typically much shorter than Full
+ * Notes). The route resolves the value before passing in.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+import ChapterActions from './ChapterActions.astro';
+
+interface Props {
+  chapter: CollectionEntry<'chapters'>;
+  course: CollectionEntry<'courses'>;
+  tab: 'full' | 'revision' | 'flow';
+  /** GitHub edit URL for the MDX file matching `tab`. */
+  editUrl: string;
+  /** Per-view reading time, defaulting to chapter.readingMinutes when no override. */
+  displayedReadingMinutes: number;
+  /** ISO date used for the visible "Updated" text. */
+  displayedUpdated: Date;
+}
+
+const { chapter, tab, editUrl, displayedReadingMinutes, displayedUpdated } = Astro.props;
+
+const dateFmt = new Intl.DateTimeFormat('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+const updatedLabel = dateFmt.format(displayedUpdated);
+
+const TYPE_LABEL: Record<string, string> = {
+  tutorial: 'Tutorial',
+  howto: 'How-to',
+  reference: 'Reference',
+  explanation: 'Explanation',
+};
+const DIFFICULTY_LABEL: Record<string, string> = {
+  beginner: 'Beginner',
+  intermediate: 'Intermediate',
+  advanced: 'Advanced',
+};
+---
+
+<header class="chapter-header" data-pagefind-meta="title:{chapter.data.title}">
+  <div class="chapter-header__badges">
+    <span class={`badge badge--type badge--type-${chapter.data.type}`}>
+      {TYPE_LABEL[chapter.data.type] ?? chapter.data.type}
+    </span>
+    <span class={`badge badge--difficulty badge--diff-${chapter.data.difficulty}`}>
+      {DIFFICULTY_LABEL[chapter.data.difficulty] ?? chapter.data.difficulty}
+    </span>
+    {tab !== 'full' && (
+      <span class="badge badge--view">
+        {tab === 'revision' ? 'Quick Revision' : 'Flow Diagram'}
+      </span>
+    )}
+  </div>
+
+  {/* H1 swaps with content per R3 — focus lands here after every ClientRouter swap. */}
+  <h1 class="chapter-header__title">{chapter.data.title}</h1>
+
+  <p class="chapter-header__subtitle">{chapter.data.description}</p>
+
+  <p class="chapter-header__meta">
+    <span>{displayedReadingMinutes} min read</span>
+    <span aria-hidden="true">·</span>
+    <span>Updated <time datetime={displayedUpdated.toISOString()}>{updatedLabel}</time></span>
+  </p>
+
+  <ChapterActions editUrl={editUrl} />
+</header>
+
+<style>
+  .chapter-header {
+    margin: 0 0 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .chapter-header__badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.75rem;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+  }
+  .badge--type-tutorial { background: color-mix(in srgb, var(--color-accent) 12%, transparent); color: var(--color-accent); }
+  .badge--diff-advanced { background: color-mix(in srgb, #c2410c 18%, transparent); color: #c2410c; }
+  .badge--diff-intermediate { background: color-mix(in srgb, #b45309 14%, transparent); color: #b45309; }
+  .badge--diff-beginner { background: color-mix(in srgb, #15803d 14%, transparent); color: #15803d; }
+  .badge--view { background: color-mix(in srgb, var(--color-accent) 16%, transparent); color: var(--color-accent); }
+
+  .chapter-header__title {
+    margin: 0;
+    font-size: clamp(1.625rem, 2.25vw + 1rem, 2.25rem);
+    line-height: 1.2;
+    font-weight: 700;
+  }
+  .chapter-header__subtitle {
+    margin: 0.5rem 0 0;
+    color: var(--color-text-muted);
+    font-size: 1.05rem;
+    line-height: 1.5;
+  }
+  .chapter-header__meta {
+    margin: 0.875rem 0 0;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  /* Focus ring for H1 after view-transition-a11y lands focus. */
+  .chapter-header__title:focus {
+    outline: 2px dashed var(--color-accent);
+    outline-offset: 4px;
+    border-radius: 4px;
+  }
+</style>

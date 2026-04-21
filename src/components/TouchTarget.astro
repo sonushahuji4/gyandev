@@ -1,0 +1,43 @@
+---
+/**
+ * Ensure an interactive element meets the 44×44 tap-target minimum (spec §4).
+ *
+ * Wrap an icon-only anchor or button whose visible glyph is smaller than 44px:
+ *
+ *   <TouchTarget>
+ *     <a href="…" aria-label="…"><CloseIcon class="w-5 h-5" /></a>
+ *   </TouchTarget>
+ *
+ * The wrapper is `display: inline-flex` and imposes a 2.75rem floor on
+ * width + height. The inner control stretches to fill the wrapper so the
+ * click area covers the full 44×44 region.
+ */
+
+interface Props {
+  as?: 'span' | 'div';
+  class?: string;
+}
+
+const { as: Tag = 'span', class: className } = Astro.props;
+---
+
+<Tag class:list={['touch-target', className]}>
+  <slot />
+</Tag>
+
+<style>
+  .touch-target {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;   /* 44px */
+    min-height: 2.75rem;  /* 44px */
+  }
+  .touch-target > :global(*) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 100%;
+    min-height: 100%;
+  }
+</style>

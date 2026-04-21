@@ -1,0 +1,65 @@
+/**
+ * Self-hosted font pipeline — PR-1.4 (performance.md §3.1 + Step 2).
+ *
+ * Ownership: performance plan. Family names match the `--font-*` tokens in
+ * `global.css` (owned by PR-1.2) so swapping to system-font fallbacks is a
+ * one-file change here, not a cross-repo rename.
+ *
+ * Subset target: Latin + Latin Extended. All three files stay comfortably
+ * under the 80 KB/font budget (spec §3).
+ *
+ *   Inter-Variable.woff2            48 KB   wght 100-900 (normal axis)
+ *   JetBrainsMono-Variable.woff2    40 KB   wght 100-800 (normal axis)
+ *   InstrumentSerif-Regular.woff2   21 KB   weight 400 normal
+ *   InstrumentSerif-Italic.woff2    22 KB   weight 400 italic (optional)
+ *
+ * Why fully self-hosted (rather than @importing `@fontsource-variable/*` CSS):
+ *   1. `FontPreload.astro` relies on deterministic `/fonts/*.woff2` paths so
+ *      the preload hint actually matches the @font-face fetch. Fontsource's
+ *      CSS bundles woff2 files at hashed `/_astro/*` URLs which change every
+ *      build — a preload there would be useless.
+ *   2. GDPR: no third-party origin is contacted (Munich 2022 ruling on Google
+ *      Fonts). `font-src` can stay at `'self'` in the CSP we ship in PR-1.5.
+ *
+ * Inter + JetBrains Mono binaries are sourced from the corresponding
+ * `@fontsource-variable/*` packages (installed per PR-1.4 Step 1); Instrument
+ * Serif binaries are downloaded from `github.com/google/fonts` (`ofl/instrumentserif/`).
+ * All three are SIL OFL 1.1 — attribution in `public/fonts/LICENSE.txt`.
+ *
+ * `font-display: swap` on every face — spec §6 + §8. Prevents FOIT and lets
+ * the system fallback render immediately; the variable font swaps in once
+ * downloaded. `FontPreload` covers Inter + JetBrains Mono on every page and
+ * Instrument Serif only where `includeSerif` is true (home).
+ */
+
+@font-face {
+  font-family: 'Inter';
+  src: url('/fonts/Inter-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/JetBrainsMono-Variable.woff2') format('woff2-variations');
+  font-weight: 100 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  src: url('/fonts/InstrumentSerif-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Instrument Serif';
+  src: url('/fonts/InstrumentSerif-Italic.woff2') format('woff2');
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}

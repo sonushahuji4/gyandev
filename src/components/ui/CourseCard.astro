@@ -1,0 +1,217 @@
+---
+/**
+ * CourseCard — single catalog tile.
+ *
+ * Promoted to `src/components/ui/` in PR-4.2 when the home page became the
+ * second consumer (roadmap §9). Consumers: all-courses CourseGrid, home
+ * page. Do not move back — further consumers should import from here.
+ *
+ * Render modes:
+ *   - `status === 'published'`  → full-area `<a>` wrapping the tile.
+ *   - otherwise (coming-soon / draft) → `<div aria-disabled="true">`, no link,
+ *     no tabstop. Spec §10 + roadmap a11y baseline.
+ *
+ * Progress slot is rendered empty and flipped visible by
+ * `src/scripts/progress-hydrate.ts`. The `data-course-slug` / `data-chapter-count`
+ * / `data-course-status` attributes are the hydration contract — keep them in
+ * sync with that script.
+ */
+import type { CollectionEntry } from 'astro:content';
+import { courseUrl } from '../../lib/routes';
+import type { CourseStats } from '../../lib/courses/aggregate';
+
+export interface Props {
+  course: CollectionEntry<'courses'>;
+  slug: string;
+  stats: CourseStats;
+  /** First row of the grid — opt out of lazy image loading (LCP candidate). */
+  priority?: boolean;
+}
+
+const { course, slug, stats, priority = false } = Astro.props;
+const { title, description, difficulty, icon, status } = course.data;
+
+const isPublished = status === 'published';
+const isComingSoon = status === 'coming-soon';
+const href = isPublished ? courseUrl(slug) : undefined;
+
+const chapterLabel =
+  stats.publishedChapters === 1 ? '1 chapter' : `${stats.publishedChapters} chapters`;
+const hours = Math.round((stats.totalReadingMinutes / 60) * 10) / 10;
+const hoursLabel =
+  stats.totalReadingMinutes <= 0
+    ? null
+    : hours < 1
+      ? `~${stats.totalReadingMinutes} min`
+      : `~${hours} hr${hours === 1 ? '' : 's'}`;
+
+// Coerce the Phase-2 filter hint once at render time — cheap and keeps the
+// attribute out of the published bundle if it ever gets dropped.
+const filterTags = [difficulty].filter(Boolean).join(',');
+
+const Wrapper = isPublished ? 'a' : 'div';
+---
+
+<li class="course-card-cell">
+  <Wrapper
+    class:list={[
+      'course-card',
+      !isPublished && 'course-card--inactive',
+      isComingSoon && 'course-card--coming-soon',
+    ]}
+    {...isPublished
+      ? { href }
+      : { role: 'group', 'aria-disabled': 'true' }}
+    data-course-slug={slug}
+    data-chapter-count={stats.publishedChapters}
+    data-course-status={status}
+    data-tags={filterTags}
+  >
+    <div class="course-card__header">
+      {icon && (
+        <img
+          class="course-card__icon"
+          src={icon}
+          alt=""
+          width="48"
+          height="48"
+          loading={priority ? 'eager' : 'lazy'}
+          decoding="async"
+          aria-hidden="true"
+        />
+      )}
+      <h2 class="course-card__title">{title}</h2>
+      {isComingSoon && (
+        <span class="course-card__badge">Coming soon</span>
+      )}
+    </div>
+
+    <p class="course-card__desc">{description}</p>
+
+    <p class="course-card__stats" aria-label={`${chapterLabel}${hoursLabel ? `, ${hoursLabel}` : ''}, ${difficulty}`}>
+      <span>{chapterLabel}</span>
+      {hoursLabel && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{hoursLabel}</span>
+        </>
+      )}
+      <span aria-hidden="true">·</span>
+      <span class="course-card__difficulty">{difficulty}</span>
+    </p>
+
+    <span class="course-card__progress" hidden></span>
+  </Wrapper>
+</li>
+
+<style>
+  .course-card-cell {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+  }
+
+  .course-card {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 0.625rem;
+    padding: 1.25rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 0.75rem;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+  }
+  .course-card:hover,
+  .course-card:focus-visible {
+    border-color: var(--color-border-strong);
+    box-shadow: 0 2px 14px -4px rgb(0 0 0 / 0.08);
+  }
+  a.course-card:hover {
+    text-decoration: none;
+  }
+  .course-card--inactive {
+    opacity: 0.7;
+    cursor: default;
+  }
+  .course-card--inactive:hover,
+  .course-card--inactive:focus-visible {
+    box-shadow: none;
+    border-color: var(--color-border);
+  }
+
+  .course-card__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+  .course-card__icon {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.5rem;
+    background: var(--color-surface-muted);
+    padding: 0.25rem;
+    flex-shrink: 0;
+  }
+  .course-card__title {
+    font-size: 1.1875rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+    line-height: 1.25;
+  }
+  .course-card__badge {
+    margin-left: auto;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    padding: 0.1875rem 0.5rem;
+    border-radius: 999px;
+    background: var(--color-surface-muted);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+  }
+
+  .course-card__desc {
+    color: var(--color-text-muted);
+    margin: 0;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    flex: 1;
+  }
+
+  .course-card__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    align-items: center;
+    margin: 0;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+  .course-card__stats span[aria-hidden="true"] {
+    opacity: 0.5;
+  }
+  .course-card__difficulty {
+    text-transform: capitalize;
+  }
+
+  .course-card__progress {
+    display: inline-block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--color-accent);
+  }
+  .course-card__progress[hidden] {
+    display: none;
+  }
+
+  .course-card--complete .course-card__progress::before {
+    content: '✓ ';
+  }
+</style>

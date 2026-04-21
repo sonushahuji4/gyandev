@@ -1,0 +1,75 @@
+---
+/**
+ * "What You'll Learn" section (PR-4.1).
+ *
+ * Spec §3 Section 3: a numbered list of learning outcomes pulled from
+ * `course.data.learningObjectives`. When the frontmatter array is empty and
+ * the MDX body has prose (passed via the default slot), fall back to the
+ * prose. When both are empty, renders nothing so the page has no dangling
+ * header.
+ */
+
+export interface Props {
+  objectives: string[];
+}
+
+const { objectives } = Astro.props;
+const hasObjectives = objectives.length > 0;
+const hasSlotProse = Astro.slots.has('default');
+const visible = hasObjectives || hasSlotProse;
+---
+
+{visible && (
+  <section class="what-youll-learn" aria-labelledby="what-youll-learn-heading">
+    <h2 id="what-youll-learn-heading">What You&apos;ll Learn</h2>
+
+    {hasObjectives ? (
+      <ol class="what-youll-learn__list">
+        {objectives.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ol>
+    ) : (
+      <div class="what-youll-learn__prose">
+        <slot />
+      </div>
+    )}
+  </section>
+)}
+
+<style>
+  .what-youll-learn {
+    margin: 2rem 0 0;
+  }
+  .what-youll-learn h2 {
+    font-size: var(--text-h2);
+    font-weight: 600;
+    margin: 0 0 0.75rem;
+    color: var(--color-text);
+  }
+  .what-youll-learn__list {
+    margin: 0;
+    padding-left: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    color: var(--color-text);
+    line-height: 1.55;
+    max-width: 44rem;
+  }
+  .what-youll-learn__list li::marker {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .what-youll-learn__prose {
+    color: var(--color-text);
+    line-height: 1.65;
+    max-width: 44rem;
+  }
+  .what-youll-learn__prose :global(p) {
+    margin: 0 0 0.75rem;
+  }
+  .what-youll-learn__prose :global(p:last-child) {
+    margin-bottom: 0;
+  }
+</style>

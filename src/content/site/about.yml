@@ -1,0 +1,37 @@
+# GyanDev — site-wide data, surfaced on the About page.
+#
+# This file is the single source of truth for author bio, socials, contact
+# methods, and the public changelog. Loaded via the `site` collection in
+# `src/content.config.ts`; referenced as `getEntry('site', 'about')`.
+#
+# Editorial updates here do NOT require a .astro edit — the About page
+# components read these values at build time.
+
+author:
+  name: Sonu Shahuji
+  role: Software Engineer
+  location: Mumbai, India
+  # [TODO: user to provide] Drop a 1024x1024 photo at public/images/author.jpg
+  # and keep this path. If left as the default, AuthorCard falls back to a
+  # CSS-generated initials avatar (documented in the PR-2.3 completion report).
+  avatar: /images/author.jpg
+  # [TODO: user to provide] Final 2-3 sentence bio. Placeholder below is
+  # intentionally generic — replace before public launch (Sprint 6 gate).
+  bio: >-
+    Software engineer writing the technical notes I wish I had when I was
+    learning. GyanDev is my attempt to explain the moving parts of modern
+    web and systems work with the same depth I use at work.
+  socials:
+    github: https://github.com/sonushahuji4
+    # [TODO: user to provide] LinkedIn profile URL
+    # linkedin: https://www.linkedin.com/in/<handle>
+    # [TODO: user to provide] Twitter/X profile URL
+    # twitter: https://twitter.com/<handle>
+
+contact:
+  email: hello@gyandev.org
+  responseTime: usually within 48 hours
+
+changelog:
+  - date: 2026-04
+    event: Launched GyanDev

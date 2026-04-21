@@ -1,0 +1,22 @@
+---
+/**
+ * SEO component — renders the output of `buildMeta()` into `<title>`, `<meta>`,
+ * and `<link>` tags. Mounted once inside `BaseLayout.astro` so no page writes
+ * raw meta tags directly (SEO spec §2, §3, §4).
+ *
+ * Props mirror `MetaInput` from `src/lib/seo/meta.ts`.
+ */
+
+import { buildMeta, type MetaInput } from '../../lib/seo/meta';
+
+export interface Props extends MetaInput {}
+
+const { title, tags } = buildMeta(Astro.props);
+---
+
+<title>{title}</title>
+{
+  tags.map((t) =>
+    t.kind === 'meta' ? <meta {...t.attrs} /> : <link {...t.attrs} />,
+  )
+}

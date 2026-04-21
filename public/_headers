@@ -1,0 +1,45 @@
+# Cloudflare Pages headers — baseline security + cache-control + CSP
+# (PR-1.1, PR-1.4, PR-1.5).
+# Ownership (PHASE-1-ROADMAP §7):
+#   - routing-and-urls (PR-1.1) owns the baseline security block.
+#   - performance      (PR-1.4) owns cache-control.
+#   - seo              (PR-1.5) owns the Content-Security-Policy directive.
+#
+# CSP note (SESSION-LOG §2.R4 — binding):
+#   `'wasm-unsafe-eval'` is REQUIRED so Pagefind's WASM search engine runs
+#   under CSP. Do not remove without replacing with a nonce-based alternative.
+#   `'unsafe-inline'` is the Phase-1 compromise for the pre-paint theme-init
+#   script + KaTeX styles; Phase 2 migrates to nonces.
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=()
+  Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://giscus.app; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self'; connect-src 'self' https://giscus.app; frame-src https://giscus.app; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Self-hosted fonts — filenames stable, license attribution in public/fonts/LICENSE.txt.
+# CORS header required because `<link rel="preload" crossorigin>` only reuses
+# the preloaded file for a CORS-enabled `@font-face` fetch (MDN: Preload).
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+  Access-Control-Allow-Origin: *
+
+# Content-hashed build output — safe to cache forever.
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Hashed CSS bundles emitted by Vite outside /_astro/ (edge-cases, catch-all).
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
+
+# Hashed JS bundles emitted by Vite outside /_astro/ (edge-cases, catch-all).
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+# HTML shell — force revalidation so content edits ship on the next request.
+# Cloudflare edge-caches the response; the browser round-trips for freshness.
+/
+  Cache-Control: public, max-age=0, must-revalidate

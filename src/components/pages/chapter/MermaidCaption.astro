@@ -1,0 +1,33 @@
+---
+/**
+ * MermaidCaption — accessible wrapper for a Mermaid diagram.
+ *
+ * Used inside `flow.mdx` immediately around a ` ```mermaid ` fence so
+ * non-visual users get a short visible caption + a longer SR-only
+ * description. astro-mermaid replaces the fenced code block with a
+ * `<pre class="mermaid">` that the runtime later replaces with an SVG.
+ *
+ * Authoring example (inside flow.mdx):
+ *
+ *   <MermaidCaption title="Event loop phases" description="Timers, pending callbacks, poll, check, close.">
+ *
+ *   ```mermaid
+ *   flowchart LR
+ *     Timers --> Pending --> Poll --> Check --> Close
+ *   ```
+ *
+ *   </MermaidCaption>
+ */
+import FigureDescribed from '../../a11y/FigureDescribed.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<FigureDescribed title={title} description={description}>
+  <slot />
+</FigureDescribed>

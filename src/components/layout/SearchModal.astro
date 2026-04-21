@@ -1,0 +1,163 @@
+---
+/**
+ * Full-viewport search modal — PR-1.2 delivers the shell only.
+ *
+ * PR-5.1 wires Pagefind into `[data-search-results]`; the `⌘K` / `/`
+ * global keybindings land with `src/scripts/keybindings.ts` in PR-1.3.
+ * Until then, the modal can still be opened by triggering the button with
+ * `data-search-trigger` in TopNav.
+ */
+
+interface Props {
+  id?: string;
+}
+
+const { id = 'search-modal' } = Astro.props;
+---
+
+<dialog
+  id={id}
+  class="search-modal"
+  aria-label="Search"
+  data-search-modal
+>
+  <div class="search-modal__inner">
+    <header class="search-modal__header">
+      <label class="search-modal__label" for={`${id}-input`}>
+        <span aria-hidden="true" class="search-modal__icon">⌕</span>
+        <input
+          id={`${id}-input`}
+          type="search"
+          class="search-modal__input"
+          placeholder="Search GyanDev…"
+          autocomplete="off"
+          spellcheck="false"
+          data-search-input
+        />
+      </label>
+      <button
+        type="button"
+        class="search-modal__close"
+        data-search-close
+        aria-label="Close search"
+      >
+        ✕
+      </button>
+    </header>
+    <div class="search-modal__body" data-search-results>
+      {/* PR-5.1: Pagefind mount target */}
+      <p class="search-modal__hint">Search lands in PR-5.1 (Pagefind).</p>
+    </div>
+  </div>
+</dialog>
+
+<style>
+  .search-modal {
+    position: fixed;
+    inset: 0;
+    margin: 0;
+    width: 100vw;
+    height: 100dvh;
+    max-width: 100vw;
+    max-height: 100dvh;
+    padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 0;
+  }
+  .search-modal::backdrop {
+    background: var(--color-backdrop);
+  }
+  .search-modal__inner {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100dvh;
+    max-width: 48rem;
+    margin: 0 auto;
+  }
+  .search-modal__header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .search-modal__label {
+    display: flex;
+    flex: 1;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0 0.75rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    min-height: 2.75rem;
+  }
+  .search-modal__icon { color: var(--color-text-muted); }
+  .search-modal__input {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0.5rem 0;
+    background: transparent;
+    color: var(--color-text);
+    border: 0;
+    outline: none;
+    font-size: 1rem;
+  }
+  .search-modal__close {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    background: transparent;
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .search-modal__close:hover { background: var(--color-surface-muted); }
+  .search-modal__body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+  }
+  .search-modal__hint {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+</style>
+
+<script>
+  function bind(root: Document | HTMLElement): void {
+    for (const dialog of root.querySelectorAll<HTMLDialogElement>('dialog[data-search-modal]')) {
+      if (dialog.dataset.searchBound === 'true') continue;
+      dialog.dataset.searchBound = 'true';
+
+      for (const btn of dialog.querySelectorAll<HTMLButtonElement>('[data-search-close]')) {
+        btn.addEventListener('click', () => dialog.close());
+      }
+
+      dialog.addEventListener('click', (event) => {
+        if (event.target === dialog) dialog.close();
+      });
+
+      // Auto-focus input when opened.
+      dialog.addEventListener('close', () => {
+        const input = dialog.querySelector<HTMLInputElement>('[data-search-input]');
+        if (input) input.value = '';
+      });
+
+      // `showModal` is called by the trigger; when it resolves, focus the input.
+      const observer = new MutationObserver(() => {
+        if (dialog.open) {
+          const input = dialog.querySelector<HTMLInputElement>('[data-search-input]');
+          if (input) input.focus();
+        }
+      });
+      observer.observe(dialog, { attributes: true, attributeFilter: ['open'] });
+    }
+  }
+
+  bind(document);
+  document.addEventListener('astro:page-load', () => bind(document));
+</script>

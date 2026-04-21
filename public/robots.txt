@@ -1,0 +1,12 @@
+# GyanDev robots policy — SEO spec §9.
+# Phase 1 philosophy: allow all crawlers, block only non-content paths.
+# Intentionally no AI-crawler blocks — ChatGPT / Claude citations are free traffic.
+
+User-agent: *
+Allow: /
+
+Disallow: /search
+Disallow: /admin
+Disallow: /404
+
+Sitemap: https://gyandev.org/sitemap-index.xml

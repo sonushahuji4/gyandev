@@ -1,0 +1,21 @@
+Fonts used in GyanDev are licensed under the SIL Open Font License, Version 1.1.
+
+Full license text: https://openfontlicense.org/open-font-license-official-text/
+
+Fonts included:
+
+1. Inter
+   Copyright 2016-2020 The Inter Project Authors
+   https://github.com/rsms/inter
+
+2. JetBrains Mono
+   Copyright 2020 The JetBrains Mono Project Authors
+   https://github.com/JetBrainsMono
+
+3. Instrument Serif
+   Copyright 2022 The Instrument Serif Project Authors
+   https://github.com/Instrument/instrument-serif
+
+All three fonts are distributed under SIL OFL 1.1.
+You may use, study, modify, and redistribute these fonts freely,
+subject to the conditions of the OFL license.

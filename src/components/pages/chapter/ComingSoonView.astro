@@ -1,0 +1,77 @@
+---
+/**
+ * Body fallback for the Quick Revision / Flow Diagram tabs when the
+ * sibling MDX file is absent. The tab itself is rendered as a disabled
+ * `<span role="tab">` by `TabLink`, but if a user pastes the URL we still
+ * serve a friendly explanation rather than a 404.
+ *
+ * The chapter `<h1>` is owned by `ChapterHeader` above this component.
+ */
+interface Props {
+  missingTab: 'revision' | 'flow';
+  /** Absolute Full Notes URL — the canonical fallback link. */
+  fullNotesUrl: string;
+}
+
+const { missingTab, fullNotesUrl } = Astro.props;
+
+const LABEL: Record<Props['missingTab'], string> = {
+  revision: 'Quick Revision',
+  flow: 'Flow Diagram',
+};
+---
+
+<section class="coming-soon" aria-labelledby="coming-soon-h">
+  <h2 id="coming-soon-h" class="coming-soon__title">{LABEL[missingTab]} — coming soon</h2>
+  <p class="coming-soon__body">
+    This view hasn't been written for this chapter yet. The Full Notes have
+    everything you need in the meantime.
+  </p>
+  <p>
+    <a class="coming-soon__cta" href={fullNotesUrl}>Read the Full Notes →</a>
+  </p>
+  <p class="coming-soon__contribute">
+    Want to help? Contributions are welcome on
+    <a
+      href="https://github.com/sonushahuji4/gyandev/issues/new"
+      rel="noopener noreferrer"
+      target="_blank"
+    >GitHub</a>.
+  </p>
+</section>
+
+<style>
+  .coming-soon {
+    margin: 2rem 0 4rem;
+    padding: 1.75rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface-muted);
+    text-align: center;
+  }
+  .coming-soon__title {
+    margin: 0 0 0.75rem;
+    font-size: 1.25rem;
+    color: var(--color-text);
+  }
+  .coming-soon__body {
+    margin: 0 auto 1rem;
+    max-width: 32rem;
+    color: var(--color-text-muted);
+  }
+  .coming-soon__cta {
+    display: inline-block;
+    padding: 0.625rem 1.25rem;
+    background: var(--color-accent);
+    color: var(--color-bg);
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .coming-soon__cta:hover { opacity: 0.9; }
+  .coming-soon__contribute {
+    margin: 1rem 0 0;
+    font-size: 0.875rem;
+    color: var(--color-text-muted);
+  }
+</style>

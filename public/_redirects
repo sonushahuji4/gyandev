@@ -1,0 +1,10 @@
+# GyanDev slug-rename redirects. One rule per line.
+# Format: <source> <destination> <status>
+# Docs:   https://developers.cloudflare.com/pages/configuration/redirects/
+#
+# Ownership (PHASE-1-ROADMAP §2.R7): this file is EXCLUSIVELY owned by
+# shared/routing-and-urls.md. No other plan or PR adds entries here.
+# www → apex is handled at the Cloudflare zone level (Redirect Rule), NOT here.
+#
+# Example (when a slug is renamed):
+#   /courses/nodejs/old-slug  /courses/nodejs/new-slug  301

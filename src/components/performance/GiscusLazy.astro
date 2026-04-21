@@ -1,0 +1,115 @@
+---
+/**
+ * GiscusLazy — lazy-load shell for the Giscus comments widget.
+ *
+ * Performance plan Step 8. This is PR-1.4 scaffolding only — the actual
+ * Giscus wiring lands in PR-5.1 when the chapter page consumes it. For now
+ * the component:
+ *
+ *   1. Reserves a `min-height: 240px` placeholder so the surrounding layout
+ *      does not shift when comments mount (spec §6 CLS rule).
+ *   2. Registers an IntersectionObserver that fires once the placeholder is
+ *      within ~400 px of the viewport — at which point PR-5.1 can inject the
+ *      real Giscus `<script src="https://giscus.app/client.js">`.
+ *   3. Exposes the Giscus config (`repo`, `repoId`, `categoryId`, `theme`)
+ *      via props + dataset so PR-5.1 can read them from the DOM without
+ *      re-threading the props stack.
+ *
+ * `theme` is "auto-synced with `data-theme`" per the PR-1.4 brief: the initial
+ * value is read from `document.documentElement.dataset.theme`, and the shell
+ * listens for the `theme-change` CustomEvent (fired by `ThemeToggle.astro`,
+ * PR-1.2) to update its own `data-theme` attribute. PR-5.1 will postMessage
+ * the mapped value (`light` / `dark_dimmed`) into the Giscus iframe once it
+ * mounts.
+ */
+
+export interface Props {
+  /** `user/repo` slug that hosts the Discussions used for comments. */
+  repo: string;
+  /** Giscus-generated `data-repo-id`. */
+  repoId: string;
+  /** Giscus-generated `data-category-id` (a Discussion category must be created manually on GitHub). */
+  categoryId: string;
+  /** Initial Giscus theme name. Default `'preferred_color_scheme'` lets Giscus follow the OS until we sync explicitly. */
+  theme?: string;
+}
+
+const {
+  repo,
+  repoId,
+  categoryId,
+  theme = 'preferred_color_scheme',
+} = Astro.props;
+---
+
+<section
+  id="comments"
+  class="giscus-lazy"
+  aria-labelledby="comments-heading"
+  data-giscus-repo={repo}
+  data-giscus-repo-id={repoId}
+  data-giscus-category-id={categoryId}
+  data-giscus-theme={theme}
+>
+  <h2 id="comments-heading">Comments</h2>
+  <div class="giscus-placeholder" aria-hidden="true">
+    <!-- Giscus mounts here in PR-5.1. Reserved height prevents CLS when the
+         iframe expands to its ~600 px resting height. -->
+    <span class="giscus-placeholder__hint">Loading comments…</span>
+  </div>
+</section>
+
+<style>
+  .giscus-lazy {
+    margin-top: 3rem;
+  }
+  .giscus-placeholder {
+    min-height: 240px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface-muted);
+  }
+  .giscus-placeholder__hint {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+</style>
+
+<script is:inline>
+  (() => {
+    const root = document.getElementById('comments');
+    if (!root) return;
+
+    // Seed the theme attribute from the pre-paint theme script output so
+    // PR-5.1 can read the resolved value without recomputing.
+    const resolved = document.documentElement.dataset.theme;
+    if (resolved) root.dataset.giscusTheme = resolved === 'dark' ? 'dark_dimmed' : 'light';
+
+    // Keep the attribute in sync when the user toggles later — PR-5.1 reads
+    // from `data-giscus-theme` on every change and postMessages Giscus.
+    document.addEventListener('theme-change', (e) => {
+      const next = e && e.detail && e.detail.theme === 'dark' ? 'dark_dimmed' : 'light';
+      root.dataset.giscusTheme = next;
+    });
+
+    // IntersectionObserver-backed ready signal. The actual Giscus <script>
+    // injection lives in PR-5.1 and listens for this event.
+    if (typeof IntersectionObserver === 'undefined') {
+      root.dispatchEvent(new CustomEvent('giscus:ready'));
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          io.disconnect();
+          root.dispatchEvent(new CustomEvent('giscus:ready'));
+        }
+      },
+      { rootMargin: '400px' },
+    );
+    io.observe(root);
+  })();
+</script>

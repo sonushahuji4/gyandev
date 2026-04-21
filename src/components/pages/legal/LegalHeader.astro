@@ -1,0 +1,57 @@
+---
+/**
+ * LegalHeader — page-scoped header for /privacy and /terms.
+ *
+ * Renders the breadcrumb trail, the H1, and the "Last updated" line. Kept
+ * outside the MDX body so the template owns accessibility structure (one H1
+ * per page, machine-readable `<time datetime>`) and the author owns prose.
+ */
+
+import Breadcrumbs from '../../seo/Breadcrumbs.astro';
+import { canonicalFor } from '../../../lib/routes';
+
+export interface Props {
+  title: string;
+  updated: Date;
+  slug: 'privacy' | 'terms';
+}
+
+const { title, updated, slug } = Astro.props;
+const label = slug === 'privacy' ? 'Privacy' : 'Terms';
+
+const formatted = updated.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+---
+
+<header class="legal-header">
+  <Breadcrumbs
+    items={[
+      { name: 'Home', url: canonicalFor('/') },
+      { name: label, url: canonicalFor(`/${slug}`) },
+    ]}
+  />
+  <h1>{title}</h1>
+  <p class="legal-header__updated">
+    Last updated:
+    <time datetime={updated.toISOString()}>{formatted}</time>
+  </p>
+</header>
+
+<style>
+  .legal-header {
+    margin-bottom: 2rem;
+  }
+  .legal-header h1 {
+    margin: 1rem 0 0.25rem;
+  }
+  .legal-header__updated {
+    margin: 0;
+    /* Use the ratified Sprint-1 token name. The fallback matches light-mode
+       `--color-text-muted` so the rendered colour never silently drifts. */
+    color: var(--color-text-muted, #5b5649);
+    font-size: 0.9375rem;
+  }
+</style>

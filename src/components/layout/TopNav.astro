@@ -1,0 +1,330 @@
+---
+/**
+ * Global sticky header. Height = var(--nav-h) = 56px.
+ *
+ * Responsive behavior (spec §3):
+ *   - < md:  hamburger + logo + theme toggle. Primary links move to Drawer.
+ *   - md+ :  full horizontal nav (logo + links + search trigger + theme + GitHub).
+ *
+ * Variant switching uses class-level `md:hidden` / `hidden md:flex` — no JS.
+ */
+
+import ThemeToggle from '../ThemeToggle.astro';
+import Drawer from './Drawer.astro';
+import SearchModal from './SearchModal.astro';
+
+interface Props {
+  currentPath?: string;
+  variant?: 'default' | 'chapter';
+}
+
+const { currentPath = '', variant = 'default' } = Astro.props;
+
+const PRIMARY_LINKS: { href: string; label: string }[] = [
+  { href: '/courses', label: 'Courses' },
+  { href: '/about', label: 'About' },
+];
+
+function isActive(href: string): boolean {
+  if (!currentPath) return false;
+  if (href === '/') return currentPath === '/';
+  return currentPath === href || currentPath.startsWith(href + '/');
+}
+
+// Reference so strict mode doesn't flag the prop as unused until the chapter
+// shell starts branching on it (PR-5.1).
+void variant;
+---
+
+<header class="top-nav" data-top-nav>
+  <div class="top-nav__bar">
+    {/* Mobile: hamburger */}
+    <button
+      type="button"
+      class="top-nav__hamburger md:hidden"
+      aria-label="Open menu"
+      aria-controls="primary-drawer"
+      aria-expanded="false"
+      data-drawer-trigger="primary-drawer"
+    >
+      <span aria-hidden="true">☰</span>
+    </button>
+
+    {/* Logo (all breakpoints) */}
+    <a href="/" class="top-nav__logo" aria-label="GyanDev home">
+      <span class="top-nav__logo-mark" aria-hidden="true">G</span>
+      <span class="top-nav__logo-word">GyanDev</span>
+    </a>
+
+    {/* Desktop primary nav */}
+    <nav class="top-nav__primary hidden md:flex" aria-label="Primary">
+      {PRIMARY_LINKS.map((link) => (
+        <a
+          href={link.href}
+          class="top-nav__link"
+          aria-current={isActive(link.href) ? 'page' : undefined}
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class="top-nav__actions">
+      {/* Desktop search trigger */}
+      <button
+        type="button"
+        class="top-nav__search hidden md:inline-flex"
+        aria-label="Search"
+        aria-keyshortcuts="Meta+K Control+K"
+        data-search-trigger="search-modal"
+      >
+        <span aria-hidden="true">⌕</span>
+        <span class="top-nav__search-label">Search</span>
+        <kbd class="top-nav__kbd" aria-hidden="true">⌘K</kbd>
+      </button>
+
+      <ThemeToggle />
+
+      <a
+        href="https://github.com/aeremsolution/gyandev"
+        class="top-nav__github hidden md:inline-flex"
+        aria-label="GitHub repository"
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        <span aria-hidden="true">⧉</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+{/* Mobile drawer (rendered once; opened via hamburger) */}
+<Drawer id="primary-drawer" ariaLabel="Primary navigation">
+  <nav class="top-nav__drawer-nav" aria-label="Primary (mobile)">
+    <ul>
+      {PRIMARY_LINKS.map((link) => (
+        <li>
+          <a
+            href={link.href}
+            aria-current={isActive(link.href) ? 'page' : undefined}
+          >
+            {link.label}
+          </a>
+        </li>
+      ))}
+      <li>
+        <a
+          href="https://github.com/aeremsolution/gyandev"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          GitHub
+        </a>
+      </li>
+    </ul>
+  </nav>
+</Drawer>
+
+{/* Search modal (rendered once; opened via search trigger) */}
+<SearchModal id="search-modal" />
+
+<style>
+  .top-nav {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    width: 100%;
+    background: var(--color-bg);
+    border-bottom: 1px solid var(--color-border);
+  }
+  .top-nav__bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    height: var(--nav-h);
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+  }
+  @media (min-width: 40rem) { .top-nav__bar { padding: 0 1.25rem; } }
+  @media (min-width: 48rem) { .top-nav__bar { padding: 0 1.5rem; gap: 1rem; } }
+  @media (min-width: 64rem) { .top-nav__bar { padding: 0 2rem; } }
+
+  .top-nav__hamburger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    background: var(--color-bg);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.125rem;
+  }
+  .top-nav__hamburger:hover { background: var(--color-surface-muted); }
+
+  .top-nav__logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .top-nav__logo:hover { color: var(--color-accent); }
+  .top-nav__logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 0.9rem;
+  }
+  .top-nav__logo-word { font-size: 1rem; }
+
+  .top-nav__primary {
+    align-items: center;
+    gap: 1rem;
+    flex: 1;
+    margin-left: 0.5rem;
+  }
+  .top-nav__link {
+    color: var(--color-text);
+    text-decoration: none;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.95rem;
+  }
+  .top-nav__link:hover { color: var(--color-accent); }
+  .top-nav__link[aria-current="page"] {
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .top-nav__actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  .top-nav__search {
+    align-items: center;
+    gap: 0.5rem;
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.875rem;
+    min-width: 10rem;
+  }
+  .top-nav__search:hover {
+    color: var(--color-text);
+    border-color: var(--color-border-strong);
+  }
+  .top-nav__search-label { flex: 1; text-align: left; }
+  .top-nav__kbd {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    padding: 0.1rem 0.35rem;
+    background: var(--color-surface-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+  }
+
+  .top-nav__github {
+    align-items: center;
+    justify-content: center;
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    color: var(--color-text);
+    text-decoration: none;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+  }
+  .top-nav__github:hover {
+    background: var(--color-surface-muted);
+    color: var(--color-accent);
+  }
+
+  .top-nav__drawer-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .top-nav__drawer-nav a {
+    display: block;
+    min-height: 3rem;
+    line-height: 3rem;
+    padding: 0 0.75rem;
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 1rem;
+  }
+  .top-nav__drawer-nav a:hover { background: var(--color-surface-muted); }
+  .top-nav__drawer-nav a[aria-current="page"] {
+    color: var(--color-accent);
+    background: var(--color-surface-muted);
+    font-weight: 500;
+  }
+</style>
+
+<script>
+  function bind(root: Document | HTMLElement): void {
+    // Hamburger → open drawer.
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-drawer-trigger]')) {
+      if (btn.dataset.drawerTriggerBound === 'true') continue;
+      btn.dataset.drawerTriggerBound = 'true';
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.drawerTrigger;
+        if (!id) return;
+        const target = document.getElementById(id) as HTMLDialogElement | null;
+        if (target && typeof target.showModal === 'function') {
+          target.showModal();
+          btn.setAttribute('aria-expanded', 'true');
+        }
+      });
+    }
+
+    // Search trigger → open search modal.
+    for (const btn of root.querySelectorAll<HTMLButtonElement>('[data-search-trigger]')) {
+      if (btn.dataset.searchTriggerBound === 'true') continue;
+      btn.dataset.searchTriggerBound = 'true';
+      btn.addEventListener('click', () => {
+        const id = btn.dataset.searchTrigger;
+        if (!id) return;
+        const target = document.getElementById(id) as HTMLDialogElement | null;
+        if (target && typeof target.showModal === 'function') target.showModal();
+      });
+    }
+
+    // Reset aria-expanded on drawer close.
+    for (const dialog of root.querySelectorAll<HTMLDialogElement>('dialog[data-drawer]')) {
+      if (dialog.dataset.navAriaBound === 'true') continue;
+      dialog.dataset.navAriaBound = 'true';
+      dialog.addEventListener('close', () => {
+        const trigger = document.querySelector<HTMLButtonElement>(
+          `[data-drawer-trigger="${dialog.id}"]`
+        );
+        if (trigger) trigger.setAttribute('aria-expanded', 'false');
+      });
+    }
+  }
+
+  bind(document);
+  document.addEventListener('astro:page-load', () => bind(document));
+</script>

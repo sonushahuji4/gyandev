@@ -1,0 +1,131 @@
+# GyanDev CI — single source of truth per PHASE-1-ROADMAP §2.R5.
+# This workflow is extended sprint-by-sprint; do not rename the file or
+# split into multiple workflows.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      # Single Node version today; structured as a matrix so adding 24 (or LTS+1)
+      # later is a one-line change rather than a workflow rewrite.
+      matrix:
+        node: [22]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check + build
+        # `npm run check` = validate (astro check) + validate:slugs +
+        # check:contrast + astro build — keeps local and CI in lock-step.
+        run: npm run check
+
+      # ---------------------------------------------------------------------
+      # PR-1.3 — Accessibility gates (axe-core + Pa11y).
+      # ---------------------------------------------------------------------
+
+      - name: Start preview server
+        # `astro preview` serves the already-built `dist/`. Run in background
+        # and wait for readiness before axe / Pa11y probe it.
+        run: |
+          npx astro preview --host 127.0.0.1 --port 4321 &
+          echo $! > /tmp/preview.pid
+          npx wait-on --timeout 60000 http://127.0.0.1:4321/
+
+      - name: axe-core a11y scan
+        # @axe-core/cli walks same-origin links by default; `--exit` makes it
+        # fail the step on any violation (not just report).
+        run: npx @axe-core/cli http://127.0.0.1:4321 --exit
+
+      - name: Pa11y scan
+        # Uses `.pa11yci.json` config — WCAG2AA runners, explicit URL list.
+        run: npx pa11y-ci --config .pa11yci.json
+
+      - name: Stop preview server
+        if: always()
+        run: |
+          if [ -f /tmp/preview.pid ]; then
+            kill "$(cat /tmp/preview.pid)" || true
+          fi
+
+      # ---------------------------------------------------------------------
+      # PR-1.4 — Performance gates (bundle budget + Lighthouse).
+      # ---------------------------------------------------------------------
+
+      # Bundle-size check also runs as `postbuild` locally (package.json),
+      # so `npm run check` would already have enforced it via the build in
+      # the "Type-check + build" step above. The explicit CI step is kept
+      # for a clean, greppable signal in the job log on regression.
+      - name: Bundle size check
+        run: npm run check:bundle
+
+      - name: Lighthouse CI
+        # `lhci autorun` reads `.lighthouserc.cjs`, runs `staticDistDir` builds,
+        # and asserts the perf / a11y / best-practices / seo thresholds defined
+        # there. The `.cjs` extension is required because `package.json` sets
+        # `"type": "module"` and @lhci/cli loads the config via CommonJS require().
+        # Uses the `@lhci/cli` devDependency installed by PR-1.4.
+        run: npx lhci autorun --config=.lighthouserc.cjs
+
+      # ---------------------------------------------------------------------
+      # PR-2.2 — Legal freshness (`src/content/legal/*.mdx`).
+      # ---------------------------------------------------------------------
+
+      # Owner: `.claude/plans/pages/legal.md` Step 10
+      # (`scripts/check-legal-freshness.mjs`). Fails if an MDX legal page
+      # has been modified in git without bumping the `updated:` frontmatter.
+      # Also prints non-fatal `warn:` lines for any file untouched for 12+
+      # months so stale policy text surfaces in the job log.
+      #
+      # Checkout uses actions/checkout@v4 above with default fetch-depth: 1,
+      # which still exposes the most recent commit per file — enough for
+      # the `git log -1` probe the script runs.
+      - name: Legal freshness check
+        run: npm run check:legal
+
+      # ---------------------------------------------------------------------
+      # PR-5.2 — Content authoring rules (`src/content/courses/**/*.mdx`).
+      # ---------------------------------------------------------------------
+
+      # Owner: `.claude/plans/pages/chapter.md` Step 21
+      # (`scripts/validate-content.mjs`). Rejects mermaid fences outside
+      # `flow.mdx`, root-level H1s in chapter body MDX, orphan
+      # revision/flow siblings, and missing frontmatter blocks. Already
+      # runs inside `npm run check`; the explicit step keeps a clean,
+      # greppable signal in the job log on regression.
+      - name: Validate content rules
+        run: npm run check:content
+
+      # ---------------------------------------------------------------------
+      # PR-1.5 — SEO gates (CSP + JSON-LD schema validation).
+      # ---------------------------------------------------------------------
+
+      # Static CSP directive check — cheap, runs before any build-dependent
+      # gate to surface a missing `'wasm-unsafe-eval'` (SESSION-LOG §2.R4)
+      # with a clean error line rather than a runtime Pagefind failure.
+      - name: CSP static check
+        run: npm run check:csp
+
+      # Owner: shared/seo.md (`scripts/validate-schema.mjs`). Walks `dist/`
+      # for `<script type="application/ld+json">` blocks, parses each, and
+      # asserts minimum required keys per `@type`.
+      - name: JSON-LD schema validation
+        run: npm run check:schema

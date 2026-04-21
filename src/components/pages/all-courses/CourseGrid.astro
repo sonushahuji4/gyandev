@@ -1,0 +1,53 @@
+---
+/**
+ * CourseGrid — responsive wrapper for the course catalog.
+ *
+ * 1 col (mobile) → 2 col (≥ md, 768px) → 3 col (≥ lg, 1024px) per spec §4.
+ * First three cards get `priority` so the LCP candidate icon loads eagerly.
+ */
+import CourseCard from '../../ui/CourseCard.astro';
+import type { CourseWithStats } from '../../../lib/courses/aggregate';
+
+export interface Props {
+  courses: CourseWithStats[];
+}
+
+const { courses } = Astro.props;
+---
+
+<section aria-labelledby="courses-grid-heading">
+  <h2 id="courses-grid-heading" class="sr-only">Course catalog</h2>
+  <ul class="course-grid" role="list">
+    {courses.map(({ course, slug, stats }, index) => (
+      <CourseCard
+        course={course}
+        slug={slug}
+        stats={stats}
+        priority={index < 3}
+      />
+    ))}
+  </ul>
+</section>
+
+<style>
+  .course-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  @media (min-width: 48rem) {
+    .course-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.25rem;
+    }
+  }
+  @media (min-width: 64rem) {
+    .course-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+  }
+</style>

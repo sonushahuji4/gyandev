@@ -1,0 +1,118 @@
+---
+/**
+ * SeasonGroup — H2 season header + `<ol>` of chapter rows (PR-4.1).
+ *
+ * Spec §3.5: each season renders as its own H2 + meta line (chapter count +
+ * combined reading time) + visual divider + ordered list. The ordered list
+ * is the source of truth for the "Chapter list as `<ol>`" a11y guarantee in
+ * spec §10.
+ *
+ * Phase 1 uses `Season {n}` as the header label. Authors who want named
+ * seasons ("Foundations") will get an optional `seasonTitle?` field in
+ * Phase 1.5 per course-overview.md §13.
+ */
+import ChapterRow from './ChapterRow.astro';
+import { getChapterAvailability, type CourseChapterRef } from '../../../lib/courses/bySlug';
+
+export interface Props {
+  season: number;
+  chapters: CourseChapterRef[];
+  courseSlug: string;
+  /** 1-based starting order for the zero-padded numbers across the whole course. */
+  startOrder: number;
+  /** Hide the season header when the course is a single unnamed season. */
+  hideHeader?: boolean;
+}
+
+const { season, chapters, courseSlug, startOrder, hideHeader = false } = Astro.props;
+
+const totalMinutes = chapters.reduce(
+  (sum, ref) => sum + ref.chapter.data.readingMinutes,
+  0,
+);
+const hours = Math.round((totalMinutes / 60) * 10) / 10;
+const hoursLabel =
+  totalMinutes <= 0
+    ? null
+    : hours < 1
+      ? `~${totalMinutes} min`
+      : `~${hours} hr${hours === 1 ? '' : 's'}`;
+
+const chapterLabel = chapters.length === 1 ? '1 chapter' : `${chapters.length} chapters`;
+const headingId = `season-${season}-heading`;
+---
+
+<section
+  class="season-group"
+  aria-labelledby={hideHeader ? undefined : headingId}
+  aria-label={hideHeader ? 'Chapters' : undefined}
+>
+  {!hideHeader && (
+    <header class="season-group__header">
+      <h2 id={headingId} class="season-group__title">Season {season}</h2>
+      <p class="season-group__meta">
+        <span>{chapterLabel}</span>
+        {hoursLabel && (
+          <>
+            <span aria-hidden="true">·</span>
+            <span>{hoursLabel}</span>
+          </>
+        )}
+      </p>
+    </header>
+  )}
+
+  <ol class="season-group__list" start={startOrder}>
+    {chapters.map((ref, i) => (
+      <ChapterRow
+        title={ref.chapter.data.title}
+        description={ref.chapter.data.description}
+        readingMinutes={ref.chapter.data.readingMinutes}
+        difficulty={ref.chapter.data.difficulty}
+        courseSlug={courseSlug}
+        chapterSlug={ref.slug}
+        orderLabel={startOrder + i}
+        availability={getChapterAvailability(ref.chapter)}
+      />
+    ))}
+  </ol>
+</section>
+
+<style>
+  .season-group {
+    margin: 2rem 0 0;
+  }
+  .season-group__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.5rem 0.75rem;
+    margin: 0 0 0.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border-strong, var(--color-border));
+  }
+  .season-group__title {
+    font-size: var(--text-h2);
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+  }
+  .season-group__meta {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+  .season-group__meta span[aria-hidden="true"] {
+    opacity: 0.55;
+  }
+  .season-group__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+</style>

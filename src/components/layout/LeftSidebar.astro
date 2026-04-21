@@ -1,0 +1,234 @@
+---
+/**
+ * Chapter-tree sidebar — left rail at `lg+`, hidden on smaller breakpoints
+ * (mobile users get the same content via the BottomSheet/Drawer wired by
+ * ChapterShell).
+ *
+ * PR-5.1 wires this to the real CourseChapterRef[] from `bySlug.ts`. Each
+ * row is a chapter link with a status icon placeholder (`○`) that
+ * `chapter-hydrate.ts` flips to `●` (current) or `✓` (read) by reading
+ * `progressKey(courseSlug)` from storage.ts. The hydration script targets
+ * `[data-chapter-status][data-chapter-slug="…"]` so the contract is
+ * narrow and the markup stays static-renderable.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+export interface SidebarChapterRef {
+  chapter: CollectionEntry<'chapters'>;
+  slug: string;
+  season: number;
+}
+
+interface Props {
+  course?: CollectionEntry<'courses'>;
+  /** Sorted chapters as produced by `getCourseBySlug` / `bundle.chapters`. */
+  chapters?: SidebarChapterRef[];
+  /** URL chapter slug of the active chapter (e.g. `"closures"`). */
+  currentChapterSlug?: string;
+  /** URL course slug of the active chapter (e.g. `"javascript"`). */
+  currentCourseSlug?: string;
+  ariaLabel?: string;
+}
+
+const {
+  course,
+  chapters = [],
+  currentChapterSlug,
+  currentCourseSlug,
+  ariaLabel = 'Chapter tree',
+} = Astro.props;
+
+// Group chapters by season while preserving sort order.
+const seasons = new Map<number, SidebarChapterRef[]>();
+for (const ref of chapters) {
+  const bucket = seasons.get(ref.season);
+  if (bucket) bucket.push(ref);
+  else seasons.set(ref.season, [ref]);
+}
+const sortedSeasons = [...seasons.entries()].sort(([a], [b]) => a - b);
+
+const courseHref = currentCourseSlug ? `/courses/${currentCourseSlug}` : undefined;
+---
+
+<aside
+  class="left-sidebar"
+  aria-label={ariaLabel}
+  data-left-sidebar
+  data-course-slug={currentCourseSlug}
+  data-pagefind-ignore="all"
+>
+  <div class="left-sidebar__inner">
+    {course && (
+      <header class="left-sidebar__header">
+        <span class="left-sidebar__eyebrow">Course</span>
+        <h2 class="left-sidebar__title">
+          {courseHref ? <a href={courseHref}>{course.data.title}</a> : course.data.title}
+        </h2>
+      </header>
+    )}
+
+    <nav aria-label={ariaLabel}>
+      {sortedSeasons.length > 0 ? (
+        <div class="left-sidebar__sections">
+          {sortedSeasons.map(([season, items]) => (
+            <section class="left-sidebar__section" aria-labelledby={`season-${season}`}>
+              <h3 id={`season-${season}`} class="left-sidebar__section-title">
+                Season {season}
+              </h3>
+              <ul class="left-sidebar__list">
+                {items.map((ref) => {
+                  const isCurrent =
+                    ref.slug === currentChapterSlug;
+                  const order = String(ref.chapter.data.order).padStart(2, '0');
+                  const href = `/courses/${currentCourseSlug ?? ref.chapter.id.split('/')[0]}/${ref.slug}`;
+                  return (
+                    <li>
+                      <a
+                        href={href}
+                        class:list={['left-sidebar__row', { 'left-sidebar__row--current': isCurrent }]}
+                        aria-current={isCurrent ? 'page' : undefined}
+                        data-chapter-row
+                        data-chapter-slug={ref.slug}
+                      >
+                        <span
+                          class="left-sidebar__status"
+                          data-chapter-status
+                          data-chapter-slug={ref.slug}
+                          data-current={isCurrent ? 'true' : undefined}
+                          aria-hidden="true"
+                        >{isCurrent ? '●' : '○'}</span>
+                        <span class="left-sidebar__order" aria-hidden="true">{order}.</span>
+                        <span class="left-sidebar__name">{ref.chapter.data.title}</span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
+      ) : (
+        <p class="left-sidebar__empty">Chapters appear here.</p>
+      )}
+    </nav>
+
+    {courseHref && (
+      <a class="left-sidebar__back" href={courseHref}>← Back to course overview</a>
+    )}
+  </div>
+</aside>
+
+<style>
+  .left-sidebar {
+    display: none;
+  }
+  @media (min-width: 64rem) {
+    .left-sidebar {
+      display: block;
+      position: sticky;
+      top: var(--nav-h);
+      width: var(--sidebar-w);
+      height: calc(100dvh - var(--nav-h));
+      overflow-y: auto;
+      border-right: 1px solid var(--color-border);
+    }
+  }
+  .left-sidebar__inner { padding: 1.25rem 1rem; }
+  .left-sidebar__header {
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .left-sidebar__eyebrow {
+    display: block;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+  .left-sidebar__title {
+    margin: 0.25rem 0 0;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  .left-sidebar__title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .left-sidebar__title a:hover { color: var(--color-accent); }
+
+  .left-sidebar__sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .left-sidebar__section-title {
+    margin: 0 0 0.4rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+    font-weight: 600;
+  }
+
+  .left-sidebar__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+  .left-sidebar__row {
+    display: grid;
+    grid-template-columns: 1.25rem 1.75rem 1fr;
+    align-items: baseline;
+    gap: 0.25rem;
+    padding: 0.5rem 0.5rem;
+    color: var(--color-text);
+    text-decoration: none;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+  .left-sidebar__row:hover { background: var(--color-surface-muted); }
+  .left-sidebar__row--current {
+    background: var(--color-surface-muted);
+    color: var(--color-accent);
+    font-weight: 500;
+  }
+  .left-sidebar__status {
+    color: var(--color-text-muted);
+    font-size: 0.75rem;
+  }
+  .left-sidebar__row--current .left-sidebar__status {
+    color: var(--color-accent);
+  }
+  .left-sidebar__status[data-status="read"] { color: var(--color-accent); }
+  .left-sidebar__order {
+    color: var(--color-text-muted);
+    font-variant-numeric: tabular-nums;
+    font-size: 0.78rem;
+  }
+  .left-sidebar__name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .left-sidebar__back {
+    display: block;
+    margin-top: 1.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.825rem;
+  }
+  .left-sidebar__back:hover { color: var(--color-accent); }
+
+  .left-sidebar__empty {
+    color: var(--color-text-muted);
+    font-size: 0.9rem;
+  }
+</style>

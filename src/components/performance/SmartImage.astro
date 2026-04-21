@@ -1,0 +1,43 @@
+---
+/**
+ * SmartImage — thin wrapper over Astro's `<Image />`.
+ *
+ * Use this instead of raw `<img>` or `<Image>` everywhere. The wrapper adds
+ * four Phase-1 defaults:
+ *   - AVIF + WebP + fallback emitted automatically via Astro's image pipeline.
+ *   - `width` + `height` enforced (required by the TS signature) — prevents CLS
+ *     (spec §6).
+ *   - `loading="lazy"` by default; pass `fetchpriority="high"` for the LCP
+ *     element (at most one per page, per spec §4).
+ *   - `decoding="async"` always, so the main thread isn't blocked by image
+ *     decode during LCP.
+ *
+ * JSDoc guidance for future authors:
+ *   - Raw `<img>` is forbidden in new code (performance.md §3.2). SmartImage
+ *     is the only sanctioned path.
+ *   - Mark the LCP image with `fetchpriority="high"` — do NOT lazy-load it.
+ *   - SVG diagrams stay inline `<svg>`, not SmartImage (infinite scale).
+ */
+import { Image, type LocalImageProps, type RemoteImageProps } from 'astro:assets';
+
+type Props = (LocalImageProps | RemoteImageProps) & {
+  /** Set `"high"` for the single LCP image on the page; forces `loading="eager"`. */
+  fetchpriority?: 'high' | 'low' | 'auto';
+};
+
+const {
+  fetchpriority,
+  loading,
+  decoding,
+  ...rest
+} = Astro.props as Props;
+
+const resolvedLoading = fetchpriority === 'high' ? 'eager' : (loading ?? 'lazy');
+---
+
+<Image
+  {...(rest as LocalImageProps | RemoteImageProps)}
+  loading={resolvedLoading}
+  fetchpriority={fetchpriority}
+  decoding={decoding ?? 'async'}
+/>

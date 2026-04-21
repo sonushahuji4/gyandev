@@ -1,0 +1,21 @@
+{
+  "defaults": {
+    "standard": "WCAG2AA",
+    "runners": ["axe"],
+    "timeout": 30000,
+    "chromeLaunchConfig": {
+      "args": ["--no-sandbox", "--disable-dev-shm-usage"]
+    },
+    "ignore": [
+      "warning"
+    ],
+    "hideElements": "[aria-hidden='true']"
+  },
+  "urls": [
+    "http://localhost:4321/",
+    "http://localhost:4321/courses",
+    "http://localhost:4321/about",
+    "http://localhost:4321/privacy",
+    "http://localhost:4321/terms"
+  ]
+}

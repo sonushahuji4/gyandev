@@ -1,0 +1,144 @@
+---
+/**
+ * Course hero — left column (PR-4.1).
+ *
+ * Owns the course identity: icon, H1 (course name), full description, and a
+ * compact stats line summarizing chapter count, total estimated hours, and
+ * difficulty. The single `<h1>` on the page lives here per spec §10.
+ *
+ * Icon is rendered as a raw `<img>` because course icons live under
+ * `public/images/courses/` (served as-is, not run through Astro's image
+ * pipeline) and are already authored as small SVG/PNG assets. The stats line
+ * doubles as an accessible label.
+ */
+import type { CollectionEntry } from 'astro:content';
+
+export interface Props {
+  course: CollectionEntry<'courses'>;
+  publishedChapters: number;
+  totalReadingMinutes: number;
+}
+
+const { course, publishedChapters, totalReadingMinutes } = Astro.props;
+const { title, description, difficulty, icon } = course.data;
+
+const chapterLabel =
+  publishedChapters === 1 ? '1 chapter' : `${publishedChapters} chapters`;
+
+const hours = Math.round((totalReadingMinutes / 60) * 10) / 10;
+const hoursLabel =
+  totalReadingMinutes <= 0
+    ? null
+    : hours < 1
+      ? `~${totalReadingMinutes} min`
+      : `~${hours} hr${hours === 1 ? '' : 's'}`;
+
+const statsAriaLabel = [
+  chapterLabel,
+  hoursLabel,
+  `${difficulty} difficulty`,
+].filter(Boolean).join(', ');
+---
+
+<div class="course-hero-left">
+  {icon && (
+    <img
+      class="course-hero-left__icon"
+      src={icon}
+      alt=""
+      width="96"
+      height="96"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+      aria-hidden="true"
+    />
+  )}
+
+  <div class="course-hero-left__body">
+    <h1 class="course-hero-left__title">{title}</h1>
+    <p class="course-hero-left__desc">{description}</p>
+
+    <p class="course-hero-left__stats" aria-label={statsAriaLabel}>
+      <span>{chapterLabel}</span>
+      {hoursLabel && (
+        <>
+          <span aria-hidden="true">·</span>
+          <span>{hoursLabel}</span>
+        </>
+      )}
+      <span aria-hidden="true">·</span>
+      <span class="course-hero-left__difficulty">{difficulty}</span>
+    </p>
+  </div>
+</div>
+
+<style>
+  .course-hero-left {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  @media (min-width: 40rem) {
+    .course-hero-left {
+      flex-direction: row;
+      gap: 1.25rem;
+      align-items: flex-start;
+    }
+  }
+
+  .course-hero-left__icon {
+    width: 4rem;
+    height: 4rem;
+    border-radius: 0.75rem;
+    background: var(--color-surface-muted);
+    padding: 0.375rem;
+    flex-shrink: 0;
+  }
+  @media (min-width: 40rem) {
+    .course-hero-left__icon {
+      width: 5rem;
+      height: 5rem;
+    }
+  }
+
+  .course-hero-left__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .course-hero-left__title {
+    font-size: var(--text-h1);
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.15;
+    color: var(--color-text);
+  }
+
+  .course-hero-left__desc {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    max-width: 42rem;
+  }
+
+  .course-hero-left__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+    margin: 0.25rem 0 0;
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+  }
+  .course-hero-left__stats span[aria-hidden="true"] {
+    opacity: 0.55;
+  }
+  .course-hero-left__difficulty {
+    text-transform: capitalize;
+  }
+</style>

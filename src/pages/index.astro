@@ -1,17 +1,95 @@
 ---
-import '../styles/global.css';
+/**
+ * Home page `/` — PR-4.2.
+ *
+ * Composition (top → bottom per spec §3):
+ *   Hero → ContinueReadingCard (JS-revealed) → All Courses grid →
+ *   FeaturedStrip → RecentlyUpdatedList.
+ *
+ * Ratifications:
+ *   - R1: client-side storage goes through `storage.ts` — see
+ *     `src/scripts/home-hydrate.ts` (Continue card + ?q= interceptor).
+ *   - R2: `includeSerif={true}` is set here ONLY; no other page sets it.
+ *
+ * JSON-LD: `websiteSchema()` emits WebSite + SearchAction; the SearchAction
+ * `urlTemplate` points at `/search?q=` which the search modal will honor once
+ * PR-5.1 wires Pagefind. The home-level `?q=` interceptor opens the modal
+ * pre-filled so the schema claim isn't misleading.
+ */
+import PageShell from '../components/layout/PageShell.astro';
+import HomeHero from '../components/pages/home/HomeHero.astro';
+import ContinueReadingCard from '../components/pages/home/ContinueReadingCard.astro';
+import FeaturedStrip from '../components/pages/home/FeaturedStrip.astro';
+import RecentlyUpdatedList from '../components/pages/home/RecentlyUpdatedList.astro';
+import CourseGrid from '../components/pages/all-courses/CourseGrid.astro';
+
+import { getCoursesWithStats } from '../lib/courses/aggregate';
+import { getFeaturedChapters } from '../lib/home/featured';
+import { getRecentlyUpdatedChapters } from '../lib/home/recent';
+import { canonicalFor } from '../lib/routes';
+import { websiteSchema } from '../lib/seo/jsonld';
+import { ogImageUrl } from '../lib/seo/og';
+
+const [coursesWithStats, featured, recent] = await Promise.all([
+  getCoursesWithStats(),
+  getFeaturedChapters(),
+  getRecentlyUpdatedChapters(5),
+]);
+
+const canonical = canonicalFor('/');
+const jsonLd = [websiteSchema()];
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<link rel="icon" href="/favicon.ico" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-		<h1>Astro</h1>
-	</body>
-</html>
+<PageShell
+  title="GyanDev — Deep notes for modern developers"
+  description="Learn how JavaScript, Node.js, System Design, and DSA actually work. In-depth notes with three views: Full Notes, Quick Revision, Flow Diagrams."
+  canonical={canonical}
+  ogImage={ogImageUrl('home')}
+  jsonLd={jsonLd}
+  includeSerif={true}
+>
+  <HomeHero />
+
+  <ContinueReadingCard />
+
+  {coursesWithStats.length > 0 && (
+    <section class="home-section" aria-labelledby="home-courses-heading">
+      <div class="home-section__head">
+        <h2 id="home-courses-heading" class="home-section__title">All Courses</h2>
+        <p class="home-section__sub">Pick your path.</p>
+      </div>
+      <CourseGrid courses={coursesWithStats} />
+    </section>
+  )}
+
+  {featured.length > 0 && <FeaturedStrip chapters={featured} />}
+
+  {recent.length > 0 && <RecentlyUpdatedList entries={recent} />}
+</PageShell>
+
+<script>
+  import '../scripts/home-hydrate';
+  import '../scripts/progress-hydrate';
+</script>
+
+<style>
+  .home-section {
+    margin-top: 3rem;
+  }
+  .home-section__head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .home-section__title {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+  .home-section__sub {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+</style>

@@ -1,0 +1,178 @@
+---
+/**
+ * ChapterRow — a single `<li>` in the course-overview chapter list (PR-4.1).
+ *
+ * Data contract:
+ *   - `data-chapter-slug` identifies the row to `course-overview-hydrate.ts`.
+ *     The script toggles `.chapter-row__icon` text between `'○'` (not read),
+ *     `'✓'` (read), and `'●'` (current) and keeps its `aria-label` in sync.
+ *   - Icons start as `'○'` with `aria-label="Not started"` so zero-JS readers
+ *     see accurate state for a fresh course.
+ *
+ * The three availability dots are filled (`●`) for every view in Phase 1;
+ * `chapterViews` (PR-5.1) will let us render hollow dots with tooltips when
+ * a Revision/Flow sibling is missing.
+ */
+import { chapterUrl } from '../../../lib/routes';
+import type { ChapterAvailability } from '../../../lib/courses/bySlug';
+
+export interface Props {
+  title: string;
+  description: string;
+  readingMinutes: number;
+  difficulty: string;
+  courseSlug: string;
+  chapterSlug: string;
+  /** 1-based position used for the zero-padded order label. */
+  orderLabel: number;
+  availability: ChapterAvailability;
+}
+
+const {
+  title,
+  description,
+  readingMinutes,
+  difficulty,
+  courseSlug,
+  chapterSlug,
+  orderLabel,
+  availability,
+} = Astro.props;
+
+const paddedOrder = String(orderLabel).padStart(2, '0');
+
+const VIEWS: Array<{ key: keyof ChapterAvailability; label: string }> = [
+  { key: 'full',     label: 'Full Notes' },
+  { key: 'revision', label: 'Quick Revision' },
+  { key: 'flow',     label: 'Flow Diagram' },
+];
+---
+
+<li class="chapter-row" data-chapter-slug={chapterSlug}>
+  <span class="chapter-row__order" aria-hidden="true">{paddedOrder}</span>
+
+  <span
+    class="chapter-row__icon"
+    data-status="not-started"
+    aria-label="Not started"
+    role="img"
+  >○</span>
+
+  <div class="chapter-row__body">
+    <a class="chapter-row__link" href={chapterUrl(courseSlug, chapterSlug)}>
+      <span class="chapter-row__title">{title}</span>
+    </a>
+    <p class="chapter-row__excerpt">{description}</p>
+
+    <p class="chapter-row__meta">
+      <span>{readingMinutes} min</span>
+      <span aria-hidden="true">·</span>
+      <span class="chapter-row__difficulty">{difficulty}</span>
+      <span aria-hidden="true">·</span>
+      <span class="chapter-row__dots" aria-label="Views available">
+        {VIEWS.map(({ key, label }) => (
+          <span
+            class:list={['chapter-row__dot', !availability[key] && 'chapter-row__dot--empty']}
+            aria-label={`${label}: ${availability[key] ? 'available' : 'coming soon'}`}
+            role="img"
+          >{availability[key] ? '●' : '○'}</span>
+        ))}
+      </span>
+    </p>
+  </div>
+</li>
+
+<style>
+  .chapter-row {
+    display: grid;
+    grid-template-columns: 2ch auto 1fr;
+    align-items: start;
+    gap: 0.5rem 0.75rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--color-border);
+    list-style: none;
+  }
+  .chapter-row:first-child {
+    border-top: none;
+  }
+
+  .chapter-row__order {
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    font-size: 0.875rem;
+    line-height: 1.4;
+    padding-top: 0.0625rem;
+  }
+
+  .chapter-row__icon {
+    font-size: 0.9375rem;
+    color: var(--color-text-muted);
+    line-height: 1.4;
+    width: 1.25ch;
+    text-align: center;
+    padding-top: 0.0625rem;
+  }
+  .chapter-row__icon[data-status="read"] {
+    color: var(--color-accent, var(--color-text));
+  }
+  .chapter-row__icon[data-status="current"] {
+    color: var(--color-accent, var(--color-text));
+  }
+
+  .chapter-row__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+
+  .chapter-row__link {
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+  .chapter-row__link:hover .chapter-row__title,
+  .chapter-row__link:focus-visible .chapter-row__title {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .chapter-row__excerpt {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .chapter-row__meta {
+    margin: 0.125rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.375rem;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+  .chapter-row__meta span[aria-hidden="true"] {
+    opacity: 0.55;
+  }
+  .chapter-row__difficulty {
+    text-transform: capitalize;
+  }
+  .chapter-row__dots {
+    display: inline-flex;
+    gap: 0.1875rem;
+  }
+  .chapter-row__dot {
+    color: var(--color-accent, var(--color-text));
+    font-size: 0.625rem;
+    line-height: 1;
+  }
+  .chapter-row__dot--empty {
+    color: var(--color-text-muted);
+    opacity: 0.5;
+  }
+</style>

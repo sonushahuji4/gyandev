@@ -1,0 +1,208 @@
+---
+/**
+ * /courses/[course] — Course overview page (PR-4.1).
+ *
+ * Build-time composition:
+ *   - `getStaticPaths()` emits one route per `courses` entry that is NOT a
+ *     draft. `coming-soon` courses render the `ComingSoonHero` variant with
+ *     `noindex` so crawlers ignore the stub until the course ships.
+ *   - `getCourseBySlug()` resolves the course + published chapters + stats;
+ *     `getChaptersGroupedBySeason()` buckets for the season-grouped list.
+ *   - `courseSchema()` (from PR-1.5) emits the `Course` JSON-LD. The matching
+ *     `BreadcrumbList` is owned by `<Breadcrumbs>` so the page never emits a
+ *     duplicate block.
+ *   - Related courses are pre-filtered to exclude the current course in case
+ *     `related:` accidentally self-references.
+ *
+ * Client-side:
+ *   - `src/scripts/course-overview-hydrate.ts` self-attaches on
+ *     `DOMContentLoaded` + `astro:page-load` to paint chapter completion
+ *     icons, update the progress widget, and swap Resume/Start CTAs. All
+ *     localStorage access goes through `progressKey()` / `lastReadKey()`
+ *     builders per roadmap §2.R1.
+ */
+import { getCollection, getEntries, render, type CollectionEntry } from 'astro:content';
+
+import PageShell from '../../../components/layout/PageShell.astro';
+import Breadcrumbs from '../../../components/seo/Breadcrumbs.astro';
+import CourseHeroLeft from '../../../components/pages/course-overview/CourseHeroLeft.astro';
+import CourseHeroRight from '../../../components/pages/course-overview/CourseHeroRight.astro';
+import WhatYoullLearn from '../../../components/pages/course-overview/WhatYoullLearn.astro';
+import Prerequisites from '../../../components/pages/course-overview/Prerequisites.astro';
+import ChapterList from '../../../components/pages/course-overview/ChapterList.astro';
+import CourseSidebar from '../../../components/pages/course-overview/CourseSidebar.astro';
+import ComingSoonHero from '../../../components/pages/course-overview/ComingSoonHero.astro';
+
+import { getCourseBySlug, getChaptersGroupedBySeason } from '../../../lib/courses/bySlug';
+import { courseSchema } from '../../../lib/seo/jsonld';
+import { canonicalFor, courseUrl } from '../../../lib/routes';
+
+export async function getStaticPaths() {
+  const courses = await getCollection('courses');
+  return courses
+    // Skip drafts so they never ship a static page. Coming-soon courses DO
+    // get a page, but it's `noindex` + minimal per spec §11.
+    .filter((course) => course.data.status !== 'draft')
+    .map((course) => ({
+      params: { course: course.id.split('/')[0] },
+      props: { course },
+    }));
+}
+
+interface Props {
+  course: CollectionEntry<'courses'>;
+}
+
+const { course } = Astro.props as Props;
+const slug = course.id.split('/')[0]!;
+const canonical = canonicalFor(courseUrl(slug));
+const isComingSoon = course.data.status === 'coming-soon';
+const pageTitle = `${course.data.title} — GyanDev`;
+
+const breadcrumbItems = [
+  { name: 'Home',    url: canonicalFor('/') },
+  { name: 'Courses', url: canonicalFor('/courses') },
+  { name: course.data.title, url: canonical },
+];
+
+const bundle = !isComingSoon ? await getCourseBySlug(slug) : null;
+
+// Derived view data — only computed when we're rendering the full layout.
+const chapters = bundle?.chapters ?? [];
+const stats = bundle?.stats ?? {
+  chapterCount: 0,
+  publishedChapters: 0,
+  totalReadingMinutes: 0,
+  firstChapterSlug: undefined,
+};
+const groups = getChaptersGroupedBySeason(chapters);
+
+const related = course.data.related.length
+  ? (await getEntries(course.data.related)).filter((r) => r.id !== course.id)
+  : [];
+
+const { Content } = await render(course);
+
+const educationalLevel =
+  course.data.difficulty === 'beginner' ? 'Beginner'
+  : course.data.difficulty === 'advanced' ? 'Advanced'
+  : 'Intermediate';
+
+const hours = Math.max(1, Math.round(stats.totalReadingMinutes / 60));
+const timeRequired = stats.totalReadingMinutes > 0 ? `PT${hours}H` : undefined;
+
+// Coming-soon pages are `noindex` and carry no Course schema — nothing to
+// describe honestly yet. Published pages emit `Course`; the paired
+// `BreadcrumbList` is owned by the `<Breadcrumbs>` component below.
+const jsonLd = isComingSoon
+  ? undefined
+  : [
+      courseSchema({
+        courseCode: slug,
+        name: course.data.title,
+        description: course.data.description,
+        url: canonical,
+        educationalLevel,
+        about: course.data.title,
+        timeRequired,
+      }),
+    ];
+
+const courseContentPath = `${slug}/course.mdx`;
+---
+
+<PageShell
+  title={pageTitle}
+  description={course.data.description}
+  canonical={canonical}
+  noindex={isComingSoon}
+  jsonLd={jsonLd}
+  mainMaxWidth="full"
+>
+  {isComingSoon ? (
+    <ComingSoonHero course={course} />
+  ) : (
+    <div class="course-overview">
+      <Breadcrumbs items={breadcrumbItems} />
+
+      <header class="course-overview__hero">
+        <CourseHeroLeft
+          course={course}
+          publishedChapters={stats.publishedChapters}
+          totalReadingMinutes={stats.totalReadingMinutes}
+        />
+        <CourseHeroRight
+          courseSlug={slug}
+          firstChapterSlug={stats.firstChapterSlug}
+        />
+      </header>
+
+      <div class="course-overview__body">
+        <div class="course-overview__main">
+          <WhatYoullLearn objectives={course.data.learningObjectives}>
+            <Content />
+          </WhatYoullLearn>
+
+          <Prerequisites prerequisites={course.data.prerequisites} />
+
+          <ChapterList groups={groups} courseSlug={slug} />
+        </div>
+
+        <CourseSidebar
+          courseSlug={slug}
+          total={stats.publishedChapters}
+          related={related}
+          courseContentPath={courseContentPath}
+        />
+      </div>
+    </div>
+  )}
+</PageShell>
+
+{!isComingSoon && (
+  <script>
+    import '../../../scripts/course-overview-hydrate';
+  </script>
+)}
+
+<style>
+  .course-overview {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .course-overview__hero {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem 0 0.5rem;
+  }
+  @media (min-width: 64rem) {
+    .course-overview__hero {
+      flex-direction: row;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 2rem;
+      padding: 1.5rem 0 1rem;
+    }
+  }
+
+  .course-overview__body {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  @media (min-width: 64rem) {
+    .course-overview__body {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 18rem;
+      gap: 2.5rem;
+      align-items: start;
+    }
+  }
+
+  .course-overview__main {
+    min-width: 0;
+  }
+</style>

@@ -1,0 +1,260 @@
+---
+/**
+ * AuthorCard — author bio block: avatar (or initials fallback), name, role,
+ * location, prose bio, and labeled social links. Spec §3 Section 4.
+ *
+ * Avatar handling (plan §3.6, spec §3.4):
+ *   - If `author.avatar` is set AND the file exists at `public/<avatar>`,
+ *     render a plain `<img>`. We intentionally do NOT use `<SmartImage>` here:
+ *     the author photo is a static `public/` asset so the build doesn't need
+ *     to process it, and SmartImage requires a typed `ImageMetadata` import
+ *     for local assets.
+ *   - If no avatar is provided (or the path is still the `[TODO]` default
+ *     and the file is absent), fall back to a CSS-generated circle with the
+ *     author's initials.
+ *
+ * Social link a11y (spec §10, plan §3.5):
+ *   - Each social link has a descriptive `aria-label` explaining the
+ *     destination and "opens in new tab" cue.
+ *   - Inline SVG icons are `aria-hidden="true"` (icon-only links).
+ *   - Tap target is 44×44 per a11y baseline.
+ */
+
+export interface AuthorData {
+  name: string;
+  role: string;
+  location: string;
+  avatar?: string;
+  bio: string;
+  socials: {
+    github?: string;
+    linkedin?: string;
+    twitter?: string;
+  };
+}
+
+export interface Props {
+  author: AuthorData;
+  /** When true, suppress the `<img>` and always render the initials avatar.
+   *  Set from the page when the avatar file hasn't been provided yet. */
+  avatarMissing?: boolean;
+}
+
+const { author, avatarMissing = false } = Astro.props;
+
+function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]!.toUpperCase())
+    .join('');
+}
+
+const initials = initialsOf(author.name);
+const showPhoto = Boolean(author.avatar) && !avatarMissing;
+const photoAlt = `${author.name}, ${author.role}`;
+
+const socials = [
+  { key: 'github', label: 'GitHub', url: author.socials.github },
+  { key: 'linkedin', label: 'LinkedIn', url: author.socials.linkedin },
+  { key: 'twitter', label: 'Twitter / X', url: author.socials.twitter },
+].filter((s): s is { key: string; label: string; url: string } => typeof s.url === 'string' && s.url.length > 0);
+---
+
+<section class="author-card" aria-labelledby="author-card-h">
+  <h2 id="author-card-h">Who runs GyanDev</h2>
+
+  <div class="author-card__body">
+    {
+      showPhoto ? (
+        <img
+          class="author-card__avatar"
+          src={author.avatar}
+          alt={photoAlt}
+          width="160"
+          height="160"
+          loading="lazy"
+          decoding="async"
+        />
+      ) : (
+        <div
+          class="author-card__avatar author-card__avatar--initials"
+          role="img"
+          aria-label={photoAlt}
+        >
+          <span aria-hidden="true">{initials}</span>
+        </div>
+      )
+    }
+
+    <div class="author-card__text">
+      <p class="author-card__name">{author.name}</p>
+      <p class="author-card__meta">
+        <span>{author.role}</span>
+        <span class="author-card__dot" aria-hidden="true">·</span>
+        <span>{author.location}</span>
+      </p>
+      <p class="author-card__bio">{author.bio}</p>
+
+      {
+        socials.length > 0 && (
+          <ul class="author-card__socials" aria-label="Author social links">
+            {socials.map((s) => (
+              <li>
+                <a
+                  href={s.url}
+                  aria-label={`${s.label} profile (opens in new tab)`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {s.key === 'github' && (
+                    <svg
+                      class="author-card__icon"
+                      viewBox="0 0 16 16"
+                      width="20"
+                      height="20"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+                      />
+                    </svg>
+                  )}
+                  {s.key === 'linkedin' && (
+                    <svg
+                      class="author-card__icon"
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.95v5.66H9.36V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.45v6.29zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zM3.56 20.45h3.56V9H3.56v11.45zM22.23 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.46c.98 0 1.77-.77 1.77-1.72V1.72C24 .77 23.21 0 22.23 0z"
+                      />
+                    </svg>
+                  )}
+                  {s.key === 'twitter' && (
+                    <svg
+                      class="author-card__icon"
+                      viewBox="0 0 24 24"
+                      width="20"
+                      height="20"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path
+                        fill="currentColor"
+                        d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231 5.451-6.231zm-1.161 17.52h1.833L7.084 4.126H5.117l11.966 15.644z"
+                      />
+                    </svg>
+                  )}
+                </a>
+              </li>
+            ))}
+          </ul>
+        )
+      }
+    </div>
+  </div>
+</section>
+
+<style>
+  .author-card {
+    margin: 0 0 3rem;
+  }
+
+  .author-card__body {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    align-items: flex-start;
+  }
+  @media (min-width: 40rem) {
+    .author-card__body {
+      flex-direction: row;
+      gap: 1.75rem;
+    }
+  }
+
+  .author-card__avatar {
+    width: 8rem;
+    height: 8rem;
+    border-radius: 1rem;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-muted);
+  }
+  .author-card__avatar--initials {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-serif);
+    font-size: 2.5rem;
+    font-weight: 500;
+    color: var(--color-accent);
+    background: var(--color-surface-muted);
+  }
+
+  .author-card__text {
+    flex: 1;
+    min-width: 0;
+  }
+  .author-card__name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--color-text);
+  }
+  .author-card__meta {
+    color: var(--color-text-muted);
+    margin: 0.125rem 0 0.75rem;
+    font-size: 0.95em;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    align-items: center;
+  }
+  .author-card__dot {
+    opacity: 0.6;
+  }
+  .author-card__bio {
+    margin: 0 0 1rem;
+  }
+
+  .author-card__socials {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .author-card__socials a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;         /* 44px — a11y tap target */
+    height: 2.75rem;
+    color: var(--color-text-muted);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    background: var(--color-surface);
+    text-decoration: none;
+    transition: color 120ms, border-color 120ms, background 120ms;
+  }
+  .author-card__socials a:hover,
+  .author-card__socials a:focus-visible {
+    color: var(--color-accent);
+    border-color: var(--color-accent);
+    background: var(--color-surface-muted);
+  }
+  .author-card__icon {
+    display: block;
+  }
+</style>

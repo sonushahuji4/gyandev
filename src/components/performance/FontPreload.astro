@@ -1,0 +1,61 @@
+---
+/**
+ * FontPreload — emits `<link rel="preload">` for LCP-critical font files.
+ *
+ * Performance plan Step 3. Mounted once in `BaseLayout.astro` `<head>`, with
+ * `includeSerif` forwarded from `PageShell` (per PHASE-1-ROADMAP §2.R2).
+ *
+ * What gets preloaded:
+ *   - Inter Variable (always)           — body text on every page, usually LCP.
+ *   - JetBrains Mono Variable (always)  — code blocks appear above the fold on
+ *                                         most chapters; preloading avoids a
+ *                                         late-FCP font swap inside code samples.
+ *   - Instrument Serif Regular (gated)  — only when `includeSerif` is true. The
+ *                                         display serif is used exclusively on
+ *                                         the home hero, so preloading it on
+ *                                         chapter / legal / 404 pages would
+ *                                         waste 21 KB that those pages never
+ *                                         paint.
+ *
+ * `crossorigin` is required on preloaded fonts even when same-origin, otherwise
+ * the browser re-fetches when the @font-face resolves.
+ */
+
+interface Props {
+  /**
+   * Toggles the Instrument Serif preload. Per PHASE-1-ROADMAP §2.R2, only the
+   * home page sets this `true` — its hero headline uses the display serif and
+   * is the LCP element. All other pages leave it `false` (default) so the
+   * 21 KB preload cost doesn't hit pages that render no serif glyphs.
+   */
+  includeSerif?: boolean;
+}
+
+const { includeSerif = false } = Astro.props;
+---
+
+<link
+  rel="preload"
+  href="/fonts/Inter-Variable.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+<link
+  rel="preload"
+  href="/fonts/JetBrainsMono-Variable.woff2"
+  as="font"
+  type="font/woff2"
+  crossorigin
+/>
+{
+  includeSerif && (
+    <link
+      rel="preload"
+      href="/fonts/InstrumentSerif-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+  )
+}

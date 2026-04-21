@@ -1,0 +1,61 @@
+---
+/**
+ * WhyThisExists — motivation + three-belief list. Spec §3 Section 2.
+ *
+ * Prose lives here rather than in an MDX body (plan §3.1 flagged MDX; we
+ * inline it to avoid a one-off content file that a future author would hunt
+ * for). If this grows beyond three paragraphs, migrate to an MDX partial.
+ */
+---
+
+<section class="why-exists" aria-labelledby="why-exists-h">
+  <h2 id="why-exists-h">Why GyanDev</h2>
+  <p>
+    Most technical content falls into two traps: shallow tutorials that skip
+    the <em>why</em>, or dense reference docs that assume you already know it.
+    Neither serves the engineer who's seeing a concept for the second or third
+    time and wants to truly understand it.
+  </p>
+  <p>
+    GyanDev is the middle path — notes deep enough to build real mental
+    models, framed for engineers who already write code for a living. Every
+    chapter is written once and presented three ways, so the same material
+    meets you wherever you are: studying, revising, or recalling.
+  </p>
+  <p>It's built on three beliefs:</p>
+  <ol class="beliefs">
+    <li>
+      <strong>Deep understanding over surface tips.</strong>
+      We'd rather explain one thing completely than list ten you'll forget by
+      next week.
+    </li>
+    <li>
+      <strong>One concept, multiple learning modes.</strong>
+      Full notes for study, quick revision for interviews, flow diagrams for
+      recall — same content, different cognitive shapes.
+    </li>
+    <li>
+      <strong>Free forever, open forever.</strong>
+      Content under CC BY-SA 4.0, code under MIT. No paywall, no login, no
+      lock-in.
+    </li>
+  </ol>
+</section>
+
+<style>
+  .why-exists {
+    margin: 0 0 3rem;
+  }
+  .beliefs {
+    list-style: decimal;
+    padding-left: 1.25rem;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .beliefs li strong {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+</style>

@@ -1,0 +1,79 @@
+---
+/**
+ * Breadcrumbs — visual breadcrumb `<nav>` + auto-generated BreadcrumbList JSON-LD.
+ *
+ * Items should be absolute URLs so the emitted JSON-LD matches spec §6.
+ * Used on course overview, chapter views, about, privacy, terms.
+ *
+ * The trailing item is the current page — rendered without a link, marked with
+ * `aria-current="page"` per WAI-ARIA APG breadcrumb pattern.
+ */
+
+import JsonLd from './JsonLd.astro';
+import { breadcrumbSchema, type BreadcrumbItem } from '../../lib/seo/jsonld';
+
+export interface Props {
+  items: BreadcrumbItem[];
+}
+
+const { items } = Astro.props;
+const schema = breadcrumbSchema(items);
+---
+
+<nav class="breadcrumbs" aria-label="Breadcrumb">
+  <ol>
+    {
+      items.map((item, i) =>
+        i === items.length - 1 ? (
+          <li>
+            <span aria-current="page">{item.name}</span>
+          </li>
+        ) : (
+          <li>
+            <a href={item.url}>{item.name}</a>
+            <span class="breadcrumbs__sep" aria-hidden="true">/</span>
+          </li>
+        ),
+      )
+    }
+  </ol>
+</nav>
+
+<JsonLd schema={schema} />
+
+<style>
+  .breadcrumbs {
+    font-size: 0.875rem;
+    color: var(--text-muted, #5b5649);
+  }
+  .breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .breadcrumbs li {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .breadcrumbs a {
+    color: inherit;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .breadcrumbs a:hover,
+  .breadcrumbs a:focus-visible {
+    color: var(--text-strong, #17150f);
+  }
+  .breadcrumbs__sep {
+    opacity: 0.6;
+  }
+  [aria-current="page"] {
+    color: var(--text-strong, #17150f);
+    font-weight: 500;
+  }
+</style>

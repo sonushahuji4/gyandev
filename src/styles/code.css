@@ -1,0 +1,116 @@
+/**
+ * Shiki + rehype-pretty-code styling.
+ *
+ * Dual-theme swap (RESEARCH.md Topic 9): rehype-pretty-code emits per-token
+ * `color`, `background-color`, `--shiki-dark`, `--shiki-dark-bg` attributes
+ * when configured with `{ theme: { light, dark } }`. We flip tokens via
+ * CSS variables rather than duplicating markup.
+ *
+ * Our astro.config.mjs configures: github-light / github-dark-dimmed.
+ */
+
+pre.shiki,
+[data-rehype-pretty-code-figure] pre {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 1em;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;       /* 14px on mobile per spec §11 */
+  line-height: 1.55;
+  tab-size: 2;
+}
+@media (min-width: 48rem) {
+  pre.shiki,
+  [data-rehype-pretty-code-figure] pre { font-size: 0.9375rem; }   /* 15px */
+}
+@media (min-width: 64rem) {
+  pre.shiki,
+  [data-rehype-pretty-code-figure] pre { font-size: 1rem; }        /* 16px */
+}
+
+pre.shiki code,
+[data-rehype-pretty-code-figure] pre code {
+  font-family: inherit;
+  font-size: inherit;
+  background: transparent;
+  padding: 0;
+  border: 0;
+  display: grid;                /* grid per-line for line highlights */
+}
+
+/* Per-line wrapper emitted by rehype-pretty-code. */
+[data-line] {
+  display: inline-block;
+  min-width: 100%;
+  padding: 0 0.25em;
+  border-left: 2px solid transparent;
+}
+
+/* Dark theme: swap to --shiki-dark tokens under html.dark. */
+html.dark pre.shiki,
+html.dark [data-rehype-pretty-code-figure] pre,
+html.dark pre.shiki span,
+html.dark [data-rehype-pretty-code-figure] pre span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+  font-style: var(--shiki-dark-font-style) !important;
+  font-weight: var(--shiki-dark-font-weight) !important;
+  text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+/* Line highlighting — rehype-pretty-code markers. */
+[data-highlighted-line] {
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  border-left-color: var(--color-accent);
+}
+[data-highlighted-chars] {
+  background: color-mix(in srgb, var(--color-accent) 15%, transparent);
+  border-radius: 3px;
+  padding: 0.1em 0.25em;
+}
+
+/* Line numbers, when enabled. */
+code[data-line-numbers] { counter-reset: line; }
+code[data-line-numbers] > [data-line]::before {
+  counter-increment: line;
+  content: counter(line);
+  display: inline-block;
+  width: 1.75rem;
+  margin-right: 1rem;
+  text-align: right;
+  color: var(--color-text-muted);
+  user-select: none;
+}
+
+/* Title bar (`// title="file.ts"` directive). */
+[data-rehype-pretty-code-title] {
+  padding: 0.4em 1em;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  background: var(--color-surface-muted);
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+}
+[data-rehype-pretty-code-title] + pre {
+  border-radius: 0 0 8px 8px;
+  border-top: 0;
+}
+
+/* Caption below code block. */
+[data-rehype-pretty-code-caption] {
+  margin-top: 0.5em;
+  font-size: 0.825em;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Inline code-within-code (rare; keep legible). */
+[data-rehype-pretty-code-figure] code[data-language]::selection,
+[data-rehype-pretty-code-figure] code[data-language] *::selection {
+  background: color-mix(in srgb, var(--color-accent) 25%, transparent);
+}

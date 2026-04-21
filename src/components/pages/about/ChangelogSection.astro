@@ -1,0 +1,108 @@
+---
+/**
+ * ChangelogSection — recent notable updates. Spec §3 Section 8.
+ *
+ * Hidden entirely when no entries are provided (spec §3.8 / plan §3).
+ * Limited to the first 10 entries; older items stay in `about.yml` but don't
+ * clutter the page.
+ *
+ * Dates are free-form strings in YAML (`YYYY-MM` or `YYYY-MM-DD`) — we parse
+ * defensively. Month-precision entries render as "Apr 2026"; day-precision as
+ * "Apr 21, 2026". Unparseable strings fall through as written.
+ */
+
+export interface ChangelogEntry {
+  date: string;
+  event: string;
+}
+
+export interface Props {
+  entries?: ChangelogEntry[];
+}
+
+const { entries = [] } = Astro.props;
+
+function formatDate(raw: string): { display: string; iso?: string } {
+  // Day-precision: YYYY-MM-DD
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+    const d = new Date(`${raw}T00:00:00Z`);
+    if (!Number.isNaN(d.valueOf())) {
+      return {
+        display: d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }),
+        iso: raw,
+      };
+    }
+  }
+  // Month-precision: YYYY-MM
+  if (/^\d{4}-\d{2}$/.test(raw)) {
+    const d = new Date(`${raw}-01T00:00:00Z`);
+    if (!Number.isNaN(d.valueOf())) {
+      return {
+        display: d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', timeZone: 'UTC' }),
+        iso: raw,
+      };
+    }
+  }
+  return { display: raw };
+}
+
+const visible = entries.slice(0, 10);
+const hasEntries = visible.length > 0;
+---
+
+{
+  hasEntries && (
+    <section class="changelog" aria-labelledby="changelog-h">
+      <h2 id="changelog-h">Recent updates</h2>
+      <ol class="changelog__list">
+        {visible.map((entry) => {
+          const { display, iso } = formatDate(entry.date);
+          return (
+            <li class="changelog__item">
+              {iso ? (
+                <time class="changelog__date" datetime={iso}>{display}</time>
+              ) : (
+                <span class="changelog__date">{display}</span>
+              )}
+              <span class="changelog__sep" aria-hidden="true">—</span>
+              <span class="changelog__event">{entry.event}</span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  )
+}
+
+<style>
+  .changelog {
+    margin: 0 0 3rem;
+  }
+  .changelog__list {
+    list-style: none;
+    padding: 0;
+    margin: 1rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .changelog__item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  .changelog__date {
+    font-variant-numeric: tabular-nums;
+    color: var(--color-text-muted);
+    min-width: 6.5rem;
+    font-size: 0.95em;
+  }
+  .changelog__sep {
+    color: var(--color-text-muted);
+  }
+  .changelog__event {
+    flex: 1;
+    min-width: 0;
+  }
+</style>

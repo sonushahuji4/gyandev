@@ -1,0 +1,143 @@
+---
+/**
+ * On-page table of contents — right rail at `xl+`, hidden below.
+ *
+ * Renders `MarkdownHeading[]` (Astro built-in) filtered to H2/H3. The
+ * IntersectionObserver-driven active-heading highlight + the scroll
+ * progress bar are wired by `src/scripts/chapter-toc.ts` (PR-5.1) — this
+ * component just reserves the markup contract:
+ *
+ *   - `data-toc`              the nav scope the script binds to
+ *   - `[data-toc-link]`       anchors that get `aria-current="location"`
+ *   - `[data-toc-progress]`   the progress fill bar
+ */
+import type { MarkdownHeading } from 'astro';
+
+interface Props {
+  headings?: MarkdownHeading[];
+  maxDepth?: number;
+  ariaLabel?: string;
+  /** Set to `false` on Revision/Flow tabs where the TOC is mostly noise. */
+  showProgress?: boolean;
+}
+
+const props = Astro.props;
+const headings: MarkdownHeading[] = props.headings ?? [];
+const maxDepth = props.maxDepth ?? 3;
+const ariaLabel = props.ariaLabel ?? 'On this page';
+const showProgress = props.showProgress ?? true;
+
+const visible = headings.filter((h: MarkdownHeading) => h.depth >= 2 && h.depth <= maxDepth);
+---
+
+<aside class="right-toc" aria-label={ariaLabel} data-right-toc data-pagefind-ignore="all">
+  <div class="right-toc__inner">
+    <h2 class="right-toc__title">On this page</h2>
+
+    {showProgress && (
+      <div class="right-toc__progress" aria-hidden="true">
+        <span class="right-toc__progress-fill" data-toc-progress></span>
+      </div>
+    )}
+
+    <nav aria-label={ariaLabel} data-toc>
+      {visible.length > 0 ? (
+        <ul class="right-toc__list">
+          {visible.map((h) => (
+            <li data-depth={h.depth}>
+              <a href={`#${h.slug}`} data-toc-link>{h.text}</a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="right-toc__empty">Headings appear here.</p>
+      )}
+    </nav>
+
+    <a class="right-toc__top" href="#main">↑ Back to top</a>
+  </div>
+</aside>
+
+<style>
+  .right-toc {
+    display: none;
+  }
+  @media (min-width: 80rem) {
+    .right-toc {
+      display: block;
+      position: sticky;
+      top: var(--nav-h);
+      width: var(--toc-w);
+      height: calc(100dvh - var(--nav-h));
+      overflow-y: auto;
+      border-left: 1px solid var(--color-border);
+    }
+  }
+  .right-toc__inner { padding: 1.25rem 1rem; }
+  .right-toc__title {
+    margin: 0 0 0.5rem;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--color-text-muted);
+  }
+  .right-toc__progress {
+    height: 3px;
+    margin: 0 0 0.75rem;
+    background: var(--color-border);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .right-toc__progress-fill {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--color-accent);
+    transition: width 120ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .right-toc__progress-fill { transition: none; }
+  }
+
+  .right-toc__list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    border-left: 1px solid var(--color-border);
+  }
+  .right-toc__list li[data-depth="3"] { padding-left: 0.75rem; }
+  .right-toc__list li[data-depth="4"] { padding-left: 1.5rem; }
+  .right-toc__list a {
+    display: block;
+    padding: 0.3rem 0.625rem;
+    margin-left: -1px;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    font-size: 0.825rem;
+    line-height: 1.4;
+    border-left: 2px solid transparent;
+  }
+  .right-toc__list a:hover { color: var(--color-text); }
+  .right-toc__list a[aria-current="location"] {
+    color: var(--color-accent);
+    border-left-color: var(--color-accent);
+    font-weight: 500;
+  }
+
+  .right-toc__top {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--color-text-muted);
+    font-size: 0.825rem;
+    text-decoration: none;
+  }
+  .right-toc__top:hover { color: var(--color-accent); }
+
+  .right-toc__empty {
+    color: var(--color-text-muted);
+    font-size: 0.85rem;
+  }
+</style>

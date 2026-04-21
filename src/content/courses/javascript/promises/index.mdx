@@ -1,0 +1,53 @@
+---
+title: Promises
+description: The Promise state machine — pending, fulfilled, rejected — and how chaining, error propagation, and the microtask queue work together to make async JavaScript predictable.
+course: javascript/course
+order: 2
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 14
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - async
+  - promises
+  - microtasks
+---
+
+## A Promise is a state machine
+
+Every promise is in one of three states:
+
+- **pending** — no result yet.
+- **fulfilled** — resolved with a value.
+- **rejected** — rejected with a reason.
+
+Transitions are one-way. Once a promise settles (fulfilled or rejected), it stays that way.
+`.then` and `.catch` schedule callbacks to run *after* settlement.
+
+```js
+const p = new Promise((resolve) => {
+  setTimeout(() => resolve(42), 100);
+});
+
+p.then((v) => console.log('got', v));
+```
+
+## Chaining is a new promise each time
+
+`.then(fn)` returns a **new** promise. If `fn` returns a value, the new promise fulfills
+with that value. If `fn` returns a promise, the new one adopts its state. If `fn` throws,
+the new promise rejects.
+
+That's the whole contract. Error propagation down a chain is just "the reject state keeps
+skipping ahead until a `.catch` handler runs".
+
+## Microtasks, not macrotasks
+
+Promise callbacks run on the **microtask queue**, not the task queue. That means they
+fire *before* the next `setTimeout`, `setInterval`, or I/O callback, but *after* the
+current synchronous code finishes. Getting this ordering wrong is the single most common
+source of confusion in async JavaScript — the Event Loop chapter walks through it in
+detail.

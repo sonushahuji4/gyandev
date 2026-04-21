@@ -1,0 +1,26 @@
+---
+/**
+ * /about — renders via `AboutLayout` using structured data from
+ * `src/content/site/about.yml` (the `site` collection).
+ *
+ * This page is indexed (no noindex). The final bio, avatar, and social URLs
+ * are marked `[TODO]` in `about.yml` per PR-2.3 blockers (PHASE-1-ROADMAP
+ * Q#14/15/17) — replace those before public launch.
+ */
+
+import { getEntry } from 'astro:content';
+import AboutLayout from '../layouts/AboutLayout.astro';
+
+const about = await getEntry('site', 'about');
+if (!about) {
+  throw new Error(
+    'Missing src/content/site/about.yml — required for /about to build.',
+  );
+}
+
+const title = 'About — GyanDev';
+const description =
+  'GyanDev is a free, open-source technical education site. Deep notes on JavaScript, Node.js, system design, and DSA. Built by Sonu Shahuji.';
+---
+
+<AboutLayout title={title} description={description} site={about.data} />

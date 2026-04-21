@@ -1,0 +1,149 @@
+---
+/**
+ * 404 page — first page to land in Sprint 2. Smoke-tests the full shell:
+ * `PageShell` + `BaseLayout` + `<SEO noindex>` + a11y primitives.
+ *
+ * Cloudflare Pages serves `dist/404.html` with HTTP 404 for any unmatched
+ * route (Astro emits flat HTML thanks to `build.format: 'file'`).
+ *
+ * Self-canonical is deliberate — do not point to `/`. Google treats a 404
+ * canonicalized to the homepage as a soft-404 signal.
+ *
+ * Reserved slug `"404"` is declared in `src/lib/routes.ts` RESERVED_SLUGS.
+ */
+
+import PageShell from '../components/layout/PageShell.astro';
+import ErrorHero from '../components/pages/404/ErrorHero.astro';
+import { canonicalFor } from '../lib/routes';
+import { ogImageUrl } from '../lib/seo/og';
+
+const canonical = canonicalFor('/404');
+---
+
+<PageShell
+  title="Page Not Found"
+  description="The page you're looking for doesn't exist. Search GyanDev or browse courses."
+  canonical={canonical}
+  ogImage={ogImageUrl('404')}
+  noindex
+>
+  <div class="error-page">
+    <ErrorHero />
+
+    <form action="/search" method="get" role="search" class="error-search">
+      <label for="error-search-input" class="sr-only">Search GyanDev</label>
+      <input
+        id="error-search-input"
+        type="search"
+        name="q"
+        class="error-search__input"
+        placeholder="Search for something..."
+        autocomplete="off"
+        spellcheck="false"
+        autofocus
+      />
+      <button type="submit" class="error-search__submit">Search</button>
+    </form>
+
+    <nav aria-label="Recovery links" class="error-links">
+      <ul>
+        <li><a href="/">Home</a></li>
+        <li><a href="/courses">All Courses</a></li>
+        <li>
+          <a href="/courses/nodejs">Node.js</a>
+          <span class="error-links__note"> — our most popular</span>
+        </li>
+      </ul>
+    </nav>
+
+    <p class="error-report">
+      Broken link? <a
+        href="https://github.com/sonushahuji4/gyandev/issues/new?template=broken-link.md"
+        rel="noopener"
+      >Let us know on GitHub.</a>
+    </p>
+  </div>
+</PageShell>
+
+<style>
+  .error-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-height: 60dvh;
+    padding: 1rem 0 2rem;
+  }
+
+  .error-search {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 28rem;
+    margin: 1rem auto 1.5rem;
+  }
+  .error-search__input {
+    flex: 1;
+    min-height: 2.75rem;
+    padding: 0 0.875rem;
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 1rem;
+    outline: none;
+  }
+  .error-search__input::placeholder { color: var(--color-text-muted); }
+  .error-search__input:hover { border-color: var(--color-border-strong); }
+  .error-search__submit {
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    background: var(--color-accent);
+    color: var(--color-accent-fg);
+    border: 1px solid var(--color-accent);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9375rem;
+    font-weight: 500;
+  }
+  .error-search__submit:hover { background: var(--color-accent-hover); }
+
+  .error-links {
+    width: 100%;
+    max-width: 28rem;
+    margin: 0 auto 1.5rem;
+  }
+  .error-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .error-links li {
+    display: flex;
+    align-items: baseline;
+    gap: 0.25rem;
+  }
+  .error-links a {
+    display: inline-block;
+    min-height: 2.75rem;
+    line-height: 2.75rem;
+  }
+  .error-links__note {
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .error-report {
+    margin-top: auto;
+    padding-top: 1rem;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    text-align: center;
+  }
+
+  @media (min-width: 48rem) {
+    .error-page { padding: 2rem 0 3rem; }
+  }
+</style>

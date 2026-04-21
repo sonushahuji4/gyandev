@@ -1,0 +1,252 @@
+---
+/**
+ * Chapter shell — the three chapter views (Full Notes / Revision / Flow)
+ * render inside this shell.
+ *
+ * Per PHASE-1-ROADMAP §2.R3: `transition:persist="chapter-shell"` wraps
+ * TopNav + breadcrumbs + tab bar *only*. The chapter `<h1>` lives inside
+ * the main content slot so `view-transition-a11y.ts` (PR-1.3) can land
+ * focus on a fresh H1 after each tab swap.
+ *
+ * `<ClientRouter />` is mounted globally in `BaseLayout` (PR-5.1) so this
+ * shell only needs to declare the persist boundary; Astro handles the
+ * cross-fade.
+ *
+ * Tab bar uses the `TabList` / `TabLink` a11y primitives (PR-1.3) so
+ * keyboard ARIA tablist semantics + the disabled-tab affordance ratified
+ * for missing Revision/Flow views (Q#21) come for free.
+ */
+
+import type { MarkdownHeading } from 'astro';
+import type { CollectionEntry } from 'astro:content';
+
+import { ClientRouter } from 'astro:transitions';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import TopNav from './TopNav.astro';
+import LeftSidebar, { type SidebarChapterRef } from './LeftSidebar.astro';
+import RightTOC from './RightTOC.astro';
+import BottomSheet from './BottomSheet.astro';
+import TabList from '../a11y/TabList.astro';
+import TabLink from '../a11y/TabLink.astro';
+import {
+  chapterUrl,
+  chapterRevisionUrl,
+  chapterFlowUrl,
+} from '../../lib/routes';
+import type { ViewAvailability } from '../../lib/chapter/availabilityOf';
+
+export type ChapterTab = 'full' | 'revision' | 'flow';
+
+interface Props {
+  title: string;
+  description: string;
+  canonical: string;
+  noindex?: boolean;
+  robotsExtra?: string;
+  includeSerif?: boolean;
+  ogImage?: string;
+  ogImageAlt?: string;
+  ogType?: 'website' | 'article';
+  twitterCreator?: string;
+  article?: import('../../lib/seo/meta').ArticleMeta;
+  jsonLd?: object | object[];
+  course?: CollectionEntry<'courses'>;
+  chapter?: CollectionEntry<'chapters'>;
+  /** Pre-computed sidebar refs from `getCourseBySlug().chapters`. */
+  chapters?: SidebarChapterRef[];
+  /** URL course slug — used by sidebar links + breadcrumbs. */
+  courseSlug?: string;
+  /** URL chapter slug — drives the active row in LeftSidebar. */
+  chapterSlug?: string;
+  activeTab: ChapterTab;
+  /** Per-view availability flags — disables Revision/Flow tabs when missing. */
+  availability?: ViewAvailability;
+  headings?: MarkdownHeading[];
+  /** Extra data attrs spread onto `<main>` — chapter title, course label, etc. */
+  pageData?: Record<string, string>;
+}
+
+const {
+  title,
+  description,
+  canonical,
+  noindex = false,
+  robotsExtra,
+  includeSerif = false,
+  ogImage,
+  ogImageAlt,
+  ogType,
+  twitterCreator,
+  article,
+  jsonLd,
+  course,
+  chapter,
+  chapters = [],
+  courseSlug,
+  chapterSlug,
+  activeTab,
+  availability,
+  headings = [],
+  pageData,
+} = Astro.props;
+
+const resolvedCourseSlug = courseSlug ?? (course ? course.id.split('/')[0] : '');
+const resolvedChapterSlug =
+  chapterSlug ??
+  (chapter ? chapter.id.split('/').slice(1).join('/') : '');
+
+const hasChapter = Boolean(resolvedCourseSlug && resolvedChapterSlug);
+
+const fullHref = hasChapter ? chapterUrl(resolvedCourseSlug, resolvedChapterSlug) : '#';
+const revisionHref = hasChapter ? chapterRevisionUrl(resolvedCourseSlug, resolvedChapterSlug) : '#';
+const flowHref = hasChapter ? chapterFlowUrl(resolvedCourseSlug, resolvedChapterSlug) : '#';
+
+const a = availability ?? { full: true, revision: true, flow: true };
+---
+
+<BaseLayout
+  title={title}
+  description={description}
+  canonical={canonical}
+  noindex={noindex}
+  robotsExtra={robotsExtra}
+  includeSerif={includeSerif}
+  ogImage={ogImage}
+  ogImageAlt={ogImageAlt}
+  ogType={ogType}
+  twitterCreator={twitterCreator}
+  article={article}
+  jsonLd={jsonLd}
+  pageScope="chapter"
+  pageData={pageData}
+>
+  <ClientRouter slot="head" />
+  <slot name="head" slot="head" />
+
+  {/* Persisted shell: TopNav + breadcrumbs + tab bar (per R3). H1 swaps with content. */}
+  <div slot="header" transition:persist="chapter-shell" data-chapter-shell>
+    <TopNav currentPath={canonical} variant="chapter" />
+
+    {course && chapter && (
+      <nav class="chapter-breadcrumbs" aria-label="Breadcrumb" data-pagefind-ignore="all">
+        <ol>
+          <li><a href="/courses">Courses</a></li>
+          <li><a href={`/courses/${resolvedCourseSlug}`}>{course.data.title}</a></li>
+          <li aria-current="page">{chapter.data.title}</li>
+        </ol>
+      </nav>
+    )}
+
+    {hasChapter && (
+      <div class="chapter-tabs-wrap" data-pagefind-ignore="all">
+        <TabList label="Chapter views" class="chapter-tabs">
+          <TabLink href={fullHref} active={activeTab === 'full'} label="Full Notes" />
+          <TabLink href={revisionHref} active={activeTab === 'revision'} label="Quick Revision" disabled={!a.revision} />
+          <TabLink href={flowHref} active={activeTab === 'flow'} label="Flow Diagram" disabled={!a.flow} />
+        </TabList>
+      </div>
+    )}
+  </div>
+
+  <div class="chapter-shell">
+    <LeftSidebar
+      course={course}
+      chapters={chapters}
+      currentChapterSlug={resolvedChapterSlug}
+      currentCourseSlug={resolvedCourseSlug}
+    />
+
+    <div class="chapter-shell__main">
+      <slot />
+    </div>
+
+    <RightTOC headings={headings} showProgress={activeTab === 'full'} />
+  </div>
+
+  {/* Mobile TOC — opened via "On this page ▾" button at < xl. */}
+  <BottomSheet id="chapter-toc-sheet" ariaLabel="On this page">
+    <RightTOC headings={headings} ariaLabel="On this page (mobile)" showProgress={false} />
+  </BottomSheet>
+
+  <slot name="footer" slot="footer" />
+</BaseLayout>
+
+<style>
+  .chapter-breadcrumbs {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.825rem;
+    color: var(--color-text-muted);
+    border-bottom: 1px solid var(--color-border);
+  }
+  @media (min-width: 48rem) { .chapter-breadcrumbs { padding: 0.5rem 1.5rem; } }
+  @media (min-width: 64rem) { .chapter-breadcrumbs { padding: 0.5rem 2rem; } }
+  .chapter-breadcrumbs ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 0.5rem;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .chapter-breadcrumbs li + li::before {
+    content: '›';
+    margin-right: 0.5rem;
+    color: var(--color-border-strong);
+  }
+  .chapter-breadcrumbs a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .chapter-breadcrumbs a:hover { color: var(--color-accent); }
+  .chapter-breadcrumbs [aria-current="page"] {
+    color: var(--color-text);
+    font-weight: 500;
+  }
+
+  .chapter-tabs-wrap {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0.25rem 1rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-bg);
+  }
+  @media (min-width: 48rem) { .chapter-tabs-wrap { padding: 0.25rem 1.5rem; } }
+  @media (min-width: 64rem) { .chapter-tabs-wrap { padding: 0.25rem 2rem; } }
+
+  .chapter-shell {
+    display: grid;
+    grid-template-columns: 1fr;
+    max-width: 80rem;
+    margin: 0 auto;
+  }
+  @media (min-width: 64rem) {
+    .chapter-shell {
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+    }
+  }
+  @media (min-width: 80rem) {
+    .chapter-shell {
+      grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--toc-w);
+    }
+  }
+  .chapter-shell__main {
+    min-width: 0;
+    padding: 1rem;
+  }
+  @media (min-width: 40rem) { .chapter-shell__main { padding: 1.25rem; } }
+  @media (min-width: 48rem) {
+    .chapter-shell__main {
+      padding: 1.5rem;
+      max-width: var(--content-max);
+      margin: 0 auto;
+    }
+  }
+  @media (min-width: 64rem) {
+    .chapter-shell__main {
+      padding: 2rem;
+    }
+  }
+</style>

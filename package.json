@@ -8,11 +8,19 @@
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
+    "postbuild": "node scripts/check-bundle-size.mjs",
     "preview": "astro preview",
     "astro": "astro",
     "validate": "astro check",
-    "validate:content": "node scripts/validate-content.mjs",
-    "check": "npm run validate && npm run build",
+    "validate:slugs": "node scripts/validate-slugs.mjs",
+    "check:content": "node scripts/validate-content.mjs",
+    "check:contrast": "node scripts/check-contrast.mjs",
+    "check:bundle": "node scripts/check-bundle-size.mjs",
+    "check:csp": "node scripts/check-csp.mjs",
+    "check:schema": "node scripts/validate-schema.mjs",
+    "check:legal": "node scripts/check-legal-freshness.mjs",
+    "check:lhci": "lhci autorun --config=.lighthouserc.cjs",
+    "check": "npm run validate && npm run validate:slugs && npm run check:contrast && npm run check:csp && npm run check:content && npm run check:legal && npm run build && npm run check:bundle && npm run check:schema",
     "format": "prettier --write .",
     "lint": "eslint src --ext .ts,.astro"
   },
@@ -20,9 +28,13 @@
     "@astrojs/check": "^0.9.8",
     "@astrojs/mdx": "^5.0.3",
     "@astrojs/sitemap": "^3.7.2",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@tailwindcss/vite": "^4.2.2",
     "astro": "^6.1.8",
     "astro-mermaid": "^2.0.1",
+    "astro-og-canvas": "^0.11.1",
+    "canvaskit-wasm": "^0.39.1",
     "katex": "^0.16.45",
     "pagefind": "^1.5.2",
     "rehype-katex": "^7.0.1",
@@ -30,6 +42,14 @@
     "remark-math": "^6.0.0",
     "shiki": "^4.0.2",
     "tailwindcss": "^4.2.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@axe-core/cli": "^4.11.2",
+    "@lhci/cli": "^0.15.1",
+    "pa11y-ci": "^4.1.0",
+    "schema-dts": "^1.1.5",
+    "wait-on": "^9.0.5"
   }
 }

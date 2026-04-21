@@ -1,0 +1,22 @@
+---
+/**
+ * JsonLd — renders one or more schema.org objects as `<script type="application/ld+json">`
+ * blocks. Accepts a single schema or an array.
+ *
+ * The `</script>` closing-tag sequence in any string value is escaped defensively
+ * so that a user-authored description containing literal HTML cannot break out
+ * of the JSON-LD script tag.
+ */
+
+export interface Props {
+  schema: object | object[];
+}
+
+const schemas = Array.isArray(Astro.props.schema) ? Astro.props.schema : [Astro.props.schema];
+
+function serialize(s: object): string {
+  return JSON.stringify(s).replace(/<\/script/gi, '<\\/script');
+}
+---
+
+{schemas.map((s) => <script type="application/ld+json" is:inline set:html={serialize(s)} />)}

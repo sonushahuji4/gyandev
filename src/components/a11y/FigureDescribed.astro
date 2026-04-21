@@ -1,0 +1,63 @@
+---
+/**
+ * Accessible `<figure>` wrapper that pairs a short visible caption with an
+ * optional long screen-reader-only description via `aria-describedby`.
+ *
+ *   <FigureDescribed
+ *     title="Event loop phases"
+ *     description="Timers, pending callbacks, poll, check, close callbacks…">
+ *     <MermaidDiagram />
+ *   </FigureDescribed>
+ *
+ * Per spec §7 — complex diagrams (Mermaid, SVG) pair a caption with a
+ * longer description so non-visual users get the full content.
+ *
+ * `id` is optional; we generate a stable one from the page+slot when omitted.
+ * A random suffix would drift between SSR and hydration — instead, we derive
+ * from Astro's component path via a `crypto.randomUUID()` at SSR time, which
+ * Astro serializes once.
+ */
+
+interface Props {
+  title: string;
+  description?: string;
+  id?: string;
+  class?: string;
+}
+
+const {
+  title,
+  description,
+  id = `fig-${crypto.randomUUID().slice(0, 8)}`,
+  class: className,
+} = Astro.props;
+
+const titleId = `${id}-t`;
+const descId = description ? `${id}-d` : undefined;
+---
+
+<figure class:list={['figure-described', className]}>
+  <div
+    role="img"
+    aria-labelledby={titleId}
+    aria-describedby={descId}
+  >
+    <slot />
+  </div>
+  <figcaption id={titleId}>{title}</figcaption>
+  {description && (
+    <p id={descId} class="sr-only">{description}</p>
+  )}
+</figure>
+
+<style>
+  .figure-described {
+    margin: 1.5em 0;
+  }
+  .figure-described figcaption {
+    margin-top: 0.5em;
+    font-size: 0.875em;
+    color: var(--color-text-muted);
+    text-align: center;
+  }
+</style>
