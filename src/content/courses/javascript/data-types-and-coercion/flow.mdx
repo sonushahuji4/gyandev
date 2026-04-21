@@ -1,0 +1,50 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  Every coercion trap in JavaScript comes from one decision tree: which
+  side is a string, which operator is being applied, and whether to use
+  `==` or `===`. This diagram walks a value through the coercion engine —
+  from `typeof` through the `+` vs arithmetic split to equality. The
+  legend below decodes each branch.
+</Callout>
+
+## The coercion decision tree — from value to result
+
+```mermaid
+flowchart TD
+    V["<b>i · Any value</b><br/>number · string · boolean · null · undefined · NaN · object"]
+      --> T["<b>ii · typeof</b><br/>classify first<br/>(null → 'object' ⚠)"]
+    T --> OP["<b>iii · Operator?</b>"]
+    OP --> PLUS["<b>iv · + operator</b><br/>string wins → concatenate<br/>else → numeric add"]
+    OP --> ARITH["<b>v · - * / % **</b><br/>always coerce to number<br/>NaN if uncoercible"]
+    OP --> EQ["<b>vi · == vs ===</b><br/>==: coerce both sides<br/>===: type + value must match"]
+    EQ --> NULL["<b>vii · null / undefined</b><br/>null == undefined (true)<br/>null === undefined (false)"]
+    EQ --> NAN["<b>viii · NaN</b><br/>NaN != everything<br/>use Number.isNaN()"]
+
+    classDef source fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef pivot  fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef plus   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef math   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef eq     fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef quirk  fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    class V source
+    class T,OP pivot
+    class PLUS plus
+    class ARITH math
+    class EQ eq
+    class NULL,NAN quirk
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Any value',         description: 'JS has 7 primitive types + object. Every coercion starts from one of these values.' },
+  { numeral: 'ii',   name: 'typeof first',      description: 'Classify the value. Remember: typeof null === "object" (historical bug), typeof NaN === "number", typeof [] === "object".' },
+  { numeral: 'iii',  name: 'Operator branches', description: 'Behaviour depends on which operator is applied — + goes one way, arithmetic goes another, equality goes a third.' },
+  { numeral: 'iv',   name: '+ operator',        description: 'If either operand is a string, both become strings and get concatenated. Otherwise numeric addition.' },
+  { numeral: 'v',    name: '- * / % **',        description: 'Always coerce both operands to numbers (or NaN if impossible). No string path — "5" * "2" is 10.' },
+  { numeral: 'vi',   name: '== vs ===',         description: '== performs type coercion before comparing. === demands identical type AND value. Always prefer ===.' },
+  { numeral: 'vii',  name: 'null & undefined',  description: 'Special pair: null == undefined is true, but neither equals anything else with ==. null === undefined is false.' },
+  { numeral: 'viii', name: 'NaN quirk',         description: 'NaN is not equal to anything, not even itself. Use Number.isNaN(x) or Object.is(x, NaN) to check.' },
+]} />

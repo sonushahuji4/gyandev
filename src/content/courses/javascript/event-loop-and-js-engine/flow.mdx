@@ -1,0 +1,48 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  The event loop is JavaScript's concurrency model in one diagram. Code
+  runs on the Call Stack. Async calls (setTimeout, fetch, promises) hand
+  off to Web APIs in the browser. When ready, their callbacks land in one
+  of two queues — microtasks (promises) or macrotasks (setTimeout). The
+  Event Loop waits for the stack to clear, drains the microtask queue
+  first, then takes one macrotask. Keep repeating. The legend below
+  decodes each stop on the tour.
+</Callout>
+
+## Event loop tour — from Call Stack to the two queues and back
+
+```mermaid
+flowchart TD
+    S["<b>i · Call Stack</b><br/>executes code line by line"]
+      --> W["<b>ii · Web APIs</b><br/>timers, fetch, DOM events<br/>run in the browser"]
+    W --> MQ["<b>iii · Microtask Queue</b><br/>.then / .catch / .finally<br/>queueMicrotask · MutationObserver"]
+    W --> CQ["<b>iv · Callback Queue</b><br/>setTimeout · setInterval<br/>event handlers · I/O"]
+    MQ --> EL["<b>v · Event Loop</b><br/>stack empty?"]
+    CQ --> EL
+    EL -- "drain first" --> MQ
+    EL -- "then one task" --> CQ
+    EL -- "push onto stack" --> S
+
+    classDef stack fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef api   fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef micro fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef macro fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef loop  fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    class S stack
+    class W api
+    class MQ micro
+    class CQ macro
+    class EL loop
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Call Stack',      description: 'JS executes code line by line here. Only one thing runs at a time — this is what "single-threaded" means.' },
+  { numeral: 'ii',  name: 'Web APIs',        description: 'When JS hits `setTimeout`, `fetch`, or adds an event listener, the work is handed off to the browser. The stack is free to continue.' },
+  { numeral: 'iii', name: 'Microtask Queue', description: 'Promise callbacks (`.then`/`.catch`/`.finally`), `queueMicrotask`, MutationObserver — higher priority than the callback queue.' },
+  { numeral: 'iv',  name: 'Callback Queue',  description: 'Also called the macrotask queue: setTimeout/setInterval callbacks, event handlers, I/O callbacks — lower priority.' },
+  { numeral: 'v',   name: 'Event Loop',      description: 'The gatekeeper. When the Call Stack is empty, it fully drains the Microtask Queue, then takes one item from the Callback Queue and pushes it onto the stack. Repeat forever.' },
+]} />

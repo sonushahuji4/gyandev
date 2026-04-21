@@ -1,0 +1,52 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="8 data types" subtitle="7 primitives + 1 reference.">
+- Primitives (by value): `number`, `string`, `boolean`, `undefined`, `null`, `symbol`, `bigint`.
+- Reference: `object` — includes arrays, functions, dates, regex, Map, Set.
+- Primitives are immutable and compared by value; objects are mutable and compared by reference.
+- `typeof null === "object"` (historical bug); `typeof []` is also `"object"` — use `Array.isArray()`.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Type coercion rules" subtitle="Implicit conversion when operators disagree.">
+- `+` with any string → string concatenation wins. `"5" + 3 + 2 === "532"`.
+- `-`, `*`, `/`, `%`, `**` coerce to number. `"5" - 3 === 2`.
+- Numeric conversions to remember: `true → 1`, `false → 0`, `null → 0`, `undefined → NaN`, `"" → 0`.
+- Unary `+` is the short form of `Number()`: `+"5" === 5`, `+"abc" === NaN`.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="== vs === (and ??)" subtitle="Always use strict.">
+- `==` coerces types before comparing; `===` requires type + value match.
+- `null == undefined` is true, but neither equals anything else with `==`.
+- `NaN` is the only value not equal to itself — use `Number.isNaN()` or `Object.is()`.
+- `??` returns the right side only for `null`/`undefined`; `||` triggers on any falsy value.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="8 falsy values (memorize!)" subtitle="Everything else is truthy.">
+- `false`, `0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN` — that's the whole list.
+- Common truthy traps: `"0"`, `"false"`, `[]`, `{}`, `" "` (space), `-1`, `Infinity`.
+- `new Boolean(false)` is **truthy** because it's an object — never use `new Boolean/String/Number`.
+- `!!value` is the idiomatic way to coerce to a real boolean.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="The famous quirks" subtitle="What interviewers love to ask.">
+- `[] == ![]` → `true`. `![]` is `false`, then `[]`→`""`→`0`, `false`→`0`, `0 == 0`.
+- `null >= 0` is `true` but `null == 0` is `false` (different comparison algorithms).
+- `"2" > "12"` is `true` (string lexicographic), but `"2" > 12` is `false` (numeric).
+- `0.1 + 0.2 !== 0.3` — IEEE 754 floating-point precision.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Logical operators return operands" subtitle="Not booleans.">
+- `||` returns the first **truthy** value (or the last value if all are falsy).
+- `&&` returns the first **falsy** value (or the last value if all are truthy).
+- `0 || 42 === 42`; `"hello" && "world" === "world"`.
+- Objects used as keys become the string `"[object Object]"` — all object keys collide!
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **F.U.N. Z.N.B.Z.** — the 8 falsies: **F**alse, **U**ndefined,
+  **N**ull, **Z**ero, **N**aN, **B**igInt-zero, empty-string ("",),
+  minus-**Z**ero. Everything else is truthy.
+</Callout>

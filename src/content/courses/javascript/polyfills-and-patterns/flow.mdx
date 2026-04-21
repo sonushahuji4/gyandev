@@ -1,0 +1,49 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  The "can you write it from scratch?" questions cluster into three
+  families of closures: rate-limiters (debounce, throttle), invocation
+  gates (once, memoize), and functional transformers (curry, pipe,
+  compose). All three families use the same trick — return a new function
+  that closes over private state. This diagram maps the patterns to the
+  closure they all share. The legend below decodes each branch.
+</Callout>
+
+## The closure family tree — one pattern, many problems
+
+```mermaid
+flowchart TD
+    C["<b>i · Closure primitive</b><br/>outer fn returns inner fn<br/>inner closes over private state"]
+      --> RL["<b>ii · Rate limiters</b><br/>private state = timer / flag"]
+    C --> IG["<b>iii · Invocation gates</b><br/>private state = cache / called"]
+    C --> FT["<b>iv · Functional transformers</b><br/>private state = accumulated args"]
+    RL --> DB["<b>v · Debounce</b><br/>clearTimeout + setTimeout<br/>last call wins"]
+    RL --> TH["<b>vi · Throttle</b><br/>boolean flag + setTimeout<br/>first call per interval"]
+    IG --> ON["<b>vii · Once</b><br/>boolean called + cached result"]
+    IG --> MEM["<b>viii · Memoize</b><br/>Map cache keyed by JSON.stringify(args)"]
+    FT --> CU["<b>ix · Curry</b><br/>collect args until fn.length reached"]
+    FT --> PC["<b>x · Pipe / Compose</b><br/>reduce / reduceRight through fns"]
+
+    classDef root   fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef branch fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef leaf   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class C root
+    class RL,IG,FT branch
+    class DB,TH,ON,MEM,CU,PC leaf
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Closure primitive',       description: 'Every pattern here returns a new function that closes over some private state — timers, flags, caches, or accumulated args.' },
+  { numeral: 'ii',   name: 'Rate limiters',           description: 'Control how often a function can fire. Private state is a timer handle or a boolean flag.' },
+  { numeral: 'iii',  name: 'Invocation gates',        description: 'Control whether the function runs at all. Private state is a called flag or a results cache.' },
+  { numeral: 'iv',   name: 'Functional transformers', description: 'Reshape how a function is called. Private state is either accumulated args (curry) or an ordered list of functions (pipe/compose).' },
+  { numeral: 'v',    name: 'Debounce',                description: 'clearTimeout + setTimeout — runs fn delay ms after the LAST call. Good for search-as-you-type.' },
+  { numeral: 'vi',   name: 'Throttle',                description: 'Boolean `inThrottle` flag — runs fn at most once per interval. Good for scroll/resize.' },
+  { numeral: 'vii',  name: 'Once',                    description: 'Runs exactly once; subsequent calls return the cached result. Useful for init paths and "pay once" flows.' },
+  { numeral: 'viii', name: 'Memoize',                 description: 'Cache keyed by JSON.stringify(args). Skips recomputation for identical inputs.' },
+  { numeral: 'ix',   name: 'Curry',                   description: 'Collect args across calls; invoke the original once args.length ≥ fn.length. Enables partial application.' },
+  { numeral: 'x',    name: 'Pipe / Compose',          description: 'Thread a value through a list of functions. pipe goes left→right (reduce); compose goes right→left (reduceRight).' },
+]} />

@@ -1,0 +1,51 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="First class functions" subtitle="Functions are values in JS.">
+- Functions can be assigned to variables, passed as arguments, returned, and stored in data structures.
+- **Statement vs Expression:** only difference is hoisting — statements are fully hoisted; expressions are `undefined` (var) or in TDZ (let/const).
+- **Named Function Expression:** the inner name is only accessible inside the function body.
+- **Anonymous functions** cannot stand alone — they are used as values only.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Callbacks bridge sync and async" subtitle="A function passed to another, called later.">
+- Callbacks give JS access to the async world despite being synchronous and single-threaded.
+- setTimeout, event listeners, fetch, array methods — all built on callbacks.
+- Event listeners form closures over their outer variables — variables persist as long as the listener lives.
+- Heavy listeners on a page leak memory — always `removeEventListener` when done.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="The browser architecture" subtitle="JS engine + Web APIs + queues + event loop.">
+- **JS Engine** holds the Call Stack and Memory Heap. Web APIs (setTimeout, fetch, DOM) live in the browser, not the language.
+- **Callback Queue** holds setTimeout/setInterval/event-handler callbacks.
+- **Microtask Queue** holds promise callbacks (`.then`/`.catch`/`.finally`), `queueMicrotask`, MutationObserver — higher priority.
+- **Event Loop** is the gatekeeper: when the stack is empty, push from microtasks first, then macrotasks.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="The execution order" subtitle="Sync → all microtasks → one macrotask → repeat.">
+- All synchronous code runs first (including Promise constructor bodies).
+- The event loop then completely drains the microtask queue before touching macrotasks.
+- Only one macrotask is processed per cycle, then microtasks get another full pass.
+- **Starvation:** endless microtasks can indefinitely block the callback queue.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="JS Engine & V8" subtitle="Parse → JIT compile → execute.">
+- **Parsing** turns source into tokens and an Abstract Syntax Tree (AST).
+- **JIT Compilation** — Ignition interprets to bytecode; TurboFan optimizes hot paths to machine code.
+- **Execution** uses the Memory Heap (objects/variables) and Call Stack (execution contexts).
+- **Orinoco** is V8's mark-and-sweep garbage collector.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="setTimeout lies — trust issues" subtitle="It's a minimum delay, not an exact one.">
+- `setTimeout(cb, 5000)` guarantees **at least** 5 seconds — if the stack is busy, the callback waits longer.
+- `setTimeout(fn, 0)` still goes through Web API → queue → event loop → stack. It only runs after all current sync code.
+- Use `setTimeout(fn, 0)` to defer less-critical work; never to "run immediately."
+- The fix for late callbacks is never blocking the main thread in the first place.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **S.M.M.** — **S**ync first, **M**icrotasks next, **M**acrotasks last.
+  Every event-loop trace in an interview is just S.M.M. on repeat.
+</Callout>

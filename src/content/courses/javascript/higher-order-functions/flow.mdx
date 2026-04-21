@@ -1,0 +1,51 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  map, filter, and reduce are three specializations of the same shape —
+  walk an array, call a callback, produce a result. Map transforms every
+  element into a new array of equal length. Filter keeps only elements
+  for which the callback is truthy. Reduce folds everything into one
+  value. The legend below decodes each path an array can take through
+  a higher-order function.
+</Callout>
+
+## The three musketeers — same shape, three outcomes
+
+```mermaid
+flowchart TD
+    A["<b>i · Input array</b><br/>[5, 1, 3, 2, 6]"]
+      --> CB["<b>ii · Pick your HOF</b><br/>map · filter · reduce"]
+    CB --> M["<b>iii · map(cb)</b><br/>callback returns a value"]
+    CB --> F["<b>iv · filter(cb)</b><br/>callback returns a boolean"]
+    CB --> R["<b>v · reduce(cb, init)</b><br/>callback returns the new accumulator"]
+    M --> MO["<b>vi · New array</b><br/>same length, transformed<br/><code>[10, 2, 6, 4, 12]</code>"]
+    F --> FO["<b>vii · New array</b><br/>subset of input<br/><code>[5, 6]</code> (x &gt; 3)"]
+    R --> RO["<b>viii · Single value</b><br/>of any type<br/><code>17</code> (sum)"]
+
+    classDef input  fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef hub    fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef map    fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef filt   fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef red    fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef out    fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    class A input
+    class CB hub
+    class M map
+    class F filt
+    class R red
+    class MO,FO,RO out
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Input array',      description: 'The array you call the method on. None of the three mutate it.' },
+  { numeral: 'ii',   name: 'Pick your HOF',    description: 'map, filter, and reduce are all HOFs on Array.prototype — each takes a callback.' },
+  { numeral: 'iii',  name: 'map(cb)',          description: 'Callback signature `(value, index, array)`. Whatever the callback returns becomes the new element.' },
+  { numeral: 'iv',   name: 'filter(cb)',       description: 'Same callback signature. Truthy return keeps the element; falsy drops it.' },
+  { numeral: 'v',    name: 'reduce(cb, init)', description: 'Callback `(acc, value, index, array)`. Return the new accumulator. Always pass an initial value.' },
+  { numeral: 'vi',   name: 'map output',       description: 'A new array of the same length, with each element transformed.' },
+  { numeral: 'vii',  name: 'filter output',    description: 'A new array containing only the elements that passed the predicate.' },
+  { numeral: 'viii', name: 'reduce output',    description: 'A single value of any type — a sum, max, object, grouped map, flattened array, anything.' },
+]} />

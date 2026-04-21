@@ -1,0 +1,51 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Higher-order functions" subtitle="Functions that take or return functions.">
+- A HOF either takes one or more functions as arguments, or returns a function.
+- Only possible because JS has first-class functions.
+- HOFs power the DRY principle — extract iteration once, pass behaviour as a callback.
+- Examples: `map`, `filter`, `reduce`, `sort`, `forEach`, `debounce`, `throttle`.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="map() — transform every element" subtitle="New array, same length.">
+- Callback `(currentValue, index, array)` — returns the transformed value for each element.
+- Always returns a **new array** of the same length. Original is untouched.
+- Chainable because it returns an array.
+- **map vs forEach:** map returns a new array; forEach returns `undefined` and is for side effects only.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="filter() — select by condition" subtitle="New array, ≤ original length.">
+- Callback returns truthy/falsy — truthy keeps the element.
+- Returned array can be shorter or empty.
+- `arr.filter(Boolean)` drops all falsy values in one shot.
+- Chainable — commonly used before `map` to shrink the array first.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="reduce() — accumulate to one value" subtitle="Single result of any type.">
+- Callback `(accumulator, currentValue, index, array)` — return the new accumulator.
+- **Always pass an initial value** (`0`, `[]`, `{}`) to avoid edge-case bugs with empty arrays.
+- Can replicate both `map` and `filter` — most flexible of the three.
+- Great for counting, grouping, building objects, flattening — things map/filter can't do alone.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Polyfills — interview essentials" subtitle="Write them from scratch, often asked.">
+- **myMap:** loop with `for`, push `callback(this[i], i, this)` into a new array, return it.
+- **myFilter:** loop, push `this[i]` only if the callback returns truthy.
+- **myReduce:** handle the optional initial value (default to `this[0]`, start from index 1), accumulate.
+- All three live on `Array.prototype` and use `this` to access the array they were called on.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Classic gotchas" subtitle="The ones interviewers love.">
+- `["1","2","3"].map(parseInt)` → `[1, NaN, NaN]` — parseInt receives `(value, index)`; index becomes radix.
+- `arr.filter(Boolean)` — removes all falsy values (`0`, `""`, `null`, `undefined`, `false`, `NaN`).
+- `reduce` without initial value on an empty array throws `TypeError`.
+- `find` returns first match; `some` is "any?"; `every` is "all?" — short-circuit HOFs.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **M.F.R.** — **M**ap transforms, **F**ilter selects, **R**educe collects.
+  Everything else (forEach, find, some, every) is a specialization.
+</Callout>

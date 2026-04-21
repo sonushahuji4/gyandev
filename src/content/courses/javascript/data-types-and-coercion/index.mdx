@@ -1,0 +1,752 @@
+---
+title: "Tricky JS Interview Questions: Data Types, Type Coercion, Equality & Gotchas"
+description: The questions interviewers love that catch everyone off guard — data types, the typeof operator, implicit coercion, == vs ===, NaN, truthy/falsy, and the famous [] == ![]. Know these and you'll stand out.
+excerpt: Data types, type coercion, == vs ===, NaN, truthy/falsy — the JS gotchas.
+course: javascript/course
+order: 11
+season: 1
+difficulty: intermediate
+type: reference
+readingMinutes: 14
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - data-types
+  - type-coercion
+  - equality
+  - nan
+  - truthy-falsy
+  - gotchas
+---
+
+## JavaScript Data Types
+
+### Two Categories of Data Types
+
+JavaScript has **8 data types** total, split into two categories.
+
+**Primitive Types (7)** are immutable, stored by **value**, compared by
+value:
+
+- `number` — integers & floats (64-bit)
+- `string` — text in quotes
+- `boolean` — `true` / `false`
+- `undefined` — declared, no value
+- `null` — intentionally empty
+- `symbol` — unique identifier (ES6)
+- `bigint` — large integers (ES2020)
+
+**Non-Primitive / Reference Type (1)** is mutable, stored by **reference**,
+compared by reference:
+
+- `object` — includes plain objects `{ }`, arrays `[ ]`, functions
+  `function() {}`, Date, RegExp, Map, Set, etc.
+- `null` reports as object (bug!)
+
+### The `typeof` Operator — Complete Reference
+
+| Expression | Result |
+| --- | --- |
+| `typeof 42` | `"number"` |
+| `typeof "hello"` | `"string"` |
+| `typeof true` | `"boolean"` |
+| `typeof undefined` | `"undefined"` |
+| `typeof null` | `"object"` ⚠ BUG |
+| `typeof Symbol("id")` | `"symbol"` |
+| `typeof 10n` | `"bigint"` |
+| `typeof {}` | `"object"` |
+| `typeof []` | `"object"` ⚠ |
+| `typeof function(){}` | `"function"` |
+| `typeof NaN` | `"number"` ⚠ |
+| `typeof Infinity` | `"number"` |
+| `typeof undeclaredVar` | `"undefined"` |
+
+**Surprises:** `typeof null` is "object" (historical bug). `typeof []` is
+"object" (arrays are objects). `typeof NaN` is "number" (NaN is a special
+numeric value). `typeof function` is "function" (not "object", even though
+functions are objects).
+
+### How to Correctly Check Types
+
+```js title="Type checking techniques"
+// Check for array
+Array.isArray([1,2]);           // true
+Array.isArray({});               // false
+
+// Check for null
+const x = null;
+x === null;                     // true (don't use typeof)
+
+// Check for NaN
+Number.isNaN(NaN);              // true
+Number.isNaN("hello");           // false (better than isNaN())
+isNaN("hello");                  // true ⚠ (coerces to number first!)
+
+// Check for exact type
+Object.prototype.toString.call([]);       // "[object Array]"
+Object.prototype.toString.call(null);     // "[object Null]"
+Object.prototype.toString.call(undefined); // "[object Undefined]"
+```
+
+<Callout type="tip" title="Interview Tip">
+  When asked "What are the data types in JavaScript?", list all 7
+  primitives + object. Mention that `undefined` is both a type AND a
+  value. Mention that `typeof null === "object"` is a historical bug.
+  Mention that arrays and functions are technically objects.
+</Callout>
+
+## Type Coercion — Implicit Conversion
+
+### What is Type Coercion?
+
+**Type coercion** is JavaScript's automatic conversion of one data type
+to another when operators or functions expect a different type. It
+happens implicitly (by the engine) or explicitly (by the programmer
+using `Number()`, `String()`, `Boolean()`, etc.).
+
+### The `+` Operator — String Wins!
+
+The `+` operator is **overloaded** — it does both addition AND string
+concatenation. The rule is: **if either operand is a string, the other is
+converted to a string and concatenated**.
+
+| Expression | Result |
+| --- | --- |
+| `"5" + 5` | `"55"` |
+| `5 + "5"` | `"55"` |
+| `"5" + "5"` | `"55"` |
+| `"5" + 3 + 2` | `"532"` |
+| `3 + 2 + "5"` | `"55"` |
+| `"" + 5` | `"5"` |
+| `"5" + true` | `"5true"` |
+| `"5" + null` | `"5null"` |
+| `"5" + undefined` | `"5undefined"` |
+| `"5" + [1, 2]` | `"51,2"` |
+| `"5" + {}` | `"5[object Object]"` |
+
+**Key:** `"5" + 3 + 2` → left to right: `"5" + 3` = "53", then `"53" + 2` =
+"532". But `3 + 2 + "5"` → `3 + 2` = 5 (both numbers), then `5 + "5"` =
+"55".
+
+### Other Arithmetic Operators — Number Wins!
+
+`-`, `*`, `/`, `%`, `**` always try to convert operands to **numbers**.
+String concatenation only happens with `+`.
+
+| Expression | Result |
+| --- | --- |
+| `"5" - 3` | `2` |
+| `"5" * "2"` | `10` |
+| `"10" / 2` | `5` |
+| `"10" % 3` | `1` |
+| `"abc" - 1` | `NaN` |
+| `true + 1` | `2` |
+| `false + 1` | `1` |
+| `null + 1` | `1` |
+| `undefined + 1` | `NaN` |
+| `true + true` | `2` |
+| `true + false` | `1` |
+
+**Numeric conversions:** `true` → 1, `false` → 0, `null` → 0, `undefined`
+→ NaN, `""` → 0, `"123"` → 123, `"abc"` → NaN.
+
+### Unary `+` Operator — Quick Number Conversion
+
+A `+` before a value converts it to a number (same as `Number()`):
+
+| Expression | Result |
+| --- | --- |
+| `+"5"` | `5` |
+| `+""` | `0` |
+| `+true` | `1` |
+| `+false` | `0` |
+| `+null` | `0` |
+| `+undefined` | `NaN` |
+| `+"abc"` | `NaN` |
+| `+[]` | `0` |
+| `+[5]` | `5` |
+| `+[1,2]` | `NaN` |
+
+## Equality — `==` vs `===`
+
+### Loose Equality (`==`) vs Strict Equality (`===`)
+
+`==` (loose/abstract) compares values **after type coercion** — it converts
+operands to the same type first.
+
+`===` (strict) compares values **without coercion** — both type AND value
+must match.
+
+### Loose Equality `==` — The Coercion Table
+
+| Expression | Result |
+| --- | --- |
+| `5 == "5"` | `true` |
+| `0 == ""` | `true` |
+| `0 == "0"` | `true` |
+| `"" == "0"` | `false` |
+| `0 == false` | `true` |
+| `"" == false` | `true` |
+| `1 == true` | `true` |
+| `2 == true` | `false` ⚠ |
+| `null == undefined` | `true` |
+| `null == 0` | `false` ⚠ |
+| `null == ""` | `false` |
+| `null == false` | `false` ⚠ |
+| `NaN == NaN` | `false` ⚠ |
+| `[] == false` | `true` ⚠ |
+| `[] == 0` | `true` |
+| `"" == []` | `true` |
+| `[1] == 1` | `true` |
+
+### Strict Equality `===`
+
+| Expression | Result |
+| --- | --- |
+| `5 === "5"` | `false` |
+| `5 === 5` | `true` |
+| `0 === false` | `false` |
+| `"" === false` | `false` |
+| `null === undefined` | `false` |
+| `NaN === NaN` | `false` ⚠ |
+
+<Callout type="warning" title="Golden Rules">
+  1) `NaN` is NOT equal to anything, including itself. Use
+  `Number.isNaN()` to check. 2) `null == undefined` is true, but neither
+  equals anything else with `==`. 3) **Always use `===`** in real code to
+  avoid coercion surprises.
+</Callout>
+
+### Object Equality — Reference Comparison
+
+Objects (including arrays) are compared by **reference**, not by content:
+
+| Expression | Result |
+| --- | --- |
+| `[] == []` | `false` |
+| `[] === []` | `false` |
+| `{} == {}` | `false` |
+| `{} === {}` | `false` |
+| `const a = []; a == a` | `true` |
+
+Two different objects in memory are never equal, even if they have
+identical content. Only the same reference equals itself.
+
+## NaN — Not a Number (But It's a Number!)
+
+### NaN Deep Dive
+
+- `typeof NaN` → `"number"` — yes, "Not a Number" is a number type!
+- `NaN === NaN` → `false` — it's the only value in JS not equal to itself
+- `NaN !== NaN` → `true`
+- Use `Number.isNaN(value)` (ES6, strict) or `Object.is(value, NaN)` to
+  check
+- Avoid `isNaN()` (legacy) — it coerces the argument first:
+  `isNaN("hello")` → true ⚠
+
+| Expression | Result |
+| --- | --- |
+| `NaN + 1` | `NaN` |
+| `NaN * 5` | `NaN` |
+| `"abc" * 2` | `NaN` |
+| `undefined + 1` | `NaN` |
+| `0 / 0` | `NaN` |
+| `Infinity - Infinity` | `NaN` |
+| `Number("abc")` | `NaN` |
+| `parseInt("xyz")` | `NaN` |
+| `Math.sqrt(-1)` | `NaN` |
+
+## Truthy & Falsy Values
+
+### The 8 Falsy Values (Memorize These!)
+
+| Value | Classification |
+| --- | --- |
+| `false` | falsy |
+| `0` | falsy |
+| `-0` | falsy |
+| `0n` (BigInt zero) | falsy |
+| `""` (empty string) | falsy |
+| `null` | falsy |
+| `undefined` | falsy |
+| `NaN` | falsy |
+
+**Everything else is truthy**, including these common traps:
+
+| Value | Classification |
+| --- | --- |
+| `"0"` (string zero) | truthy ⚠ |
+| `"false"` (string) | truthy ⚠ |
+| `[]` (empty array) | truthy ⚠ |
+| `{}` (empty object) | truthy ⚠ |
+| `function(){}` | truthy |
+| `-1` | truthy |
+| `Infinity` | truthy |
+| `" "` (space string) | truthy ⚠ |
+| `new Boolean(false)` | truthy ⚠⚠ |
+
+<Callout type="warning" title="Biggest Trap">
+  `new Boolean(false)` is **truthy** because it creates a Boolean *object*,
+  not a primitive. All objects are truthy. Never use `new Boolean()`,
+  `new String()`, or `new Number()`.
+</Callout>
+
+## Tricky Operators & Expressions
+
+### Logical Operators — They Don't Return Boolean!
+
+`&&` and `||` return **one of the operands**, not necessarily true/false:
+
+| Expression | Result |
+| --- | --- |
+| `"hello" \|\| "world"` | `"hello"` |
+| `"" \|\| "world"` | `"world"` |
+| `0 \|\| 42` | `42` |
+| `null \|\| "default"` | `"default"` |
+| `"hello" && "world"` | `"world"` |
+| `"" && "world"` | `""` |
+| `0 && 42` | `0` |
+| `null && "hello"` | `null` |
+| `1 && 2 && 3` | `3` |
+| `1 && 0 && 3` | `0` |
+| `0 \|\| "" \|\| "hi" \|\| 0` | `"hi"` |
+
+**`||`** returns the **first truthy** value, or the last value if all
+falsy. **`&&`** returns the **first falsy** value, or the last value if
+all truthy.
+
+### Nullish Coalescing `??` vs `||`
+
+`??` returns the right side only if the left is `null` or `undefined` (not
+for other falsy values like `0` or `""`):
+
+| Expression | Result |
+| --- | --- |
+| `0 \|\| 42` | `42` |
+| `0 ?? 42` | `0` |
+| `"" \|\| "default"` | `"default"` |
+| `"" ?? "default"` | `""` |
+| `null ?? "fallback"` | `"fallback"` |
+| `undefined ?? "fallback"` | `"fallback"` |
+| `false ?? "fallback"` | `false` |
+
+Use `??` when you want to keep `0` or `""` as valid values. Use `||` when
+any falsy should trigger the fallback.
+
+### Optional Chaining `?.`
+
+```js title="Safely access nested properties"
+const user = { address: { city: "Mumbai" } };
+
+user.address.city;          // "Mumbai"
+user.phone?.number;         // undefined (no error!)
+user.getAge?.();            // undefined (no error, method doesn't exist)
+user?.address?.city;        // "Mumbai"
+
+// Without ?. →
+user.phone.number;          // TypeError: Cannot read property 'number' of undefined
+```
+
+## Mega Rapid-Fire — 50 Tricky Output Questions
+
+<Callout type="insight" title="How to use">
+  Cover the answer column. Try to predict the output, then check. If you
+  get it wrong, understand why before moving on. These are the most
+  commonly asked tricky questions in JS interviews.
+</Callout>
+
+### String & Number Operations
+
+| Expression | Result |
+| --- | --- |
+| `"5" + 5` | `"55"` |
+| `"5" - 3` | `2` |
+| `"5" * "2"` | `10` |
+| `"5" - "3"` | `2` |
+| `"5" + + "5"` | `"55"` |
+| `"foo" + + "bar"` | `"fooNaN"` |
+| `"5" + - "2"` | `"5-2"` |
+| `5 + + "5"` | `10` |
+| `"" + 0` | `"0"` |
+| `"" - 0` | `0` |
+
+### Boolean & Null & Undefined Operations
+
+| Expression | Result |
+| --- | --- |
+| `true + true` | `2` |
+| `true + false` | `1` |
+| `true + "1"` | `"true1"` |
+| `true + 1` | `2` |
+| `false + []` | `"false"` |
+| `null + 1` | `1` |
+| `null + null` | `0` |
+| `undefined + 1` | `NaN` |
+| `undefined + undefined` | `NaN` |
+| `null + undefined` | `NaN` |
+
+### Equality Traps
+
+| Expression | Result |
+| --- | --- |
+| `0 == false` | `true` |
+| `0 === false` | `false` |
+| `"" == false` | `true` |
+| `"" === false` | `false` |
+| `null == undefined` | `true` |
+| `null === undefined` | `false` |
+| `NaN == NaN` | `false` |
+| `[] == false` | `true` |
+| `![] == false` | `true` |
+| `[] == ![]` | `true` ⚠⚠ |
+
+**The infamous `[] == ![]`:** `![]` → `false` ([] is truthy, negated =
+false). Then `[] == false`. [] converts to `""`, false converts to `0`,
+`""` converts to `0`. `0 == 0` → true!
+
+### typeof Traps
+
+| Expression | Result |
+| --- | --- |
+| `typeof typeof 1` | `"string"` |
+| `typeof NaN` | `"number"` |
+| `typeof null` | `"object"` |
+| `typeof []` | `"object"` |
+| `typeof undefined` | `"undefined"` |
+| `typeof typeof undefined` | `"string"` |
+
+**`typeof typeof 1`:** `typeof 1` → `"number"` (a string). `typeof "number"`
+→ `"string"`.
+
+### Object & Array Weirdness
+
+| Expression | Result |
+| --- | --- |
+| `[] + []` | `""` |
+| `[] + {}` | `"[object Object]"` |
+| `{} + []` | `0` (in console) |
+| `{} + {}` | `"[object Object]..."` or `NaN` |
+| `[] + 1` | `"1"` |
+| `[1,2] + [3,4]` | `"1,23,4"` |
+| `+[]` | `0` |
+| `+{}` | `NaN` |
+| `!![]` | `true` |
+| `!!""` | `false` |
+
+**`{} + []`:** In browser console, `{}` at the start is treated as an
+empty block (not an object), so it becomes `+[]` → 0. Wrap in parens:
+`({}) + []` → `"[object Object]"`.
+
+### Comparison Traps
+
+| Expression | Result |
+| --- | --- |
+| `null > 0` | `false` |
+| `null == 0` | `false` |
+| `null >= 0` | `true` ⚠ |
+| `undefined > 0` | `false` |
+| `undefined == 0` | `false` |
+| `undefined < 0` | `false` |
+| `"2" > "12"` | `true` ⚠ |
+| `"2" > 12` | `false` |
+
+**`null >= 0` is true but `null > 0` and `null == 0` are both false!**
+This is because `>=`/`>`/`<` use numeric coercion (null → 0), but `==` has
+special rules where null only equals undefined.
+
+**`"2" > "12"`:** String comparison is lexicographic (character by
+character). "2" > "1" at the first character, so true. But `"2" > 12`
+coerces "2" to number → 2 > 12 → false.
+
+## Interview Questions & Answers
+
+**Q1. What are the data types in JavaScript?**
+
+JavaScript has **8 data types**. Seven are **primitives**: `number`,
+`string`, `boolean`, `undefined`, `null`, `symbol` (ES6), and `bigint`
+(ES2020). The eighth is `object`, which is a non-primitive reference type
+— arrays, functions, dates, regex, maps, sets, and plain objects are all
+objects. Primitives are immutable and stored by value; objects are mutable
+and stored by reference.
+
+**Q2. What is the difference between `==` and `===`?**
+
+`==` (loose equality) performs **type coercion** before comparison — it
+converts both operands to the same type, then compares. `===` (strict
+equality) does **no coercion** — both the type and value must be
+identical. Example: `5 == "5"` is `true` (string coerced to number), but
+`5 === "5"` is `false` (different types). Best practice: always use
+`===` to avoid unexpected coercion bugs.
+
+**Q3. What is Type Coercion in JavaScript?**
+
+Type coercion is the automatic or implicit conversion of values from one
+type to another by the JS engine. **Implicit** coercion happens when
+operators expect a different type: `"5" - 3` coerces "5" to number 5.
+**Explicit** coercion is done by the programmer using functions like
+`Number("5")`, `String(42)`, `Boolean(0)`. The `+` operator prefers string
+concatenation (string wins), while `-`, `*`, `/` prefer numeric conversion
+(number wins).
+
+**Q4. What is `NaN`? How do you check for it?**
+
+`NaN` (Not a Number) is a special numeric value that represents an invalid
+or unrepresentable mathematical result (like `0/0` or `"abc" * 2`).
+Ironically, `typeof NaN` is `"number"`. It's the only value in JavaScript
+that is **not equal to itself** (`NaN === NaN` is `false`). To check for
+NaN, use `Number.isNaN(value)` (ES6, recommended) — it returns true only
+if the value is literally NaN. Avoid the older `isNaN()` which coerces
+the argument first.
+
+**Q5. What are truthy and falsy values? List all falsy values.**
+
+A **falsy** value is one that is treated as `false` in a boolean context
+(like `if` statements). There are exactly **8 falsy values**: `false`,
+`0`, `-0`, `0n`, `""`, `null`, `undefined`, `NaN`. Everything else is
+**truthy**, including commonly confusing values like `"0"`, `"false"`,
+`[]`, `{}`, `-1`, and `Infinity`.
+
+**Q6. Why is `typeof null === "object"`?**
+
+This is a **historical bug** from the first implementation of JavaScript
+in 1995. Values were stored with a type tag, and `null` was represented
+as the null pointer (0x00), which had the same type tag as objects. This
+bug was never fixed to maintain backward compatibility — changing it
+would break millions of existing websites. To properly check for null,
+use `value === null`, not `typeof`.
+
+**Q7. What is the difference between `null` and `undefined`?**
+
+`undefined` means a variable has been declared but hasn't been assigned a
+value — it's the JS engine's default. `null` is an intentional assignment
+by the programmer meaning "no value." Types differ: `typeof undefined` →
+`"undefined"`, `typeof null` → `"object"`. With loose equality `null ==
+undefined` is `true`, but with strict equality `null === undefined` is
+`false`. In numeric context: `Number(undefined)` → `NaN`, `Number(null)`
+→ `0`.
+
+**Q8. What is the difference between `||` and `??`?**
+
+`||` (logical OR) returns the first **truthy** value. It treats `0`, `""`,
+`false`, `NaN` as falsy and skips them. `??` (nullish coalescing, ES2020)
+returns the first value that is NOT `null` or `undefined`. It keeps `0`,
+`""`, and `false` as valid values. Use `??` when `0` or `""` are
+legitimate values you want to preserve (e.g., form inputs, counters).
+
+**Q9. What is the difference between primitive and reference types?**
+
+**Primitives** are stored directly in the variable's memory location
+(stack). Assigning or passing creates a **copy**. Comparing checks the
+**value**. They are **immutable**.
+
+**Reference types** (objects) are stored in the heap, and the variable
+holds a **pointer** to that location. Assigning or passing copies the
+**reference**, not the object. Comparing checks if both point to the
+**same object in memory**. They are **mutable**.
+
+```js title="Proof"
+let a = 5; let b = a; b = 10;
+console.log(a); // 5 (copy — a is unchanged)
+
+let x = {v:5}; let y = x; y.v = 10;
+console.log(x.v); // 10 (reference — same object!)
+```
+
+**Q10. What is the output of `[] == ![]` and why?**
+
+`true`. Step by step: (1) `![]` → `[]` is truthy, so `![]` = `false`.
+(2) Now we have `[] == false`. (3) `false` is coerced to `0`. (4) `[]` is
+coerced to `""` (via toString). (5) `""` is coerced to `0`. (6) `0 == 0`
+→ `true`. This is one of the most famous JS quirks and demonstrates why
+`===` should always be used.
+
+**Q11. How do you check if a variable is an array?**
+
+Use `Array.isArray(value)` — it's the most reliable method. `typeof []`
+returns `"object"` (not useful). `instanceof Array` works but can fail
+across different frames/iframes. `Object.prototype.toString.call(value) ===
+"[object Array]"` is another reliable but verbose approach.
+
+**Q12. What is `Object.is()` and how is it different from `===`?**
+
+`Object.is(a, b)` is like `===` but fixes two edge cases: (1) `Object.is(NaN,
+NaN)` → `true` (whereas `NaN === NaN` is false). (2) `Object.is(0, -0)` →
+`false` (whereas `0 === -0` is true). For everything else, it behaves
+identically to `===`.
+
+## Complex I/O Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+console.log(1 + "2" + "2");
+console.log(1 + +"2" + "2");
+console.log(1 + -"1" + "2");
+console.log(+"1" + "1" + "2");
+console.log("A" - "B" + "2");
+console.log("A" - "B" + 2);
+```
+
+**Output:** `"122" → "32" → "02" → "112" → "NaN2" → NaN`
+
+Line 1: 1+"2"="12", "12"+"2"="122". Line 2: +"2"=2, 1+2=3, 3+"2"="32".
+Line 3: -"1"=-1, 1+(-1)=0, 0+"2"="02". Line 4: +"1"=1, 1+"1"="11",
+"11"+"2"="112". Line 5: "A"-"B"=NaN, NaN+"2"="NaN2" (string wins).
+Line 6: NaN+2=NaN (no string, stays number).
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+let a = { };
+let b = { key: "b" };
+let c = { key: "c" };
+
+a[b] = 123;
+a[c] = 456;
+
+console.log(a[b]);
+```
+
+**Output:** `456`
+
+Object keys are strings. `b` and `c` are objects → both convert to the
+string `"[object Object]"` when used as keys. So `a["[object Object]"]`
+is set to 123, then overwritten to 456. Both `a[b]` and `a[c]` access the
+same key!
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+console.log(0.1 + 0.2 == 0.3);
+console.log(0.1 + 0.2);
+```
+
+**Output:** `false → 0.30000000000000004`
+
+IEEE 754 floating-point precision issue. `0.1 + 0.2` is
+`0.30000000000000004`, not exactly `0.3`. Fix: compare with a tolerance:
+`Math.abs(0.1 + 0.2 - 0.3) < Number.EPSILON`.
+
+**I/O 4. What will be the output?**
+
+```js title="JavaScript"
+var x = 1;
+var y = x;
+x = 5;
+console.log(y);
+
+var a = { val: 1 };
+var b = a;
+a.val = 5;
+console.log(b.val);
+```
+
+**Output:** `1 → 5`
+
+Primitives are copied by value (y is independent). Objects are copied by
+reference (a and b point to the same object).
+
+**I/O 5. What will be the output?**
+
+```js title="JavaScript"
+const a = [1, 2, 3];
+const b = [1, 2, 3];
+const c = a;
+
+console.log(a == b);
+console.log(a === b);
+console.log(a == c);
+console.log(a === c);
+```
+
+**Output:** `false → false → true → true`
+
+`a` and `b` are different objects in memory (different references). `c`
+is the same reference as `a`.
+
+**I/O 6. What will be the output?**
+
+```js title="JavaScript"
+let x = 10;
+let y = "10";
+
+console.log(x == y);
+console.log(x === y);
+console.log(x + y);
+console.log(x - y);
+console.log(x * y);
+console.log(x / y);
+console.log(typeof (x + y));
+console.log(typeof (x - y));
+```
+
+**Output:** `true → false → "1010" → 0 → 100 → 1 → "string" → "number"`
+
+This single example demonstrates all the coercion rules: `+` concatenates
+(string wins), `-`/`*`/`/` convert to number, `==` coerces, `===`
+doesn't.
+
+**I/O 7. What will be the output?**
+
+```js title="JavaScript"
+console.log("10" > "9");
+console.log("10" > 9);
+```
+
+**Output:** `false → true`
+
+String vs string: lexicographic comparison — "1" (49) < "9" (57), so
+`"10" > "9"` is false. String vs number: "10" coerced to 10 → `10 > 9`
+is true.
+
+**I/O 8. What will be the output?**
+
+```js title="JavaScript"
+var a = 1;
+var b = 0;
+var c = -1;
+
+console.log(a && b);
+console.log(a || b);
+console.log(a && c);
+console.log(b || c);
+console.log(!a);
+console.log(!b);
+console.log(!!a);
+```
+
+**Output:** `0 → 1 → -1 → -1 → false → true → true`
+
+`&&` returns first falsy or last value. `||` returns first truthy or last
+value. `!` converts to boolean and negates. `!!` converts to boolean
+(double negate).
+
+## Quick Revision — Cheat Sheet
+
+**The Must-Know Rules**
+
+- **8 data types:** number, string, boolean, undefined, null, symbol,
+  bigint + object
+- `typeof null === "object"` — historical bug. Check null with `=== null`
+- `typeof NaN === "number"` — NaN is a number type. Check with
+  `Number.isNaN()`
+- `typeof [] === "object"` — arrays are objects. Check with
+  `Array.isArray()`
+- `+` with any string → string concatenation. Other math ops → numeric
+  conversion.
+- `"5" + 3 + 2` → "532" (left to right, string infects). `3 + 2 + "5"` →
+  "55"
+- `==` coerces types, `===` doesn't. Always use `===`
+- `null == undefined` → true, but `null === undefined` → false
+- `NaN === NaN` → false (use `Number.isNaN()` or `Object.is()`)
+- Objects compared by **reference**, not content. `[] == []` → false
+- 8 falsy values: `false, 0, -0, 0n, "", null, undefined, NaN`
+- `"0"`, `[]`, `{}` are all **truthy**!
+- `||` returns first truthy; `&&` returns first falsy; `??` returns first
+  non-null/undefined
+- `null >= 0` is true but `null == 0` is false (different comparison
+  algorithms)
+- String comparison is lexicographic: `"10" > "9"` → false
+- `0.1 + 0.2 !== 0.3` — floating point precision
+- Objects as keys → converted to `"[object Object]"` string

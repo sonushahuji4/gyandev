@@ -1,0 +1,52 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Array method polyfills" subtitle="Loop, apply callback, return the right shape.">
+- **myMap / myFilter:** `for` loop over `this`, call `callback.call(thisArg, this[i], i, this)`, push results. myFilter guards with the boolean.
+- **myReduce:** default `acc` to `initialValue`; if undefined, seed `acc = this[0]` and start at index 1. Throw on empty array with no initial.
+- **myForEach:** loop, call callback, return nothing — it's `undefined` on purpose.
+- **myFlat:** recursive helper `flatten(arr, depth)` — recurse if item is array and depth > 0.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Function.prototype polyfills" subtitle="bind returns a function; call/apply invoke immediately.">
+- **myBind:** capture `this` as `fn`, return a new function that does `fn.apply(context, [...args, ...newArgs])`. Partial application for free.
+- **myCall:** attach `this` to `context` via a `Symbol()` key, invoke `context[key](...args)`, delete the key, return the result.
+- **myApply:** same as myCall but accepts an **array** of arguments instead of variadic.
+- Default `context` to `globalThis`; using a Symbol key avoids overwriting existing properties.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="call / apply / bind cheat" subtitle="Three tools, one job — control this.">
+- `call(ctx, a, b)` invokes immediately with individual args.
+- `apply(ctx, [a, b])` invokes immediately with an array of args.
+- `bind(ctx, a)` returns a **new function** with `this` locked — supports partial application.
+- Standalone calls set `this` to the global object (or `undefined` in strict mode); method calls set `this` to the owner.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Currying" subtitle="Turn f(a,b,c) into f(a)(b)(c).">
+- **Generic curry:** keep collecting args until `args.length >= fn.length`, then `fn.apply(this, args)`.
+- **Infinite currying** (`sum(1)(2)(3)...()`): return a function that, if called with no arg, returns the accumulator; otherwise recurse with `sum(a + b)`.
+- Powered entirely by closures — each returned function closes over the accumulated args.
+- Use `fn.length` (number of declared parameters) to know when enough args are collected.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Debounce, throttle, once, memoize" subtitle="Four closures that show up in every interview.">
+- **Debounce:** `clearTimeout` then `setTimeout(fn, delay)` in closure — last call wins after silence.
+- **Throttle:** boolean flag `inThrottle` + `setTimeout` to clear it — first call per interval wins.
+- **Once:** boolean `called` + cached `result` — returns cached value on every subsequent call.
+- **Memoize:** `Map` cache keyed by `JSON.stringify(args)` — returns cached result for identical arguments.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Promise execution order" subtitle="The event loop rule on every interview whiteboard.">
+- **Step 1:** all sync code — including Promise constructor bodies. `resolve()` does NOT exit the constructor.
+- **Step 2:** drain the entire microtask queue (promise `.then`, `await` resume, `queueMicrotask`).
+- **Step 3:** take one macrotask (setTimeout, setInterval, I/O) and run it.
+- **Step 4:** drain microtasks again. Repeat 3–4 forever.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **B.C.A. → M.F.R.** — **B**ind/**C**all/**A**pply for `this`;
+  **M**ap/**F**ilter/**R**educe for arrays. Learn the polyfills for both
+  trios and half the "write it from scratch" questions are done.
+</Callout>

@@ -1,0 +1,690 @@
+---
+title: "Higher-Order Functions, map, filter & reduce"
+description: Functional programming in JavaScript — the patterns that power modern codebases, React, and every interview. Higher-order functions, map/filter/reduce, polyfills, chaining, and the classic gotchas.
+excerpt: Higher-order functions + map, filter, reduce — functional JS patterns and polyfills.
+course: javascript/course
+order: 10
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 11
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - higher-order-functions
+  - map
+  - filter
+  - reduce
+  - polyfills
+  - functional-programming
+---
+
+## Topic 18 — Higher-Order Functions
+
+### What is a Higher-Order Function (HOF)?
+
+A Higher-Order Function is a function that does at least one of these:
+
+- **Takes one or more functions as arguments** (e.g., `array.map(callback)`)
+- **Returns a function as its result** (e.g., function factories, currying)
+
+This is possible because JavaScript has **first-class functions** —
+functions can be treated as values.
+
+```js title="Simple HOF example"
+function x() {
+  console.log("Hi");
+}
+function y(callback) {
+  callback();  // y takes a function and calls it
+}
+y(x); // "Hi" — y is a Higher-Order Function, x is a callback
+```
+
+### The DRY Principle — Why HOFs Matter
+
+Without HOFs, you end up writing repetitive code. Consider calculating area
+and circumference for an array of radii:
+
+```js title="❌ Repetitive — violates DRY"
+const radius = [1, 2, 3, 4];
+
+const calculateArea = function(radius) {
+  const output = [];
+  for (let i = 0; i < radius.length; i++) {
+    output.push(Math.PI * radius[i] * radius[i]);
+  }
+  return output;
+};
+
+const calculateCircumference = function(radius) {
+  const output = [];
+  for (let i = 0; i < radius.length; i++) {
+    output.push(2 * Math.PI * radius[i]);
+  }
+  return output;
+};
+// Two functions with 90% identical code — only the formula differs!
+```
+
+```js title="✅ Clean — extract logic into HOF"
+const radius = [1, 2, 3, 4];
+
+const area = (r) => Math.PI * r * r;
+const circumference = (r) => 2 * Math.PI * r;
+const diameter = (r) => 2 * r;
+
+const calculate = function(arr, operation) {
+  const output = [];
+  for (let i = 0; i < arr.length; i++) {
+    output.push(operation(arr[i]));
+  }
+  return output;
+};
+
+console.log(calculate(radius, area));          // areas
+console.log(calculate(radius, circumference));  // circumferences
+console.log(calculate(radius, diameter));       // diameters
+```
+
+The `calculate` function is a HOF — it takes a function (`operation`) as
+an argument. The logic is separated from the iteration. Adding new
+calculations is one line, not a new function.
+
+### Polyfill of `map` — Building Your Own
+
+The `calculate` function above is essentially a polyfill of
+`Array.prototype.map`. Here's how you'd add it to all arrays:
+
+```js title="Polyfill"
+Array.prototype.myMap = function(callback) {
+  const output = [];
+  for (let i = 0; i < this.length; i++) {
+    output.push(callback(this[i], i, this));
+  }
+  return output;
+};
+
+// Usage — identical to native map:
+[1,2,3].myMap(x => x * 2); // [2, 4, 6]
+```
+
+<Callout type="tip" title="Interview Tip">
+  Writing polyfills for `map`, `filter`, and `reduce` is one of the most
+  commonly asked coding questions. Understand the internal logic and be
+  ready to write them on the spot.
+</Callout>
+
+## Topic 19 — map, filter & reduce
+
+At a glance: **map()** transforms every element and returns a new array of
+the same length (callback returns a transformed value). **filter()** selects
+elements by condition and returns a new array of `≤` original length
+(callback returns a boolean — keep/drop). **reduce()** reduces to a single
+value of any type (callback params: `(acc, curr, i, arr)`).
+
+### map() — Transform an Array
+
+`map()` creates a **new array** by calling a function on every element of
+the original array. The original is NOT modified. The returned array always
+has the **same length**.
+
+```js title="map examples"
+const arr = [5, 1, 3, 2, 6];
+
+// Double
+arr.map(x => x * 2);         // [10, 2, 6, 4, 12]
+
+// To string
+arr.map(x => x.toString());   // ["5", "1", "3", "2", "6"]
+
+// To binary
+arr.map(x => x.toString(2));  // ["101", "1", "11", "10", "110"]
+
+// Object transformation
+arr.map(x => ({ value: x, squared: x * x }));
+// [{value:5, squared:25}, {value:1, squared:1}, ...]
+```
+
+**Callback signature:** `callback(currentValue, index, array)`
+
+### filter() — Select Elements by Condition
+
+`filter()` creates a new array containing only elements for which the
+callback returns a **truthy** value. Elements that return falsy are
+excluded.
+
+```js title="filter examples"
+const arr = [5, 1, 3, 2, 6];
+
+// Odd numbers
+arr.filter(x => x % 2 !== 0);  // [5, 1, 3]
+
+// Greater than 3
+arr.filter(x => x > 3);         // [5, 6]
+
+// Remove falsy values from mixed array
+[0, 1, "", "hello", null, 42, undefined, false].filter(Boolean);
+// [1, "hello", 42]
+```
+
+**Callback signature:** `callback(currentValue, index, array)` → must
+return truthy/falsy
+
+### reduce() — Reduce to a Single Value
+
+`reduce()` executes a callback on each element, accumulating a single
+result. The **accumulator** carries the running result. The second argument
+is the **initial value**.
+
+```js title="reduce examples"
+const arr = [5, 1, 3, 2, 6];
+
+// Sum
+arr.reduce((acc, curr) => acc + curr, 0);  // 17
+
+// Max value
+arr.reduce((max, curr) => curr > max ? curr : max, 0);  // 6
+
+// Min value
+arr.reduce((min, curr) => curr < min ? curr : min, Infinity);  // 1
+
+// Count occurrences
+["a","b","a","c","b","a"].reduce((acc, curr) => {
+  acc[curr] = (acc[curr] || 0) + 1;
+  return acc;
+}, {});
+// { a: 3, b: 2, c: 1 }
+
+// Flatten nested arrays
+[[1,2],[3,4],[5]].reduce((acc, curr) => acc.concat(curr), []);
+// [1, 2, 3, 4, 5]
+```
+
+**Callback signature:** `callback(accumulator, currentValue, index, array)`
+
+**Second argument:** Initial value of the accumulator. Always provide it to
+avoid bugs.
+
+<Callout type="warning" title="Always provide initial value to reduce!">
+  If you omit it, the first element is used as the initial accumulator and
+  iteration starts from the second element. This works for sum but fails
+  for things like counting or building objects. Passing an explicit initial
+  value (`0`, `[]`, `{}`) is safer and clearer.
+</Callout>
+
+### Function Chaining — Combining map, filter & reduce
+
+Since `map` and `filter` return arrays, you can **chain** them together.
+This is one of the most powerful patterns in JS.
+
+```js title="Chaining example"
+const users = [
+  { firstName: "Alok", lastName: "Raj", age: 23 },
+  { firstName: "Ashish", lastName: "Kumar", age: 29 },
+  { firstName: "Ankit", lastName: "Roy", age: 29 },
+  { firstName: "Pranav", lastName: "Mukherjee", age: 50 },
+];
+
+// First names of users under 30
+const output = users
+  .filter(user => user.age < 30)
+  .map(user => user.firstName);
+
+console.log(output); // ["Alok", "Ashish", "Ankit"]
+```
+
+### Same Result with reduce Only
+
+Any chain of `filter` + `map` can be written as a single `reduce`.
+Interviewers love asking you to convert between the two:
+
+```js title="reduce replaces filter + map"
+const output = users.reduce((acc, user) => {
+  if (user.age < 30) {
+    acc.push(user.firstName);
+  }
+  return acc;
+}, []);
+
+console.log(output); // ["Alok", "Ashish", "Ankit"]
+```
+
+### Polyfills — Write Your Own map, filter & reduce
+
+```js title="Polyfill: Array.prototype.myMap"
+Array.prototype.myMap = function(cb) {
+  const result = [];
+  for (let i = 0; i < this.length; i++) {
+    result.push(cb(this[i], i, this));
+  }
+  return result;
+};
+```
+
+```js title="Polyfill: Array.prototype.myFilter"
+Array.prototype.myFilter = function(cb) {
+  const result = [];
+  for (let i = 0; i < this.length; i++) {
+    if (cb(this[i], i, this)) {
+      result.push(this[i]);
+    }
+  }
+  return result;
+};
+```
+
+```js title="Polyfill: Array.prototype.myReduce"
+Array.prototype.myReduce = function(cb, initialValue) {
+  let acc = initialValue;
+  let startIndex = 0;
+
+  if (acc === undefined) {
+    acc = this[0];
+    startIndex = 1;
+  }
+
+  for (let i = startIndex; i < this.length; i++) {
+    acc = cb(acc, this[i], i, this);
+  }
+  return acc;
+};
+```
+
+### Other Important Array HOFs
+
+- `forEach(cb)` — like map but **returns nothing** (undefined). For side
+  effects only.
+- `find(cb)` — returns the **first element** that passes the test (or
+  undefined).
+- `findIndex(cb)` — returns the **index** of the first match (or -1).
+- `some(cb)` — returns `true` if **at least one** element passes the test.
+- `every(cb)` — returns `true` if **all** elements pass the test.
+- `flatMap(cb)` — maps then flattens one level. Like `.map().flat(1)`.
+- `sort(compareFn)` — sorts in place (mutates!). A HOF taking a comparator.
+
+### map vs forEach — A Common Interview Question
+
+- `map` → **returns a new array** with transformed values. Chainable.
+- `forEach` → **returns undefined**. Used for side effects (logging, DOM
+  updates). NOT chainable.
+- Use `map` when you need the result. Use `forEach` when you don't.
+
+```js title="The difference"
+const arr = [1, 2, 3];
+
+const result1 = arr.map(x => x * 2);
+console.log(result1); // [2, 4, 6]
+
+const result2 = arr.forEach(x => x * 2);
+console.log(result2); // undefined
+```
+
+## Interview Questions & Answers
+
+**Q1. What is a Higher-Order Function?**
+
+A Higher-Order Function is a function that either (1) takes one or more
+functions as arguments, or (2) returns a function as its result. Examples
+include `map`, `filter`, `reduce`, `forEach`, `sort`, and custom functions
+like debounce/throttle. They enable functional programming patterns by
+abstracting iteration and logic separation.
+
+**Q2. What is the difference between `map`, `filter`, and `reduce`?**
+
+**map:** Transforms every element and returns a new array of the *same
+length*. Use when you need to change each element.
+
+**filter:** Tests every element and returns a new array with only elements
+that pass the test. The result can be shorter or empty. Use when you need
+to select/exclude elements.
+
+**reduce:** Accumulates all elements into a *single value* (number, string,
+object, array — anything). The most flexible of the three — can replicate
+both map and filter. Use when you need to derive a single result from an
+array.
+
+**Q3. Write a polyfill for `Array.prototype.map`.**
+
+Create a new method on `Array.prototype` that iterates over `this` (the
+array), calls the callback with each element, index, and the array itself,
+pushes the result to a new array, and returns it. The callback receives
+`(currentValue, index, array)`. See the polyfill code in the section above
+— it's the most commonly asked version.
+
+**Q4. What is the difference between `map` and `forEach`?**
+
+`map` returns a **new array** of transformed values and is chainable.
+`forEach` returns **undefined** and is used purely for side effects
+(logging, DOM manipulation). If you need the result, use `map`. If you
+just need to do something with each element without collecting results,
+use `forEach`. Neither modifies the original array (unless you explicitly
+mutate within the callback).
+
+**Q5. Can `reduce` do everything that `map` and `filter` do?**
+
+**Yes.** `reduce` is the most general of the three. You can implement
+`map` by pushing transformed values to the accumulator array, and `filter`
+by conditionally pushing. You can even combine both in a single `reduce`
+call. However, using `map`/`filter` separately is more readable and
+expressive — use `reduce` when you need something neither can do alone
+(like counting, grouping, or building objects).
+
+**Q6. What happens if you don't provide an initial value to `reduce`?**
+
+If no initial value is provided, `reduce` uses the **first element** of
+the array as the initial accumulator and starts iteration from the
+**second element**. If the array is empty and no initial value is given,
+it throws a `TypeError: Reduce of empty array with no initial value`.
+Best practice: **always provide an initial value** to avoid edge-case
+bugs and make intent clear.
+
+**Q7. Do `map`, `filter`, `reduce` mutate the original array?**
+
+**No.** All three are **non-mutating** — they return new values without
+modifying the original array. This is a key principle of functional
+programming: avoid side effects. However, if your callback itself mutates
+elements (e.g., modifying object properties), the original array's objects
+WILL be affected because objects are passed by reference. The array
+structure stays the same, but object contents can change.
+
+**Q8. What are `find`, `some`, and `every`?**
+
+**find(cb):** Returns the *first element* where the callback returns
+truthy (or `undefined` if none match). Unlike filter which returns all
+matches.
+
+**some(cb):** Returns `true` if *at least one* element passes the test.
+Short-circuits on first truthy.
+
+**every(cb):** Returns `true` only if *all* elements pass the test.
+Short-circuits on first falsy.
+
+All three are HOFs and very useful for conditional checks without full
+iteration.
+
+**Q9. How would you implement debounce as a Higher-Order Function?**
+
+Debounce is a HOF that takes a function and a delay, and returns a new
+function that only executes after the user has stopped calling it for the
+specified delay period:
+
+```js title="Debounce"
+function debounce(fn, delay) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+// Usage: const search = debounce(fetchResults, 300);
+```
+
+This uses closures (timer persists between calls) and is a HOF (takes fn,
+returns fn).
+
+**Q10. How would you implement throttle as a Higher-Order Function?**
+
+Throttle limits a function to execute at most once per specified time
+period:
+
+```js title="Throttle"
+function throttle(fn, limit) {
+  let inThrottle = false;
+  return function(...args) {
+    if (!inThrottle) {
+      fn.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+// Usage: const scroll = throttle(handleScroll, 200);
+```
+
+## Input/Output Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+const arr = [5, 1, 3, 2, 6];
+const doubled = arr.map(x => x * 2);
+console.log(doubled);
+console.log(arr);
+```
+
+**Output:** `[10, 2, 6, 4, 12] → [5, 1, 3, 2, 6]`
+
+map returns a new array. Original is untouched.
+
+**I/O 2. What will be the output?**
+
+```js title="JavaScript"
+const arr = [5, 1, 3, 2, 6];
+const odds = arr.filter(x => x % 2);
+console.log(odds);
+```
+
+**Output:** `[5, 1, 3]`
+
+`x % 2` returns `1` (truthy) for odd, `0` (falsy) for even. Filter keeps
+truthy values.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+const arr = [5, 1, 3, 2, 6];
+const sum = arr.reduce((acc, curr) => acc + curr, 0);
+console.log(sum);
+```
+
+**Output:** `17`
+
+acc starts at 0. Each iteration: 0+5=5, 5+1=6, 6+3=9, 9+2=11, 11+6=17.
+
+**I/O 4. What will be the output? (Tricky — age report with reduce)**
+
+```js title="JavaScript"
+const users = [
+  { name: "Alok", age: 23 },
+  { name: "Ashish", age: 29 },
+  { name: "Ankit", age: 29 },
+  { name: "Pranav", age: 50 },
+];
+
+const report = users.reduce((acc, curr) => {
+  if (acc[curr.age]) {
+    acc[curr.age]++;
+  } else {
+    acc[curr.age] = 1;
+  }
+  return acc;
+}, {});
+
+console.log(report);
+```
+
+**Output:** `{ 23: 1, 29: 2, 50: 1 }`
+
+Reduce builds an object counting unique ages. This is a very common
+interview pattern — grouping/counting with reduce.
+
+**I/O 5. What will be the output? (Chaining)**
+
+```js title="JavaScript"
+const users = [
+  { name: "Alok", age: 23 },
+  { name: "Ashish", age: 29 },
+  { name: "Ankit", age: 29 },
+  { name: "Pranav", age: 50 },
+];
+
+const result = users
+  .filter(u => u.age < 30)
+  .map(u => u.name);
+
+console.log(result);
+```
+
+**Output:** `["Alok", "Ashish", "Ankit"]`
+
+Filter keeps users under 30 (3 users), then map extracts their names.
+
+**I/O 6. What will be the output? (Same as above but with reduce)**
+
+```js title="JavaScript"
+const users = [
+  { name: "Alok", age: 23 },
+  { name: "Ashish", age: 29 },
+  { name: "Ankit", age: 29 },
+  { name: "Pranav", age: 50 },
+];
+
+const result = users.reduce((acc, curr) => {
+  if (curr.age < 30) acc.push(curr.name);
+  return acc;
+}, []);
+
+console.log(result);
+```
+
+**Output:** `["Alok", "Ashish", "Ankit"]`
+
+Same result — single `reduce` replaces `filter` + `map` chain.
+
+**I/O 7. What will be the output? (map vs forEach return)**
+
+```js title="JavaScript"
+const a = [1,2,3].map(x => x * 2);
+const b = [1,2,3].forEach(x => x * 2);
+console.log(a);
+console.log(b);
+```
+
+**Output:** `[2, 4, 6] → undefined`
+
+`map` returns the new array. `forEach` always returns `undefined`.
+
+**I/O 8. What will be the output? (Tricky — map with index)**
+
+```js title="JavaScript"
+const result = ["a", "b", "c"].map((val, idx) => idx);
+console.log(result);
+```
+
+**Output:** `[0, 1, 2]`
+
+The callback ignores the value and returns the index. map creates an array
+of indices.
+
+**I/O 9. What will be the output? (Tricky — reduce without initial value)**
+
+```js title="JavaScript"
+const result = [1, 2, 3].reduce((acc, curr) => acc + curr);
+console.log(result);
+```
+
+**Output:** `6`
+
+No initial value → first element (1) is the initial acc, iteration starts
+from index 1. So: 1+2=3, 3+3=6. Works for sum, but risky for other
+operations.
+
+**I/O 10. What will be the output? (Tricky — map with parseInt)**
+
+```js title="JavaScript"
+const result = ["1", "2", "3"].map(parseInt);
+console.log(result);
+```
+
+**Output:** `[1, NaN, NaN]`
+
+**Classic gotcha!** map passes `(value, index, array)` to the callback.
+`parseInt` accepts `(string, radix)`. So it actually calls: `parseInt("1", 0)`
+→ 1, `parseInt("2", 1)` → NaN (base 1 is invalid), `parseInt("3", 2)` →
+NaN (3 doesn't exist in binary). Fix: `["1","2","3"].map(x => parseInt(x))`
+or `.map(Number)`.
+
+**I/O 11. What will be the output? (Tricky — flat with reduce)**
+
+```js title="JavaScript"
+const nested = [[1,2], [3,4], [5,6]];
+const flat = nested.reduce((acc, curr) => [...acc, ...curr], []);
+console.log(flat);
+```
+
+**Output:** `[1, 2, 3, 4, 5, 6]`
+
+Reduce with spread operator flattens one level. Each iteration spreads
+the accumulator and current sub-array into a new array.
+
+**I/O 12. What will be the output? (Tricky — filter with Boolean)**
+
+```js title="JavaScript"
+const arr = [0, 1, "", "hello", null, undefined, 42, false, NaN, "0"];
+console.log(arr.filter(Boolean));
+```
+
+**Output:** `[1, "hello", 42, "0"]`
+
+`Boolean` as a callback converts each value to true/false. Keeps truthy
+values. Note: `"0"` (non-empty string) is truthy! `0`, `""`, `null`,
+`undefined`, `false`, `NaN` are all falsy.
+
+**I/O 13. What will be the output? (Full name with map)**
+
+```js title="JavaScript"
+const users = [
+  { firstName: "Alok", lastName: "Raj" },
+  { firstName: "Ashish", lastName: "Kumar" },
+];
+const names = users.map(u => u.firstName + " " + u.lastName);
+console.log(names);
+```
+
+**Output:** `["Alok Raj", "Ashish Kumar"]`
+
+**I/O 14. What will be the output? (Tricky — chaining with find)**
+
+```js title="JavaScript"
+const nums = [10, 20, 30, 40, 50];
+
+const a = nums.find(x => x > 25);
+const b = nums.filter(x => x > 25);
+const c = nums.some(x => x > 100);
+const d = nums.every(x => x > 5);
+
+console.log(a, b, c, d);
+```
+
+**Output:** `30, [30, 40, 50], false, true`
+
+`find` returns the first match (30). `filter` returns all matches. `some`
+checks if any >100 (none → false). `every` checks if all >5 (yes → true).
+
+## Quick Revision — Cheat Sheet
+
+**Everything You Need to Remember**
+
+- **HOF:** Takes function as argument OR returns a function
+- **map:** Transforms every element → new array of same length. Chainable.
+- **filter:** Tests every element → new array of elements that pass.
+  Chainable.
+- **reduce:** Accumulates → single value (any type). Most flexible.
+- **forEach:** Side effects only → returns `undefined`. NOT chainable.
+- **find:** First match. **some:** Any match? **every:** All match?
+- None of them mutate the original array (but callbacks can mutate objects)
+- **Always provide initial value to reduce** to avoid edge-case bugs
+- reduce can replace both map and filter — but chaining is more readable
+- Callback signature: `(currentValue, index, array)` for map/filter;
+  `(accumulator, currentValue, index, array)` for reduce
+- **Polyfills:** Be ready to write map, filter, reduce from scratch using
+  `Array.prototype`
+- `["1","2","3"].map(parseInt)` → `[1, NaN, NaN]` — classic gotcha (radix
+  issue)
+- `arr.filter(Boolean)` removes all falsy values
+- **Debounce & Throttle** are HOFs using closures — very common interview
+  questions
+- Function chaining: `.filter().map()` — filter first (reduces array
+  size), then map

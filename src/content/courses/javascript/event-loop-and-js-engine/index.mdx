@@ -1,0 +1,597 @@
+---
+title: "Functions, Callbacks, Event Loop, JS Engine & setTimeout"
+description: First class functions, the async world, how JavaScript actually runs in the browser, and why setTimeout lies. The architecture that lets single-threaded JS juggle everything.
+excerpt: First class functions, callbacks, the event loop, V8, and why setTimeout lies.
+course: javascript/course
+order: 9
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 12
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - event-loop
+  - callbacks
+  - first-class-functions
+  - js-engine
+  - settimeout
+  - microtask-queue
+---
+
+## Topic 13 — First Class Functions & Anonymous Functions
+
+### Function Statement vs Function Expression vs Arrow Function
+
+```js title="Function Statement (aka Declaration)"
+function a() { console.log("Hello"); }
+// Hoisted fully. Can be called before declaration.
+```
+
+```js title="Function Expression"
+var b = function() { console.log("Hello"); };
+// Treated as a variable. Hoisted as undefined. TypeError if called before.
+```
+
+```js title="Named Function Expression"
+var b = function xyz() { console.log("Hello"); };
+b();   // ✓ Works
+xyz(); // ✗ ReferenceError — xyz only accessible inside the function body
+```
+
+```js title="Arrow Function (ES6)"
+const c = () => { console.log("Hello"); };
+// Same hoisting as function expression. No own this, arguments, super.
+```
+
+### What is an Anonymous Function?
+
+A function **without a name**. It cannot stand alone as a statement —
+`function() {}` by itself throws `SyntaxError: Function statements require a
+function name`. Anonymous functions are used as **values**: assigned to
+variables, passed as arguments, or returned from functions.
+
+### Parameters vs Arguments
+
+**Parameters** are the labels/identifiers in the function *definition*.
+**Arguments** are the actual values passed during the function *call*.
+
+```js title="Example"
+function add(a, b) { return a + b; } // a, b are PARAMETERS
+add(3, 5);                           // 3, 5 are ARGUMENTS
+```
+
+### First Class Functions (First Class Citizens)
+
+In JavaScript, functions are **first class citizens**. This means functions
+can be:
+
+- **Assigned to variables:** `const fn = function() {}`
+- **Passed as arguments:** `arr.map(function(x) { return x * 2; })`
+- **Returned from other functions:** `function factory() { return function() {} }`
+- **Stored in data structures:** `[fn1, fn2, fn3]` or `{handler: fn}`
+- **Have properties:** `fn.name`, `fn.length` (number of parameters)
+
+This ability to treat functions as values is the foundation of functional
+programming in JS, enabling patterns like higher-order functions, callbacks,
+closures, and currying.
+
+<Callout type="tip" title="Key Difference">
+  Function Statement vs Expression — the difference is **hoisting**.
+  Statements are fully hoisted; expressions are hoisted as `undefined` (if
+  `var`) or put in TDZ (if `let`/`const`).
+</Callout>
+
+## Topic 14 — Callback Functions & Event Listeners
+
+### What is a Callback Function?
+
+A **callback function** is a function passed as an argument to another
+function, which is then invoked at a later point. The receiving function
+"calls back" the passed function when it's ready.
+
+```js title="Callback pattern"
+function greet(name, callback) {
+  console.log("Hello " + name);
+  callback();
+}
+greet("Akshay", function() {
+  console.log("Callback executed!");
+});
+// "Hello Akshay" → "Callback executed!"
+```
+
+Callbacks give us access to the **asynchronous world in a synchronous
+language**. setTimeout, event listeners, fetch — all use callbacks.
+
+### Event Listeners & Closures
+
+```js title="Counter with event listener + closure"
+function attachEventList() {
+  let count = 0;
+  document.getElementById("btn").addEventListener("click", function() {
+    console.log("Clicked", ++count);
+    // The callback forms a closure over count
+    // count persists between clicks!
+  });
+}
+attachEventList();
+// Click: "Clicked 1", "Clicked 2", "Clicked 3"...
+```
+
+<Callout type="warning" title="Memory Warning">
+  Event listeners are **heavy** — they form closures and the closed-over
+  variables are never garbage collected as long as the listener exists
+  (even if the call stack is empty). Always remove listeners with
+  `removeEventListener` when no longer needed. Multiple listeners (onClick,
+  onScroll, onHover) on a page can cause significant memory usage and
+  slowdowns.
+</Callout>
+
+### Never Block the Main Thread
+
+Since JS has **only one call stack** (single-threaded), any heavy operation
+blocks everything — UI freezes, clicks don't register, animations stop. This
+is called **blocking the main thread**.
+
+Always use **async patterns** (setTimeout, Promises, async/await, Web
+Workers) for time-consuming operations.
+
+## Topic 15 — Asynchronous JS & The Event Loop
+
+### The Browser Architecture
+
+The browser provides much more than just a JS engine:
+
+- **JS Engine** — contains the Call Stack and Memory Heap
+- **Web APIs** — setTimeout, DOM APIs, fetch, console, localStorage,
+  geolocation, etc. (These are NOT part of JavaScript itself!)
+- **Callback Queue (Task Queue / Macrotask Queue)** — holds callbacks from
+  setTimeout, setInterval, event handlers
+- **Microtask Queue** — holds callbacks from Promises (`.then`/`.catch`/`.finally`)
+  and MutationObserver (higher priority than callback queue)
+- **Event Loop** — the gatekeeper that moves callbacks from queues to the
+  call stack
+
+The flow: **Call Stack** executes code line by line and hands off Web API
+calls to the browser. **Web APIs** handle timers, HTTP requests, DOM events
+in the background. **Queues** receive callbacks when ready — Microtask Queue
+(promises) or Callback Queue (setTimeout). The **Event Loop** checks if the
+call stack is empty, then pushes from the Microtask Queue first, then the
+Callback Queue.
+
+### The Classic Example — Traced Step by Step
+
+```js title="JavaScript"
+console.log("Start");
+setTimeout(function cbT() { console.log("CB Timeout"); }, 5000);
+fetch("https://api.example.com").then(function cbF() { console.log("CB Fetch"); });
+console.log("End");
+```
+
+**Output:** `"Start" → "End" → "CB Fetch" → "CB Timeout"`
+
+**Execution trace:**
+
+1. `console.log("Start")` → prints immediately
+2. `setTimeout` → registers `cbT` with Web API timer (5s). JS moves on.
+3. `fetch` → registers `cbF` with Web API. JS moves on.
+4. `console.log("End")` → prints immediately. GEC pops. Stack is empty.
+5. Fetch response arrives (say after 2s) → `cbF` goes to **Microtask Queue**
+6. Timer expires (5s) → `cbT` goes to **Callback Queue**
+7. Event Loop: Stack is empty → pushes `cbF` first (microtask has higher
+   priority) → "CB Fetch"
+8. Event Loop: Stack empty again → pushes `cbT` from callback queue → "CB
+   Timeout"
+
+### Microtask Queue vs Callback Queue
+
+**Microtask Queue (Higher Priority)** holds Promise callbacks (`.then`,
+`.catch`, `.finally`), `queueMicrotask()`, MutationObserver, and
+`process.nextTick()` (Node). The event loop **empties this completely**
+before touching the callback queue.
+
+**Callback Queue / Macrotask Queue** holds `setTimeout`, `setInterval`,
+`setImmediate` (Node), I/O callbacks, UI rendering tasks, event handlers.
+Only processed after the microtask queue is empty.
+
+<Callout type="warning" title="Starvation">
+  If microtasks keep creating new microtasks (e.g., a promise that resolves
+  and creates another promise), the callback queue tasks **never get a
+  chance to run**. This is called starvation of the macrotask queue.
+</Callout>
+
+### What is the Event Loop?
+
+The Event Loop is a continuously running process that has **one simple
+job**: check if the Call Stack is empty, and if so, push the next task from
+the queues onto the stack. It prioritizes the Microtask Queue over the
+Callback Queue. It's what makes asynchronous JavaScript possible despite JS
+being single-threaded.
+
+## Topic 16 — JS Engine & V8 Architecture
+
+### JavaScript Runtime Environment (JRE)
+
+JS runs everywhere because of the JRE — a container with everything needed
+to execute JS:
+
+- **JS Engine** — the core (V8 in Chrome/Node, SpiderMonkey in Firefox,
+  Chakra in Edge)
+- Web APIs / Node APIs
+- Event Loop, Callback Queue, Microtask Queue
+
+### Three Steps Inside the JS Engine
+
+1. **Parsing:** Code is broken into tokens (`let`, `a`, `=`, `7`) and
+   converted into an **Abstract Syntax Tree (AST)** — a tree representation
+   of the code's structure.
+2. **Compilation:** JS uses **JIT (Just-In-Time) Compilation** — a hybrid of
+   interpretation and compilation. The AST goes to an interpreter (Ignition
+   in V8) which generates bytecode. Simultaneously, a compiler (TurboFan in
+   V8) optimizes hot code paths into machine code.
+3. **Execution:** Uses the **Memory Heap** (stores variables, objects) and
+   **Call Stack** (manages execution contexts). A **Garbage Collector**
+   (Orinoco in V8) uses Mark-and-Sweep algorithm to free unused memory.
+
+<Callout type="insight" title="V8 Components">
+  Parser → AST → **Ignition** (Interpreter → Bytecode) ↔ **TurboFan**
+  (Compiler → Optimized Machine Code) + **Orinoco** (Garbage Collector using
+  Mark & Sweep)
+</Callout>
+
+## Topic 17 — Trust Issues with setTimeout()
+
+### setTimeout Guarantees a MINIMUM Delay, Not Exact
+
+When you write `setTimeout(cb, 5000)`, the callback `cb` will wait **at
+least** 5 seconds. But it might wait 6, 7, or even 10+ seconds. Why?
+
+1. After 5 seconds, `cb` moves to the **Callback Queue**
+2. The Event Loop checks: is the Call Stack empty?
+3. If the stack is **busy** (running millions of lines of synchronous code),
+   `cb` has to **wait**
+4. `cb` only executes when the stack is completely empty
+
+### setTimeout(fn, 0) — The Zero Delay Trick
+
+```js title="JavaScript"
+console.log("Start");
+setTimeout(function() { console.log("Callback"); }, 0);
+console.log("End");
+```
+
+**Output:** `"Start" → "End" → "Callback"`
+
+Even with 0ms delay, the callback must go through the Web API → Callback
+Queue → Event Loop path. It can only execute **after** the current
+synchronous code finishes. This pattern is used to **defer** less important
+tasks, letting critical synchronous code run first.
+
+<Callout type="tip" title="The Concurrency Model of JS">
+  JavaScript is single-threaded but achieves concurrency through the Event
+  Loop. Async callbacks never run *in parallel* with the main thread — they
+  wait until the stack is clear. This is cooperative concurrency, not
+  preemptive.
+</Callout>
+
+## Interview Questions & Answers
+
+**Q1. What are First Class Functions in JavaScript?**
+
+First class functions means functions are treated as **first class
+citizens** — they can be assigned to variables, passed as arguments to
+other functions, returned from functions, and stored in data structures
+like arrays and objects. This ability to use functions as values is what
+enables higher-order functions, callbacks, closures, currying, and
+functional programming patterns in JavaScript.
+
+**Q2. What is the difference between Function Statement, Expression, and Declaration?**
+
+**Function Statement** (same as Function Declaration): `function a() {}` —
+hoisted fully, can be called before the line it's written on.
+
+**Function Expression:** `var b = function() {}` — treated as a variable,
+hoisted as `undefined`. Calling before assignment gives TypeError.
+
+The only real difference between statement and expression is **hoisting
+behavior**. "Function Declaration" is just another name for "Function
+Statement."
+
+**Q3. What is a Callback Function? Why are they important?**
+
+A callback is a function passed as an argument to another function, to be
+executed at a later time. Callbacks are crucial because they give
+JavaScript access to the **asynchronous world** despite being synchronous
+and single-threaded. setTimeout, event listeners, array methods (map,
+filter), fetch — all rely on callbacks. They enable non-blocking code
+execution, allowing the main thread to continue while waiting for async
+operations.
+
+**Q4. What is the Event Loop? Explain its role.**
+
+The Event Loop is a continuously running mechanism that monitors the Call
+Stack and the task queues. Its job: when the Call Stack is empty, it takes
+the next task from the **Microtask Queue** (promises, MutationObserver)
+first, and only when that's empty, from the **Callback Queue** (setTimeout,
+events), and pushes it onto the Call Stack for execution. It's the bridge
+between asynchronous Web APIs and the synchronous Call Stack, enabling
+JavaScript's concurrency model.
+
+**Q5. What is the difference between Microtask Queue and Callback Queue?**
+
+**Microtask Queue:** Higher priority. Holds promise callbacks
+(`.then`/`.catch`), `queueMicrotask()`, and MutationObserver callbacks. The
+event loop *completely empties* this queue before processing any macrotask.
+
+**Callback Queue (Macrotask Queue):** Lower priority. Holds
+setTimeout/setInterval callbacks, event handler callbacks, I/O callbacks.
+Only processed after all microtasks are done.
+
+This priority difference is why a resolved promise's `.then` always runs
+before a `setTimeout(fn, 0)`.
+
+**Q6. Are `setTimeout`, `console.log`, `fetch` part of JavaScript?**
+
+**No.** They are **Web APIs** provided by the browser's runtime environment,
+not part of the ECMAScript specification. They are properties of the
+`window` (global) object. The JS engine accesses them through the global
+object. In Node.js, equivalent APIs are provided by the Node runtime. This
+is why `window.setTimeout()` and `setTimeout()` are the same thing.
+
+**Q7. Why does `setTimeout(fn, 5000)` sometimes take longer than 5 seconds?**
+
+Because setTimeout guarantees a **minimum** delay, not an exact one. After
+the timer expires, the callback moves to the Callback Queue. But it can
+only execute when the Call Stack is **empty**. If the main thread is busy
+with long-running synchronous code (e.g., a heavy loop), the callback must
+wait. So a 5-second timer could effectively take 10+ seconds if the stack
+is blocked. This is why you should never block the main thread.
+
+**Q8. What does `setTimeout(fn, 0)` do? Why would you use it?**
+
+Even with 0ms delay, the callback is not executed immediately. It goes
+through Web API → Callback Queue → Event Loop → Call Stack. It runs
+**after** all current synchronous code finishes. Use case: **deferring** a
+less important task to let critical synchronous code execute first. It
+essentially says "run this as soon as you're free, but not before
+everything else currently in the stack."
+
+**Q9. What is JIT Compilation? Is JavaScript interpreted or compiled?**
+
+JavaScript uses **JIT (Just-In-Time) Compilation** — a hybrid approach. The
+code is first interpreted line by line (generating bytecode), while
+simultaneously a compiler analyzes frequently executed ("hot") code paths
+and compiles them into optimized machine code at runtime. So JS is
+**neither purely interpreted nor purely compiled** — it's JIT compiled.
+V8's Ignition interpreter generates bytecode, and TurboFan compiler
+produces optimized machine code.
+
+**Q10. What is starvation in the context of the event loop?**
+
+Starvation occurs when tasks in the Callback Queue (macrotasks) never get
+to execute because the Microtask Queue keeps getting new tasks added. Since
+the event loop always empties the microtask queue completely before
+processing any macrotask, if microtasks keep creating new microtasks, the
+callback queue tasks are indefinitely starved. For example, a recursive
+`Promise.resolve().then(() => { /* adds another microtask */ })` would
+prevent any setTimeout callbacks from ever running.
+
+**Q11. What is the difference between a Higher-Order Function and a Callback?**
+
+A **Higher-Order Function (HOF)** is a function that either takes a
+function as an argument OR returns a function. A **callback** is the
+function that is *passed into* a higher-order function. They are two sides
+of the same coin: `array.map(transformFn)` — `map` is the HOF, `transformFn`
+is the callback.
+
+## Input/Output Interview Questions
+
+**I/O 1. What will be the output?**
+
+```js title="JavaScript"
+a();
+b();
+
+function a() { console.log("a"); }
+var b = function() { console.log("b"); };
+```
+
+**Output:** Line 1 prints `"a"`; Line 2 throws `TypeError: b is not a
+function`.
+
+Function statement `a` is fully hoisted. Function expression `b` is
+`undefined` during hoisting.
+
+**I/O 2. What will be the output? (The classic event loop question)**
+
+```js title="JavaScript"
+console.log("Start");
+
+setTimeout(function() {
+  console.log("Timeout");
+}, 0);
+
+Promise.resolve().then(function() {
+  console.log("Promise");
+});
+
+console.log("End");
+```
+
+**Output:** `"Start" → "End" → "Promise" → "Timeout"`
+
+Synchronous code runs first (Start, End). Then Microtask Queue (Promise)
+has priority over Callback Queue (setTimeout). Even though setTimeout has
+0ms delay, the promise callback runs first.
+
+**I/O 3. What will be the output?**
+
+```js title="JavaScript"
+console.log(1);
+setTimeout(() => console.log(2), 1000);
+setTimeout(() => console.log(3), 0);
+Promise.resolve().then(() => console.log(4));
+Promise.resolve().then(() => { console.log(5); return Promise.resolve(); }).then(() => console.log(6));
+console.log(7);
+```
+
+**Output:** `1 → 7 → 4 → 5 → 6 → 3 → 2`
+
+Sync: 1, 7. Microtasks: 4, 5, 6 (chained promises resolve in order, all
+before macrotasks). Macrotasks: 3 (0ms), then 2 (1000ms).
+
+**I/O 4. What will be the output?**
+
+```js title="JavaScript"
+setTimeout(function() { console.log("timer"); }, 5000);
+
+function x(y) {
+  console.log("x");
+  y();
+}
+
+x(function y() {
+  console.log("y");
+});
+```
+
+**Output:** `"x" → "y" → (after 5s) "timer"`
+
+x() runs immediately with callback y. Timer runs in Web API background.
+After 5s, "timer" prints.
+
+**I/O 5. What will be the output? (Named function expression scope)**
+
+```js title="JavaScript"
+var b = function xyz() {
+  console.log("b called");
+};
+b();
+console.log(b.name);
+xyz();
+```
+
+**Output:** Line 4 prints `"b called"`. Line 5 prints `"xyz"`. Line 6
+throws `ReferenceError: xyz is not defined`.
+
+`b()` works. `b.name` is "xyz" (the function's internal name). But `xyz`
+is not in the outer scope — only accessible inside the function body
+itself.
+
+**I/O 6. What will be the output? (Tricky — async/await + event loop)**
+
+```js title="JavaScript"
+async function foo() {
+  console.log("A");
+  await Promise.resolve();
+  console.log("B");
+}
+console.log("C");
+foo();
+console.log("D");
+```
+
+**Output:** `"C" → "A" → "D" → "B"`
+
+"C" prints first (sync). `foo()` is called — "A" prints (sync part of
+async function). `await` pauses `foo` and returns control. "D" prints
+(sync). Then the microtask from the resolved promise runs the rest: "B".
+
+**I/O 7. What will be the output? (Tricky — multiple setTimeout ordering)**
+
+```js title="JavaScript"
+setTimeout(() => console.log("A"), 0);
+setTimeout(() => console.log("B"), 0);
+setTimeout(() => console.log("C"), 0);
+console.log("D");
+```
+
+**Output:** `"D" → "A" → "B" → "C"`
+
+Sync code first ("D"), then callbacks from the callback queue in FIFO
+order: A → B → C.
+
+**I/O 8. What will be the output? (Functions as values)**
+
+```js title="JavaScript"
+var b = function(param) {
+  console.log(param);
+};
+b(function() { return "hello"; });
+```
+
+**Output:** `ƒ () { return "hello"; }`
+
+An anonymous function is passed as an argument. `console.log(param)`
+prints the function itself (its code), not its return value. To get
+"hello", you'd need `console.log(param())`.
+
+**I/O 9. What will be the output? (Promise vs setTimeout priority)**
+
+```js title="JavaScript"
+setTimeout(() => console.log(1), 0);
+
+new Promise((resolve) => {
+  console.log(2);
+  resolve();
+}).then(() => console.log(3));
+
+console.log(4);
+```
+
+**Output:** `2 → 4 → 3 → 1`
+
+Promise constructor runs **synchronously** (2 prints). 4 prints sync.
+Then microtask (3) before macrotask (1).
+
+**I/O 10. What will be the output? (Tricky — queueMicrotask)**
+
+```js title="JavaScript"
+console.log("start");
+
+queueMicrotask(() => console.log("microtask"));
+setTimeout(() => console.log("timeout"), 0);
+Promise.resolve().then(() => console.log("promise"));
+
+console.log("end");
+```
+
+**Output:** `"start" → "end" → "microtask" → "promise" → "timeout"`
+
+Sync first. Both `queueMicrotask` and promise are microtasks — they run
+before the setTimeout macrotask, in the order they were queued.
+
+## Quick Revision — Cheat Sheet
+
+**Everything You Need to Remember**
+
+- **First Class Functions:** Functions can be values — assigned, passed,
+  returned, stored
+- **Function Statement vs Expression:** Only difference is hoisting
+- **Named Function Expression:** Name only accessible inside the function
+  body
+- **Anonymous Function:** No name — used as values only, can't stand alone
+- **Parameters** = definition labels; **Arguments** = actual values passed
+- **Callback:** Function passed to another function, called later
+- **Never block the main thread** — use async patterns for heavy work
+- **Web APIs** (setTimeout, fetch, console) are NOT JavaScript — they're
+  browser features
+- **Event Loop:** Checks if stack is empty → pushes from Microtask Queue
+  first, then Callback Queue
+- **Microtask Queue** (promises) has **higher priority** than Callback
+  Queue (setTimeout)
+- **Promise constructor** runs synchronously; `.then` callback is async
+  (microtask)
+- **Starvation:** Endless microtasks starve macrotask queue
+- **setTimeout(fn, N):** Guarantees **minimum** N ms delay, not exact
+- **setTimeout(fn, 0):** Defers to after current sync code, still goes
+  through queue
+- **JS Engine:** Parsing (AST) → JIT Compilation (Ignition + TurboFan) →
+  Execution (Heap + Stack)
+- **V8:** Ignition (interpreter), TurboFan (optimizing compiler), Orinoco
+  (garbage collector)
+- **Execution order:** Sync code → Microtasks (all) → One Macrotask →
+  Microtasks (all) → repeat
+- Remove event listeners when done to prevent memory leaks

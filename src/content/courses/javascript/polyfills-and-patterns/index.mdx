@@ -1,0 +1,709 @@
+---
+title: "Polyfills, this/call/apply/bind, Currying, Debounce, Promises & Coding Challenges"
+description: The questions where they say "Can you write it from scratch?" — polyfills for map/filter/reduce/bind/call/apply/flat/Promise.all, currying, debounce/throttle, deep clone, memoize, once, pipe/compose. Be ready to code these live.
+excerpt: Polyfills, this/call/apply/bind, currying, debounce, deep clone — code these live.
+course: javascript/course
+order: 12
+season: 1
+difficulty: advanced
+type: howto
+readingMinutes: 12
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - polyfills
+  - currying
+  - debounce
+  - throttle
+  - call-apply-bind
+  - promises
+---
+
+## Polyfills — "Write Your Own ___"
+
+<Callout type="insight" title="Why polyfills are asked">
+  They test if you truly understand how built-in methods work internally.
+  You'll be asked to write these on a whiteboard or in an editor. Memorize
+  the pattern, not just the code.
+</Callout>
+
+### Polyfill for `Array.prototype.map()`
+
+```js title="myMap"
+Array.prototype.myMap = function(callback, thisArg) {
+  if (typeof callback !== 'function') {
+    throw new TypeError(callback + ' is not a function');
+  }
+  const result = [];
+  for (let i = 0; i < this.length; i++) {
+    if (i in this) { // skip holes in sparse arrays
+      result.push(callback.call(thisArg, this[i], i, this));
+    }
+  }
+  return result;
+};
+
+// Test:
+[1,2,3].myMap(x => x * 2); // [2, 4, 6]
+```
+
+**Key points:** Returns new array. Passes `(element, index, array)` to
+callback. Supports optional `thisArg`. Skips holes in sparse arrays.
+
+### Polyfill for `Array.prototype.filter()`
+
+```js title="myFilter"
+Array.prototype.myFilter = function(callback, thisArg) {
+  if (typeof callback !== 'function') {
+    throw new TypeError(callback + ' is not a function');
+  }
+  const result = [];
+  for (let i = 0; i < this.length; i++) {
+    if (i in this && callback.call(thisArg, this[i], i, this)) {
+      result.push(this[i]);
+    }
+  }
+  return result;
+};
+
+[1,2,3,4].myFilter(x => x % 2 === 0); // [2, 4]
+```
+
+### Polyfill for `Array.prototype.reduce()`
+
+```js title="myReduce"
+Array.prototype.myReduce = function(callback, initialValue) {
+  if (typeof callback !== 'function') {
+    throw new TypeError(callback + ' is not a function');
+  }
+  let acc = initialValue;
+  let startIndex = 0;
+
+  if (initialValue === undefined) {
+    if (this.length === 0) {
+      throw new TypeError('Reduce of empty array with no initial value');
+    }
+    acc = this[0];
+    startIndex = 1;
+  }
+
+  for (let i = startIndex; i < this.length; i++) {
+    acc = callback(acc, this[i], i, this);
+  }
+  return acc;
+};
+
+[1,2,3].myReduce((acc, cur) => acc + cur, 0); // 6
+```
+
+### Polyfill for `Array.prototype.forEach()`
+
+```js title="myForEach"
+Array.prototype.myForEach = function(callback, thisArg) {
+  for (let i = 0; i < this.length; i++) {
+    if (i in this) {
+      callback.call(thisArg, this[i], i, this);
+    }
+  }
+  // returns undefined — no return value!
+};
+
+[1,2,3].myForEach(x => console.log(x)); // 1, 2, 3
+```
+
+### Polyfill for `Function.prototype.bind()`
+
+```js title="myBind — VERY commonly asked!"
+Function.prototype.myBind = function(context, ...args) {
+  const fn = this; // the function being bound
+  return function(...newArgs) {
+    return fn.apply(context, [...args, ...newArgs]);
+  };
+};
+
+// Test:
+function greet(greeting, punctuation) {
+  console.log(greeting + ", " + this.name + punctuation);
+}
+
+const user = { name: "Akshay" };
+const bound = greet.myBind(user, "Hello");
+bound("!"); // "Hello, Akshay!"
+```
+
+**Key points:** `this` inside myBind refers to the function being bound.
+Returns a new function. Supports partial application (pre-filled args).
+
+### Polyfill for `Function.prototype.call()`
+
+```js title="myCall"
+Function.prototype.myCall = function(context = globalThis, ...args) {
+  const uniqueKey = Symbol(); // avoid overwriting existing properties
+  context[uniqueKey] = this; // attach the function to context
+  const result = context[uniqueKey](...args);
+  delete context[uniqueKey]; // clean up
+  return result;
+};
+
+function sayHi() { console.log("Hi, " + this.name); }
+sayHi.myCall({ name: "Akshay" }); // "Hi, Akshay"
+```
+
+### Polyfill for `Function.prototype.apply()`
+
+```js title="myApply — same as myCall but takes array"
+Function.prototype.myApply = function(context = globalThis, args = []) {
+  const uniqueKey = Symbol();
+  context[uniqueKey] = this;
+  const result = context[uniqueKey](...args);
+  delete context[uniqueKey];
+  return result;
+};
+
+function add(a, b) { return this.base + a + b; }
+add.myApply({ base: 10 }, [1, 2]); // 13
+```
+
+### Polyfill for `Array.prototype.flat()`
+
+```js title="myFlat — recursive"
+Array.prototype.myFlat = function(depth = 1) {
+  const result = [];
+  const flatten = (arr, d) => {
+    for (const item of arr) {
+      if (Array.isArray(item) && d > 0) {
+        flatten(item, d - 1);
+      } else {
+        result.push(item);
+      }
+    }
+  };
+  flatten(this, depth);
+  return result;
+};
+
+[1,[2,[3,[4]]]].myFlat(2);     // [1, 2, 3, [4]]
+[1,[2,[3,[4]]]].myFlat(Infinity); // [1, 2, 3, 4]
+```
+
+### Polyfill for `Promise.all()`
+
+```js title="myPromiseAll"
+function myPromiseAll(promises) {
+  return new Promise((resolve, reject) => {
+    const results = [];
+    let completed = 0;
+
+    if (promises.length === 0) return resolve([]);
+
+    promises.forEach((promise, index) => {
+      Promise.resolve(promise)
+        .then(value => {
+          results[index] = value; // maintain order!
+          completed++;
+          if (completed === promises.length) {
+            resolve(results);
+          }
+        })
+        .catch(reject); // first rejection rejects all
+    });
+  });
+}
+
+// Test:
+myPromiseAll([
+  Promise.resolve(1),
+  Promise.resolve(2),
+  Promise.resolve(3)
+]).then(console.log); // [1, 2, 3]
+```
+
+**Key:** Results must be in the same order as input. First rejection
+rejects the whole thing. Use a counter, not `results.length` (because of
+sparse arrays).
+
+## `this`, call, apply & bind
+
+### call vs apply vs bind — At a Glance
+
+- `call(context, arg1, arg2)` — Calls function immediately with given
+  `this` and **individual args**
+- `apply(context, [arg1, arg2])` — Calls function immediately with given
+  `this` and **array of args**
+- `bind(context, arg1)` — Returns a **new function** with bound `this`.
+  Does NOT call it.
+
+```js title="Example"
+function intro(city, country) {
+  console.log(this.name + " from " + city + ", " + country);
+}
+
+const person = { name: "Akshay" };
+
+intro.call(person, "Mumbai", "India");   // "Akshay from Mumbai, India"
+intro.apply(person, ["Mumbai", "India"]); // "Akshay from Mumbai, India"
+
+const boundFn = intro.bind(person, "Mumbai");
+boundFn("India"); // "Akshay from Mumbai, India"
+```
+
+**I/O — What will be the output? (this in different contexts)**
+
+```js title="this in different contexts"
+function abc() {
+  console.log(this.a + this.b);
+}
+
+var obj = {
+  a: 5,
+  b: 6,
+  c: function() {
+    console.log(this.a + this.b);
+  }
+};
+
+abc();    // ?
+obj.c();  // ?
+```
+
+**Output:** `NaN → 11`
+
+`abc()` — standalone call, `this` = `window`. `window.a` and `window.b`
+are `undefined`, so `undefined + undefined = NaN`. `obj.c()` — method
+call, `this` = `obj`, so `5 + 6 = 11`.
+
+**I/O — What will be the output? (Method borrowing with call)**
+
+```js title="JavaScript"
+const person1 = {
+  name: "Akshay",
+  greet: function(city) {
+    console.log(this.name + " lives in " + city);
+  }
+};
+
+const person2 = { name: "Alok" };
+
+person1.greet.call(person2, "Delhi");
+```
+
+**Output:** `"Alok lives in Delhi"`
+
+Method borrowing: person2 doesn't have `greet`, but we borrow it from
+person1 and change `this` to person2 using `call`.
+
+## Currying
+
+### What is Currying?
+
+Currying transforms a function with multiple arguments into a sequence of
+functions, each taking a single argument: `f(a, b, c)` → `f(a)(b)(c)`.
+
+```js title="Basic currying"
+// Normal function
+function add(a, b, c) { return a + b + c; }
+add(1, 2, 3); // 6
+
+// Curried version
+function addCurried(a) {
+  return function(b) {
+    return function(c) {
+      return a + b + c;
+    };
+  };
+}
+addCurried(1)(2)(3); // 6
+```
+
+### Implement a generic `curry()` function
+
+```js title="Generic curry"
+function curry(fn) {
+  return function curried(...args) {
+    if (args.length >= fn.length) {
+      return fn.apply(this, args);
+    }
+    return function(...args2) {
+      return curried.apply(this, [...args, ...args2]);
+    };
+  };
+}
+
+function sum(a, b, c) { return a + b + c; }
+const curriedSum = curry(sum);
+
+curriedSum(1)(2)(3);   // 6
+curriedSum(1, 2)(3);  // 6
+curriedSum(1)(2, 3);  // 6
+```
+
+**How it works:** If enough args are collected (≥ fn.length), call the
+original function. Otherwise, return a new function that collects more
+args.
+
+### Infinite currying — `sum(1)(2)(3)...(n)()`
+
+Implement a `sum` that works for infinite chaining and returns total when
+called with no args:
+
+```js title="Infinite currying with termination"
+function sum(a) {
+  return function(b) {
+    if (b !== undefined) {
+      return sum(a + b);
+    }
+    return a;
+  };
+}
+
+sum(1)(2)(3)();       // 6
+sum(5)(10)(15)(20)(); // 50
+```
+
+## Debounce & Throttle
+
+### Debounce
+
+**Debounce:** Wait until the user *stops* doing something for N ms, then
+execute once. Use case: search input, window resize.
+
+```js title="debounce"
+function debounce(fn, delay) {
+  let timer;
+  return function(...args) {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      fn.apply(this, args);
+    }, delay);
+  };
+}
+
+// Usage:
+const search = debounce((query) => {
+  console.log("Searching: " + query);
+}, 300);
+
+// User types fast → only last call executes after 300ms pause
+```
+
+### Throttle
+
+**Throttle:** Execute at most once every N ms, no matter how many times
+it's called. Use case: scroll events, button clicks.
+
+```js title="throttle"
+function throttle(fn, limit) {
+  let inThrottle = false;
+  return function(...args) {
+    if (!inThrottle) {
+      fn.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  };
+}
+
+// Usage:
+const handleScroll = throttle(() => {
+  console.log("Scrolled!");
+}, 200);
+// Fires at most once every 200ms even if user scrolls continuously
+```
+
+<Callout type="tip" title="Debounce vs Throttle">
+  Debounce waits for silence (last call wins). Throttle enforces a rate
+  limit (first call wins per interval). Both use closures + setTimeout.
+</Callout>
+
+## Promises — Theory & Output Questions
+
+### Promise States & Basics
+
+- **Pending** — initial state, neither fulfilled nor rejected
+- **Fulfilled** — operation completed, `.then()` handler runs
+- **Rejected** — operation failed, `.catch()` handler runs
+- A promise is **settled** once fulfilled or rejected — cannot change again
+- `.finally()` runs regardless of outcome — for cleanup
+
+### Promise Methods
+
+- `Promise.all([p1, p2])` — waits for ALL. Rejects on first failure.
+  Returns array of results.
+- `Promise.allSettled([p1, p2])` — waits for ALL regardless of
+  success/failure. Returns status+value for each.
+- `Promise.race([p1, p2])` — returns the FIRST to settle (win or lose).
+- `Promise.any([p1, p2])` — returns the FIRST to FULFILL. Rejects only if
+  ALL reject.
+
+**I/O — What will be the output? (Classic promise ordering)**
+
+```js title="JavaScript"
+console.log("Start");
+
+const p = new Promise((resolve) => {
+  console.log("Inside Promise");
+  resolve("Resolved");
+});
+
+p.then(val => console.log(val));
+
+console.log("End");
+```
+
+**Output:** `"Start" → "Inside Promise" → "End" → "Resolved"`
+
+Promise constructor runs **synchronously**. `.then` callback goes to
+microtask queue. Sync code finishes first, then microtasks.
+
+**I/O — What will be the output? (Complete async/event loop question)**
+
+```js title="JavaScript"
+setTimeout(() => console.log('B'), 0);
+
+Promise.resolve()
+  .then(() => console.log('C'))
+  .then(() => {
+    console.log('D');
+    setTimeout(() => console.log('E'), 0);
+  });
+
+(async function() {
+  console.log('F');
+  await null;
+  console.log('G');
+})();
+
+console.log('H');
+```
+
+**Output:** `F → H → C → G → D → B → E`
+
+**Sync:** F, H. **Microtasks:** C (promise.then), G (await resumes), D
+(chained then). **Macrotasks:** B (first setTimeout), E (setTimeout
+inside then).
+
+## Common Coding Challenges
+
+### Deep clone of an object (without JSON)
+
+```js title="deepClone"
+function deepClone(obj) {
+  if (obj === null || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return new Date(obj);
+  if (obj instanceof RegExp) return new RegExp(obj);
+  if (Array.isArray(obj)) return obj.map(item => deepClone(item));
+
+  const cloned = {};
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      cloned[key] = deepClone(obj[key]);
+    }
+  }
+  return cloned;
+}
+
+const original = { a: 1, b: { c: 2 }, d: [3, 4] };
+const clone = deepClone(original);
+clone.b.c = 99;
+console.log(original.b.c); // 2 (not affected!)
+```
+
+### Flatten a deeply nested array without using `.flat()`
+
+```js title="Three approaches"
+// 1. Recursive
+function flatten(arr) {
+  return arr.reduce((acc, item) => {
+    return acc.concat(Array.isArray(item) ? flatten(item) : item);
+  }, []);
+}
+
+// 2. Iterative (using stack)
+function flattenIterative(arr) {
+  const stack = [...arr];
+  const result = [];
+  while (stack.length) {
+    const item = stack.pop();
+    Array.isArray(item) ? stack.push(...item) : result.unshift(item);
+  }
+  return result;
+}
+
+// 3. toString hack (only for numbers!)
+[1,[2,[3]]].toString().split(',').map(Number); // [1,2,3]
+
+flatten([1,[2,[3,[4,[5]]]]]); // [1,2,3,4,5]
+```
+
+### Implement a `once()` function — runs only once
+
+```js title="once — uses closure"
+function once(fn) {
+  let called = false;
+  let result;
+  return function(...args) {
+    if (!called) {
+      called = true;
+      result = fn.apply(this, args);
+    }
+    return result;
+  };
+}
+
+const pay = once((amount) => {
+  console.log("Paid: $" + amount);
+  return amount;
+});
+
+pay(100); // "Paid: $100" → returns 100
+pay(200); // (nothing logged) → returns 100 (cached)
+pay(300); // (nothing logged) → returns 100 (cached)
+```
+
+### Implement `memoize()`
+
+```js title="memoize — caches function results"
+function memoize(fn) {
+  const cache = new Map();
+  return function(...args) {
+    const key = JSON.stringify(args);
+    if (cache.has(key)) return cache.get(key);
+    const result = fn.apply(this, args);
+    cache.set(key, result);
+    return result;
+  };
+}
+
+const factorial = memoize(function f(n) {
+  console.log("Computing...", n);
+  return n <= 1 ? 1 : n * f(n - 1);
+});
+
+factorial(5); // Computing... 5, 4, 3, 2, 1 → 120
+factorial(5); // 120 (cached, no computing!)
+```
+
+### Implement `pipe()` and `compose()`
+
+```js title="pipe (left→right) and compose (right→left)"
+// pipe: f(g(h(x))) → pipe(h, g, f)(x)
+const pipe = (...fns) => (x) => fns.reduce((acc, fn) => fn(acc), x);
+
+// compose: f(g(h(x))) → compose(f, g, h)(x)
+const compose = (...fns) => (x) => fns.reduceRight((acc, fn) => fn(acc), x);
+
+const add10 = x => x + 10;
+const double = x => x * 2;
+const square = x => x * x;
+
+pipe(add10, double, square)(5);    // (5+10=15) → (15*2=30) → (30*30=900)
+compose(square, double, add10)(5); // same: 900
+```
+
+### Check type of a variable without using `typeof`
+
+```js title="Two approaches"
+// Method 1: constructor property
+(5).constructor === Number;     // true
+"hi".constructor === String;    // true
+[].constructor === Array;       // true
+
+// Method 2: Object.prototype.toString (most reliable)
+Object.prototype.toString.call(5);           // "[object Number]"
+Object.prototype.toString.call("hi");        // "[object String]"
+Object.prototype.toString.call([]);          // "[object Array]"
+Object.prototype.toString.call(null);        // "[object Null]"
+Object.prototype.toString.call(undefined);   // "[object Undefined]"
+Object.prototype.toString.call(() => {});    // "[object Function]"
+```
+
+## Complex Event Loop Output Questions
+
+**I/O — What will be the output?**
+
+```js title="JavaScript"
+console.log(1);
+
+setTimeout(() => console.log(2), 0);
+
+new Promise((resolve) => {
+  console.log(3);
+  resolve();
+  console.log(4);
+}).then(() => console.log(5));
+
+console.log(6);
+```
+
+**Output:** `1 → 3 → 4 → 6 → 5 → 2`
+
+Sync: 1, 3 (constructor is sync), 4 (resolve doesn't stop execution!), 6.
+Microtask: 5. Macrotask: 2.
+
+**Key trap:** `console.log(4)` after `resolve()` still runs — resolve
+doesn't exit the constructor!
+
+**I/O — What will be the output?**
+
+```js title="JavaScript"
+async function async1() {
+  console.log('A');
+  await async2();
+  console.log('B');
+}
+
+async function async2() {
+  console.log('C');
+}
+
+console.log('D');
+async1();
+console.log('E');
+```
+
+**Output:** `D → A → C → E → B`
+
+**D** (sync). **A** (sync part of async1). **C** (async2 runs sync).
+`await` pauses async1. **E** (sync). **B** (microtask after await
+resolves).
+
+## Quick Revision — What to Write on the Spot
+
+**Polyfills You Must Memorize**
+
+- `Array.prototype.map` — loop, push callback result, return new array
+- `Array.prototype.filter` — loop, push if callback returns truthy
+- `Array.prototype.reduce` — handle initial value, accumulate through loop
+- `Array.prototype.forEach` — loop, call callback, return nothing
+- `Array.prototype.flat` — recursive with depth parameter
+- `Function.prototype.bind` — return new function using `apply`
+- `Function.prototype.call` — attach fn to context, call, clean up
+- `Function.prototype.apply` — same as call but args is array
+- `Promise.all` — counter + results array, first reject rejects all
+
+**Coding Patterns You Must Know**
+
+- **Debounce** — clearTimeout + setTimeout in closure
+- **Throttle** — boolean flag + setTimeout in closure
+- **Currying** — return functions until enough args collected
+- **Infinite currying** — sum(1)(2)(3)...() with recursive return
+- **Memoize** — cache Map in closure, JSON.stringify args as key
+- **Once** — boolean flag + cached result in closure
+- **Deep clone** — recursive, handle null/Date/RegExp/Array
+- **Flatten array** — recursive reduce or iterative stack
+- **Pipe / Compose** — reduce / reduceRight through function array
+- **Type check without typeof** — `Object.prototype.toString.call()`
+- **call/apply/bind** — know the difference and when to use each
+
+**Event Loop Execution Order Rule**
+
+- **Step 1:** All synchronous code runs first (including Promise
+  constructor body!)
+- **Step 2:** All microtasks (Promise .then/.catch, await resume,
+  queueMicrotask)
+- **Step 3:** One macrotask (setTimeout, setInterval, I/O)
+- **Step 4:** All microtasks again (if any were created during step 3)
+- **Repeat** steps 3-4 until all queues are empty
+- `resolve()` inside Promise constructor does NOT stop execution of
+  remaining sync code!
