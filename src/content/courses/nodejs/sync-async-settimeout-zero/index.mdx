@@ -1,0 +1,361 @@
+---
+title: Sync, Async & the magic of setTimeout(0)
+description: Why blocking the main thread is dangerous, how the crypto module can freeze your app, and why setTimeout(0) doesn't run at 0ms.
+excerpt: Sync methods freeze the event loop, crypto can block for seconds, and setTimeout(0) still waits for the call stack.
+course: nodejs/course
+order: 7
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 20
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - event-loop
+  - sync-async
+  - settimeout
+  - crypto
+  - libuv
+---
+
+## V8 is fast — but it can't do everything alone
+
+From Episode 06, we learned that V8 executes synchronous code in
+**microseconds**. Simple variable assignments, math, function calls — all
+happen almost instantly on the call stack. But V8 **cannot** handle async
+operations (file I/O, networking, timers) by itself. It offloads those to
+**libuv**, which talks to the OS and returns the callback to V8 when done.
+
+This episode dives deeper into what happens when you use **synchronous
+versions** of normally-async operations, and introduces a tricky interview
+concept: `setTimeout(0)`.
+
+## Blocking the main thread — fs.readFileSync()
+
+The PDF shows a critical code example. Look at this program with both sync
+and async operations together:
+
+```js title="xyz.js — mixing sync and async"
+console.log("Hello world");
+
+var a = 107;
+var b = 20;
+
+// Synchronous — BLOCKS the main thread!
+fs.readFileSync("./file.txt", "utf8"); // ~10ms
+console.log("this will execute only after file read");
+
+Https.get("https://dummyjson.com/products/1", (res) => {
+  console.log("fetched data success");
+});
+
+setTimeout(() => {
+  console.log("setTimeout called after 5 seconds");
+}, 5000);
+
+// Async function
+fs.readFile("./file.txt", "utf8", (err, data) => {
+  console.log("File Data : ", data);
+});
+
+function multiplyFn(x, y) {
+  const result = a * b;
+  return result;
+}
+```
+
+<Callout type="warning" title="Key concept — fs.readFileSync() blocks everything">
+  `fs.readFileSync("./file.txt", "utf8")` reads a file **synchronously**. This means:
+
+  - V8 **cannot offload** this to libuv — it must wait for the file to be completely read
+  - The main thread is **frozen** at line 7 until the file reading is done
+  - Line 8 (`console.log`) will NOT execute until the file read completes
+  - No other code runs — not the HTTP request, not the timer, nothing
+
+  **Analogy:** Think of an ice cream shop where the owner insists on
+  serving each customer one at a time, refusing to even acknowledge the
+  next customer until the current one is fully served. That's what
+  `readFileSync` does to your main thread.
+</Callout>
+
+| Synchronous (blocking)               | Asynchronous (non-blocking)             |
+| ------------------------------------ | --------------------------------------- |
+| `fs.readFileSync()`                  | `fs.readFile()`                         |
+| Blocks the main thread               | Offloaded to libuv's thread pool        |
+| V8 waits — cannot move to next line  | V8 immediately moves to next line       |
+| libuv is NOT involved                | Callback runs when file read is done    |
+| Event loop is frozen                 | Event loop stays responsive             |
+| Application becomes unresponsive     | Other requests can be handled           |
+
+<Callout type="warning" title="Best Practice">
+  Avoid using synchronous methods (`readFileSync`, `writeFileSync`, etc.)
+  in production code, especially in servers. They block the event loop
+  and can make your entire application unresponsive. Use async versions
+  (`readFile`, `writeFile`) that keep the app responsive.
+</Callout>
+
+## The crypto module — another blocking example
+
+Node.js has a core module called `crypto` used for cryptographic
+operations like generating secure keys, hashing passwords, and more. It's
+built into Node.js just like `https`, `fs`, and `zlib`.
+
+<Callout type="insight" title="What is pbkdf2?">
+  **PBKDF2** stands for **Password-Based Key Derivation Function 2**. It
+  generates a cryptographic key from a password + salt. Here's what you
+  pass to it:
+
+  - **Password:** The password string to derive a key from
+  - **Salt:** A random value combined with the password to prevent rainbow table attacks
+  - **Iterations:** Number of hashing rounds (e.g., 5,000,000) — more = harder to crack but slower
+  - **Key Length:** The output key length in bytes (e.g., 50)
+  - **Digest Algorithm:** The hashing algorithm, like `sha512`
+  - **Callback:** (async version only) Function called when key generation is complete
+</Callout>
+
+The PDF shows two code examples — one with `pbkdf2Sync` (blocking) and one
+with `pbkdf2` (async). Here's the first example:
+
+```js title="blocking.js — crypto.pbkdf2 async only"
+const crypto = require("node:crypto");
+
+console.log("Hello World");
+
+var a = 1078698;
+var b = 20986;
+
+// pbkdf2 - Password Base Key Derivative Function
+
+// Async Function — offloaded to libuv
+crypto.pbkdf2("password", "salt", 5000000, 50, "sha512", (err, key) => {
+  console.log("Second Key is generated");
+});
+
+function multiplyFn(x, y) {
+  const result = a * b;
+  return result;
+}
+
+var c = multiplyFn(a, b);
+
+console.log("Multiplication result is : ", c);
+```
+
+```text title="Output"
+Hello World
+Multiplication result is :  22637556228
+Second Key is generated
+```
+
+Notice the output order: "Hello World" and the multiplication result print
+**first** (synchronous), then "Second Key is generated" prints **last**
+(async — offloaded to libuv's thread pool). Now here's the version with
+**both sync and async**:
+
+```js title="blocking.js — sync + async crypto"
+const crypto = require("node:crypto");
+
+console.log("Hello World");
+
+var a = 1078698;
+var b = 20986;
+
+// Synchronous — BLOCKS THE MAIN THREAD — DON'T USE IT
+crypto.pbkdf2Sync("password", "salt", 50000000, 50, "sha512");
+console.log("First Key is Generated");
+
+// Async Function — offloaded to libuv
+crypto.pbkdf2("password", "salt", 5000000, 50, "sha512", (err, key) => {
+  console.log("Second Key is generated");
+});
+
+function multiplyFn(x, y) {
+  const result = a * b;
+  return result;
+}
+
+var c = multiplyFn(a, b);
+console.log("Multiplication result is : ", c);
+```
+
+```text title="Output"
+Hello World
+First Key is Generated
+Multiplication result is :  22637556228
+Second Key is generated
+```
+
+<Callout type="insight" title="Why this output order?">
+  **Step by step:**
+
+  - `"Hello World"` — sync, prints immediately
+  - `pbkdf2Sync()` — sync, **BLOCKS the main thread** for several seconds while computing 50 million iterations. Nothing else runs.
+  - `"First Key is Generated"` — only prints after the sync crypto is done
+  - `pbkdf2()` — async, offloaded to libuv's thread pool. V8 moves on immediately.
+  - `multiplyFn()` — sync, runs on call stack instantly
+  - `"Multiplication result"` — sync, prints
+  - Call stack empties → event loop → `"Second Key is generated"` — async callback runs last
+</Callout>
+
+<Callout type="tip" title="Rule of thumb">
+  If a function name ends with `Sync` (like `pbkdf2Sync`, `readFileSync`,
+  `writeFileSync`), it is synchronous and will **block the main thread**.
+  The async version (without Sync) offloads to libuv. Always prefer the
+  async version in production.
+</Callout>
+
+## The magic of setTimeout(0) — a classic interview question
+
+This is one of the most asked JavaScript/Node.js interview questions. What
+happens when you set a timer with **0 milliseconds** delay?
+
+<Callout type="tip" title="Interview question">
+  **Q: What will be the output of the following code?**
+</Callout>
+
+```js title="setTimeoutZero.js"
+console.log("Hello World");
+
+var a = 1078698;
+var b = 20986;
+
+setTimeout(() => {
+  console.log("call me right now ");
+}, 0); // Trust issues with setTimeout!
+
+setTimeout(() => {
+  console.log("call me after 3 seconds");
+}, 3000);
+
+function multiplyFn(x, y) {
+  const result = a * b;
+  return result;
+}
+
+var c = multiplyFn(a, b);
+
+console.log("Multiplication result is : ", c);
+```
+
+```text title="Output"
+Hello World
+Multiplication result is :  22637556228
+call me right now
+call me after 3 seconds
+```
+
+Wait — `"call me right now"` has a delay of **0ms**, but it prints
+**AFTER** the multiplication result? Shouldn't 0ms mean "run immediately"?
+
+<Callout type="insight" title="Why setTimeout(0) doesn't run at 0ms">
+  Three key reasons:
+
+  - **setTimeout is always async:** Even with 0ms delay, `setTimeout` is an asynchronous function. The callback is immediately handed off to libuv — it does NOT execute inline.
+  - **The callback goes to the timer queue:** libuv registers the callback and it waits in the event loop's timer queue. It can only run when the **call stack is empty**.
+  - **All synchronous code runs first:** V8 must finish executing ALL synchronous code in the GEC before the event loop can push any callbacks onto the call stack. So the multiplication and its console.log always run before any setTimeout callback.
+</Callout>
+
+Let me trace through the execution step by step:
+
+| Step | What executes                                            | Where                  |
+| ---- | -------------------------------------------------------- | ---------------------- |
+| 1    | `console.log("Hello World")`                             | V8 call stack (sync)   |
+| 2    | `a = 1078698, b = 20986`                                 | V8 call stack (sync)   |
+| 3    | `setTimeout(..., 0)` — offloaded to libuv                | libuv timer queue      |
+| 4    | `setTimeout(..., 3000)` — offloaded to libuv             | libuv timer queue      |
+| 5    | `multiplyFn(a, b)` — sync execution                      | V8 call stack (sync)   |
+| 6    | `console.log("Multiplication result...")`                | V8 call stack (sync)   |
+| 7    | Call stack empty → event loop kicks in                   | Event loop             |
+| 8    | `"call me right now"` — timer(0) callback runs           | V8 via event loop      |
+| 9    | `"call me after 3 seconds"` — timer(3000) callback       | V8 via event loop      |
+
+<Callout type="warning" title='"Trust issues" with setTimeout(0)'>
+  When you ask the code to run after 0 milliseconds, it doesn't
+  necessarily run immediately after that time. It runs **only when the
+  call stack is empty**. The 0ms is a minimum threshold, not a guarantee.
+  The actual execution depends entirely on the state of the call stack.
+  This is why the notes say "don't trust setTimeout blindly!"
+</Callout>
+
+## The complete picture — all three examples combined
+
+The PDF's last code screenshot shows the most complex example combining
+**everything** — sync crypto, setTimeout(0), async crypto, and synchronous
+math:
+
+```js title="blocking.js — everything combined"
+const crypto = require("node:crypto");
+
+console.log("Hello World");
+
+var a = 1078698;
+var b = 20986;
+
+// pbkdf2 - Password Base Key Derivative Function
+// Synchronous — BLOCKS THE MAIN THREAD
+console.log("========");
+crypto.pbkdf2Sync("password", "salt", 50000000, 50, "sha512");
+console.log("First Key is Generated");
+
+setTimeout(() => {
+  console.log("call me right now !!!! ");
+}, 0); // it will only be called once call stack of main thread is empty
+
+// Async Function
+crypto.pbkdf2("password", "salt", 5000000, 50, "sha512", (err, key) => {
+  console.log("Second Key is generated");
+});
+
+function multiplyFn(x, y) {
+  const result = a * b;
+  return result;
+}
+
+var c = multiplyFn(a, b);
+console.log("Multiplication result is : ", c);
+```
+
+```text title="Output"
+Hello World
+========
+First Key is Generated
+Multiplication result is :  22637556228
+call me right now !!!!
+Second Key is generated
+```
+
+<Callout type="insight" title="Execution trace — every line explained">
+  - `"Hello World"` — sync, immediate
+  - `"========"` — sync, immediate
+  - `pbkdf2Sync()` — **BLOCKS for seconds** while computing 50M iterations. Everything freezes.
+  - `"First Key is Generated"` — only after sync crypto completes
+  - `setTimeout(..., 0)` — async, offloaded to libuv timer. V8 moves on.
+  - `pbkdf2()` — async, offloaded to libuv thread pool. V8 moves on.
+  - `multiplyFn()` — sync, instant math on call stack
+  - `"Multiplication result"` — sync, prints immediately
+  - **Call stack is now empty → event loop takes over**
+  - `"call me right now !!!!"` — setTimeout(0) callback, runs from timer queue
+  - `"Second Key is generated"` — async pbkdf2 callback, runs when thread pool finishes
+</Callout>
+
+## Episode 07 — at a glance
+
+| Concept             | Key detail                                                                                                                        |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| V8 speed            | Executes synchronous code in microseconds — variable assignment, math, function calls are instant                                 |
+| Sync functions      | Any function ending in `Sync` blocks the main thread. V8 waits, event loop freezes. Examples: `readFileSync`, `pbkdf2Sync`, `writeFileSync` |
+| Async functions     | Without the Sync suffix — offloaded to libuv (thread pool for file/crypto, OS kernel for network). V8 moves on immediately.       |
+| crypto module       | Core Node.js module for cryptographic operations. Import with `require("crypto")` or `require("node:crypto")`                     |
+| pbkdf2Sync          | Synchronous key derivation — blocks the main thread for the entire computation. Never use in production servers.                  |
+| pbkdf2              | Async key derivation — offloaded to libuv thread pool. Event loop stays responsive.                                               |
+| setTimeout(0)       | Does NOT run at 0ms. The callback is async — it's offloaded to libuv and only runs after the **call stack is empty**. The 0 is a minimum threshold, not a guarantee. |
+| Execution order     | All sync code → then event loop → then timer callbacks → then I/O callbacks                                                       |
+| Best practice       | Always prefer async methods in production. Sync methods are acceptable only during app startup or in CLI scripts.                 |
+| Interview tip       | setTimeout(0) output questions test understanding of the call stack, event loop, and callback queues. Sync always runs before any async callback. |
+
+<Callout type="tip" title="The golden rule">
+  Synchronous code **always** finishes before **any** async callback runs
+  — even setTimeout(0). The event loop can only push callbacks to the
+  call stack when it's completely empty.
+</Callout>

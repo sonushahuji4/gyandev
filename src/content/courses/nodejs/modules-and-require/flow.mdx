@@ -1,0 +1,49 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  How two files talk to each other in Node.js. Private scopes on both
+  sides; `module.exports` is the only legal door out, `require()` is the
+  only door in. The legend below decodes each side.
+</Callout>
+
+## module.exports → require — the only legal bridge
+
+```mermaid
+flowchart LR
+    subgraph SUM ["sum.js (private module)"]
+        A["<b>i · body</b><br/>let x = ...<br/>function calculateSum()"]
+          --> B["<b>ii · module.exports</b><br/>= { x, calculateSum }"]
+    end
+
+    subgraph APP ["app.js (private module)"]
+        D["<b>iv · require('./sum')</b><br/>receives module.exports"]
+          --> E["<b>v · destructure</b><br/>const { x, calculateSum } = …"]
+        E --> F["<b>vi · use it</b><br/>calculateSum(5, 10)"]
+    end
+
+    B -->|"iii · bridge<br/>CJS require()"| D
+
+    G["<b>vii · barrel</b><br/>folder/index.js<br/>re-exports siblings"] -.->|alt path| D
+
+    classDef priv fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef pub fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef use fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef barrel fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    class A,F priv
+    class B,D pub
+    class E use
+    class G barrel
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Module body',            description: 'Variables and functions live in the file\'s private scope. Nothing leaks by default.' },
+  { numeral: 'ii',  name: 'module.exports',         description: 'The public door. Whatever you assign here becomes the module\'s return value.' },
+  { numeral: 'iii', name: 'CJS bridge',             description: 'require("./sum") runs the file once, then returns its module.exports value.' },
+  { numeral: 'iv',  name: 'require() in consumer',  description: 'Other file receives whatever was exported — a function, an object, a class, anything.' },
+  { numeral: 'v',   name: 'Destructure',            description: 'The professional pattern: const { x, calculateSum } = require("./sum"). Clean, explicit, scannable.' },
+  { numeral: 'vi',  name: 'Use the import',         description: 'Call the function, read the variable — just as if it were defined locally.' },
+  { numeral: 'vii', name: 'Barrel (index.js)',      description: 'Put index.js inside a folder to group exports; require("./folder") auto-loads it.' },
+]} />

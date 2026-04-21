@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js Episode 04 — Module Exports & Require</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d0f12;--bg-card:#161920;--bg-card-alt:#1a1e28;--accent:#68d391;--accent-dim:#38a169;--accent-glow:rgba(104,211,145,.15);--orange:#ed8936;--orange-dim:#c05621;--orange-glow:rgba(237,137,54,.12);--blue:#63b3ed;--blue-dim:#3182ce;--purple:#b794f4;--pink:#f687b3;--red:#fc8181;--text:#e2e8f0;--text-dim:#a0aec0;--text-muted:#718096;--border:#2d3748;--tbg:#1a1b26;--tg:#9ece6a;--tb:#7aa2f7;--tr:#f7768e;--ty:#e0af68;--tc:#565f89}
+  *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-serif;font-weight:400;line-height:1.75;overflow-x:hidden}
+  .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 45% at 20% 30%,rgba(183,148,244,.07) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 80% 70%,rgba(237,137,54,.06) 0%,transparent 70%);pointer-events:none}
+  .hero-badge{display:inline-block;padding:.4rem 1.2rem;border:1px solid #9f7aea;border-radius:999px;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--purple);margin-bottom:2rem;animation:fadeDown .8s ease}
+  .hero h1{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,4.8rem);line-height:1.1;margin-bottom:1rem;animation:fadeUp 1s ease}
+  .hero h1 .hl-p{color:var(--purple)}.hero h1 .hl-o{color:var(--orange)}.hero h1 .hl-g{color:var(--accent)}
+  .hero-sub{font-size:clamp(1rem,2.5vw,1.25rem);color:var(--text-dim);max-width:660px;margin-bottom:3rem;animation:fadeUp 1.2s ease}
+  .scroll-cue{animation:bounce 2s infinite;color:var(--text-muted);font-size:1.5rem}
+  .container{max-width:860px;margin:0 auto;padding:0 1.5rem 6rem}
+  .chapter{margin-top:5rem;margin-bottom:3rem;position:relative;padding-left:2rem}
+  .chapter::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+  .chapter.ch-o::before{background:linear-gradient(to bottom,var(--orange),transparent)}
+  .chapter.ch-g::before{background:linear-gradient(to bottom,var(--accent),transparent)}
+  .chapter.ch-b::before{background:linear-gradient(to bottom,var(--blue),transparent)}
+  .chapter.ch-p::before{background:linear-gradient(to bottom,var(--purple),transparent)}
+  .chapter.ch-pk::before{background:linear-gradient(to bottom,var(--pink),transparent)}
+  .chapter.ch-r::before{background:linear-gradient(to bottom,var(--red),transparent)}
+  .chapter-num{font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+  .chapter.ch-o .chapter-num{color:var(--orange)}.chapter.ch-g .chapter-num{color:var(--accent)}.chapter.ch-b .chapter-num{color:var(--blue)}.chapter.ch-p .chapter-num{color:var(--purple)}.chapter.ch-pk .chapter-num{color:var(--pink)}.chapter.ch-r .chapter-num{color:var(--red)}
+  .chapter h2{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.5rem);font-weight:700;line-height:1.2}
+  .story{font-size:1.1rem;color:var(--text-dim);margin-bottom:1.5rem}.story strong{color:var(--text);font-weight:600}.story em{color:var(--accent);font-style:normal;font-weight:600}.story .hl{color:var(--orange);font-style:normal;font-weight:600}
+  .story code,code{font-family:'JetBrains Mono',monospace;font-size:.88em;background:var(--bg-card);padding:.15em .45em;border-radius:4px;color:var(--orange)}
+  .def-box{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1.5rem 1.8rem;margin:2rem 0}
+  .def-box.b-o{border-left:3px solid var(--orange)}.def-box.b-g{border-left:3px solid var(--accent)}.def-box.b-b{border-left:3px solid var(--blue)}.def-box.b-p{border-left:3px solid var(--purple)}.def-box.b-pk{border-left:3px solid var(--pink)}.def-box.b-r{border-left:3px solid var(--red)}
+  .def-box .label{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem}
+  .def-box.b-o .label{color:var(--orange)}.def-box.b-g .label{color:var(--accent)}.def-box.b-b .label{color:var(--blue)}.def-box.b-p .label{color:var(--purple)}.def-box.b-pk .label{color:var(--pink)}.def-box.b-r .label{color:var(--red)}
+  .def-box p{font-size:1.05rem;color:var(--text);line-height:1.7}
+  .callout{display:flex;gap:1rem;align-items:flex-start;border-radius:10px;padding:1.3rem 1.5rem;margin:2rem 0}
+  .callout.c-g{background:var(--accent-glow);border:1px solid rgba(104,211,145,.2)}.callout.c-o{background:var(--orange-glow);border:1px solid rgba(237,137,54,.2)}.callout.c-r{background:rgba(252,129,129,.08);border:1px solid rgba(252,129,129,.2)}.callout.c-p{background:rgba(183,148,244,.08);border:1px solid rgba(183,148,244,.2)}.callout.c-b{background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.2)}
+  .callout .ci{font-size:1.4rem;flex-shrink:0;margin-top:.15rem}.callout p{font-size:.95rem;color:var(--text);line-height:1.6}
+  .terminal{background:var(--tbg);border:1px solid #2a2b3d;border-radius:10px;margin:2rem 0;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:.85rem;line-height:1.7}
+  .terminal-bar{background:#16161e;padding:.5rem 1rem;display:flex;gap:6px;align-items:center}
+  .td{width:10px;height:10px;border-radius:50%}.td.r{background:#f7768e}.td.y{background:#e0af68}.td.g{background:#9ece6a}
+  .terminal-bar span{color:#565f89;font-size:.75rem;margin-left:.8rem}
+  .tb{padding:1rem 1.2rem}.tb .p{color:var(--tb)}.tb .c{color:var(--tg)}.tb .o{color:#c0caf5}.tb .cm{color:var(--tc)}.tb .e{color:var(--tr)}.tb .s{color:var(--tg)}.tb .k{color:var(--tb)}.tb .f{color:var(--ty)}.tb .n{color:var(--orange)}
+  .compare-table{width:100%;border-collapse:collapse;margin:2rem 0;font-size:.95rem}
+  .compare-table th{font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:.8rem 1rem;border-bottom:2px solid var(--border)}
+  .compare-table td{padding:.8rem 1rem;border-bottom:1px solid var(--border);color:var(--text-dim);vertical-align:top}
+  .compare-table tr:hover td{background:var(--bg-card)}
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;margin:2rem 0}
+  .info-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;transition:border-color .3s,transform .3s}
+  .info-card:hover{border-color:var(--purple);transform:translateY(-2px)}
+  .info-card .icon{font-size:1.6rem;margin-bottom:.8rem}.info-card h4{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.5rem}.info-card p{font-size:.9rem;color:var(--text-muted);line-height:1.5}
+  .diagram-wrapper{margin:2.5rem 0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:2rem;overflow-x:auto}
+  .diagram-wrapper .diagram-title{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--purple);margin-bottom:1.2rem}
+  .diagram-wrapper svg{display:block;margin:0 auto;width:100%}
+  .footer{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:.85rem;border-top:1px solid var(--border);margin-top:4rem}
+  .ep-nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;margin-top:3rem;border-top:1px solid var(--border);font-size:.9rem}.ep-nav .muted{color:var(--text-muted)}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+  @media(max-width:600px){.container{padding:0 1rem 4rem}.chapter{padding-left:1.2rem}.tb{padding:.8rem;font-size:.78rem}}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-badge">Episode 04</div>
+  <h1><span class="hl-p">Modules</span>, <span class="hl-o">Exports</span> &amp; <span class="hl-g">Require</span></h1>
+  <p class="hero-sub">Real projects have hundreds of files. Learn how Node.js keeps them organized with modules — the building blocks that let code talk to each other without leaking secrets.</p>
+  <div class="scroll-cue">&#8595;</div>
+</section>
+
+<div class="container">
+
+  <!-- CH 1 — WHY MODULES -->
+  <div class="chapter ch-p">
+    <div class="chapter-num">Chapter 01</div>
+    <h2>The Problem — One File Is Not Enough</h2>
+  </div>
+
+  <p class="story">
+    In Episode 03, we wrote all our code in a single <code>app.js</code>. That works for tiny experiments, but imagine building an e-commerce site — authentication, product listings, shopping cart, payment processing, email notifications... Stuffing all of that into one file would be <strong>chaos</strong>.
+  </p>
+  <p class="story">
+    This is why Node.js uses a <strong>module system</strong>. Every <code>.js</code> file in Node.js is automatically its own module. Each file has its own private scope — variables and functions defined in one file are <em>invisible</em> to other files by default.
+  </p>
+
+  <div class="def-box b-p">
+    <div class="label">What is a Module?</div>
+    <p>A <strong>module</strong> is a self-contained unit of JavaScript code — it can be a single file or an entire folder. Everything inside a module is <strong>private by default</strong>. If you want to share something with the outside world, you must explicitly <strong>export</strong> it.</p>
+  </div>
+
+  <div class="callout c-r">
+    <div class="ci">&#128680;</div>
+    <p><strong>Critical Rule:</strong> Modules protect their variables and functions from leaking. If you define a function in <code>sum.js</code> and try to call it from <code>app.js</code> without exporting it, you'll get a <code>ReferenceError</code>. This isn't a bug — it's a feature that prevents naming conflicts and keeps your code organized.</p>
+  </div>
+
+  <!-- Module Isolation Diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Module Isolation — Each File is a Fortress</div>
+    <svg viewBox="0 0 750 220" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#fc8181"/></marker></defs>
+      <!-- Module A -->
+      <rect x="30" y="30" width="210" height="160" rx="12" fill="#1a1e28" stroke="#9f7aea"/>
+      <text x="135" y="20" text-anchor="middle" fill="#b794f4" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing=".1em">sum.js (MODULE)</text>
+      <text x="135" y="65" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="11">function calculateSum()</text>
+      <text x="135" y="90" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="11">let x = "hello"</text>
+      <rect x="60" y="115" width="150" height="24" rx="6" fill="rgba(252,129,129,.1)" stroke="rgba(252,129,129,.3)"/>
+      <text x="135" y="132" text-anchor="middle" fill="#fc8181" font-family="JetBrains Mono,monospace" font-size="9">PRIVATE by default</text>
+      <text x="135" y="170" text-anchor="middle" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="10">Cannot be accessed outside</text>
+
+      <!-- X mark -->
+      <line x1="260" y1="100" x2="310" y2="100" stroke="#fc8181" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="285" y="90" text-anchor="middle" fill="#fc8181" font-family="Playfair Display,serif" font-size="22" font-weight="700">&#10005;</text>
+
+      <!-- Module B -->
+      <rect x="325" y="30" width="210" height="160" rx="12" fill="#1a1e28" stroke="#3182ce"/>
+      <text x="430" y="20" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing=".1em">app.js (MODULE)</text>
+      <text x="430" y="70" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="11">calculateSum(5, 10);</text>
+      <rect x="355" y="90" width="150" height="24" rx="6" fill="rgba(252,129,129,.1)" stroke="rgba(252,129,129,.3)"/>
+      <text x="430" y="107" text-anchor="middle" fill="#fc8181" font-family="JetBrains Mono,monospace" font-size="9">ReferenceError!</text>
+      <text x="430" y="145" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="10">calculateSum is not defined</text>
+      <text x="430" y="170" text-anchor="middle" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="10">Need export + require</text>
+
+      <!-- Solution hint -->
+      <rect x="570" y="55" width="160" height="110" rx="10" fill="rgba(104,211,145,.06)" stroke="#38a169"/>
+      <text x="650" y="48" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="9" letter-spacing=".1em">SOLUTION</text>
+      <text x="650" y="85" text-anchor="middle" fill="#68d391" font-family="Source Sans 3,sans-serif" font-size="12" font-weight="600">1. Export from sum.js</text>
+      <text x="650" y="110" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10">module.exports</text>
+      <text x="650" y="135" text-anchor="middle" fill="#68d391" font-family="Source Sans 3,sans-serif" font-size="12" font-weight="600">2. Import in app.js</text>
+      <text x="650" y="155" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10">require("./sum")</text>
+    </svg>
+  </div>
+
+
+  <!-- CH 2 — REQUIRE & MODULE.EXPORTS -->
+  <div class="chapter ch-o">
+    <div class="chapter-num">Chapter 02</div>
+    <h2>The Bridge — require() & module.exports</h2>
+  </div>
+
+  <p class="story">
+    Node.js gives you two tools to connect modules together: <strong><code>module.exports</code></strong> (the sender) and <strong><code>require()</code></strong> (the receiver). Think of it like a delivery service — one module <em>packages</em> what it wants to share, and another module <em>receives</em> the package.
+  </p>
+
+  <div class="def-box b-o">
+    <div class="label">require()</div>
+    <p><strong><code>require()</code></strong> is a built-in Node.js function that lets you include other modules into your code. When you call <code>require("./sum.js")</code>, Node.js loads that file, executes it, and returns whatever <code>module.exports</code> was set to.</p>
+  </div>
+
+  <div class="def-box b-g">
+    <div class="label">module.exports</div>
+    <p><strong><code>module.exports</code></strong> is an empty object <code>{}</code> by default. Whatever you assign to it becomes the "public API" of that module — the only thing visible to the outside world when someone <code>require()</code>s your file.</p>
+  </div>
+
+  <p class="story">Let's walk through the complete flow with code:</p>
+
+  <!-- Step 1: Export -->
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>sum.js — Exporting a function</span></div>
+    <div class="tb">
+      <span class="cm">// sum.js</span><br>
+      <span class="k">function</span> <span class="f">calculateSum</span>(a, b) {<br>
+      &nbsp;&nbsp;<span class="k">let</span> sum = a + b;<br>
+      &nbsp;&nbsp;console.<span class="f">log</span>(sum);<br>
+      }<br><br>
+      <span class="cm">// Make it available to the outside world</span><br>
+      module.exports = calculateSum;
+    </div>
+  </div>
+
+  <!-- Step 2: Import -->
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>app.js — Importing and using it</span></div>
+    <div class="tb">
+      <span class="cm">// app.js</span><br>
+      <span class="k">const</span> calculateSum = <span class="f">require</span>(<span class="s">"./sum.js"</span>);<br><br>
+      <span class="f">calculateSum</span>(<span class="n">5</span>, <span class="n">10</span>); <span class="cm">// Output: 15</span>
+    </div>
+  </div>
+
+  <div class="callout c-g">
+    <div class="ci">&#128161;</div>
+    <p><strong>Pro Tip:</strong> You can omit the <code>.js</code> extension when requiring files — <code>require("./sum")</code> works perfectly. Node.js automatically resolves the extension for you.</p>
+  </div>
+
+
+  <!-- CH 3 — EXPORTING MULTIPLE THINGS -->
+  <div class="chapter ch-g">
+    <div class="chapter-num">Chapter 03</div>
+    <h2>Exporting Multiple Things</h2>
+  </div>
+
+  <p class="story">
+    What if you need to export <em>more than one</em> thing from a module — say, a variable and a function? You wrap them in an <strong>object</strong>:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>sum.js — Exporting multiple items</span></div>
+    <div class="tb">
+      <span class="k">let</span> x = <span class="s">"export in React exports in Node"</span>;<br><br>
+      <span class="k">function</span> <span class="f">calculateSum</span>(a, b) {<br>
+      &nbsp;&nbsp;console.<span class="f">log</span>(a + b);<br>
+      }<br><br>
+      <span class="cm">// Export as an object</span><br>
+      module.exports = { x, calculateSum };
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>app.js — Using destructuring to import</span></div>
+    <div class="tb">
+      <span class="cm">// Destructuring — the clean, professional way</span><br>
+      <span class="k">const</span> { x, calculateSum } = <span class="f">require</span>(<span class="s">"./sum.js"</span>);<br><br>
+      <span class="f">calculateSum</span>(<span class="n">5</span>, <span class="n">10</span>); <span class="cm">// 15</span><br>
+      console.<span class="f">log</span>(x);            <span class="cm">// "export in React exports in Node"</span>
+    </div>
+  </div>
+
+  <p class="story">
+    <strong>Destructuring</strong> is a JavaScript feature that lets you unpack properties from an object into separate variables. Most professional Node.js developers use this pattern daily — you'll see it everywhere in production codebases.
+  </p>
+
+  <div class="callout c-o">
+    <div class="ci">&#128221;</div>
+    <p><strong>Alternative pattern:</strong> Instead of assigning one big object, some developers add properties one at a time:<br><code>module.exports.x = x;</code><br><code>module.exports.calculateSum = calculateSum;</code><br>Both approaches produce the same result.</p>
+  </div>
+
+
+  <!-- CH 4 — NESTED MODULES & INDEX.JS -->
+  <div class="chapter ch-b">
+    <div class="chapter-num">Chapter 04</div>
+    <h2>Scaling Up — Folders, Nested Modules & index.js</h2>
+  </div>
+
+  <p class="story">
+    As your project grows, you'll want to group related modules into <strong>folders</strong>. For example, a <code>calculate/</code> folder might contain <code>sum.js</code> and <code>multiply.js</code>. You can import from subfolders using relative paths:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>Importing from subfolders</span></div>
+    <div class="tb">
+      <span class="k">const</span> { calculateSum } = <span class="f">require</span>(<span class="s">"./calculate/sum"</span>);<br>
+      <span class="k">const</span> { calculateMultiply } = <span class="f">require</span>(<span class="s">"./calculate/multiply"</span>);
+    </div>
+  </div>
+
+  <p class="story">
+    But there's an even cleaner pattern: create an <strong><code>index.js</code></strong> file inside the folder. This file acts as a "receptionist" — it gathers all exports from sibling files and re-exports them as a single package.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>calculate/index.js — The barrel file</span></div>
+    <div class="tb">
+      <span class="k">const</span> { calculateMultiply } = <span class="f">require</span>(<span class="s">"./multiply"</span>);<br>
+      <span class="k">const</span> { calculateSum } = <span class="f">require</span>(<span class="s">"./sum"</span>);<br><br>
+      module.exports = { calculateMultiply, calculateSum };
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>app.js — One clean import from the folder</span></div>
+    <div class="tb">
+      <span class="cm">// Node.js automatically looks for index.js inside the folder!</span><br>
+      <span class="k">const</span> { calculateSum, calculateMultiply } = <span class="f">require</span>(<span class="s">"./calculate"</span>);<br><br>
+      <span class="f">calculateSum</span>(<span class="n">5</span>, <span class="n">10</span>);       <span class="cm">// 15</span><br>
+      <span class="f">calculateMultiply</span>(<span class="n">5</span>, <span class="n">10</span>);  <span class="cm">// 50</span>
+    </div>
+  </div>
+
+  <!-- Folder structure diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Project Structure with Nested Modules</div>
+    <svg viewBox="0 0 750 240" xmlns="http://www.w3.org/2000/svg">
+      <!-- Folder tree -->
+      <text x="40" y="35" fill="#ed8936" font-family="JetBrains Mono,monospace" font-size="13" font-weight="600">project/</text>
+      <text x="70" y="60" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="12">&#9500;&#9472; app.js</text>
+      <text x="220" y="60" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="11">&#8592; entry point, requires ./calculate</text>
+      <text x="70" y="85" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="12">&#9500;&#9472; data.json</text>
+      <text x="220" y="85" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="11">&#8592; JSON files can be required too!</text>
+      <text x="70" y="110" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="12">&#9500;&#9472; xyz.js</text>
+      <text x="70" y="140" fill="#b794f4" font-family="JetBrains Mono,monospace" font-size="12" font-weight="600">&#9492;&#9472; calculate/</text>
+      <text x="260" y="140" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="11">&#8592; folder acts as a module</text>
+      <text x="110" y="168" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="12">&#9500;&#9472; index.js</text>
+      <text x="260" y="168" fill="#68d391" font-family="Source Sans 3,sans-serif" font-size="11">&#8592; barrel file (auto-loaded by Node)</text>
+      <text x="110" y="195" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="12">&#9500;&#9472; sum.js</text>
+      <text x="260" y="195" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="11">&#8592; exports calculateSum</text>
+      <text x="110" y="222" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="12">&#9492;&#9472; multiply.js</text>
+      <text x="260" y="222" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="11">&#8592; exports calculateMultiply</text>
+    </svg>
+  </div>
+
+  <div class="callout c-b">
+    <div class="ci">&#128230;</div>
+    <p><strong>Bonus — Requiring JSON:</strong> You can import JSON files directly with <code>require("./data.json")</code>. Node.js parses it and returns a JavaScript object. And built-in modules like <code>util</code> can be imported with <code>require('node:util')</code>.</p>
+  </div>
+
+
+  <!-- CH 5 — CJS vs ESM -->
+  <div class="chapter ch-pk">
+    <div class="chapter-num">Chapter 05</div>
+    <h2>The Two Worlds — CommonJS vs ES Modules</h2>
+  </div>
+
+  <p class="story">
+    Everything we've learned so far uses <strong>CommonJS (CJS)</strong> — the original module system built into Node.js. But there's a newer system called <strong>ES Modules (ESM)</strong> that's becoming the future standard. You need to know both.
+  </p>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th style="color:var(--orange)">Feature</th>
+        <th style="color:var(--orange)">CommonJS (CJS)</th>
+        <th style="color:var(--accent)">ES Modules (ESM)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Syntax</strong></td><td><code>require()</code> / <code>module.exports</code></td><td><code>import</code> / <code>export</code></td></tr>
+      <tr><td><strong>File extension</strong></td><td><code>.js</code> (default)</td><td><code>.mjs</code> or <code>.js</code> with config</td></tr>
+      <tr><td><strong>Loading</strong></td><td>Synchronous</td><td>Asynchronous</td></tr>
+      <tr><td><strong>Strict mode</strong></td><td>Non-strict (sloppy mode)</td><td>Always strict mode</td></tr>
+      <tr><td><strong>Default in</strong></td><td>Node.js (traditional)</td><td>Browsers, React, Angular</td></tr>
+      <tr><td><strong>Era</strong></td><td>Older, established</td><td>Newer, the future</td></tr>
+      <tr><td><strong>How to enable</strong></td><td>Default — works out of the box</td><td>Add <code>"type": "module"</code> in package.json</td></tr>
+    </tbody>
+  </table>
+
+  <p class="story">Here's what ES Module syntax looks like compared to CommonJS:</p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>ES Modules — sum.js</span></div>
+    <div class="tb">
+      <span class="cm">// ESM: use the 'export' keyword directly</span><br>
+      <span class="k">export</span> <span class="k">let</span> x = <span class="s">"export in React exports in Node"</span>;<br><br>
+      <span class="k">export</span> <span class="k">function</span> <span class="f">calculateSum</span>(a, b) {<br>
+      &nbsp;&nbsp;console.<span class="f">log</span>(a + b);<br>
+      }
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>ES Modules — app.js</span></div>
+    <div class="tb">
+      <span class="cm">// ESM: use 'import' instead of 'require'</span><br>
+      <span class="k">import</span> { calculateSum, x } <span class="k">from</span> <span class="s">"./sum.js"</span>;<br><br>
+      <span class="f">calculateSum</span>(<span class="n">5</span>, <span class="n">10</span>); <span class="cm">// 15</span><br>
+      console.<span class="f">log</span>(x);
+    </div>
+  </div>
+
+  <div class="callout c-p">
+    <div class="ci">&#9888;&#65039;</div>
+    <p><strong>Strict Mode Difference (Interview Tip!):</strong> In CommonJS, you can write <code>z = "hello"</code> without <code>let/const/var</code> and it works (non-strict). In ES Modules, the same code throws a <code>ReferenceError</code> because ESM always enforces strict mode. This makes ESM safer and more predictable.</p>
+  </div>
+
+  <p class="story">
+    To enable ES Modules in your project, create a <code>package.json</code> file and add <code>"type": "module"</code>. The industry is gradually shifting toward ESM — most new frameworks and libraries already use it.
+  </p>
+
+
+  <!-- QUICK REFERENCE -->
+  <div class="chapter ch-o">
+    <div class="chapter-num">Quick Reference</div>
+    <h2>Episode 04 — At a Glance</h2>
+  </div>
+
+  <table class="compare-table">
+    <thead><tr><th style="color:var(--orange)">Concept</th><th style="color:var(--accent)">Key Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Module</strong></td><td>A file or folder with private JS code — nothing leaks by default</td></tr>
+      <tr><td><strong><code>require()</code></strong></td><td>Built-in function to import another module's exports</td></tr>
+      <tr><td><strong><code>module.exports</code></strong></td><td>Empty object by default — assign to it to make things public</td></tr>
+      <tr><td><strong>Export one thing</strong></td><td><code>module.exports = calculateSum;</code></td></tr>
+      <tr><td><strong>Export multiple</strong></td><td><code>module.exports = { x, calculateSum };</code></td></tr>
+      <tr><td><strong>Destructured import</strong></td><td><code>const { x, calculateSum } = require("./sum");</code></td></tr>
+      <tr><td><strong>Omit .js</strong></td><td>Node.js auto-resolves file extensions</td></tr>
+      <tr><td><strong>index.js pattern</strong></td><td>Barrel file in a folder — lets you <code>require("./folder")</code></td></tr>
+      <tr><td><strong>Require JSON</strong></td><td><code>const data = require("./data.json");</code></td></tr>
+      <tr><td><strong>Built-in modules</strong></td><td><code>require('node:util')</code>, <code>require('node:fs')</code>, etc.</td></tr>
+      <tr><td><strong>CommonJS (CJS)</strong></td><td>require/exports, synchronous, non-strict, Node.js default</td></tr>
+      <tr><td><strong>ES Modules (ESM)</strong></td><td>import/export, async, strict mode, the future standard</td></tr>
+      <tr><td><strong>Enable ESM</strong></td><td>Add <code>"type": "module"</code> to package.json</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ep-nav">
+    <span class="muted">&#8592; Episode 03 — Writing Code</span>
+    <span class="muted">Episode 05 — Coming Soon &#8594;</span>
+  </div>
+
+  <div class="footer">
+    Node.js Episode 04 — Module Exports &amp; Require &nbsp;|&nbsp; Story-format notes for deep learning &nbsp;|&nbsp; Series continues...
+  </div>
+
+</div>
+</body>
+</html>

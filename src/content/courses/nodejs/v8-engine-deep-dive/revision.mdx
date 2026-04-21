@@ -1,0 +1,55 @@
+---
+readingMinutes: 5
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Parsing — tokens and the AST" subtitle="How V8 turns text into a tree.">
+- **Lexical analysis (tokenization):** raw source → tokens (keyword, identifier, operator, literal, punctuation).
+- `var a = 10;` → `['var', 'a', '=', '10', ';']`.
+- **Syntax analysis:** tokens → **Abstract Syntax Tree** (hierarchical structure following JS grammar).
+- If a token is unexpected, the AST can't be built → **SyntaxError**.
+- Explore any snippet's AST visually at **astexplorer.net**.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Interpreted vs compiled — JS is both" subtitle="JIT is the hybrid answer.">
+- **Interpreted** (Python) — fast to start, slower at runtime, line-by-line.
+- **Compiled** (C / C++) — slow to start, fast once compiled, whole program up-front.
+- JavaScript uses **JIT (Just-In-Time)** — interpret for fast startup, compile hot paths at runtime.
+- "The ultimate hybrid" — interpreted flexibility + compiled speed.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Ignition + TurboFan pipeline" subtitle="The two-engine heart of V8.">
+- **Ignition (interpreter):** AST → **bytecode**, executes line by line → fast startup.
+- Ignition watches for **hot code** — functions called repeatedly.
+- **TurboFan (optimizing compiler):** hot bytecode → optimized machine code using **type assumptions**.
+- **Deoptimization:** if types change (numbers → string), revert to Ignition bytecode and re-run.
+- Lesson: pass **consistent types** to the same function to avoid deopt churn.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Inline caching & copy elision" subtitle="Two optimizations worth naming.">
+- **Inline caching** — remembers where `obj.name` lived last time so repeat lookups skip the search.
+- Works best with **same-shaped objects** (stable hidden classes).
+- **Copy elision** — constructs returned objects directly in the caller's memory, skipping the copy.
+- Both run quietly during bytecode execution and TurboFan compilation.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Garbage collection — Mark & Sweep" subtitle="Four sub-systems handle different generations.">
+- **Mark phase:** start at roots (global, call stack), mark everything reachable.
+- **Sweep phase:** free memory for unmarked objects.
+- **Orinoco** — main GC, runs concurrently with JS to minimize pauses.
+- **Oil Pan** — collects the **C++ objects** V8 holds internally.
+- **Scavenger** — young generation (short-lived temporaries), frequent minor cycles.
+- **MCompact** — old generation, full mark-sweep-compact to fight fragmentation.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Other engines use the same idea" subtitle="Different names, same shape.">
+- **V8** (Chrome, Node.js, Deno) — Ignition + TurboFan.
+- **SpiderMonkey** (Firefox) — Baseline Interpreter + WarpMonkey / IonMonkey.
+- **JavaScriptCore** (Safari) — LLInt + DFG → FTL.
+- **Chakra** (old Edge, deprecated) — Interpreter + SimpleJIT → FullJIT.
+- Pattern everywhere: parse → interpret → optimize hot code → deoptimize on bad assumptions.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **P · I · T · G** — **P**arse (tokens → AST) · **I**gnition (bytecode) · **T**urboFan (machine code, with deopt) · **G**arbage collect throughout (Orinoco · Oil Pan · Scavenger · MCompact).
+</Callout>

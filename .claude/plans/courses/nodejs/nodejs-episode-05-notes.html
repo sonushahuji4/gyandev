@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js Episode 05 — Deep Dive into Modules & require()</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d0f12;--bg-card:#161920;--bg-alt:#1a1e28;--accent:#68d391;--accent-dim:#38a169;--accent-glow:rgba(104,211,145,.15);--orange:#ed8936;--orange-dim:#c05621;--orange-glow:rgba(237,137,54,.12);--blue:#63b3ed;--blue-dim:#3182ce;--purple:#b794f4;--pink:#f687b3;--red:#fc8181;--cyan:#76e4f7;--text:#e2e8f0;--text-dim:#a0aec0;--text-muted:#718096;--border:#2d3748;--tbg:#1a1b26;--tg:#9ece6a;--tb:#7aa2f7;--tr:#f7768e;--ty:#e0af68;--tc:#565f89}
+  *{margin:0;padding:0;box-sizing:border-box}html{scroll-behavior:smooth}
+  body{background:var(--bg);color:var(--text);font-family:'Source Sans 3',sans-serif;font-weight:400;line-height:1.75;overflow-x:hidden}
+
+  .hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;position:relative;overflow:hidden}
+  .hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 50% 45% at 30% 20%,rgba(118,228,247,.06) 0%,transparent 70%),radial-gradient(ellipse 40% 40% at 75% 75%,rgba(183,148,244,.06) 0%,transparent 70%);pointer-events:none}
+  .hero-badge{display:inline-block;padding:.4rem 1.2rem;border:1px solid #0bc5ea;border-radius:999px;font-size:.8rem;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);margin-bottom:2rem;animation:fadeDown .8s ease}
+  .hero h1{font-family:'Playfair Display',serif;font-weight:900;font-size:clamp(2.4rem,6.5vw,4.8rem);line-height:1.1;margin-bottom:1rem;animation:fadeUp 1s ease}
+  .hero h1 .hl-c{color:var(--cyan)}.hero h1 .hl-o{color:var(--orange)}.hero h1 .hl-p{color:var(--purple)}
+  .hero-sub{font-size:clamp(1rem,2.5vw,1.25rem);color:var(--text-dim);max-width:660px;margin-bottom:3rem;animation:fadeUp 1.2s ease}
+  .scroll-cue{animation:bounce 2s infinite;color:var(--text-muted);font-size:1.5rem}
+
+  .container{max-width:860px;margin:0 auto;padding:0 1.5rem 6rem}
+  .chapter{margin-top:5rem;margin-bottom:3rem;position:relative;padding-left:2rem}
+  .chapter::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+  .chapter.ch-c::before{background:linear-gradient(to bottom,var(--cyan),transparent)}
+  .chapter.ch-o::before{background:linear-gradient(to bottom,var(--orange),transparent)}
+  .chapter.ch-g::before{background:linear-gradient(to bottom,var(--accent),transparent)}
+  .chapter.ch-p::before{background:linear-gradient(to bottom,var(--purple),transparent)}
+  .chapter.ch-b::before{background:linear-gradient(to bottom,var(--blue),transparent)}
+  .chapter-num{font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.2em;text-transform:uppercase;margin-bottom:.5rem}
+  .chapter.ch-c .chapter-num{color:var(--cyan)}.chapter.ch-o .chapter-num{color:var(--orange)}.chapter.ch-g .chapter-num{color:var(--accent)}.chapter.ch-p .chapter-num{color:var(--purple)}.chapter.ch-b .chapter-num{color:var(--blue)}
+  .chapter h2{font-family:'Playfair Display',serif;font-size:clamp(1.8rem,4vw,2.5rem);font-weight:700;line-height:1.2}
+
+  .story{font-size:1.1rem;color:var(--text-dim);margin-bottom:1.5rem}.story strong{color:var(--text);font-weight:600}.story em{color:var(--accent);font-style:normal;font-weight:600}.story .hl{color:var(--orange);font-style:normal;font-weight:600}
+  .story code,code{font-family:'JetBrains Mono',monospace;font-size:.88em;background:var(--bg-card);padding:.15em .45em;border-radius:4px;color:var(--orange)}
+
+  .def-box{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:1.5rem 1.8rem;margin:2rem 0}
+  .def-box.b-c{border-left:3px solid var(--cyan)}.def-box.b-o{border-left:3px solid var(--orange)}.def-box.b-g{border-left:3px solid var(--accent)}.def-box.b-p{border-left:3px solid var(--purple)}.def-box.b-b{border-left:3px solid var(--blue)}
+  .def-box .label{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.6rem}
+  .def-box.b-c .label{color:var(--cyan)}.def-box.b-o .label{color:var(--orange)}.def-box.b-g .label{color:var(--accent)}.def-box.b-p .label{color:var(--purple)}.def-box.b-b .label{color:var(--blue)}
+  .def-box p{font-size:1.05rem;color:var(--text);line-height:1.7}
+
+  .callout{display:flex;gap:1rem;align-items:flex-start;border-radius:10px;padding:1.3rem 1.5rem;margin:2rem 0}
+  .callout.c-g{background:var(--accent-glow);border:1px solid rgba(104,211,145,.2)}.callout.c-o{background:var(--orange-glow);border:1px solid rgba(237,137,54,.2)}.callout.c-r{background:rgba(252,129,129,.08);border:1px solid rgba(252,129,129,.2)}.callout.c-p{background:rgba(183,148,244,.08);border:1px solid rgba(183,148,244,.2)}.callout.c-c{background:rgba(118,228,247,.06);border:1px solid rgba(118,228,247,.2)}.callout.c-b{background:rgba(99,179,237,.08);border:1px solid rgba(99,179,237,.2)}
+  .callout .ci{font-size:1.4rem;flex-shrink:0;margin-top:.15rem}.callout p{font-size:.95rem;color:var(--text);line-height:1.6}
+
+  .terminal{background:var(--tbg);border:1px solid #2a2b3d;border-radius:10px;margin:2rem 0;overflow:hidden;font-family:'JetBrains Mono',monospace;font-size:.85rem;line-height:1.7}
+  .terminal-bar{background:#16161e;padding:.5rem 1rem;display:flex;gap:6px;align-items:center}
+  .td{width:10px;height:10px;border-radius:50%}.td.r{background:#f7768e}.td.y{background:#e0af68}.td.g{background:#9ece6a}
+  .terminal-bar span{color:#565f89;font-size:.75rem;margin-left:.8rem}
+  .tb{padding:1rem 1.2rem}.tb .p{color:var(--tb)}.tb .c{color:var(--tg)}.tb .o{color:#c0caf5}.tb .cm{color:var(--tc)}.tb .e{color:var(--tr)}.tb .s{color:var(--tg)}.tb .k{color:var(--tb)}.tb .f{color:var(--ty)}.tb .n{color:var(--orange)}.tb .cy{color:var(--cyan)}
+
+  .compare-table{width:100%;border-collapse:collapse;margin:2rem 0;font-size:.95rem}
+  .compare-table th{font-family:'JetBrains Mono',monospace;font-size:.75rem;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:.8rem 1rem;border-bottom:2px solid var(--border)}
+  .compare-table td{padding:.8rem 1rem;border-bottom:1px solid var(--border);color:var(--text-dim);vertical-align:top}
+  .compare-table tr:hover td{background:var(--bg-card)}
+
+  .info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1.2rem;margin:2rem 0}
+  .info-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem;transition:border-color .3s,transform .3s}
+  .info-card:hover{border-color:var(--cyan);transform:translateY(-2px)}
+  .info-card .icon{font-size:1.6rem;margin-bottom:.8rem}.info-card h4{font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.5rem}.info-card p{font-size:.9rem;color:var(--text-muted);line-height:1.5}
+
+  .diagram-wrapper{margin:2.5rem 0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:2rem;overflow-x:auto}
+  .diagram-wrapper .diagram-title{font-family:'JetBrains Mono',monospace;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:var(--cyan);margin-bottom:1.2rem}
+  .diagram-wrapper svg{display:block;margin:0 auto;width:100%}
+
+  /* Step cards */
+  .step-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:1.5rem 1.8rem;margin:1.5rem 0;position:relative;padding-left:4.5rem}
+  .step-card .step-badge{position:absolute;left:1.2rem;top:1.3rem;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:600;font-size:.85rem}
+  .step-card h4{font-size:1.1rem;margin-bottom:.4rem;font-family:'Playfair Display',serif}
+  .step-card p{font-size:.95rem;color:var(--text-dim);line-height:1.6}
+  .sc-1 .step-badge{background:rgba(118,228,247,.12);color:var(--cyan);border:1px solid rgba(118,228,247,.3)}
+  .sc-2 .step-badge{background:rgba(99,179,237,.1);color:var(--blue);border:1px solid rgba(99,179,237,.3)}
+  .sc-3 .step-badge{background:rgba(183,148,244,.1);color:var(--purple);border:1px solid rgba(183,148,244,.3)}
+  .sc-4 .step-badge{background:var(--orange-glow);color:var(--orange);border:1px solid rgba(237,137,54,.3)}
+  .sc-5 .step-badge{background:var(--accent-glow);color:var(--accent);border:1px solid rgba(104,211,145,.3)}
+  .sc-1{border-left:3px solid var(--cyan)}.sc-2{border-left:3px solid var(--blue)}.sc-3{border-left:3px solid var(--purple)}.sc-4{border-left:3px solid var(--orange)}.sc-5{border-left:3px solid var(--accent)}
+
+  .footer{text-align:center;padding:3rem 1rem;color:var(--text-muted);font-size:.85rem;border-top:1px solid var(--border);margin-top:4rem}
+  .ep-nav{display:flex;justify-content:space-between;align-items:center;padding:1rem 0;margin-top:3rem;border-top:1px solid var(--border);font-size:.9rem}.ep-nav .muted{color:var(--text-muted)}
+
+  @keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes fadeDown{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
+  @media(max-width:600px){.container{padding:0 1rem 4rem}.chapter{padding-left:1.2rem}.tb{padding:.8rem;font-size:.78rem}.step-card{padding-left:3.8rem}.step-card .step-badge{left:.8rem;width:30px;height:30px;font-size:.75rem}}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-badge">Episode 05</div>
+  <h1>Deep Dive into <span class="hl-c">Modules</span> &amp; <span class="hl-o">require()</span></h1>
+  <p class="hero-sub">Go behind the curtain. Discover how Node.js wraps your code in secret functions, the 5-step mechanics of require(), and the architecture that makes it all possible.</p>
+  <div class="scroll-cue">&#8595;</div>
+</section>
+
+<div class="container">
+
+  <!-- CH 1 — FUNCTION SCOPE = MODULE SCOPE -->
+  <div class="chapter ch-c">
+    <div class="chapter-num">Chapter 01</div>
+    <h2>The Fundamental Principle — Function Scope</h2>
+  </div>
+
+  <p class="story">
+    Before we talk about modules, we need to talk about one of JavaScript's oldest and most important rules: <strong>function scope</strong>. Everything declared inside a function is <em>trapped</em> inside that function. It's like a room with no windows — nothing escapes unless you carry it out yourself.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>Function scope in plain JavaScript</span></div>
+    <div class="tb">
+      <span class="k">function</span> <span class="f">x</span>() {<br>
+      &nbsp;&nbsp;<span class="k">let</span> a = <span class="n">10</span>;<br>
+      &nbsp;&nbsp;<span class="k">function</span> <span class="f">b</span>() {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;console.<span class="f">log</span>(<span class="s">"I'm private!"</span>);<br>
+      &nbsp;&nbsp;}<br>
+      }<br><br>
+      console.<span class="f">log</span>(a); <span class="cm">// ReferenceError: a is not defined</span><br>
+      <span class="f">b</span>();             <span class="cm">// ReferenceError: b is not defined</span>
+    </div>
+  </div>
+
+  <p class="story">
+    Variable <code>a</code> and function <code>b</code> are locked inside function <code>x</code>. They don't exist outside of it. This is basic JavaScript. Now here's the key insight:
+  </p>
+
+  <p class="story">
+    <strong>Node.js modules work exactly the same way.</strong> When you create a file in Node.js, all the code in that file is <span class="hl">automatically wrapped inside a function</span> before V8 ever sees it. This is why variables in one file can't leak into another — they're trapped inside their own function wrapper.
+  </p>
+
+  <div class="def-box b-c">
+    <div class="label">The Core Principle</div>
+    <p><strong>Function scope in JavaScript = Module scope in Node.js.</strong> Both create private spaces where variables and functions are invisible to the outside world. The only way to share data between modules is through explicit exports (<code>module.exports</code>).</p>
+  </div>
+
+
+  <!-- CH 2 — IIFE & MODULE WRAPPER -->
+  <div class="chapter ch-p">
+    <div class="chapter-num">Chapter 02</div>
+    <h2>The Secret Wrapper — IIFE & Module Wrapper Function</h2>
+  </div>
+
+  <p class="story">
+    So Node.js wraps your code in a function. But what <em>kind</em> of function? The answer comes from a classic JavaScript pattern called an <strong>IIFE</strong> — Immediately Invoked Function Expression.
+  </p>
+
+  <div class="def-box b-p">
+    <div class="label">What is an IIFE?</div>
+    <p>An <strong>IIFE</strong> is a function that is <strong>created and immediately executed</strong> — on the fly, with no separate call needed. The pattern looks like <code>(function() { ... })()</code>. It runs the moment the JavaScript engine encounters it.</p>
+  </div>
+
+  <p class="story">Let's break down the IIFE anatomy piece by piece:</p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>Anatomy of an IIFE</span></div>
+    <div class="tb">
+      <span class="cm">// The three parts of an IIFE:</span><br><br>
+      (<span class="k">function</span>() {    <span class="cm">// 1. Wrapping () turns declaration → expression</span><br>
+      &nbsp;&nbsp;<span class="k">let</span> secret = <span class="s">"hidden"</span>;  <span class="cm">// 2. Body — your code lives here</span><br>
+      })();               <span class="cm">// 3. Trailing () immediately invokes it</span><br><br>
+      <span class="cm">// 'secret' is completely isolated — unreachable from outside</span><br>
+      console.<span class="f">log</span>(secret); <span class="cm">// ReferenceError!</span>
+    </div>
+  </div>
+
+  <p class="story">
+    Now, Node.js doesn't use a plain IIFE. It uses a specialized version called the <strong>Module Wrapper Function</strong>. The critical difference? Node.js passes <em>five special parameters</em> into this wrapper:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar"><div class="td r"></div><div class="td y"></div><div class="td g"></div><span>The Module Wrapper Function — what Node.js ACTUALLY uses</span></div>
+    <div class="tb">
+      (<span class="k">function</span> (<span class="cy">exports</span>, <span class="cy">require</span>, <span class="cy">module</span>, <span class="cy">__filename</span>, <span class="cy">__dirname</span>) {<br><br>
+      &nbsp;&nbsp;<span class="cm">// 👆 YOUR ENTIRE MODULE CODE GOES HERE 👆</span><br>
+      &nbsp;&nbsp;<span class="cm">// Every .js file you write is wrapped in this function</span><br>
+      &nbsp;&nbsp;<span class="cm">// before Node.js gives it to V8 for execution</span><br><br>
+      });
+    </div>
+  </div>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="icon">&#128230;</div>
+      <h4>exports</h4>
+      <p>A shorthand reference to <code>module.exports</code>. You can attach properties to it to export values.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128268;</div>
+      <h4>require</h4>
+      <p>The function you use to import other modules. Node.js injects it as a parameter — it's not a global!</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128220;</div>
+      <h4>module</h4>
+      <p>An object representing the current module. <code>module.exports</code> is what gets returned when someone requires this file.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128196;</div>
+      <h4>__filename</h4>
+      <p>The absolute path of the current file, e.g., <code>/Users/you/project/app.js</code></p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128193;</div>
+      <h4>__dirname</h4>
+      <p>The absolute path of the directory containing the current file, e.g., <code>/Users/you/project</code></p>
+    </div>
+  </div>
+
+  <div class="callout c-p">
+    <div class="ci">&#127891;</div>
+    <p><strong>Interview Answer:</strong> "How does Node.js keep module variables private?" — Node.js wraps every module's code inside a <strong>Module Wrapper Function</strong> (based on the IIFE concept). This creates a private scope. The wrapper also injects five special parameters: <code>exports</code>, <code>require</code>, <code>module</code>, <code>__filename</code>, and <code>__dirname</code>.</p>
+  </div>
+
+
+  <!-- CH 3 — THE 5 STEPS OF REQUIRE -->
+  <div class="chapter ch-o">
+    <div class="chapter-num">Chapter 03</div>
+    <h2>The 5-Step Mechanics of require()</h2>
+  </div>
+
+  <p class="story">
+    When you write <code>require("./sum")</code>, a lot more happens than just "loading a file." Node.js executes <strong>five precise steps</strong> behind the scenes. This is one of the most popular Node.js interview questions.
+  </p>
+
+  <!-- Step 1 -->
+  <div class="step-card sc-1">
+    <div class="step-badge">1</div>
+    <h4>Resolving</h4>
+    <p>Node.js determines <strong>what</strong> you're trying to load and finds its absolute path. Is it a local file (<code>./sum</code>)? A JSON file? A built-in core module (<code>fs</code>, <code>http</code>)? A third-party package from <code>node_modules</code>? The resolver checks file extensions, folder structures, and module registries to figure it out.</p>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step-card sc-2">
+    <div class="step-badge">2</div>
+    <h4>Loading</h4>
+    <p>After resolving the path, Node.js <strong>reads the file content from disk into memory</strong>. For <code>.js</code> files, it reads the JavaScript source code. For <code>.json</code>, it reads the JSON text. For core modules, it loads from internal binaries. <strong>Important:</strong> the code is read but <em>not yet executed</em> at this stage.</p>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step-card sc-3">
+    <div class="step-badge">3</div>
+    <h4>Wrapping</h4>
+    <p>Node.js takes the loaded source code and <strong>wraps it inside the Module Wrapper Function</strong>: <code>(function(exports, require, module, __filename, __dirname) { YOUR_CODE })</code>. This establishes the private scope and injects the five special parameters.</p>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step-card sc-4">
+    <div class="step-badge">4</div>
+    <h4>Evaluation (Execution)</h4>
+    <p>The wrapped function is <strong>handed to V8 for execution</strong>. The JavaScript engine runs your code: variables are created, functions are defined, and most importantly, <code>module.exports</code> gets populated with whatever you export. The <code>require()</code> call then <strong>returns</strong> the value of <code>module.exports</code>.</p>
+  </div>
+
+  <!-- Step 5 -->
+  <div class="step-card sc-5">
+    <div class="step-badge">5</div>
+    <h4>Caching</h4>
+    <p>After execution, Node.js <strong>caches the module in memory</strong>. If <em>any</em> file calls <code>require("./sum")</code> again, Node.js skips all previous steps and <strong>returns the cached version instantly</strong>. A module is executed only once — every subsequent require returns the same cached object. This drastically improves performance.</p>
+  </div>
+
+  <!-- 5-Step Flow Diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">The 5-Step require() Pipeline</div>
+    <svg viewBox="0 0 750 130" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="a1" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#565f89"/></marker></defs>
+      <!-- Step boxes -->
+      <rect x="10" y="30" width="120" height="70" rx="8" fill="rgba(118,228,247,.08)" stroke="rgba(118,228,247,.4)"/>
+      <text x="70" y="22" text-anchor="middle" fill="#76e4f7" font-family="JetBrains Mono,monospace" font-size="9">STEP 1</text>
+      <text x="70" y="60" text-anchor="middle" fill="#76e4f7" font-family="Playfair Display,serif" font-size="14" font-weight="700">Resolve</text>
+      <text x="70" y="82" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="9">Find the path</text>
+
+      <line x1="135" y1="65" x2="158" y2="65" stroke="#565f89" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <rect x="162" y="30" width="120" height="70" rx="8" fill="rgba(99,179,237,.08)" stroke="rgba(99,179,237,.4)"/>
+      <text x="222" y="22" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono,monospace" font-size="9">STEP 2</text>
+      <text x="222" y="60" text-anchor="middle" fill="#63b3ed" font-family="Playfair Display,serif" font-size="14" font-weight="700">Load</text>
+      <text x="222" y="82" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="9">Read from disk</text>
+
+      <line x1="287" y1="65" x2="310" y2="65" stroke="#565f89" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <rect x="314" y="30" width="120" height="70" rx="8" fill="rgba(183,148,244,.08)" stroke="rgba(183,148,244,.4)"/>
+      <text x="374" y="22" text-anchor="middle" fill="#b794f4" font-family="JetBrains Mono,monospace" font-size="9">STEP 3</text>
+      <text x="374" y="60" text-anchor="middle" fill="#b794f4" font-family="Playfair Display,serif" font-size="14" font-weight="700">Wrap</text>
+      <text x="374" y="82" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="9">Module Wrapper</text>
+
+      <line x1="439" y1="65" x2="462" y2="65" stroke="#565f89" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <rect x="466" y="30" width="120" height="70" rx="8" fill="rgba(237,137,54,.08)" stroke="rgba(237,137,54,.4)"/>
+      <text x="526" y="22" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono,monospace" font-size="9">STEP 4</text>
+      <text x="526" y="60" text-anchor="middle" fill="#ed8936" font-family="Playfair Display,serif" font-size="14" font-weight="700">Evaluate</text>
+      <text x="526" y="82" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="9">V8 executes</text>
+
+      <line x1="591" y1="65" x2="614" y2="65" stroke="#565f89" stroke-width="1.5" marker-end="url(#a1)"/>
+
+      <rect x="618" y="30" width="120" height="70" rx="8" fill="rgba(104,211,145,.08)" stroke="rgba(104,211,145,.4)"/>
+      <text x="678" y="22" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="9">STEP 5</text>
+      <text x="678" y="60" text-anchor="middle" fill="#68d391" font-family="Playfair Display,serif" font-size="14" font-weight="700">Cache</text>
+      <text x="678" y="82" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="9">Store in memory</text>
+    </svg>
+  </div>
+
+  <div class="callout c-o">
+    <div class="ci">&#128293;</div>
+    <p><strong>Interview Answer:</strong> "What happens internally when you call <code>require()</code>?" — Node.js performs five steps: <strong>Resolve</strong> (find the path), <strong>Load</strong> (read from disk), <strong>Wrap</strong> (Module Wrapper Function), <strong>Evaluate</strong> (V8 executes), and <strong>Cache</strong> (store for reuse). Modules are only executed once — subsequent requires return the cached version.</p>
+  </div>
+
+
+  <!-- CH 4 — NODE ARCHITECTURE -->
+  <div class="chapter ch-g">
+    <div class="chapter-num">Chapter 04</div>
+    <h2>Under the Hood — Node.js Architecture</h2>
+  </div>
+
+  <p class="story">
+    Now that you understand modules deeply, let's zoom out and look at the <strong>two pillars</strong> that make Node.js work: V8 and libuv. Understanding this architecture will help you connect everything you've learned across all episodes.
+  </p>
+
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Node.js Internal Architecture</div>
+    <svg viewBox="0 0 750 300" xmlns="http://www.w3.org/2000/svg">
+      <!-- Outer -->
+      <rect x="30" y="15" width="690" height="270" rx="14" fill="#1a1e28" stroke="rgba(118,228,247,.3)" stroke-width="1.5"/>
+      <text x="375" y="42" text-anchor="middle" fill="#76e4f7" font-family="JetBrains Mono,monospace" font-size="11" letter-spacing=".12em" font-weight="600">NODE.JS RUNTIME ENVIRONMENT</text>
+
+      <!-- V8 -->
+      <rect x="60" y="60" width="280" height="200" rx="10" fill="rgba(237,137,54,.05)" stroke="#ed8936"/>
+      <text x="200" y="85" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing=".1em">V8 ENGINE (C++)</text>
+      <text x="200" y="115" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3,sans-serif" font-size="13" font-weight="600">JavaScript Execution</text>
+      <rect x="90" y="130" width="220" height="28" rx="5" fill="#2d3748"/>
+      <text x="200" y="149" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="10">Call Stack &amp; Memory Heap</text>
+      <rect x="90" y="166" width="220" height="28" rx="5" fill="#2d3748"/>
+      <text x="200" y="185" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="10">JIT Compilation (JS → Machine)</text>
+      <rect x="90" y="202" width="220" height="28" rx="5" fill="#2d3748"/>
+      <text x="200" y="221" text-anchor="middle" fill="#a0aec0" font-family="JetBrains Mono,monospace" font-size="10">Garbage Collection</text>
+
+      <!-- libuv -->
+      <rect x="410" y="60" width="280" height="200" rx="10" fill="rgba(104,211,145,.05)" stroke="#38a169"/>
+      <text x="550" y="85" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing=".1em">LIBUV (C++)</text>
+      <text x="550" y="115" text-anchor="middle" fill="#e2e8f0" font-family="Source Sans 3,sans-serif" font-size="13" font-weight="600">Async I/O &amp; System Access</text>
+      <rect x="440" y="130" width="220" height="28" rx="5" fill="rgba(104,211,145,.06)" stroke="rgba(104,211,145,.15)"/>
+      <text x="550" y="149" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10">Event Loop</text>
+      <rect x="440" y="166" width="220" height="28" rx="5" fill="rgba(104,211,145,.06)" stroke="rgba(104,211,145,.15)"/>
+      <text x="550" y="185" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10">Thread Pool</text>
+      <rect x="440" y="202" width="220" height="28" rx="5" fill="rgba(104,211,145,.06)" stroke="rgba(104,211,145,.15)"/>
+      <text x="550" y="221" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10">File I/O · Networking · Timers</text>
+
+      <!-- Connection -->
+      <line x1="345" y1="160" x2="405" y2="160" stroke="#565f89" stroke-width="1" stroke-dasharray="4"/>
+      <text x="375" y="152" text-anchor="middle" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="9">binds</text>
+    </svg>
+  </div>
+
+  <div class="callout c-g">
+    <div class="ci">&#128421;&#65039;</div>
+    <p><strong>Source Code Deep Dive:</strong> If you explore the Node.js GitHub repo, core built-in modules (<code>fs</code>, <code>http</code>, <code>path</code>) are JavaScript files in the <code>lib/</code> directory. The actual <code>require</code> function is generated by <code>makeRequireFunction</code> in <code>lib/internal/modules/helpers.js</code>. Passing an empty argument to <code>require()</code> throws a <code>TypeError</code>.</p>
+  </div>
+
+
+  <!-- CH 5 — PUTTING IT ALL TOGETHER -->
+  <div class="chapter ch-b">
+    <div class="chapter-num">Chapter 05</div>
+    <h2>The Complete Picture — Putting It All Together</h2>
+  </div>
+
+  <p class="story">
+    Let's trace the entire journey from the moment you write <code>require("./sum")</code> to the moment you use the exported function:
+  </p>
+
+  <div class="diagram-wrapper">
+    <div class="diagram-title">The Full Journey of require("./sum")</div>
+    <svg viewBox="0 0 750 380" xmlns="http://www.w3.org/2000/svg">
+      <defs><marker id="af" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#68d391"/></marker></defs>
+
+      <!-- Your code -->
+      <rect x="230" y="10" width="290" height="40" rx="8" fill="rgba(99,179,237,.1)" stroke="#3182ce"/>
+      <text x="375" y="36" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono,monospace" font-size="11">const sum = require("./sum");</text>
+
+      <line x1="375" y1="50" x2="375" y2="72" stroke="#68d391" stroke-width="1.5" marker-end="url(#af)"/>
+
+      <!-- Step 1 -->
+      <rect x="200" y="75" width="350" height="35" rx="6" fill="rgba(118,228,247,.06)" stroke="rgba(118,228,247,.3)"/>
+      <text x="375" y="97" text-anchor="middle" fill="#76e4f7" font-family="Source Sans 3,sans-serif" font-size="12"><tspan font-weight="700">1. Resolve</tspan> → finds /project/sum.js</text>
+
+      <line x1="375" y1="110" x2="375" y2="125" stroke="#68d391" stroke-width="1.5" marker-end="url(#af)"/>
+
+      <!-- Step 2 -->
+      <rect x="200" y="128" width="350" height="35" rx="6" fill="rgba(99,179,237,.06)" stroke="rgba(99,179,237,.3)"/>
+      <text x="375" y="150" text-anchor="middle" fill="#63b3ed" font-family="Source Sans 3,sans-serif" font-size="12"><tspan font-weight="700">2. Load</tspan> → reads file from disk into memory</text>
+
+      <line x1="375" y1="163" x2="375" y2="178" stroke="#68d391" stroke-width="1.5" marker-end="url(#af)"/>
+
+      <!-- Step 3 -->
+      <rect x="100" y="181" width="550" height="50" rx="6" fill="rgba(183,148,244,.06)" stroke="rgba(183,148,244,.3)"/>
+      <text x="375" y="200" text-anchor="middle" fill="#b794f4" font-family="Source Sans 3,sans-serif" font-size="12" font-weight="700">3. Wrap inside Module Wrapper Function</text>
+      <text x="375" y="220" text-anchor="middle" fill="#718096" font-family="JetBrains Mono,monospace" font-size="9">(function(exports, require, module, __filename, __dirname) { YOUR_CODE })</text>
+
+      <line x1="375" y1="231" x2="375" y2="246" stroke="#68d391" stroke-width="1.5" marker-end="url(#af)"/>
+
+      <!-- Step 4 -->
+      <rect x="200" y="249" width="350" height="35" rx="6" fill="rgba(237,137,54,.06)" stroke="rgba(237,137,54,.3)"/>
+      <text x="375" y="271" text-anchor="middle" fill="#ed8936" font-family="Source Sans 3,sans-serif" font-size="12"><tspan font-weight="700">4. Evaluate</tspan> → V8 executes, returns module.exports</text>
+
+      <line x1="375" y1="284" x2="375" y2="299" stroke="#68d391" stroke-width="1.5" marker-end="url(#af)"/>
+
+      <!-- Step 5 -->
+      <rect x="200" y="302" width="350" height="35" rx="6" fill="rgba(104,211,145,.06)" stroke="rgba(104,211,145,.3)"/>
+      <text x="375" y="324" text-anchor="middle" fill="#68d391" font-family="Source Sans 3,sans-serif" font-size="12"><tspan font-weight="700">5. Cache</tspan> → stored in memory for future requires</text>
+
+      <line x1="375" y1="337" x2="375" y2="355" stroke="#68d391" stroke-width="1.5" marker-end="url(#af)"/>
+
+      <rect x="230" y="358" width="290" height="28" rx="6" fill="rgba(104,211,145,.12)" stroke="#38a169"/>
+      <text x="375" y="377" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10" font-weight="600">sum is now ready to use!</text>
+    </svg>
+  </div>
+
+
+  <!-- QUICK REFERENCE -->
+  <div class="chapter ch-c">
+    <div class="chapter-num">Quick Reference</div>
+    <h2>Episode 05 — At a Glance</h2>
+  </div>
+
+  <table class="compare-table">
+    <thead><tr><th style="color:var(--cyan)">Concept</th><th style="color:var(--accent)">Key Detail</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Module privacy</strong></td><td>All code is wrapped in a function → variables/functions are private by default</td></tr>
+      <tr><td><strong>IIFE</strong></td><td>Immediately Invoked Function Expression — <code>(function(){...})()</code> — runs on definition</td></tr>
+      <tr><td><strong>Module Wrapper</strong></td><td><code>(function(exports, require, module, __filename, __dirname) { ... })</code></td></tr>
+      <tr><td><strong>5 wrapper params</strong></td><td><code>exports</code>, <code>require</code>, <code>module</code>, <code>__filename</code>, <code>__dirname</code></td></tr>
+      <tr><td><strong>Step 1: Resolve</strong></td><td>Find the absolute path and module type (local/core/npm/json)</td></tr>
+      <tr><td><strong>Step 2: Load</strong></td><td>Read file content from disk into memory (not yet executed)</td></tr>
+      <tr><td><strong>Step 3: Wrap</strong></td><td>Encapsulate code in the Module Wrapper Function</td></tr>
+      <tr><td><strong>Step 4: Evaluate</strong></td><td>V8 executes the code, <code>module.exports</code> is returned</td></tr>
+      <tr><td><strong>Step 5: Cache</strong></td><td>Module stored in memory — never re-executed, just reused</td></tr>
+      <tr><td><strong>V8 role</strong></td><td>Executes JS, manages Call Stack &amp; memory, JIT compilation</td></tr>
+      <tr><td><strong>libuv role</strong></td><td>Event Loop, Thread Pool, async I/O, networking, timers</td></tr>
+      <tr><td><strong>Source code</strong></td><td>Core modules in <code>lib/</code> dir; require built by <code>makeRequireFunction</code></td></tr>
+    </tbody>
+  </table>
+
+  <div class="ep-nav">
+    <span class="muted">&#8592; Episode 04 — Module Exports &amp; Require</span>
+    <span class="muted">Episode 06 — Coming Soon &#8594;</span>
+  </div>
+
+  <div class="footer">
+    Node.js Episode 05 — Deep Dive into Modules &amp; require() &nbsp;|&nbsp; Story-format notes for deep learning &nbsp;|&nbsp; Series continues...
+  </div>
+
+</div>
+</body>
+</html>

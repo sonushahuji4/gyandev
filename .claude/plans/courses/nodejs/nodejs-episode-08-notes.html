@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episode 08 — Deep Dive into V8 JS Engine — Complete Notes</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#090b10;--bg2:#0f1218;--bg3:#151a24;--bg4:#1c2231;--text:#e4e7ef;--text2:#9ca3b8;--text3:#5e6577;--border:#1e2536;--border2:#2a3348;--accent:#60a5fa;--accent-bg:rgba(96,165,250,.08);--accent-border:rgba(96,165,250,.2);--green:#34d399;--green-bg:rgba(52,211,153,.08);--green-border:rgba(52,211,153,.2);--orange:#fb923c;--orange-bg:rgba(251,146,60,.07);--orange-border:rgba(251,146,60,.2);--purple:#a78bfa;--purple-bg:rgba(167,139,250,.07);--purple-border:rgba(167,139,250,.2);--red:#f87171;--red-bg:rgba(248,113,113,.07);--red-border:rgba(248,113,113,.2);--yellow:#fbbf24;--yellow-bg:rgba(251,191,36,.07);--yellow-border:rgba(251,191,36,.2);--cyan:#22d3ee;--cyan-bg:rgba(34,211,238,.07);--cyan-border:rgba(34,211,238,.2);--pink:#f472b6;--mono:'Geist Mono',monospace;--sans:'Outfit',sans-serif;--serif:'Instrument Serif',serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.8;-webkit-font-smoothing:antialiased}
+.hero{text-align:center;padding:4rem 1.5rem 2rem;position:relative}
+.hero::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent)}
+.badge{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--cyan);border:1px solid var(--cyan-border);background:var(--cyan-bg);padding:.3rem 1.2rem;border-radius:99px;margin-bottom:1.5rem}
+.hero h1{font-family:var(--serif);font-size:clamp(2rem,5vw,3.5rem);font-weight:400;line-height:1.15;margin-bottom:.8rem;font-style:italic}
+.hero h1 em{color:var(--orange);font-style:italic}
+.hero p{color:var(--text2);max-width:640px;margin:0 auto;font-size:1rem}
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.ch{margin-top:4rem;margin-bottom:1.5rem;position:relative;padding-left:1.5rem}
+.ch::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+.ch-o::before{background:linear-gradient(to bottom,var(--orange),transparent)}.ch-g::before{background:linear-gradient(to bottom,var(--green),transparent)}.ch-b::before{background:linear-gradient(to bottom,var(--accent),transparent)}.ch-r::before{background:linear-gradient(to bottom,var(--red),transparent)}.ch-p::before{background:linear-gradient(to bottom,var(--purple),transparent)}.ch-c::before{background:linear-gradient(to bottom,var(--cyan),transparent)}.ch-y::before{background:linear-gradient(to bottom,var(--yellow),transparent)}
+.ch-label{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase}
+.ch-o .ch-label{color:var(--orange)}.ch-g .ch-label{color:var(--green)}.ch-b .ch-label{color:var(--accent)}.ch-r .ch-label{color:var(--red)}.ch-p .ch-label{color:var(--purple)}.ch-c .ch-label{color:var(--cyan)}.ch-y .ch-label{color:var(--yellow)}
+.ch h2{font-family:var(--serif);font-size:clamp(1.5rem,3vw,2.2rem);font-weight:400;font-style:italic;line-height:1.25}
+p.prose{font-size:1rem;color:var(--text2);margin-bottom:1.2rem}
+p.prose strong{color:var(--text);font-weight:500}
+p.prose code{font-family:var(--mono);font-size:.82em;background:var(--bg3);padding:.12em .4em;border-radius:4px;color:var(--orange)}
+.def{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0}
+.def.bo{border-left:3px solid var(--orange)}.def.bg{border-left:3px solid var(--green)}.def.br{border-left:3px solid var(--red)}.def.bb{border-left:3px solid var(--accent)}.def.bp{border-left:3px solid var(--purple)}.def.bc{border-left:3px solid var(--cyan)}.def.by{border-left:3px solid var(--yellow)}
+.def .dt{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem}
+.def.bo .dt{color:var(--orange)}.def.bg .dt{color:var(--green)}.def.br .dt{color:var(--red)}.def.bb .dt{color:var(--accent)}.def.bp .dt{color:var(--purple)}.def.bc .dt{color:var(--cyan)}.def.by .dt{color:var(--yellow)}
+.def p,.def ul{font-size:.92rem;line-height:1.7}
+.def ul{padding-left:1.2rem;margin-top:.3rem}
+.def ul li{margin:.3rem 0;color:var(--text2)}
+.def ul li strong{color:var(--text);font-weight:500}
+.def ul li code{font-family:var(--mono);font-size:.8em;background:var(--bg3);padding:.1em .35em;border-radius:3px;color:var(--orange)}
+.callout{border-radius:10px;padding:1rem 1.2rem;margin:1.5rem 0;font-size:.88rem;line-height:1.65}
+.callout strong{font-weight:600}
+.c-green{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
+.c-orange{background:var(--orange-bg);border:1px solid var(--orange-border);color:var(--orange)}
+.c-blue{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent)}
+.c-purple{background:var(--purple-bg);border:1px solid var(--purple-border);color:var(--purple)}
+.c-cyan{background:var(--cyan-bg);border:1px solid var(--cyan-border);color:var(--cyan)}
+.c-red{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red)}
+.c-yellow{background:var(--yellow-bg);border:1px solid var(--yellow-border);color:var(--yellow)}
+.term{background:#0c0e14;border:1px solid var(--border);border-radius:10px;margin:1.5rem 0;overflow:hidden}
+.term-bar{background:var(--bg3);padding:5px 12px;display:flex;gap:5px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%}.dot-r{background:#f87171}.dot-y{background:#fbbf24}.dot-g{background:#34d399}
+.term-bar span{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-left:8px}
+.term pre{padding:.8rem 1.2rem;font-family:var(--mono);font-size:.8rem;line-height:1.8;overflow-x:auto;white-space:pre}
+.kw{color:#c084fc}.fn{color:#fbbf24}.str{color:#34d399}.num{color:#fb923c}.cm{color:#475569}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.5rem 0}
+@media(max-width:650px){.grid{grid-template-columns:1fr}}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.2rem;overflow:hidden}
+.card h4{font-size:.95rem;font-weight:500;margin-bottom:.5rem;display:flex;align-items:center;gap:6px}
+.card h4 .ind{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.card p,.card ul{font-size:.85rem;color:var(--text2);line-height:1.6}
+.card ul{padding-left:1rem;margin-top:.3rem}
+.card ul li{margin:.2rem 0}
+.card code{font-family:var(--mono);font-size:.78em;background:var(--bg3);padding:.1em .35em;border-radius:3px;color:var(--orange)}
+.pipeline{display:flex;flex-direction:column;gap:0;margin:1.5rem 0}
+.pipe-step{display:flex;align-items:stretch;gap:0}
+.pipe-track{width:28px;display:flex;flex-direction:column;align-items:center;flex-shrink:0}
+.pipe-dot{width:12px;height:12px;border-radius:50%;flex-shrink:0;margin-top:10px;border:2px solid}
+.pipe-line{width:2px;flex:1;margin-top:2px}
+.pipe-card{flex:1;padding:6px 0 14px 14px}
+.pipe-card h4{font-size:.95rem;font-weight:500;margin:0 0 3px}
+.pipe-card p{font-size:.82rem;color:var(--text2);margin:0;line-height:1.55}
+.pipe-card code{font-family:var(--mono);font-size:.78em;background:var(--bg3);padding:.1em .35em;border-radius:3px;color:var(--orange)}
+.pipe-branch{margin-left:28px;padding:8px 0 8px 14px;border-left:2px dashed var(--border2);font-size:.82rem;color:var(--text3)}
+.pipe-branch strong{color:var(--text2);font-weight:500}
+.token-row{display:flex;flex-wrap:wrap;gap:6px;margin:.6rem 0}
+.token{font-family:var(--mono);font-size:.75rem;padding:4px 10px;border-radius:6px;border:1px solid;display:flex;align-items:center;gap:5px}
+.tk-kw{background:var(--purple-bg);border-color:var(--purple-border);color:var(--purple)}
+.tk-id{background:var(--accent-bg);border-color:var(--accent-border);color:var(--accent)}
+.tk-op{background:var(--orange-bg);border-color:var(--orange-border);color:var(--orange)}
+.tk-lit{background:var(--green-bg);border-color:var(--green-border);color:var(--green)}
+.tk-punc{background:var(--red-bg);border-color:var(--red-border);color:var(--red)}
+.tk-label{font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;opacity:.7}
+.ast-tree{font-family:var(--mono);font-size:.8rem;line-height:1.9;padding:.8rem 1.2rem;background:var(--bg2);border:1px solid var(--border);border-radius:10px;margin:1rem 0}
+.ast-tree .nd{color:var(--orange);font-weight:500}
+.ast-tree .leaf{color:var(--green)}
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:3rem 0}
+.tbl{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.88rem}
+.tbl th{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:.6rem .8rem;border-bottom:2px solid var(--border);color:var(--text3)}
+.tbl td{padding:.6rem .8rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.tbl td code{font-family:var(--mono);font-size:.78em;background:var(--bg3);padding:.1em .3em;border-radius:3px;color:var(--orange)}
+.tbl td strong{color:var(--text);font-weight:500}
+.footer{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:.75rem;border-top:1px solid var(--border);margin-top:3rem}
+.diagram-wrap{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:1.5rem 1rem;margin:1.8rem 0;overflow-x:auto}
+.diagram-wrap .dia-title{font-family:var(--mono);font-size:.65rem;letter-spacing:.15em;text-transform:uppercase;margin-bottom:.8rem;text-align:center}
+.diagram-wrap svg{display:block;margin:0 auto}
+.diagram-wrap .dia-caption{font-size:.78rem;color:var(--text3);text-align:center;margin-top:1rem;line-height:1.5}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="badge">Episode 08 — Complete Notes</div>
+  <h1>Deep dive into the <em>V8 JS Engine</em></h1>
+  <p>How your JavaScript code goes from text to execution — parsing, tokenization, AST, Ignition interpreter, TurboFan compiler, JIT optimization, deoptimization, and garbage collection.</p>
+</section>
+
+<div class="container">
+
+<!-- ═══════════════════════════════════════════ CH 1 ═══ -->
+<div class="ch ch-o">
+  <div class="ch-label">Chapter 01</div>
+  <h2>Node.js architecture — the big picture</h2>
+</div>
+
+<p class="prose">Before diving into V8's internals, let's recall the high-level architecture of Node.js (from the whiteboard diagram on PDF page 1):</p>
+
+<div class="def bo">
+  <div class="dt">Node.js = V8 + libuv + core modules</div>
+  <p>Node.js is a runtime that combines several components inside a single dashed boundary:</p>
+  <ul>
+    <li><strong>V8 JS Engine (by Google):</strong> The heart — parses, compiles, and executes JavaScript code</li>
+    <li><strong>libuv:</strong> The C library that handles async I/O, event loop, thread pool, OS communication</li>
+    <li><strong>Core modules:</strong> Built-in libraries like <code>fs</code>, <code>http</code>, <code>crypto</code>, <code>zlib</code>, and many more — these are the APIs that give JavaScript the power to interact with files, network, and OS</li>
+  </ul>
+  <p style="margin-top:.6rem">This episode focuses entirely on what happens <strong>inside V8</strong> — the journey your code takes from raw text to actual execution.</p>
+</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════ DIAGRAM: Node.js Architecture ═══ -->
+<div class="ch ch-c">
+  <div class="ch-label">Visual — Node.js architecture</div>
+  <h2>The big picture — what sits inside Node.js</h2>
+</div>
+
+<div class="diagram-wrap">
+  <div class="dia-title" style="color:var(--cyan)">Node.js runtime architecture (from whiteboard page 1)</div>
+  <svg width="100%" viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg" style="font-family:'Geist Mono','Courier New',monospace">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#5e6577" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+    <!-- Node.js boundary -->
+    <rect x="20" y="20" width="740" height="300" rx="16" fill="none" stroke="#2a3348" stroke-width="1.5" stroke-dasharray="8 4"/>
+    <text x="390" y="48" text-anchor="middle" fill="#9ca3b8" font-size="13" font-weight="500">NODE.JS RUNTIME</text>
+    <!-- V8 box -->
+    <rect x="50" y="70" width="300" height="120" rx="12" fill="rgba(251,146,60,.05)" stroke="rgba(251,146,60,.3)" stroke-width="1"/>
+    <text x="200" y="96" text-anchor="middle" fill="#fb923c" font-size="12" font-weight="600">V8 JS ENGINE (Google)</text>
+    <text x="200" y="118" text-anchor="middle" fill="#9ca3b8" font-size="10">Parsing → Ignition → TurboFan</text>
+    <text x="200" y="134" text-anchor="middle" fill="#9ca3b8" font-size="10">Call Stack · Memory Heap · GC</text>
+    <text x="200" y="175" text-anchor="middle" fill="#5e6577" font-size="9">Executes JavaScript code</text>
+    <!-- libuv box -->
+    <rect x="430" y="70" width="300" height="120" rx="12" fill="rgba(96,165,250,.05)" stroke="rgba(96,165,250,.3)" stroke-width="1"/>
+    <text x="580" y="96" text-anchor="middle" fill="#60a5fa" font-size="12" font-weight="600">LIBUV (C Library)</text>
+    <text x="580" y="118" text-anchor="middle" fill="#9ca3b8" font-size="10">Event Loop · Thread Pool</text>
+    <text x="580" y="134" text-anchor="middle" fill="#9ca3b8" font-size="10">Async I/O · Timers · OS access</text>
+    <text x="580" y="175" text-anchor="middle" fill="#5e6577" font-size="9">Handles async operations</text>
+    <!-- Arrow V8 → libuv -->
+    <line x1="350" y1="130" x2="428" y2="130" stroke="#5e6577" stroke-width="1.2" marker-end="url(#ah)"/>
+    <text x="389" y="122" text-anchor="middle" fill="#5e6577" font-size="8">async offload</text>
+    <!-- Core modules row -->
+    <rect x="50" y="220" width="130" height="55" rx="8" fill="rgba(52,211,153,.05)" stroke="rgba(52,211,153,.3)" stroke-width="1"/>
+    <text x="115" y="244" text-anchor="middle" fill="#34d399" font-size="11" font-weight="500">fs</text>
+    <text x="115" y="260" text-anchor="middle" fill="#5e6577" font-size="8">file system</text>
+    <rect x="200" y="220" width="130" height="55" rx="8" fill="rgba(52,211,153,.05)" stroke="rgba(52,211,153,.3)" stroke-width="1"/>
+    <text x="265" y="244" text-anchor="middle" fill="#34d399" font-size="11" font-weight="500">http / https</text>
+    <text x="265" y="260" text-anchor="middle" fill="#5e6577" font-size="8">networking</text>
+    <rect x="350" y="220" width="130" height="55" rx="8" fill="rgba(52,211,153,.05)" stroke="rgba(52,211,153,.3)" stroke-width="1"/>
+    <text x="415" y="244" text-anchor="middle" fill="#34d399" font-size="11" font-weight="500">crypto</text>
+    <text x="415" y="260" text-anchor="middle" fill="#5e6577" font-size="8">encryption</text>
+    <rect x="500" y="220" width="130" height="55" rx="8" fill="rgba(52,211,153,.05)" stroke="rgba(52,211,153,.3)" stroke-width="1"/>
+    <text x="565" y="244" text-anchor="middle" fill="#34d399" font-size="11" font-weight="500">zlib, os, path...</text>
+    <text x="565" y="260" text-anchor="middle" fill="#5e6577" font-size="8">other core modules</text>
+    <text x="390" y="305" text-anchor="middle" fill="#5e6577" font-size="9">Core modules bridge JS code to C++ bindings → libuv → OS</text>
+  </svg>
+</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════ DIAGRAM: V8 Internal Pipeline ═══ -->
+<div class="ch ch-o">
+  <div class="ch-label">Visual — V8 engine internals</div>
+  <h2>The complete V8 pipeline — how code becomes execution</h2>
+</div>
+
+<p class="prose">This is the most important diagram to remember. It shows <strong>every component inside V8</strong> and how they connect — exactly matching the whiteboard drawings from PDF pages 1-3.</p>
+
+<div class="diagram-wrap">
+  <div class="dia-title" style="color:var(--orange)">V8 JS engine — complete internal pipeline</div>
+  <svg width="100%" viewBox="0 0 780 680" xmlns="http://www.w3.org/2000/svg" style="font-family:'Geist Mono','Courier New',monospace">
+    <defs>
+      <marker id="ar" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#fb923c" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      <marker id="ag" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#34d399" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      <marker id="ab" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#60a5fa" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      <marker id="ap" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#a78bfa" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      <marker id="ared" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#f87171" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+      <marker id="acyan" viewBox="0 0 10 8" refX="9" refY="4" markerWidth="7" markerHeight="6" orient="auto"><path d="M1 1L8 4L1 7" fill="none" stroke="#22d3ee" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></marker>
+    </defs>
+
+    <!-- ── SOURCE CODE ── -->
+    <rect x="240" y="15" width="300" height="48" rx="10" fill="rgba(156,163,184,.06)" stroke="#2a3348" stroke-width="1"/>
+    <text x="355" y="35" text-anchor="middle" fill="#e4e7ef" font-size="9">📄</text>
+    <text x="393" y="35" text-anchor="start" fill="#9ca3b8" font-size="11" font-weight="500">YOUR SOURCE CODE (.js)</text>
+    <text x="390" y="52" text-anchor="middle" fill="#5e6577" font-size="9">var a = 10; function sum(x,y){...}</text>
+
+    <!-- Arrow down to parsing -->
+    <line x1="390" y1="63" x2="390" y2="90" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <!-- ── A: PARSING ── -->
+    <rect x="170" y="92" width="440" height="130" rx="12" fill="rgba(34,211,238,.04)" stroke="rgba(34,211,238,.3)" stroke-width="1"/>
+    <text x="390" y="113" text-anchor="middle" fill="#22d3ee" font-size="12" font-weight="600">A. PARSING</text>
+    <!-- Step 1: Lexical -->
+    <rect x="195" y="125" width="185" height="42" rx="8" fill="rgba(167,139,250,.06)" stroke="rgba(167,139,250,.25)" stroke-width="1"/>
+    <text x="287" y="143" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="500">① Lexical Analysis</text>
+    <text x="287" y="158" text-anchor="middle" fill="#5e6577" font-size="8">Code → Tokens (tokenization)</text>
+    <!-- Step 2: Syntax -->
+    <rect x="400" y="125" width="185" height="42" rx="8" fill="rgba(167,139,250,.06)" stroke="rgba(167,139,250,.25)" stroke-width="1"/>
+    <text x="492" y="143" text-anchor="middle" fill="#a78bfa" font-size="10" font-weight="500">② Syntax Analysis</text>
+    <text x="492" y="158" text-anchor="middle" fill="#5e6577" font-size="8">Tokens → AST (tree structure)</text>
+    <!-- Arrow between them -->
+    <line x1="382" y1="146" x2="398" y2="146" stroke="#a78bfa" stroke-width="1" marker-end="url(#ap)"/>
+    <!-- Output label -->
+    <text x="390" y="208" text-anchor="middle" fill="#5e6577" font-size="9">Output: Abstract Syntax Tree (AST)</text>
+    <text x="390" y="195" text-anchor="middle" fill="#22d3ee" font-size="9" font-weight="500">↓ AST</text>
+
+    <!-- Arrow down to Ignition -->
+    <line x1="390" y1="222" x2="390" y2="250" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <!-- ── B: IGNITION INTERPRETER ── -->
+    <rect x="200" y="252" width="220" height="70" rx="12" fill="rgba(251,146,60,.06)" stroke="rgba(251,146,60,.35)" stroke-width="1"/>
+    <text x="310" y="278" text-anchor="middle" fill="#fb923c" font-size="12" font-weight="600">B. IGNITION</text>
+    <text x="310" y="294" text-anchor="middle" fill="#9ca3b8" font-size="10">Interpreter</text>
+    <text x="310" y="310" text-anchor="middle" fill="#5e6577" font-size="8">AST → Bytecode (line by line)</text>
+
+    <!-- Arrow down to Bytecode -->
+    <line x1="310" y1="322" x2="310" y2="360" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ar)"/>
+
+    <!-- ── BYTECODE ── -->
+    <rect x="220" y="362" width="180" height="44" rx="8" fill="rgba(251,146,60,.04)" stroke="rgba(251,146,60,.2)" stroke-width="1"/>
+    <text x="310" y="383" text-anchor="middle" fill="#fb923c" font-size="11" font-weight="500">BYTECODE</text>
+    <text x="310" y="398" text-anchor="middle" fill="#5e6577" font-size="8">Intermediate representation</text>
+
+    <!-- ── OPTIMIZATION ARROW: Ignition → TurboFan ── -->
+    <line x1="420" y1="287" x2="500" y2="287" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#ab)"/>
+    <text x="460" y="278" text-anchor="middle" fill="#60a5fa" font-size="8" font-weight="500">HOT code</text>
+    <text x="460" y="300" text-anchor="middle" fill="#5e6577" font-size="7">optimization →</text>
+
+    <!-- ── C: TURBOFAN COMPILER ── -->
+    <rect x="502" y="252" width="220" height="70" rx="12" fill="rgba(96,165,250,.06)" stroke="rgba(96,165,250,.35)" stroke-width="1"/>
+    <text x="612" y="278" text-anchor="middle" fill="#60a5fa" font-size="12" font-weight="600">C. TURBOFAN</text>
+    <text x="612" y="294" text-anchor="middle" fill="#9ca3b8" font-size="10">Optimizing Compiler</text>
+    <text x="612" y="310" text-anchor="middle" fill="#5e6577" font-size="8">Makes type assumptions</text>
+
+    <!-- ── DEOPTIMIZATION ARROW: TurboFan → Ignition ── -->
+    <path d="M502 305 Q460 330 420 305" fill="none" stroke="#f87171" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#ared)"/>
+    <text x="460" y="340" text-anchor="middle" fill="#f87171" font-size="7">← deoptimization</text>
+    <text x="460" y="352" text-anchor="middle" fill="#5e6577" font-size="7">(wrong assumptions)</text>
+
+    <!-- Arrow down from TurboFan to Optimized Machine Code -->
+    <line x1="612" y1="322" x2="612" y2="362" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#ab)"/>
+
+    <!-- ── OPTIMIZED MACHINE CODE ── -->
+    <rect x="502" y="364" width="220" height="44" rx="8" fill="rgba(96,165,250,.04)" stroke="rgba(96,165,250,.2)" stroke-width="1"/>
+    <text x="612" y="385" text-anchor="middle" fill="#60a5fa" font-size="11" font-weight="500">OPTIMIZED MACHINE CODE</text>
+    <text x="612" y="400" text-anchor="middle" fill="#5e6577" font-size="8">Native CPU instructions</text>
+
+    <!-- Arrows down to Execution -->
+    <line x1="310" y1="406" x2="310" y2="440" stroke="#34d399" stroke-width="1.2"/>
+    <line x1="612" y1="408" x2="612" y2="440" stroke="#34d399" stroke-width="1.2"/>
+    <line x1="310" y1="440" x2="612" y2="440" stroke="#34d399" stroke-width="1.2"/>
+    <line x1="460" y1="440" x2="460" y2="465" stroke="#34d399" stroke-width="1.5" marker-end="url(#ag)"/>
+
+    <!-- ── D: EXECUTION ── -->
+    <rect x="340" y="467" width="240" height="50" rx="12" fill="rgba(52,211,153,.06)" stroke="rgba(52,211,153,.35)" stroke-width="1.5"/>
+    <text x="460" y="492" text-anchor="middle" fill="#34d399" font-size="14" font-weight="600">D. EXECUTION</text>
+    <text x="460" y="508" text-anchor="middle" fill="#5e6577" font-size="8">Your code runs on the CPU</text>
+
+    <!-- ══ GARBAGE COLLECTOR (side panel) ══ -->
+    <rect x="25" y="252" width="148" height="268" rx="12" fill="rgba(248,113,113,.04)" stroke="rgba(248,113,113,.25)" stroke-width="1" stroke-dasharray="6 3"/>
+    <text x="99" y="276" text-anchor="middle" fill="#f87171" font-size="10" font-weight="600">GARBAGE</text>
+    <text x="99" y="290" text-anchor="middle" fill="#f87171" font-size="10" font-weight="600">COLLECTOR</text>
+    <text x="99" y="310" text-anchor="middle" fill="#5e6577" font-size="8">(Mark & Sweep)</text>
+    <!-- GC sub-components -->
+    <rect x="40" y="325" width="118" height="26" rx="5" fill="rgba(248,113,113,.06)" stroke="rgba(248,113,113,.15)" stroke-width="1"/>
+    <text x="99" y="342" text-anchor="middle" fill="#f87171" font-size="8" font-weight="500">Orinoco (main GC)</text>
+    <rect x="40" y="358" width="118" height="26" rx="5" fill="rgba(248,113,113,.06)" stroke="rgba(248,113,113,.15)" stroke-width="1"/>
+    <text x="99" y="375" text-anchor="middle" fill="#f87171" font-size="8" font-weight="500">Oil Pan (C++ objs)</text>
+    <rect x="40" y="391" width="118" height="26" rx="5" fill="rgba(248,113,113,.06)" stroke="rgba(248,113,113,.15)" stroke-width="1"/>
+    <text x="99" y="408" text-anchor="middle" fill="#f87171" font-size="8" font-weight="500">Scavenger (young)</text>
+    <rect x="40" y="424" width="118" height="26" rx="5" fill="rgba(248,113,113,.06)" stroke="rgba(248,113,113,.15)" stroke-width="1"/>
+    <text x="99" y="441" text-anchor="middle" fill="#f87171" font-size="8" font-weight="500">MCompact (old gen)</text>
+    <text x="99" y="470" text-anchor="middle" fill="#5e6577" font-size="7">Runs throughout</text>
+    <text x="99" y="482" text-anchor="middle" fill="#5e6577" font-size="7">the entire pipeline</text>
+    <text x="99" y="494" text-anchor="middle" fill="#5e6577" font-size="7">behind the scenes</text>
+
+    <!-- ══ OPTIMIZATION TECHNIQUES (side panel right) ══ -->
+    <rect x="625" y="445" width="140" height="74" rx="10" fill="rgba(167,139,250,.04)" stroke="rgba(167,139,250,.2)" stroke-width="1"/>
+    <text x="695" y="465" text-anchor="middle" fill="#a78bfa" font-size="9" font-weight="500">OPTIMIZATIONS</text>
+    <text x="695" y="483" text-anchor="middle" fill="#5e6577" font-size="8">· Inline Caching</text>
+    <text x="695" y="497" text-anchor="middle" fill="#5e6577" font-size="8">· Copy Elision</text>
+    <text x="695" y="511" text-anchor="middle" fill="#5e6577" font-size="8">· Hidden Classes</text>
+
+    <!-- ══ LEGEND ══ -->
+    <rect x="25" y="555" width="730" height="108" rx="10" fill="rgba(156,163,184,.03)" stroke="#1e2536" stroke-width="1"/>
+    <text x="390" y="578" text-anchor="middle" fill="#5e6577" font-size="9" font-weight="600">HOW TO EXPLAIN THIS IN AN INTERVIEW</text>
+    <text x="390" y="600" text-anchor="middle" fill="#9ca3b8" font-size="9">"V8 first PARSES JavaScript into an AST. Then IGNITION interprets it into bytecode for fast startup.</text>
+    <text x="390" y="616" text-anchor="middle" fill="#9ca3b8" font-size="9">If code runs frequently (hot code), TURBOFAN compiles it into optimized machine code using type assumptions.</text>
+    <text x="390" y="632" text-anchor="middle" fill="#9ca3b8" font-size="9">If assumptions fail, it DEOPTIMIZES back to bytecode. GARBAGE COLLECTION (Mark & Sweep) runs throughout.</text>
+    <text x="390" y="648" text-anchor="middle" fill="#9ca3b8" font-size="9">This JIT (Just-In-Time) compilation gives JS both interpreter flexibility and compiled-language speed."</text>
+  </svg>
+  <div class="dia-caption">This diagram maps directly to the whiteboard drawings from PDF pages 1-3. Use it to walk through the pipeline in interviews.</div>
+</div>
+
+<div class="callout c-orange"><strong>Interview walkthrough:</strong> Start from the top — "Your JS source code enters V8, gets parsed into tokens then an AST. The AST goes to Ignition (interpreter) which produces bytecode and starts executing immediately. Hot code paths get sent to TurboFan (optimizing compiler) which produces machine code. If TurboFan's type assumptions break, it deoptimizes back to Ignition. Garbage collection via Mark & Sweep runs behind the scenes the entire time through Orinoco, Scavenger, and MCompact."</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ CH 2 ═══ -->
+<div class="ch ch-c">
+  <div class="ch-label">Chapter 02</div>
+  <h2>Stage A: Parsing — from code to tokens to AST</h2>
+</div>
+
+<p class="prose">When JavaScript code enters V8, the very first thing that happens is <strong>parsing</strong>. Parsing has two sub-stages: <strong>Lexical Analysis (Tokenization)</strong> and <strong>Syntax Analysis (AST generation)</strong>.</p>
+
+<div class="def bc">
+  <div class="dt">Step 1 — Lexical analysis (tokenization)</div>
+  <p>The main goal of lexical analysis is to break down raw JavaScript code into manageable pieces called <strong>tokens</strong>. Each token represents a fundamental element of the language.</p>
+</div>
+
+<p class="prose">For example, take this simple line of code:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>input code</span></div>
+  <pre><span class="kw">var</span> a = <span class="num">10</span>;</pre>
+</div>
+
+<p class="prose">V8's lexer scans this character by character and produces these tokens:</p>
+
+<div class="token-row">
+  <div class="token tk-kw">var <span class="tk-label">keyword</span></div>
+  <div class="token tk-id">a <span class="tk-label">identifier</span></div>
+  <div class="token tk-op">= <span class="tk-label">operator</span></div>
+  <div class="token tk-lit">10 <span class="tk-label">literal</span></div>
+  <div class="token tk-punc">; <span class="tk-label">punctuation</span></div>
+</div>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>tokenization output</span></div>
+  <pre>JavaScript Code: <span class="kw">var</span> a = <span class="num">10</span>;
+    ↓
+Tokens: [ <span class="str">'var'</span>, <span class="str">'a'</span>, <span class="str">'='</span>, <span class="str">'10'</span>, <span class="str">';'</span> ]</pre>
+</div>
+
+<p class="prose"><strong>Why tokenization?</strong> It helps V8 read and understand the code by breaking it into smaller, structured pieces. Without tokenization, V8 would be staring at a wall of characters with no idea where one keyword ends and another begins. This step is crucial for the next stage — building the tree.</p>
+
+<div class="def bc">
+  <div class="dt">Step 2 — Syntax analysis (building the AST)</div>
+  <p>After tokenization, the flat list of tokens is analyzed according to JavaScript's grammar rules and converted into an <strong>Abstract Syntax Tree (AST)</strong> — a tree-like data structure that represents the hierarchical, syntactic structure of your code.</p>
+</div>
+
+<p class="prose">For <code>var a = 10;</code>, the AST looks like this:</p>
+
+<div class="ast-tree">
+<span class="nd">VariableDeclaration</span>
+├── <span class="leaf">Identifier (a)</span>
+└── <span class="leaf">Literal (10)</span>
+</div>
+
+<p class="prose">Each node in the tree corresponds to a construct in the code: <strong>VariableDeclaration</strong> represents the statement, <strong>Identifier</strong> is the variable name <code>a</code>, and <strong>Literal</strong> is the value <code>10</code>.</p>
+
+<p class="prose">For more complex code like this:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>AST Explorer example (from PDF page 10)</span></div>
+  <pre><span class="kw">var</span> name = <span class="str">"Node JS"</span>;
+<span class="kw">function</span> <span class="fn">sayNamaste</span>() {
+  console.<span class="fn">log</span>(<span class="str">"Namaste World"</span>);
+}</pre>
+</div>
+
+<p class="prose">The AST becomes a much larger tree with a <strong>Program</strong> root node containing a <strong>VariableDeclaration</strong> node and a <strong>FunctionDeclaration</strong> node, which itself contains an <strong>Identifier</strong> (<code>sayNamaste</code>), <strong>params</strong> (empty array), and a <strong>BlockStatement</strong> body with an <strong>ExpressionStatement</strong> inside it.</p>
+
+<div class="callout c-cyan"><strong>Tool:</strong> You can explore AST structures visually at <strong>astexplorer.net</strong> — paste any JavaScript code and see the exact tree V8 would generate. The PDF shows a screenshot of this tool.</div>
+
+<div class="def br">
+  <div class="dt">Syntax errors explained</div>
+  <p>When V8 processes tokens one by one during syntax analysis, if it encounters an <strong>unexpected token</strong> that doesn't fit JavaScript's grammar rules, a <strong>syntax error</strong> occurs. This happens because the AST <strong>cannot be generated</strong> if the code structure is invalid. For example, <code>var name =;</code> would produce "Unexpected token (1:10)" because the parser expects a value after <code>=</code> but finds <code>;</code> instead.</p>
+</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ CH 3 ═══ -->
+<div class="ch ch-p">
+  <div class="ch-label">Chapter 03</div>
+  <h2>Stage B: Interpreted vs compiled — and why JS is both</h2>
+</div>
+
+<p class="prose">Before understanding V8's execution pipeline, you need to know the two fundamental types of programming languages:</p>
+
+<div class="grid">
+  <div class="card">
+    <h4><div class="ind" style="background:var(--orange)"></div>Interpreted languages</h4>
+    <ul>
+      <li>Executed <strong>line by line</strong> by an interpreter</li>
+      <li><strong>Fast initial execution</strong> — no compilation wait</li>
+      <li>Slower runtime performance</li>
+      <li>Easier to debug</li>
+      <li>Example: <strong>Python</strong></li>
+    </ul>
+  </div>
+  <div class="card">
+    <h4><div class="ind" style="background:var(--accent)"></div>Compiled languages</h4>
+    <ul>
+      <li>First <strong>compiled</strong> entirely: high-level code → machine code</li>
+      <li><strong>Slow initial start</strong> (compilation takes time)</li>
+      <li>But <strong>very fast execution</strong> once compiled</li>
+      <li>Harder to debug</li>
+      <li>Example: <strong>C, C++</strong></li>
+    </ul>
+  </div>
+</div>
+
+<div class="def bp">
+  <div class="dt">Q: Is JavaScript interpreted or compiled?</div>
+  <p><strong>Neither purely interpreted nor purely compiled.</strong> JavaScript uses a combination of both techniques — this is called <strong>JIT (Just-In-Time) compilation</strong>.</p>
+  <ul>
+    <li><strong>Interpreter:</strong> JavaScript first uses an interpreter for fast initial execution — start running the script quickly, line by line</li>
+    <li><strong>Compiler:</strong> V8 then uses JIT compilation to optimize frequently-run code paths into machine code at runtime, just before they're needed — giving compiled-language speed for hot paths</li>
+  </ul>
+  <p style="margin-top:.5rem">This is why JavaScript is called <strong>"the ultimate hybrid"</strong> — it gets the best of both worlds: interpreted flexibility and compiled speed.</p>
+</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ CH 4 ═══ -->
+<div class="ch ch-g">
+  <div class="ch-label">Chapter 04</div>
+  <h2>The V8 execution pipeline — Ignition + TurboFan</h2>
+</div>
+
+<p class="prose">This is the core of Episode 08. The whiteboard diagrams on PDF pages 2-3 show the complete V8 pipeline. Here it is as a flow:</p>
+
+<div class="pipeline">
+  <div class="pipe-step">
+    <div class="pipe-track"><div class="pipe-dot" style="border-color:var(--text2);background:var(--bg3)"></div><div class="pipe-line" style="background:var(--border2)"></div></div>
+    <div class="pipe-card"><h4 style="color:var(--text2)">Source code (your .js file)</h4><p>Raw JavaScript text enters V8</p></div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-track"><div class="pipe-dot" style="border-color:var(--cyan);background:var(--cyan-bg)"></div><div class="pipe-line" style="background:var(--border2)"></div></div>
+    <div class="pipe-card"><h4 style="color:var(--cyan)">A. Parsing</h4><p><strong>Lexical Analysis:</strong> Code → Tokens (tokenization)<br><strong>Syntax Analysis:</strong> Tokens → AST (Abstract Syntax Tree)</p></div>
+  </div>
+  <div class="pipe-step">
+    <div class="pipe-track"><div class="pipe-dot" style="border-color:var(--orange);background:var(--orange-bg)"></div><div class="pipe-line" style="background:var(--border2)"></div></div>
+    <div class="pipe-card"><h4 style="color:var(--orange)">B. Ignition (Interpreter)</h4><p>Converts AST → <strong>Bytecode</strong> (intermediate representation, lower-level than source code but not yet machine code). Ignition then executes this bytecode <strong>line by line</strong> — this gives you fast initial startup.</p></div>
+  </div>
+
+  <div class="pipe-branch">↘ <strong>While executing, Ignition monitors "hot" code</strong> — functions that are called repeatedly. When code is hot enough, it's sent to TurboFan for optimization.</div>
+
+  <div class="pipe-step">
+    <div class="pipe-track"><div class="pipe-dot" style="border-color:var(--accent);background:var(--accent-bg)"></div><div class="pipe-line" style="background:var(--border2)"></div></div>
+    <div class="pipe-card"><h4 style="color:var(--accent)">C. TurboFan (Optimizing Compiler)</h4><p>Takes the hot bytecode and compiles it into <strong>optimized machine code</strong> — native CPU instructions. TurboFan makes <strong>assumptions</strong> about types (e.g., "this function always receives numbers") and generates highly efficient code based on those assumptions.</p></div>
+  </div>
+
+  <div class="pipe-branch">↙ <strong>If assumptions are wrong</strong> (e.g., function was optimized for numbers but receives a string), TurboFan <strong>deoptimizes</strong> — the code is reverted back to Ignition bytecode for re-interpretation and possible re-optimization.</div>
+
+  <div class="pipe-step">
+    <div class="pipe-track"><div class="pipe-dot" style="border-color:var(--green);background:var(--green-bg)"></div></div>
+    <div class="pipe-card"><h4 style="color:var(--green)">D. Execution</h4><p>Both bytecode (from Ignition) and optimized machine code (from TurboFan) feed into the execution stage. Your code runs.</p></div>
+  </div>
+</div>
+
+<div class="def bg">
+  <div class="dt">The hot code example from the whiteboard (PDF page 2)</div>
+  <p>Imagine a function <code>sum()</code> that is called thousands of times:</p>
+  <ul>
+    <li><code>sum(10, 5)</code> — Ignition runs it in bytecode</li>
+    <li><code>sum(2, 3)</code> — Ignition runs again, notices it's being called a lot with numbers</li>
+    <li><code>sum(6, 7)</code> — V8 marks this as <strong>"HOT"</strong> → sends to TurboFan</li>
+    <li>TurboFan assumes: "this function always gets numbers" → generates optimized machine code that does fast integer addition</li>
+    <li><code>sum("a", "b")</code> — Oops! Strings, not numbers. The assumption is wrong → <strong>deoptimization</strong> → code goes back to Ignition</li>
+  </ul>
+</div>
+
+<div class="callout c-green"><strong>Developer best practice:</strong> For optimal performance, pass <strong>consistent types</strong> to your functions. If a function is optimized for numeric calculations, avoid passing strings. Inconsistent types cause repeated deoptimization → reoptimization cycles, which hurt performance.</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ CH 5 ═══ -->
+<div class="ch ch-b">
+  <div class="ch-label">Chapter 05</div>
+  <h2>Optimization techniques — inline caching &amp; copy elision</h2>
+</div>
+
+<p class="prose">V8 uses several clever optimization techniques during bytecode execution and TurboFan compilation:</p>
+
+<div class="grid">
+  <div class="card">
+    <h4><div class="ind" style="background:var(--accent)"></div>Inline caching</h4>
+    <p>Speeds up <strong>property access</strong> by caching the results of lookups. When you access <code>obj.name</code>, V8 remembers where <code>name</code> was found in the object's hidden class. Next time, it skips the lookup and goes directly to the cached location. This makes repeated property access on same-shaped objects extremely fast.</p>
+  </div>
+  <div class="card">
+    <h4><div class="ind" style="background:var(--purple)"></div>Copy elision</h4>
+    <p>An optimization that <strong>eliminates unnecessary copying of objects</strong>. When a function returns an object, instead of creating the object inside the function and then copying it to the caller, V8 can construct it directly in the caller's memory — avoiding the copy entirely.</p>
+  </div>
+</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ CH 6 ═══ -->
+<div class="ch ch-r">
+  <div class="ch-label">Chapter 06</div>
+  <h2>Garbage collection — memory cleanup behind the scenes</h2>
+</div>
+
+<p class="prose">The whiteboard diagrams on PDF page 3 show that <strong>Garbage Collection</strong> runs <strong>throughout</strong> the entire V8 pipeline — alongside parsing, interpretation, and compilation. It uses the <strong>Mark and Sweep</strong> algorithm as its foundation.</p>
+
+<div class="def br">
+  <div class="dt">How mark and sweep works</div>
+  <p><strong>Mark phase:</strong> V8 starts from "root" references (global scope, call stack) and marks every object that is reachable — meaning something still points to it.<br>
+  <strong>Sweep phase:</strong> V8 goes through the entire heap and frees memory for all <strong>unmarked</strong> objects — these are objects that no code references anymore.</p>
+</div>
+
+<p class="prose">V8's garbage collector has several specialized sub-systems (shown in red on the whiteboard, PDF page 3):</p>
+
+<table class="tbl">
+  <thead><tr><th style="color:var(--red)">GC component</th><th style="color:var(--orange)">What it does</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Orinoco</strong></td><td>V8's main garbage collection project — coordinates all GC activities. Runs mostly <strong>concurrently</strong> (in parallel with your JS code) to minimize pauses.</td></tr>
+    <tr><td><strong>Oil Pan</strong></td><td>Handles garbage collection for the <strong>C++ objects</strong> that V8 manages internally (DOM nodes in Chrome, internal V8 data structures).</td></tr>
+    <tr><td><strong>Scavenger</strong></td><td>Handles the <strong>"young generation"</strong> — newly created objects. Most objects die young (temporary variables, short-lived closures), so Scavenger collects them quickly and frequently using a minor GC cycle.</td></tr>
+    <tr><td><strong>MCompact</strong> (Mark-Compact)</td><td>Handles the <strong>"old generation"</strong> — objects that survived multiple Scavenger cycles. Uses a full mark-sweep-compact cycle: marks reachable objects, sweeps dead ones, then <strong>compacts</strong> memory to eliminate fragmentation.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout c-red"><strong>Key insight:</strong> Garbage collection runs <strong>behind the scenes</strong> using the Mark and Sweep algorithm. You as a developer never manage memory manually (unlike C/C++). But understanding GC helps you write code that doesn't accidentally keep references to huge objects, causing memory leaks.</div>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ CH 7 ═══ -->
+<div class="ch ch-y">
+  <div class="ch-label">Chapter 07</div>
+  <h2>Other JS engines — V8 isn't the only one</h2>
+</div>
+
+<p class="prose">The PDF notes that all these processes (parsing, interpreting, compiling, GC) work <strong>differently in each JavaScript engine</strong>, but V8 is considered the best on the market. Here's how other engines name their components:</p>
+
+<table class="tbl">
+  <thead><tr><th style="color:var(--yellow)">Engine</th><th>Used in</th><th>Interpreter</th><th>Compiler</th></tr></thead>
+  <tbody>
+    <tr><td><strong>V8</strong></td><td>Chrome, Node.js, Deno</td><td>Ignition</td><td>TurboFan</td></tr>
+    <tr><td><strong>SpiderMonkey</strong></td><td>Firefox</td><td>Baseline Interpreter</td><td>WarpMonkey (IonMonkey)</td></tr>
+    <tr><td><strong>JavaScriptCore</strong></td><td>Safari</td><td>LLInt</td><td>DFG → FTL</td></tr>
+    <tr><td><strong>Chakra</strong></td><td>Old Edge (deprecated)</td><td>Interpreter</td><td>SimpleJIT → FullJIT</td></tr>
+  </tbody>
+</table>
+
+<p class="prose">The architecture is the same concept everywhere: parse → interpret → optimize hot code → deoptimize when assumptions fail. The names change, the core idea doesn't.</p>
+
+<div class="sep"></div>
+
+<!-- ═══════════════════════════════════════════ Quick Ref ═══ -->
+<div class="ch ch-o">
+  <div class="ch-label">Quick Reference</div>
+  <h2>Episode 08 — at a glance</h2>
+</div>
+
+<table class="tbl">
+  <thead><tr><th style="color:var(--orange)">Concept</th><th style="color:var(--green)">Key detail</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Parsing</strong></td><td>First stage: Code → Tokens (lexical analysis) → AST (syntax analysis)</td></tr>
+    <tr><td><strong>Tokenization</strong></td><td>Breaking code into tokens: keywords, identifiers, operators, literals, punctuation</td></tr>
+    <tr><td><strong>AST</strong></td><td>Abstract Syntax Tree — hierarchical tree representation of code structure. Explore at astexplorer.net</td></tr>
+    <tr><td><strong>Syntax Error</strong></td><td>Occurs when an unexpected token prevents the AST from being generated</td></tr>
+    <tr><td><strong>Ignition</strong></td><td>V8's interpreter. Converts AST → bytecode, executes line by line. Fast startup.</td></tr>
+    <tr><td><strong>TurboFan</strong></td><td>V8's optimizing compiler. Converts hot bytecode → optimized machine code. Makes type assumptions.</td></tr>
+    <tr><td><strong>Hot code</strong></td><td>Code that runs frequently. Identified by Ignition, sent to TurboFan for optimization.</td></tr>
+    <tr><td><strong>Deoptimization</strong></td><td>When TurboFan's type assumptions are wrong — code reverts to Ignition bytecode</td></tr>
+    <tr><td><strong>JIT compilation</strong></td><td>Just-In-Time — compile at runtime, not ahead of time. JS uses both interpreter + JIT compiler.</td></tr>
+    <tr><td><strong>Inline caching</strong></td><td>Caches property lookup results for faster repeated access on same-shaped objects</td></tr>
+    <tr><td><strong>Copy elision</strong></td><td>Eliminates unnecessary object copying when returning from functions</td></tr>
+    <tr><td><strong>Garbage collection</strong></td><td>Mark and Sweep algorithm. Runs behind the scenes via Orinoco (main GC), Scavenger (young gen), MCompact (old gen), Oil Pan (C++ objects).</td></tr>
+    <tr><td><strong>Best practice</strong></td><td>Pass consistent types to functions. Avoid triggering deoptimization with mixed types.</td></tr>
+    <tr><td><strong>V8 source code</strong></td><td>github.com/v8/v8 — you can explore bytecode examples in the test/cctest/interpreter folder</td></tr>
+    <tr><td><strong>V8 website</strong></td><td>v8.dev — official documentation and blog posts about engine internals</td></tr>
+  </tbody>
+</table>
+
+<div class="callout c-orange" style="text-align:center">
+<strong>The complete V8 pipeline to remember:</strong><br>
+Source Code → <span style="color:var(--cyan)">Parsing</span> (Tokens → AST) → <span style="color:var(--orange)">Ignition</span> (Bytecode) ⇄ <span style="color:var(--accent)">TurboFan</span> (Optimized Machine Code) → <span style="color:var(--green)">Execution</span><br>
+<span style="font-size:.8rem;color:var(--text3)">With Garbage Collection (Mark & Sweep) running throughout via Orinoco</span>
+</div>
+
+</div>
+
+<footer class="footer">Node.js Episode 08 — Deep Dive into V8 JS Engine — Complete Notes from PDF whiteboard diagrams & text</footer>
+
+</body>
+</html>

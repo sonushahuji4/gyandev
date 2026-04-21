@@ -1,0 +1,46 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Memory creation vs code execution" subtitle="Every execution context runs in two phases.">
+- V8 creates the **GEC** and pushes it onto the call stack.
+- **Memory phase:** `a`, `b`, `c` allocated as `undefined`; `multiplyFn` stored with its full definition (hoisting).
+- **Execution phase:** values assigned, code runs top-down.
+- Function calls create **FECs** with the same two-phase pattern.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Three async offload paths" subtitle="Not every async op uses the thread pool.">
+- **Network I/O** (`https.get`) → OS kernel non-blocking sockets (epoll / kqueue / IOCP).
+- **File I/O** (`fs.readFile`) → libuv **thread pool** (default 4, `UV_THREADPOOL_SIZE`).
+- **Timers** (`setTimeout`) → libuv's internal timer tracking.
+- **DNS & crypto** also use the thread pool.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Sync always finishes first" subtitle="The event loop only runs when V8 is idle.">
+- V8 runs every sync line, including `multiplyFn()` and `console.log(c)`, before any callback.
+- Once the GEC pops, the **call stack is empty** — the turning point.
+- The program does NOT exit: libuv still holds 3 pending async handles.
+- The event loop takes over and starts cycling through phases.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Phase cycle with microtasks" subtitle="What drains between every phase.">
+- 6 phases: **Timers → Pending → Idle/Prepare → Poll → Check → Close**.
+- Between every phase: drain **nextTick queue** first, then **Promise queue**.
+- Node 11+: microtasks drain again after every individual callback.
+- Poll phase may **block** waiting for I/O when there's nothing else to do.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Priority ladder — 7 rungs" subtitle="Who runs first when everyone is ready.">
+- **(1)** Synchronous code
+- **(2)** `process.nextTick()` — micro
+- **(3)** Promise `.then/.catch` — micro
+- **(4)** `setTimeout` / `setInterval` — macro
+- **(5)** I/O callbacks (fs, http, db) — macro
+- **(6)** `setImmediate()` — macro
+- **(7)** Close callbacks — macro
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **S · T · P · T · I · I · C** — **S**ync → **n**ext**T**ick → **P**romise · **T**imer → **I**/O → **I**mmediate → **C**lose.
+</Callout>

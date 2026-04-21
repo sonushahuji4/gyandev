@@ -1,0 +1,56 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  V8's full journey from source text to running code — parsing, the
+  Ignition/TurboFan dance with its deoptimization back-edge, and the
+  Mark-and-Sweep garbage collector running alongside everything. The
+  legend below decodes each phase.
+</Callout>
+
+## V8 engine — complete internal pipeline
+
+```mermaid
+flowchart TD
+    SRC["<b>i · Source code</b><br/>var a = 10;<br/>function sum(x,y){...}"]
+      --> LEX["<b>ii · Lexical Analysis</b><br/>Code → Tokens<br/>keyword · id · op · literal"]
+    LEX --> SYN["<b>iii · Syntax Analysis</b><br/>Tokens → AST<br/>tree structure"]
+    SYN --> IG["<b>iv · Ignition</b><br/>AST → Bytecode<br/>interprets line by line"]
+    IG -- "hot code" --> TF["<b>v · TurboFan</b><br/>Bytecode → Machine code<br/>type assumptions"]
+    TF -- "wrong assumptions<br/>(deoptimize)" --> IG
+    IG --> BC["<b>vi · Bytecode</b><br/>intermediate representation"]
+    TF --> MC["<b>vii · Optimized machine code</b><br/>native CPU instructions"]
+    BC --> EX["<b>viii · Execution</b><br/>your code runs on the CPU"]
+    MC --> EX
+
+    GC["<b>ix · Garbage Collector</b><br/>Mark & Sweep<br/>Orinoco · Oil Pan ·<br/>Scavenger · MCompact"] -. "runs throughout" .-> IG
+    GC -. "runs throughout" .-> TF
+    GC -. "runs throughout" .-> EX
+
+    classDef src fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef parse fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    classDef ig fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef tf fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef exec fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef gc fill:#fde8e8,stroke:#b91c1c,stroke-width:2px,color:#1a1915;
+    class SRC src
+    class LEX,SYN parse
+    class IG,BC ig
+    class TF,MC tf
+    class EX exec
+    class GC gc
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Source code',       description: 'Your raw .js text enters V8 as a string of characters.' },
+  { numeral: 'ii',   name: 'Lexical analysis',  description: 'V8 scans character-by-character and emits tokens: keywords, identifiers, operators, literals, punctuation.' },
+  { numeral: 'iii',  name: 'Syntax analysis',   description: 'Tokens are assembled into an Abstract Syntax Tree — a hierarchical grammar structure. Invalid tokens here → SyntaxError.' },
+  { numeral: 'iv',   name: 'Ignition',          description: 'V8\'s interpreter: walks the AST, emits bytecode, executes line by line for fast startup. Watches for hot functions.' },
+  { numeral: 'v',    name: 'TurboFan',          description: 'Optimizing compiler: takes hot bytecode and compiles it to optimized machine code using type assumptions. Deopts back to Ignition if the assumptions break.' },
+  { numeral: 'vi',   name: 'Bytecode',          description: 'Intermediate representation emitted by Ignition — lower-level than JS but not yet machine code.' },
+  { numeral: 'vii',  name: 'Optimized machine code', description: 'Native CPU instructions produced by TurboFan. Runs at compiled-language speed until an assumption breaks.' },
+  { numeral: 'viii', name: 'Execution',         description: 'Both bytecode and machine code funnel into the CPU — your program actually runs here.' },
+  { numeral: 'ix',   name: 'Garbage collector', description: 'Mark & Sweep via Orinoco (main), Oil Pan (C++), Scavenger (young gen), MCompact (old gen) — runs concurrently throughout.' },
+]} />

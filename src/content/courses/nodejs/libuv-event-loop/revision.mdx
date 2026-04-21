@@ -1,0 +1,58 @@
+---
+readingMinutes: 6
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="V8 + libuv split duties" subtitle="One brain, one nervous system.">
+- V8 (C++) runs JavaScript on the **single main thread** — call stack, heap, GC.
+- **libuv** (C) provides async I/O: **event loop**, **thread pool (default 4)**, **callback queues**.
+- V8 delegates `fs`, `https.get`, `crypto`, DNS to libuv; libuv talks to the OS.
+- The main thread is sacred — nothing interrupts it; callbacks wait in queues.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Six phases, clockwise cycle" subtitle='Timer → Pending → Idle → Poll → Check → Close.'>
+- **Timer:** `setTimeout`, `setInterval` — delay is a minimum, not exact.
+- **Pending callbacks:** deferred I/O callbacks (TCP errors etc).
+- **Idle / Prepare:** internal Node housekeeping.
+- **Poll:** I/O results from `fs`, `http`, `net`, crypto. Loop **parks here if idle**.
+- **Check:** `setImmediate()` — runs right after Poll.
+- **Close:** `socket.on('close')` cleanup.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Microtasks drain between every phase" subtitle="Two VIP queues ahead of every macrotask.">
+- Between every phase: drain **ALL `process.nextTick()`** → then **ALL Promise** callbacks.
+- A nextTick scheduled during draining still runs in the same drain.
+- Node 11+: microtasks also drain after every individual callback.
+- Recursive `process.nextTick()` can **starve** the event loop — use `setImmediate()` instead.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="setTimeout(0) vs setImmediate" subtitle="Order depends on context.">
+- **Outside I/O:** order is **non-deterministic** — depends on process boot timing.
+- **Inside I/O (Poll callback):** `setImmediate` always beats `setTimeout(0)` — Check comes right after Poll.
+- `setTimeout(fn, 0)` still waits for Timers phase on the **next loop iteration**.
+- Poll → Check → Close → (back to Timers) is the fixed order.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Execution priority — 7 rungs" subtitle="When everything is ready, who runs first.">
+- **(1)** Synchronous code — always first.
+- **(2)** `process.nextTick()` — highest-priority microtask.
+- **(3)** Promise `.then/.catch/.finally` — second microtask tier.
+- **(4)** `setTimeout / setInterval` — Timers phase.
+- **(5)** I/O callbacks — Poll phase (`fs`, `http`, crypto).
+- **(6)** `setImmediate()` — Check phase.
+- **(7)** Close callbacks — final cleanup.
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Seven golden rules to memorise" subtitle="The cheat sheet for interviews.">
+- Sync always runs first. Always. No exceptions.
+- `process.nextTick()` > Promises > every phase.
+- Microtasks drain between every phase.
+- Inside I/O, `setImmediate` beats `setTimeout(0)`.
+- Outside I/O, that order is non-deterministic.
+- When idle, the loop parks in **Poll**, waiting for I/O.
+- Recursive `nextTick()` starves the loop — reach for `setImmediate()` for recursive async.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **S · nT · P · T · I · Im · C** — **S**ync → **n**ext**T**ick → **P**romise · **T**imer → **I**/O → **Im**mediate → **C**lose. Drain microtasks between every phase.
+</Callout>

@@ -1,0 +1,48 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  Trace the combined example step by step. V8 runs every sync line on the
+  call stack, including the blocking `pbkdf2Sync` and `readFileSync`
+  calls. Only once the stack is empty does libuv's timer queue and thread
+  pool get to deliver their callbacks. The legend below decodes each
+  phase.
+</Callout>
+
+## Sync code → call stack empty → libuv callbacks
+
+```mermaid
+flowchart TD
+    Start["<b>i · Sync code starts</b><br/>console.log(Hello World)<br/>var assignments"]
+      --> Block["<b>ii · pbkdf2Sync</b><br/>BLOCKS main thread<br/>(50M iterations)"]
+    Block --> AfterBlock["<b>iii · After sync crypto</b><br/>console.log(First Key)"]
+    AfterBlock --> Offload["<b>iv · Async offloads</b><br/>setTimeout(0) → timer queue<br/>pbkdf2() → libuv thread pool"]
+    Offload --> MoreSync["<b>v · More sync code</b><br/>multiplyFn + console.log"]
+    MoreSync --> Empty{"<b>vi · Call stack empty?</b>"}
+    Empty -- "yes" --> Loop["<b>vii · Event loop takes over</b>"]
+    Loop --> Timer["<b>viii · Timer callback</b><br/>call me right now !!!!"]
+    Timer --> Pool["<b>ix · Thread pool callback</b><br/>Second Key is generated"]
+
+    classDef sync fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef block fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef loop fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef cb fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    class Start,AfterBlock,MoreSync sync
+    class Block,Offload block
+    class Empty,Loop loop
+    class Timer,Pool cb
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Sync starts',       description: 'V8 pushes GEC, prints "Hello World", assigns `a` and `b` on the call stack.' },
+  { numeral: 'ii',   name: 'pbkdf2Sync blocks', description: 'Main thread frozen for seconds while V8 computes 50M iterations — event loop cannot advance.' },
+  { numeral: 'iii',  name: 'Post-block sync',   description: 'Once pbkdf2Sync returns, `"First Key is Generated"` prints immediately.' },
+  { numeral: 'iv',   name: 'Async offloads',    description: 'setTimeout(0) → libuv timer queue; pbkdf2() → libuv thread pool. V8 does not wait.' },
+  { numeral: 'v',    name: 'More sync',         description: '`multiplyFn()` runs on the call stack, then `"Multiplication result…"` prints.' },
+  { numeral: 'vi',   name: 'Stack empty',       description: 'GEC pops. V8 is idle — the call stack is finally empty.' },
+  { numeral: 'vii',  name: 'Event loop',        description: 'libuv’s event loop starts pushing ready callbacks back onto the call stack.' },
+  { numeral: 'viii', name: 'Timer callback',    description: 'setTimeout(0) callback fires from the timer queue — `"call me right now !!!!"`.' },
+  { numeral: 'ix',   name: 'Thread pool cb',    description: 'Async pbkdf2 finishes on a worker thread; libuv delivers `"Second Key is generated"`.' },
+]} />

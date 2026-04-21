@@ -1,0 +1,43 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Files are modules" subtitle="Private by default — that's the whole idea.">
+- Every `.js` file in Node is its own module.
+- Variables + functions are scoped to that file; they never leak unless exported.
+- Calling an unexported function from another file → `ReferenceError`.
+- Private-by-default is a **feature**: no naming collisions, cleaner refactors.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="The bridge — exports + require" subtitle="Sender and receiver.">
+- **Sender:** `module.exports = something` — whatever you assign becomes this module's public API.
+- **Receiver:** `const x = require("./path")` — runs the file, returns `module.exports`.
+- Default `module.exports` is `{}` (an empty object).
+- The `.js` extension is optional: `require("./sum")` works.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Export many things" subtitle="Wrap them in an object.">
+- `module.exports = { x, calculateSum }` exports both at once.
+- Import with destructuring: `const { x, calculateSum } = require("./sum")`.
+- Alternative: attach properties one at a time — `module.exports.x = x`.
+- Destructuring is the professional default — expect it in every production codebase.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Folders + index.js (barrel)" subtitle="Scale up without path spaghetti.">
+- Put related files in a folder (e.g. `calculate/`).
+- Add `calculate/index.js` that re-exports siblings.
+- `require("./calculate")` auto-loads `index.js` — one clean import.
+- Bonus: `require("./data.json")` parses JSON; `require("node:util")` loads core modules.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="CJS vs ESM" subtitle="Two module systems, one language.">
+- **CJS:** `require` / `module.exports` — synchronous, non-strict, Node default.
+- **ESM:** `import` / `export` — async, always strict, future standard.
+- Enable ESM by adding `"type": "module"` to `package.json` (or use `.mjs`).
+- Strict mode gotcha: `z = "hello"` works in CJS (sloppy), throws in ESM.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  Every Module Exports Its Package — **E** (every file) · **M** (module) · **E** (exports) · **I** (index.js barrel) · **P** (package.json for ESM). "Modules protect, exports publish, require receives."
+</Callout>

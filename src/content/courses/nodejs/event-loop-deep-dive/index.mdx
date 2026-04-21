@@ -1,13 +1,13 @@
 ---
-title: The Event Loop
-description: libuv phases, timers, I/O callbacks, poll, check, close — and where `process.nextTick` and microtasks slot in between every phase.
-excerpt: Phases, microtasks, and the pitfalls that trip up every Node developer.
+title: libuv & Async I/O
+description: How Node.js handles thousands of concurrent operations without a second thread — V8, libuv, the call stack, and the event loop working in harmony.
+excerpt: V8 is synchronous. Node feels concurrent. This is how libuv and the event loop bridge the gap.
 course: nodejs/course
-order: 3
+order: 6
 season: 1
 difficulty: intermediate
 type: explanation
-readingMinutes: 45
+readingMinutes: 22
 status: published
 published: 2026-04-21
 updated: 2026-04-21
@@ -15,32 +15,387 @@ tags:
   - event-loop
   - libuv
   - async
+  - call-stack
+  - v8
 ---
 
-{/* TODO(content): expand into full libuv phase walkthrough with interleaved examples. */}
+<Callout type="quote" title="">
+  JavaScript is synchronous and single-threaded. So how does Node.js handle
+  thousands of concurrent operations? The answer lies in V8, libuv, the call
+  stack, and the event loop working in perfect harmony.
+</Callout>
 
-## The six phases
+## The Foundation — JavaScript Is Synchronous & Single-Threaded
 
-libuv cycles through six phases on every tick:
+Before we can understand how Node.js handles async operations, we need to be
+crystal clear about what JavaScript *actually is* at its core.
 
-1. **Timers** — `setTimeout` / `setInterval` callbacks whose thresholds elapsed.
-2. **Pending callbacks** — I/O callbacks deferred from a previous iteration.
-3. **Idle, prepare** — internal.
-4. **Poll** — wait for new I/O events; most callbacks fire here.
-5. **Check** — `setImmediate` callbacks.
-6. **Close** — `'close'` events on sockets/handles.
+<Callout type="insight" title="What is a thread?">
+  A **thread** is the smallest unit of execution within a process in an
+  operating system. It represents a single sequence of instructions that can
+  be managed independently by the OS scheduler. Multiple threads can exist
+  within a single process, sharing the same memory space but executing
+  independently. Programs can be **single-threaded** (one instruction
+  sequence) or **multi-threaded** (multiple sequences running in parallel).
+</Callout>
 
-Between every phase the engine drains `process.nextTick` and then the microtask queue.
+Three properties of JavaScript matter here:
 
-## Why ordering bites
+- **Single-threaded.** JavaScript runs on one thread with a single call
+  stack. At any given moment, only one piece of code is being processed.
+  There is no parallelism inside the JS engine itself.
+- **Synchronous.** Code executes line by line, in order. Line 2 only runs
+  after Line 1 finishes completely. If a function takes time, it *blocks*
+  everything after it.
+- **V8 engine.** The V8 engine (used in Chrome and Node.js) runs on this
+  single thread, parsing and executing JavaScript sequentially. It manages
+  the call stack, memory heap, and garbage collection.
 
-```js
-setTimeout(() => console.log('timeout'), 0);
-setImmediate(() => console.log('immediate'));
+In languages like **C++ or Java**, code can run across multiple threads
+simultaneously — one part on Thread 1, another on Thread 2. JavaScript
+doesn't do this. It executes one line, then the next, then the next. If
+you're executing line 2, it will **only run after line 1 has completely
+finished**. That is the essence of synchronous execution.
+
+## Synchronous vs Asynchronous — The Ice Cream Shop
+
+<Callout type="insight" title="Synchronous system">
+  Tasks are completed **one after another**. Think of it as having just one
+  hand to accomplish 10 tasks — you must complete one before starting the
+  next. Like an ice cream shop with a single server: each customer's order
+  is fully completed before the next customer is even acknowledged. Total
+  time = sum of all individual task times.
+</Callout>
+
+<Callout type="insight" title="Asynchronous system">
+  Tasks are completed **independently**. Imagine having 10 hands for 10
+  tasks — each hand works on its task at the same time. In the ice cream
+  shop: Coke orders are served instantly (0 min), ice cream orders take 5
+  min, complex orders take 10 min — but **no one waits for anyone else's
+  order**. Total time = the longest single task.
+</Callout>
+
+| Axis        | Synchronous            | Asynchronous                |
+| ----------- | ---------------------- | --------------------------- |
+| Workers     | One hand, N tasks      | N hands, N tasks            |
+| Ordering    | Strictly sequential    | Independent, parallel       |
+| Total time  | Sum of all tasks       | Longest single task         |
+| Behaviour   | Later tasks wait       | No task waits for another   |
+
+<Callout type="tip" title="The big paradox">
+  JavaScript *itself* is synchronous. But with the power of **Node.js**
+  (specifically libuv), it can handle asynchronous operations — making it
+  *appear* to perform multiple tasks concurrently while the JS engine still
+  processes one thing at a time.
+</Callout>
+
+Here are two minimal code examples that show the split:
+
+```js title="synchronous-example.js"
+let a = 10786;
+let b = 20987;
+
+function multiplyFn(x, y) {
+  const result = x * y;
+  return result;
+}
+
+let c = multiplyFn(a, b);
+console.log(c); // 226215682
 ```
 
-In the main module, the order is non-deterministic — depends on how long the current tick
-took. Inside an I/O callback, `setImmediate` always wins because poll → check is the
-fixed order.
+```js title="asynchronous-example.js"
+// 1. API Call — network request, takes time
+https.get("https://api.fbi.com", (res) => {
+  console.log("secret data:", res.secret);
+});
 
-> Placeholder chapter — full deep-dive with benchmarks coming soon.
+// 2. File Read — disk I/O, takes time
+fs.readFile("./gossip.txt", "utf8", (data) => {
+  console.log("File Data", data);
+});
+
+// 3. Timer — waits 5 seconds
+setTimeout(() => {
+  console.log("wait here for 5 seconds");
+}, 5000);
+```
+
+The synchronous code executes immediately — plain math, variable assignment,
+function calls. The asynchronous code involves **waiting**: for a network
+response, for a file to be read from disk, for a timer to expire. These are
+the operations that Node.js offloads to libuv.
+
+## Inside V8 — Call Stack, Memory Heap & Garbage Collector
+
+The V8 engine has three key components that work together to run your
+JavaScript:
+
+- **Call stack (LIFO).** A stack data structure where function calls are
+  pushed and popped. The currently executing function sits on top. Only
+  *one function* runs at a time — this is why JS is single-threaded.
+- **Memory heap.** An unstructured pool of memory where **variables,
+  objects, closures, and function definitions** are stored. This is where
+  your data lives while the program runs.
+- **Garbage collector.** Automatically identifies variables and objects
+  that are no longer referenced and **frees their memory**. Unlike C++,
+  you never manage memory manually in JavaScript.
+
+```text title="V8 JS engine (single thread)"
+┌─────────────────────────────────────────────────────────┐
+│                   V8 JS ENGINE (Single Thread)           │
+│                                                          │
+│  ┌──────────────┐   ┌──────────────────┐   ┌──────────┐ │
+│  │  Call Stack  │   │   Memory Heap    │   │ Garbage  │ │
+│  │   (LIFO)     │   │ (objects, vars,  │   │Collector │ │
+│  │              │   │  closures, fns)  │   │          │ │
+│  │ multiplyFn() │   │                  │   │ Finds &  │ │
+│  │ ──────────── │   │  a = 10786       │   │ frees    │ │
+│  │   GEC        │   │  b = 20987       │   │ unused   │ │
+│  │              │   │  multiplyFn=fn{} │   │ memory   │ │
+│  └──────────────┘   └──────────────────┘   └──────────┘ │
+│        ↑                                                 │
+│   Executes code line by line                             │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Key insight:** when you write synchronous code, it all happens step by
+step in the call stack, using memory from the heap, and the garbage
+collector quietly tidies up behind the scenes. No interruptions, no
+parallel tasks — just one thing at a time.
+
+## How Synchronous Code Executes — Step by Step
+
+Let's trace exactly how V8 executes this synchronous code through the call
+stack:
+
+```js title="The code we're tracing"
+let a = 10786;         // Line 1
+let b = 20987;         // Line 2
+
+function multiplyFn(x, y) {  // Line 4
+  const result = x * y;       // Line 5
+  return result;              // Line 6
+}                              // Line 7
+
+let c = multiplyFn(a, b);  // Line 9
+console.log(c);            // Line 10 → outputs 226215682
+```
+
+1. **Global Execution Context (GEC) created.** As soon as V8 begins, it
+   creates the GEC — the main environment for top-level code. This is
+   always the first thing pushed onto the call stack. The stack now has:
+   `[GEC]`.
+2. **Memory creation phase (hoisting).** Before any code runs, V8 scans
+   the entire file. Variables `a` and `b` are allocated in memory and set
+   to `undefined`. The function `multiplyFn` is stored in memory with its
+   *entire function definition* — this is why function declarations can
+   be called before they appear in code.
+3. **Code execution phase begins.** `let a = 10786` executes: `a` is now
+   assigned `10786`. Then `let b = 20987` executes: `b` gets `20987`. V8
+   processes these line by line, top to bottom. The function definition
+   on line 4 is skipped (already stored in memory).
+4. **Function invocation — new execution context.** When `multiplyFn(a,
+   b)` is called on line 9, V8 creates a new **Function Execution Context
+   (FEC)** and pushes it onto the top of the call stack. Parameters `x`
+   and `y` receive the values of `a` (10786) and `b` (20987). Call stack:
+   `[FEC(multiplyFn), GEC]`.
+5. **Execute inside multiplyFn.** Inside the function, `result` is
+   initialized as `undefined` (memory phase), then assigned
+   `10786 × 20987 = 226215682` (execution phase). Then `return result` is
+   hit — the function returns `226215682` and its execution context is
+   **popped off** the call stack. The garbage collector may now clean up
+   memory used by this context.
+6. **Resume GEC — assign return value.** Back in the GEC, the returned
+   value `226215682` is assigned to variable `c`. Then `console.log(c)`
+   prints the result to the console. Call stack: `[GEC]`.
+7. **GEC popped — call stack empty.** All code has been executed. The GEC
+   is removed from the call stack. The stack is now completely empty, and
+   the JS engine is idle. Program ends.
+
+<Callout type="tip" title="Stack-to-heap handoff">
+  When a function's execution context is popped off the call stack, the
+  garbage collector may clear memory allocated for that context. Once the
+  GEC is popped and the stack is empty, V8 is done with synchronous work.
+</Callout>
+
+## The Superhero — libuv & How Async Code Executes
+
+Here's the million-dollar question: if V8 is single-threaded and
+synchronous, how does Node.js handle things like **API calls, file reads,
+and timers** without blocking everything?
+
+The answer: **V8 doesn't do it alone.** The JavaScript engine has no
+concept of time or waiting. It needs superpowers. This is where Node.js
+comes in, and it grants those powers through a C library called **libuv**.
+
+<Callout type="insight" title="What is libuv?">
+  **libuv** is a C library (not JavaScript!) that provides Node.js with its
+  async I/O superpowers. It handles the **event loop**, **thread pool**,
+  file system operations, networking, DNS resolution, and timers. It is
+  written in **C**, which makes it very efficient at communicating with
+  the operating system. libuv acts as a **bridge between JavaScript and
+  the OS** — V8 can't talk to the OS directly, so libuv does it on its
+  behalf.
+</Callout>
+
+```text title="V8 ↔ libuv ↔ OS"
+┌──────────────────┐          ┌──────────┐          ┌──────────────┐
+│    V8 ENGINE     │          │  LIBUV   │          │      OS      │
+│                  │  async   │          │  talks   │              │
+│  Call Stack      │ ──────→  │ Event    │ ──────→  │  Files       │
+│  Memory Heap     │  offload │ Loop     │   to     │  Network     │
+│  Garbage         │          │ Thread   │          │  Database    │
+│  Collector       │ ←──────  │ Pool     │ ←──────  │  Timers      │
+│                  │ callback │          │ results  │              │
+└──────────────────┘          └──────────┘          └──────────────┘
+
+       JS code runs here      Manages async          System-level
+       synchronously          operations             resources
+```
+
+## Complete Async Walkthrough — The Big Picture
+
+Let's trace through a mixed sync + async program to see how V8 and libuv
+work together:
+
+```js title="mixed-code.js — sync + async together"
+let a = 10786;
+let b = 20987;
+
+// Async operation 1: API call (callback A)
+https.get("https://api.fbi.com", (res) => {       // ← Callback A
+  console.log(res.secret);
+});
+
+// Async operation 2: Timer (callback B)
+setTimeout(() => {                                // ← Callback B
+  console.log("setTimeout");
+}, 5000);
+
+// Async operation 3: File read (callback C)
+fs.readFile("./gossip.txt", "utf8", (data) => {  // ← Callback C
+  console.log("File Data", data);
+});
+
+// Sync: function definition + call
+function multiplyFn(x, y) {
+  const result = x * y;
+  return result;
+}
+
+let c = multiplyFn(a, b);
+console.log(c);  // 226215682
+```
+
+Now line by line — here's where each one goes:
+
+1. **GEC created — `a` and `b` assigned.** The two `let` lines execute
+   synchronously in the call stack within the GEC. Simple variable
+   assignments — V8 handles them directly.
+2. **`https.get()` hit — async, offloaded to libuv.** V8 encounters the
+   API call and recognizes it as asynchronous. It signals libuv to handle
+   it. libuv registers the API call with its associated **callback A** in
+   its event loop. V8 does not wait — it immediately moves on.
+3. **`setTimeout()` hit — async, offloaded to libuv.** V8 sees another
+   async operation. It hands the timer off to libuv with **callback B**.
+   libuv starts tracking the 5-second timer. V8 keeps going.
+4. **`fs.readFile()` hit — async, offloaded to libuv.** Yet another async
+   operation. V8 offloads the file read to libuv with **callback C**.
+   libuv uses its **thread pool** to perform the file system operation in
+   the background. V8 continues without waiting.
+5. **`multiplyFn(a, b)` — sync, runs on call stack.** V8 encounters the
+   function call. A new Function Execution Context is created and pushed
+   onto the call stack. `x` gets 10786, `y` gets 20987. `result = 10786 *
+   20987 = 226215682`. The function returns, its context is popped, and
+   `c` receives the value.
+6. **`console.log(c)` — prints 226215682.** This is the last synchronous
+   line. The GEC is popped off the call stack. The call stack is empty.
+   V8 is idle.
+7. **libuv takes over — heavy lifting in the background.** While V8
+   relaxes, libuv is busy: processing the 5-second timer, waiting for the
+   network response from the API, and reading `gossip.txt` from disk. It
+   handles all these operations by communicating with the OS.
+8. **Async operations complete — callbacks return via event loop.** As
+   each async operation finishes, libuv pushes the corresponding callback
+   onto the **callback queue**. The **event loop** checks: *"Is the call
+   stack empty?"* If yes, it moves the callback from the queue onto the
+   call stack, and V8 executes it.
+9. **Callbacks execute one by one.** Callback C (file read) might finish
+   first — it runs. Then Callback A (API response) comes back — it runs.
+   Finally Callback B (timer) fires after 5 seconds — it runs. Each
+   callback is executed *one at a time* on the single-threaded call
+   stack, but the *waiting* happened in parallel via libuv.
+
+<Callout type="insight" title="The key insight">
+  V8 handles synchronous JS execution. libuv handles async operations
+  (file I/O, networking, timers) by talking to the OS. The event loop is
+  the coordinator that pushes completed async callbacks back to V8's call
+  stack when it's free. This is why Node.js is called **"non-blocking
+  I/O"** — the main thread never waits.
+</Callout>
+
+## The Event Loop & Callback Queue
+
+One final layer connects the two halves: the event loop and its task
+queues.
+
+```text title="Main thread ↔ event loop ↔ task queues"
+┌─────────────────────────────────────────────────────────┐
+│                 Main Thread (V8)                          │
+│  ┌──────────────┐       ┌──────────────────────┐         │
+│  │  Call Stack  │       │    Memory Heap       │         │
+│  │   (LIFO)     │       │  (objects, closures) │         │
+│  └──────────────┘       └──────────────────────┘         │
+│         ↑                                                 │
+│    Executes code line by line                             │
+└─────────────────────────────────────────────────────────┘
+          │
+          │ Async operations handed off to Web APIs / Node APIs
+          ▼
+┌─────────────────────────────────────────────────────────┐
+│            Event Loop & Task Queues                       │
+│                                                          │
+│   ┌──────────────────┐    ┌──────────────────┐          │
+│   │ Macrotask Queue  │    │ Microtask Queue  │          │
+│   │  (setTimeout,    │    │ (Promises,       │          │
+│   │   setInterval,   │    │  queueMicrotask, │          │
+│   │   I/O callbacks) │    │  MutationObserver)│         │
+│   └──────────────────┘    └──────────────────┘          │
+│                                                          │
+│   Event loop checks: "Is call stack empty?"              │
+│   If YES → move next callback to call stack              │
+│   Microtasks always run before the next macrotask        │
+└─────────────────────────────────────────────────────────┘
+```
+
+The event loop follows a simple but powerful rule: it continuously checks
+whether the call stack is empty. If it is, it picks the next callback
+from the queue and pushes it onto the call stack for V8 to execute.
+**Microtasks** (like `Promise.then` callbacks) always have priority over
+**macrotasks** (like `setTimeout` callbacks).
+
+Wherever V8 encounters an asynchronous operation, it offloads it to
+libuv. libuv does the further processing, and once the operation is
+complete, it returns the result to V8 through the event loop. V8 then
+quickly executes the callback. Examples of async operations: API calls,
+`setTimeout`, file read/write, database queries, DNS lookups.
+
+## Episode 06 — At a Glance
+
+| Concept                     | Key detail                                                                         |
+| --------------------------- | ---------------------------------------------------------------------------------- |
+| Thread                      | Smallest unit of execution in a process; JS uses a single thread.                  |
+| Synchronous                 | Code runs line by line; each operation blocks the next until complete.             |
+| Asynchronous                | Tasks run independently; no waiting for others to finish.                          |
+| JS nature                   | Synchronous + single-threaded — but Node.js adds async powers.                     |
+| Call stack                  | LIFO stack where function calls are pushed/popped; one at a time.                  |
+| Memory heap                 | Stores variables, objects, functions — unstructured memory pool.                   |
+| Garbage collector           | Auto-frees unused memory; no manual deallocation needed (unlike C++).              |
+| GEC                         | Global Execution Context — first thing pushed on the call stack.                   |
+| Execution phases            | Memory creation (vars = undefined, fns stored) → code execution (assign + run).    |
+| libuv                       | C library giving Node.js async powers: event loop, thread pool, OS communication.  |
+| Async flow                  | V8 offloads → libuv handles in background → callbacks return via event loop.       |
+| Non-blocking I/O            | Main thread never waits; async work happens in libuv while V8 continues.           |
+| Event loop                  | Continuously checks if call stack is empty, then moves callbacks from queue.       |
+| Microtasks vs macrotasks    | Promises (microtask) always execute before `setTimeout` (macrotask) callbacks.     |

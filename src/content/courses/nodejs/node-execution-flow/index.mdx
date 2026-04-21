@@ -1,0 +1,273 @@
+---
+title: How Node.js actually executes your code
+description: V8 engine, libuv, event loop phases, microtask queues, OS interaction — every single step, traced through one real example.
+excerpt: Watch a mixed sync + async program move through the call stack, libuv, and the event loop, step by step.
+course: nodejs/course
+order: 8
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 18
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - event-loop
+  - libuv
+  - microtasks
+  - call-stack
+  - execution-priority
+---
+
+<Callout type="insight" title="One example, every component">
+  A complete visual walkthrough of how Node.js executes a real program —
+  starting from `node app.js` and ending with the event loop draining
+  every queue. Every step touches a different piece of the runtime: the
+  V8 call stack, the memory heap, libuv's thread pool and timers, the OS
+  kernel, and the microtask queues that run between phases.
+</Callout>
+
+The example we trace through every step:
+
+```js title="app.js"
+let a = 10786;
+let b = 20987;
+
+// Async operation 1: API call (callback A)
+https.get("https://api.fbi.com", (res) => { // A
+  console.log(res.secret);
+});
+
+// Async operation 2: Timer (callback B)
+setTimeout(() => { // B
+  console.log("setTimeout");
+}, 5000);
+
+// Async operation 3: File read (callback C)
+fs.readFile("./gossip.txt", "utf8", (data) => { // C
+  console.log("File Data", data);
+});
+
+function multiplyFn(x, y) {
+  const result = x * y;
+  return result;
+}
+
+let c = multiplyFn(a, b);
+console.log(c); // 226215682
+```
+
+## Initialization — code loaded into V8
+
+Node.js loads your file. The V8 engine receives the source code as a
+string. **Nothing has executed yet.**
+
+- Call stack is empty
+- Memory heap is clean
+- libuv's event loop is initialized and idle
+- OS is standing by
+
+## Phase 1 — Memory Creation (GEC + hoisting)
+
+V8 creates the **Global Execution Context (GEC)** and pushes it onto the
+call stack. Then it enters the **memory creation phase**:
+
+- Variables `a`, `b`, `c` are allocated and set to `undefined`
+- Function `multiplyFn` is stored with its **entire definition** (this is why you can call functions before they appear in code — hoisting)
+- The async function calls (`https.get`, `setTimeout`, `fs.readFile`) are NOT executed yet — just recognized as identifiers
+
+<Callout type="insight" title="Key concept">
+  Every execution context has two phases — **Memory Creation** (allocate
+  variables as undefined, store functions) then **Code Execution**
+  (assign values, run code line by line).
+</Callout>
+
+## Phase 2 — Code Execution (sync assignments)
+
+V8 enters the **code execution phase**. It processes line 1: `a` is
+assigned `10786` in the memory heap.
+
+- This is **synchronous** — it runs directly on the call stack, instantly
+- V8 moves to the next line immediately
+
+`b` gets `20987`. Still synchronous, still inside the GEC. V8 continues to
+the next executable line.
+
+## Async offload #1 — https.get() → OS kernel
+
+V8 sees `https.get()` — a **network I/O operation**. V8 cannot do
+networking! It hands this off to **libuv**.
+
+- V8 calls the Node.js C++ binding for `https.get`
+- libuv receives the request and stores **callback A**
+- libuv tells the **OS kernel** to make the HTTP request using non-blocking sockets (epoll on Linux, kqueue on macOS, IOCP on Windows)
+- **V8 does NOT wait** — it immediately moves to the next line
+
+<Callout type="insight" title="Network I/O uses the OS directly">
+  **Network I/O** uses OS-level non-blocking mechanisms directly — NOT
+  the libuv thread pool. The OS kernel handles the TCP connection, and
+  libuv gets notified when data arrives.
+</Callout>
+
+## Async offload #2 — setTimeout() → libuv timer
+
+V8 encounters `setTimeout()`. Timers are managed by **libuv** internally —
+not by V8 and not by the OS.
+
+- libuv stores **callback B** with a 5000ms delay
+- libuv starts an internal timer (using its own "concept of now")
+- V8 moves to the next line — no waiting
+
+<Callout type="warning" title="setTimeout doesn't guarantee exact timing">
+  It means "run this callback no sooner than 5000ms from now." The
+  actual execution depends on when the event loop's timers phase checks
+  for expired timers.
+</Callout>
+
+## Async offload #3 — fs.readFile() → libuv thread pool
+
+V8 hits `fs.readFile()` — file system I/O. Unlike networking, **file
+operations use libuv's thread pool**.
+
+- libuv stores **callback C**
+- libuv assigns the file read to a **worker thread** from its pool (default: 4 threads, configurable via `UV_THREADPOOL_SIZE`)
+- The worker thread performs the blocking `read()` syscall
+- V8 continues — doesn't wait
+
+<Callout type="insight" title="Critical distinction">
+  **Network I/O** → OS kernel non-blocking sockets (epoll/kqueue/IOCP)
+
+  **File I/O** → libuv thread pool (blocking on worker, non-blocking for main thread)
+
+  **DNS lookups** → thread pool
+
+  **Crypto operations** → thread pool
+</Callout>
+
+## Sync execution — multiplyFn() creates a new FEC
+
+V8 encounters `multiplyFn(a, b)` — a synchronous function call.
+
+- A new **Function Execution Context (FEC)** is created and pushed on top of GEC
+- **Memory phase:** `result` allocated as `undefined`
+- **Execution phase:** `x = 10786`, `y = 20987`, `result = 10786 × 20987 = 226215682`
+- `return result` → FEC is **popped** off the call stack
+- Garbage collector may clean up FEC's memory
+- `c = 226215682` is assigned in GEC
+
+Meanwhile, libuv is **still working** in the background on all three async
+operations. The main thread never stopped for them.
+
+## Sync execution — console.log(c), the turning point
+
+`console.log(c)` prints **226215682**. This is the last synchronous line.
+
+- GEC is popped off the call stack
+- **The call stack is now EMPTY**
+- V8 has finished all synchronous work
+- But the program **doesn't exit!** libuv still has active handles (3 pending async operations)
+- Node.js stays alive as long as the event loop has work
+
+<Callout type="insight" title="The turning point">
+  All synchronous code is done. The event loop now takes over. From
+  this point on, only callbacks will run on the call stack — and only
+  when the event loop pushes them there.
+</Callout>
+
+## Event loop active — cycling through phases
+
+The event loop begins cycling through its 6 phases. At each phase
+boundary, it first drains microtask queues.
+
+- **Microtask check:** nextTick queue? **Empty.** Promise queue? **Empty.**
+- **Timers phase:** Is callback B ready? **No** — 5 seconds hasn't elapsed yet
+- **Pending callbacks:** None
+- **Poll phase:** Any I/O ready? Waiting for network response and file read…
+- The event loop may **block in the poll phase** waiting for I/O events, since there's nothing else to do
+
+## Poll phase — file read completes, callback C runs
+
+The thread pool worker finishes reading `gossip.txt`. libuv places
+**callback C** into the **poll queue**.
+
+- Event loop reaches the **poll phase** and finds callback C ready
+- **Before executing:** drain nextTick queue (empty), drain Promise queue (empty)
+- `console.log("File Data", data)` is pushed onto the call stack, runs, and is popped
+- **After executing:** drain microtasks again (still empty)
+
+## Poll phase — API response arrives, callback A runs
+
+The HTTP response arrives. The OS kernel (epoll/kqueue) notifies libuv,
+which places **callback A** into the poll queue.
+
+- Same process: drain microtasks → execute callback A → drain microtasks
+- `console.log(res.secret)` runs on the call stack
+- Call stack empties again, event loop continues cycling
+
+## Timers phase — 5 seconds elapsed, callback B runs
+
+5 seconds have passed. libuv marks callback B as ready. The event loop's
+**timers phase** picks it up.
+
+- **Before executing:** drain nextTick queue (empty), drain Promise queue (empty)
+- `console.log("setTimeout")` pushed onto call stack, runs, popped
+- **After executing:** drain microtasks (empty)
+- All three callbacks have now executed
+
+## Shutdown — loop exits cleanly
+
+The event loop checks: any active handles? Pending timers? Pending I/O?
+**No.**
+
+- All 3 async operations completed
+- All callbacks executed
+- All queues empty
+- `uv_run()` returns, Node.js process exits with code 0
+
+<Callout type="insight" title="Final console output order">
+  1. `226215682` — synchronous (ran first, always)
+  2. `File Data …` — I/O callback (file read was fast)
+  3. `[secret data]` — I/O callback (network was slower)
+  4. `setTimeout` — timer callback (5s delay, ran last)
+
+  Sync always first. Then callbacks in order of completion, governed by
+  event loop phases.
+</Callout>
+
+## The complete reference — execution priority order
+
+| # | Kind                              | Type  |
+| - | --------------------------------- | ----- |
+| 1 | **Synchronous code**              | sync  |
+| 2 | **process.nextTick()**            | micro |
+| 3 | **Promise .then/.catch**          | micro |
+| 4 | **setTimeout / setInterval**      | macro |
+| 5 | **I/O callbacks** (fs, http, db)  | macro |
+| 6 | **setImmediate()**                | macro |
+| 7 | **Close callbacks**               | macro |
+
+## Event loop phase cycle
+
+Between every phase the loop drains nextTick() then Promises.
+
+1. **Timers** — `setTimeout`, `setInterval` callbacks
+   _↑ drain nextTick() then Promises_
+2. **Pending callbacks** — Deferred I/O callbacks (TCP errors etc)
+   _↑ drain nextTick() then Promises_
+3. **Idle / Prepare** — Internal Node.js housekeeping
+   _↑ drain nextTick() then Promises_
+4. **Poll** — I/O events: fs, http, net, db. May block here.
+   _↑ drain nextTick() then Promises_
+5. **Check** — `setImmediate()` callbacks
+   _↑ drain nextTick() then Promises_
+6. **Close callbacks** — `socket.on('close')` etc
+   _↑ drain microtasks, then loop to phase 1_
+
+## Memory trick for priority order
+
+**S · T · P · T · I · I · C**
+
+Sync → nextTick → Promise · Timer → I/O → Immediate → Close
+
+Between every phase: drain nextTick queue, then drain Promise queue.
+After every individual callback (Node 11+): drain microtasks again.

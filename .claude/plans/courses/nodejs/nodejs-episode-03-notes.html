@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js Episode 03 — Let's Write Some Code</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f12;
+    --bg-card: #161920;
+    --bg-card-alt: #1a1e28;
+    --accent: #68d391;
+    --accent-dim: #38a169;
+    --accent-glow: rgba(104,211,145,0.15);
+    --orange: #ed8936;
+    --orange-dim: #c05621;
+    --orange-glow: rgba(237,137,54,0.12);
+    --blue: #63b3ed;
+    --blue-dim: #3182ce;
+    --purple: #b794f4;
+    --pink: #f687b3;
+    --text: #e2e8f0;
+    --text-dim: #a0aec0;
+    --text-muted: #718096;
+    --border: #2d3748;
+    --terminal-bg: #1a1b26;
+    --terminal-green: #9ece6a;
+    --terminal-blue: #7aa2f7;
+    --terminal-red: #f7768e;
+    --terminal-yellow: #e0af68;
+    --terminal-comment: #565f89;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body { background:var(--bg); color:var(--text); font-family:'Source Sans 3',sans-serif; font-weight:400; line-height:1.75; overflow-x:hidden; }
+
+  /* HERO */
+  .hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2rem; position:relative; overflow:hidden; }
+  .hero::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 50% 45% at 25% 25%, rgba(237,137,54,0.07) 0%, transparent 70%), radial-gradient(ellipse 40% 40% at 80% 70%, rgba(104,211,145,0.06) 0%, transparent 70%); pointer-events:none; }
+  .hero-badge { display:inline-block; padding:0.4rem 1.2rem; border:1px solid var(--orange-dim); border-radius:999px; font-size:0.8rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--orange); margin-bottom:2rem; animation:fadeDown .8s ease; }
+  .hero h1 { font-family:'Playfair Display',serif; font-weight:900; font-size:clamp(2.6rem,7vw,5rem); line-height:1.1; margin-bottom:1rem; animation:fadeUp 1s ease; }
+  .hero h1 .hl-g { color:var(--accent); }
+  .hero h1 .hl-o { color:var(--orange); }
+  .hero-sub { font-size:clamp(1rem,2.5vw,1.3rem); color:var(--text-dim); max-width:640px; margin-bottom:3rem; animation:fadeUp 1.2s ease; }
+  .scroll-cue { animation:bounce 2s infinite; color:var(--text-muted); font-size:1.5rem; }
+
+  /* CONTAINER */
+  .container { max-width:860px; margin:0 auto; padding:0 1.5rem 6rem; }
+
+  /* CHAPTERS */
+  .chapter { margin-top:5rem; margin-bottom:3rem; position:relative; padding-left:2rem; }
+  .chapter::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px; }
+  .chapter.ch-o::before { background:linear-gradient(to bottom,var(--orange),transparent); }
+  .chapter.ch-g::before { background:linear-gradient(to bottom,var(--accent),transparent); }
+  .chapter.ch-b::before { background:linear-gradient(to bottom,var(--blue),transparent); }
+  .chapter.ch-p::before { background:linear-gradient(to bottom,var(--purple),transparent); }
+  .chapter.ch-pk::before { background:linear-gradient(to bottom,var(--pink),transparent); }
+  .chapter-num { font-family:'JetBrains Mono',monospace; font-size:0.75rem; letter-spacing:0.2em; text-transform:uppercase; margin-bottom:0.5rem; }
+  .chapter.ch-o .chapter-num { color:var(--orange); }
+  .chapter.ch-g .chapter-num { color:var(--accent); }
+  .chapter.ch-b .chapter-num { color:var(--blue); }
+  .chapter.ch-p .chapter-num { color:var(--purple); }
+  .chapter.ch-pk .chapter-num { color:var(--pink); }
+  .chapter h2 { font-family:'Playfair Display',serif; font-size:clamp(1.8rem,4vw,2.5rem); font-weight:700; line-height:1.2; }
+
+  /* STORY */
+  .story { font-size:1.1rem; color:var(--text-dim); margin-bottom:1.5rem; }
+  .story strong { color:var(--text); font-weight:600; }
+  .story em { color:var(--accent); font-style:normal; font-weight:600; }
+  .story .hl { color:var(--orange); font-style:normal; font-weight:600; }
+  .story code, code { font-family:'JetBrains Mono',monospace; font-size:0.88em; background:var(--bg-card); padding:0.15em 0.45em; border-radius:4px; color:var(--orange); }
+
+  /* DEF BOX */
+  .def-box { background:var(--bg-card); border:1px solid var(--border); border-radius:8px; padding:1.5rem 1.8rem; margin:2rem 0; }
+  .def-box.b-o { border-left:3px solid var(--orange); }
+  .def-box.b-g { border-left:3px solid var(--accent); }
+  .def-box.b-b { border-left:3px solid var(--blue); }
+  .def-box.b-p { border-left:3px solid var(--purple); }
+  .def-box.b-pk { border-left:3px solid var(--pink); }
+  .def-box .label { font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; margin-bottom:0.6rem; }
+  .def-box.b-o .label { color:var(--orange); }
+  .def-box.b-g .label { color:var(--accent); }
+  .def-box.b-b .label { color:var(--blue); }
+  .def-box.b-p .label { color:var(--purple); }
+  .def-box.b-pk .label { color:var(--pink); }
+  .def-box p { font-size:1.05rem; color:var(--text); line-height:1.7; }
+
+  /* CALLOUT */
+  .callout { display:flex; gap:1rem; align-items:flex-start; border-radius:10px; padding:1.3rem 1.5rem; margin:2rem 0; }
+  .callout.c-g { background:var(--accent-glow); border:1px solid rgba(104,211,145,0.2); }
+  .callout.c-o { background:var(--orange-glow); border:1px solid rgba(237,137,54,0.2); }
+  .callout.c-b { background:rgba(99,179,237,0.1); border:1px solid rgba(99,179,237,0.2); }
+  .callout.c-pk { background:rgba(246,135,179,0.08); border:1px solid rgba(246,135,179,0.2); }
+  .callout .ci { font-size:1.4rem; flex-shrink:0; margin-top:0.15rem; }
+  .callout p { font-size:0.95rem; color:var(--text); line-height:1.6; }
+
+  /* TERMINAL */
+  .terminal { background:var(--terminal-bg); border:1px solid #2a2b3d; border-radius:10px; margin:2rem 0; overflow:hidden; font-family:'JetBrains Mono',monospace; font-size:0.85rem; line-height:1.7; }
+  .terminal-bar { background:#16161e; padding:0.5rem 1rem; display:flex; gap:6px; align-items:center; }
+  .terminal-dot { width:10px; height:10px; border-radius:50%; }
+  .terminal-dot.r { background:#f7768e; }
+  .terminal-dot.y { background:#e0af68; }
+  .terminal-dot.g { background:#9ece6a; }
+  .terminal-bar span { color:#565f89; font-size:0.75rem; margin-left:0.8rem; }
+  .terminal-body { padding:1rem 1.2rem; }
+  .terminal-body .prompt { color:var(--terminal-blue); }
+  .terminal-body .cmd { color:var(--terminal-green); }
+  .terminal-body .output { color:#c0caf5; }
+  .terminal-body .comment { color:var(--terminal-comment); }
+  .terminal-body .error { color:var(--terminal-red); }
+  .terminal-body .str { color:var(--terminal-green); }
+  .terminal-body .kw { color:var(--terminal-blue); }
+  .terminal-body .fn { color:var(--terminal-yellow); }
+  .terminal-body .num { color:var(--orange); }
+
+  /* COMPARE TABLE */
+  .compare-table { width:100%; border-collapse:collapse; margin:2rem 0; font-size:0.95rem; }
+  .compare-table th { font-family:'JetBrains Mono',monospace; font-size:0.75rem; letter-spacing:0.1em; text-transform:uppercase; text-align:left; padding:0.8rem 1rem; border-bottom:2px solid var(--border); }
+  .compare-table td { padding:0.8rem 1rem; border-bottom:1px solid var(--border); color:var(--text-dim); vertical-align:top; }
+  .compare-table tr:hover td { background:var(--bg-card); }
+
+  /* INFO GRID */
+  .info-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:1.2rem; margin:2rem 0; }
+  .info-card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.5rem; transition:border-color .3s,transform .3s; }
+  .info-card:hover { border-color:var(--orange-dim); transform:translateY(-2px); }
+  .info-card .icon { font-size:1.6rem; margin-bottom:0.8rem; }
+  .info-card h4 { font-family:'Playfair Display',serif; font-size:1.1rem; margin-bottom:0.5rem; }
+  .info-card p { font-size:0.9rem; color:var(--text-muted); line-height:1.5; }
+
+  /* STEP FLOW */
+  .step-flow { margin:2.5rem 0; }
+  .step { display:flex; gap:1.2rem; align-items:flex-start; margin-bottom:1.8rem; }
+  .step-num { flex-shrink:0; width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-weight:600; font-size:0.85rem; }
+  .step-num.sn-o { background:var(--orange-glow); color:var(--orange); border:1px solid rgba(237,137,54,0.3); }
+  .step-num.sn-g { background:var(--accent-glow); color:var(--accent); border:1px solid rgba(104,211,145,0.3); }
+  .step-num.sn-b { background:rgba(99,179,237,0.1); color:var(--blue); border:1px solid rgba(99,179,237,0.3); }
+  .step-num.sn-p { background:rgba(183,148,244,0.1); color:var(--purple); border:1px solid rgba(183,148,244,0.3); }
+  .step-body h4 { font-size:1.05rem; margin-bottom:0.25rem; }
+  .step-body p { font-size:0.95rem; color:var(--text-dim); line-height:1.6; }
+
+  /* DIAGRAM */
+  .diagram-wrapper { margin:2.5rem 0; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:2rem; overflow-x:auto; }
+  .diagram-wrapper .diagram-title { font-family:'JetBrains Mono',monospace; font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:var(--orange); margin-bottom:1.2rem; }
+  .diagram-wrapper svg { display:block; margin:0 auto; width:100%; }
+
+  /* FOOTER */
+  .footer { text-align:center; padding:3rem 1rem; color:var(--text-muted); font-size:0.85rem; border-top:1px solid var(--border); margin-top:4rem; }
+  .ep-nav { display:flex; justify-content:space-between; align-items:center; padding:1rem 0; margin-top:3rem; border-top:1px solid var(--border); font-size:0.9rem; }
+  .ep-nav .muted { color:var(--text-muted); }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(30px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fadeDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
+  @media(max-width:600px){ .container{padding:0 1rem 4rem} .chapter{padding-left:1.2rem} .terminal-body{padding:0.8rem;font-size:0.78rem} }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">Episode 03</div>
+  <h1>Let's <span class="hl-o">Write</span> Some <span class="hl-g">Code</span></h1>
+  <p class="hero-sub">Time to stop talking about Node.js and start using it. We'll install Node, meet the REPL, write our first program, and discover the mysterious global objects that live inside Node.js.</p>
+  <div class="scroll-cue">&#8595;</div>
+</section>
+
+<div class="container">
+
+  <!-- ===== CH 1 — INSTALLATION ===== -->
+  <div class="chapter ch-o">
+    <div class="chapter-num">Chapter 01</div>
+    <h2>Setting Up — Installing Node.js</h2>
+  </div>
+
+  <p class="story">
+    Every journey starts with a first step — and for us, that step is <strong>installing Node.js</strong>. Think of it like installing a new language on your computer. Once installed, your machine will understand JavaScript not just in the browser, but <em>everywhere</em>.
+  </p>
+
+  <div class="step-flow">
+    <div class="step">
+      <div class="step-num sn-o">1</div>
+      <div class="step-body">
+        <h4>Download Node.js</h4>
+        <p>Head to <code>https://nodejs.org</code> and download the <strong>LTS (Long Term Support)</strong> version. LTS is recommended for most users because it's stable and receives security updates for longer. The "Current" version has the latest features but may be less stable.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-g">2</div>
+      <div class="step-body">
+        <h4>Run the Installer</h4>
+        <p>Follow the installation wizard. It will install two things: <strong>Node.js</strong> (the runtime) and <strong>NPM</strong> (the package manager). Both are essential. Accept the default settings — they work perfectly for beginners.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-b">3</div>
+      <div class="step-body">
+        <h4>Verify the Installation</h4>
+        <p>Open your terminal (Command Prompt on Windows, Terminal on Mac/Linux) and run the verification commands below. If you see version numbers, you're all set!</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span>Terminal — Verify Installation</span>
+    </div>
+    <div class="terminal-body">
+      <span class="comment"># Check Node.js version</span><br>
+      <span class="prompt">$</span> <span class="cmd">node -v</span><br>
+      <span class="output">v20.15.0</span><br><br>
+      <span class="comment"># Check NPM version</span><br>
+      <span class="prompt">$</span> <span class="cmd">npm -v</span><br>
+      <span class="output">10.7.0</span><br><br>
+      <span class="comment"># If you see "command not found", Node.js is NOT installed</span>
+    </div>
+  </div>
+
+  <div class="callout c-o">
+    <div class="ci">&#9888;&#65039;</div>
+    <p><strong>Troubleshooting:</strong> If <code>node -v</code> returns "command not found", the installation may have failed or the PATH environment variable wasn't set correctly. Try restarting your terminal, or reinstall Node.js making sure to check the "Add to PATH" option.</p>
+  </div>
+
+
+  <!-- ===== CH 2 — REPL ===== -->
+  <div class="chapter ch-g">
+    <div class="chapter-num">Chapter 02</div>
+    <h2>The Playground — Node REPL</h2>
+  </div>
+
+  <p class="story">
+    Now that Node.js is installed, you have a secret playground available right in your terminal. It's called the <strong>REPL</strong> — and it's one of the fastest ways to experiment with JavaScript outside a browser.
+  </p>
+
+  <div class="def-box b-g">
+    <div class="label">What is REPL?</div>
+    <p><strong>REPL</strong> stands for <strong>Read, Evaluate, Print, Loop</strong>. It reads the code you type, evaluates (executes) it, prints the result, and then loops back — waiting for your next input. It's like a conversation with the JavaScript engine, one line at a time.</p>
+  </div>
+
+  <!-- REPL Diagram -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">The REPL Cycle</div>
+    <svg viewBox="0 0 750 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#68d391"/></marker>
+      </defs>
+      <!-- READ -->
+      <rect x="30" y="55" width="140" height="90" rx="10" fill="rgba(99,179,237,0.1)" stroke="#3182ce"/>
+      <text x="100" y="45" text-anchor="middle" fill="#63b3ed" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing="0.1em">STEP 1</text>
+      <text x="100" y="92" text-anchor="middle" fill="#63b3ed" font-family="Playfair Display,serif" font-size="20" font-weight="700">Read</text>
+      <text x="100" y="118" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Takes your input</text>
+      <!-- arrow -->
+      <line x1="175" y1="100" x2="210" y2="100" stroke="#68d391" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- EVALUATE -->
+      <rect x="215" y="55" width="140" height="90" rx="10" fill="rgba(237,137,54,0.1)" stroke="#c05621"/>
+      <text x="285" y="45" text-anchor="middle" fill="#ed8936" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing="0.1em">STEP 2</text>
+      <text x="285" y="92" text-anchor="middle" fill="#ed8936" font-family="Playfair Display,serif" font-size="20" font-weight="700">Evaluate</text>
+      <text x="285" y="118" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Executes via V8</text>
+      <line x1="360" y1="100" x2="395" y2="100" stroke="#68d391" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- PRINT -->
+      <rect x="400" y="55" width="140" height="90" rx="10" fill="rgba(104,211,145,0.1)" stroke="#38a169"/>
+      <text x="470" y="45" text-anchor="middle" fill="#68d391" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing="0.1em">STEP 3</text>
+      <text x="470" y="92" text-anchor="middle" fill="#68d391" font-family="Playfair Display,serif" font-size="20" font-weight="700">Print</text>
+      <text x="470" y="118" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Shows the result</text>
+      <line x1="545" y1="100" x2="580" y2="100" stroke="#68d391" stroke-width="1.5" marker-end="url(#ar)"/>
+      <!-- LOOP -->
+      <rect x="585" y="55" width="140" height="90" rx="10" fill="rgba(183,148,244,0.1)" stroke="#9f7aea"/>
+      <text x="655" y="45" text-anchor="middle" fill="#b794f4" font-family="JetBrains Mono,monospace" font-size="10" letter-spacing="0.1em">STEP 4</text>
+      <text x="655" y="92" text-anchor="middle" fill="#b794f4" font-family="Playfair Display,serif" font-size="20" font-weight="700">Loop</text>
+      <text x="655" y="118" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Waits for more</text>
+      <!-- Loop-back arrow -->
+      <path d="M 655 150 C 655 180, 100 180, 100 150" stroke="#565f89" stroke-width="1" fill="none" stroke-dasharray="4" marker-end="url(#ar)"/>
+    </svg>
+  </div>
+
+  <p class="story">
+    To enter the REPL, simply type <code>node</code> in your terminal and press Enter. You'll see a <code>></code> prompt — that's the REPL waiting for your JavaScript. It's similar to the browser's developer console, but powered by Node.js instead.
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span>Terminal — Node REPL in Action</span>
+    </div>
+    <div class="terminal-body">
+      <span class="prompt">$</span> <span class="cmd">node</span><br>
+      <span class="output">Welcome to Node.js v20.15.0.</span><br>
+      <span class="output">Type ".help" for more information.</span><br><br>
+      <span class="prompt">></span> <span class="num">1</span> + <span class="num">1</span><br>
+      <span class="output">2</span><br><br>
+      <span class="prompt">></span> <span class="kw">let</span> a = <span class="str">"jatin"</span>;<br>
+      <span class="output">undefined</span><br><br>
+      <span class="prompt">></span> <span class="kw">let</span> b = <span class="str">"sharma"</span>;<br>
+      <span class="output">undefined</span><br><br>
+      <span class="prompt">></span> a + b<br>
+      <span class="output">'jatinsharma'</span><br><br>
+      <span class="comment">// Press Ctrl+C twice or type .exit to leave the REPL</span>
+    </div>
+  </div>
+
+  <div class="callout c-g">
+    <div class="ci">&#128173;</div>
+    <p><strong>Why "undefined"?</strong> When you declare a variable with <code>let</code>, the statement itself doesn't produce a value — so the REPL prints <code>undefined</code>. It's not an error! It's just the REPL being honest about the return value of a declaration.</p>
+  </div>
+
+  <p class="story">
+    The REPL is great for quick experiments, but it's not practical for real projects. You lose all your code when you close the terminal. That's why, for actual development, we write code in <strong>files</strong>.
+  </p>
+
+
+  <!-- ===== CH 3 — WRITING CODE IN VSCODE ===== -->
+  <div class="chapter ch-b">
+    <div class="chapter-num">Chapter 03</div>
+    <h2>Real Code — Files & VS Code</h2>
+  </div>
+
+  <p class="story">
+    The REPL is a playground, but your real workshop is a <strong>code editor</strong>. VS Code (Visual Studio Code) is the most popular choice for Node.js development — it's free, powerful, and has excellent JavaScript support built in.
+  </p>
+
+  <div class="step-flow">
+    <div class="step">
+      <div class="step-num sn-o">1</div>
+      <div class="step-body">
+        <h4>Create a Project Folder</h4>
+        <p>Create a new folder on your computer, e.g., <code>my-nodejs-project</code>. This is where all your project files will live.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-b">2</div>
+      <div class="step-body">
+        <h4>Open in VS Code</h4>
+        <p>Launch VS Code and go to <strong>File > Open Folder</strong>. Select your new folder. This sets up your workspace.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-g">3</div>
+      <div class="step-body">
+        <h4>Create app.js</h4>
+        <p>In the VS Code file explorer, create a new file called <code>app.js</code>. This is the conventional entry point for a Node.js application.</p>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num sn-p">4</div>
+      <div class="step-body">
+        <h4>Write & Run</h4>
+        <p>Write your JavaScript code in the file, open the integrated terminal with <strong>Ctrl + `</strong>, and run it with <code>node app.js</code>.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Code example -->
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span>app.js — Your First Node.js Program</span>
+    </div>
+    <div class="terminal-body">
+      <span class="comment">// app.js</span><br>
+      <span class="kw">let</span> name = <span class="str">"Node JS 03"</span>;<br>
+      <span class="kw">let</span> a = <span class="num">5</span>;<br>
+      <span class="kw">let</span> b = <span class="num">10</span>;<br>
+      <span class="kw">let</span> c = a + b;<br><br>
+      console.<span class="fn">log</span>(name);  <span class="comment">// "Node JS 03"</span><br>
+      console.<span class="fn">log</span>(c);     <span class="comment">// 15</span>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span>Terminal — Running the File</span>
+    </div>
+    <div class="terminal-body">
+      <span class="prompt">$</span> <span class="cmd">node app.js</span><br>
+      <span class="output">Node JS 03</span><br>
+      <span class="output">15</span>
+    </div>
+  </div>
+
+  <p class="story">
+    And just like that, you've written JavaScript that runs <em>outside</em> any browser. No HTML file, no <code>&lt;script&gt;</code> tag, no web page needed. Just a <code>.js</code> file and the <code>node</code> command. This is the Node.js runtime environment in action — using V8 behind the scenes.
+  </p>
+
+  <!-- REPL vs File comparison -->
+  <div class="diagram-wrapper">
+    <div class="diagram-title">Two Ways to Run JavaScript in Node.js</div>
+    <svg viewBox="0 0 750 180" xmlns="http://www.w3.org/2000/svg">
+      <!-- REPL -->
+      <rect x="30" y="20" width="320" height="140" rx="12" fill="#1a1e28" stroke="#9f7aea"/>
+      <text x="190" y="52" text-anchor="middle" fill="#b794f4" font-family="Playfair Display,serif" font-size="18" font-weight="700">REPL Mode</text>
+      <text x="190" y="78" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3,sans-serif" font-size="12">Type <tspan font-family="JetBrains Mono,monospace" fill="#b794f4">node</tspan> in terminal</text>
+      <text x="190" y="100" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Interactive, one line at a time</text>
+      <text x="190" y="118" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Great for quick experiments</text>
+      <text x="190" y="136" text-anchor="middle" fill="#565f89" font-family="Source Sans 3,sans-serif" font-size="11">Code lost when terminal closes</text>
+
+      <!-- vs -->
+      <text x="375" y="100" text-anchor="middle" fill="#4a5568" font-family="Playfair Display,serif" font-size="16" font-weight="700">vs</text>
+
+      <!-- File -->
+      <rect x="400" y="20" width="320" height="140" rx="12" fill="#1a1e28" stroke="#38a169"/>
+      <text x="560" y="52" text-anchor="middle" fill="#68d391" font-family="Playfair Display,serif" font-size="18" font-weight="700">File Mode</text>
+      <text x="560" y="78" text-anchor="middle" fill="#a0aec0" font-family="Source Sans 3,sans-serif" font-size="12">Type <tspan font-family="JetBrains Mono,monospace" fill="#68d391">node app.js</tspan> in terminal</text>
+      <text x="560" y="100" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Runs entire file at once</text>
+      <text x="560" y="118" text-anchor="middle" fill="#718096" font-family="Source Sans 3,sans-serif" font-size="11">Perfect for real projects</text>
+      <text x="560" y="136" text-anchor="middle" fill="#68d391" font-family="Source Sans 3,sans-serif" font-size="11">Code persists in files forever</text>
+    </svg>
+  </div>
+
+
+  <!-- ===== CH 4 — GLOBAL OBJECTS ===== -->
+  <div class="chapter ch-p">
+    <div class="chapter-num">Chapter 04</div>
+    <h2>The Hidden World — Global Objects</h2>
+  </div>
+
+  <p class="story">
+    If you've used JavaScript in a browser, you know about the <strong><code>window</code></strong> object — the all-powerful global object that gives you access to <code>alert()</code>, <code>document</code>, <code>localStorage</code>, and more. But here's the thing: the <code>window</code> object is <span class="hl">provided by the browser, not by V8</span>.
+  </p>
+
+  <p class="story">
+    So what happens in Node.js, where there is no browser and no window? Node.js provides its own global object, simply called <strong><code>global</code></strong>.
+  </p>
+
+  <div class="def-box b-p">
+    <div class="label">Global Objects in Node.js</div>
+    <p>In Node.js, the global object is called <strong><code>global</code></strong>. It's the equivalent of the browser's <code>window</code>. The <code>global</code> object is <strong>not part of V8</strong> — it's a feature provided by Node.js itself. It gives you access to built-in functions like <code>setTimeout()</code>, <code>setInterval()</code>, <code>setImmediate()</code>, <code>console</code>, <code>fetch</code>, <code>queueMicrotask()</code>, and more.</p>
+  </div>
+
+  <!-- Browser vs Node comparison -->
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th style="color:var(--orange)">Feature</th>
+        <th style="color:var(--blue)">Browser</th>
+        <th style="color:var(--accent)">Node.js</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Global object</strong></td><td><code>window</code></td><td><code>global</code></td></tr>
+      <tr><td><strong>DOM access</strong></td><td><code>document</code>, <code>getElementById</code></td><td>Not available (no DOM)</td></tr>
+      <tr><td><strong>Timers</strong></td><td><code>setTimeout</code>, <code>setInterval</code></td><td><code>setTimeout</code>, <code>setInterval</code>, <code>setImmediate</code></td></tr>
+      <tr><td><strong>Console</strong></td><td><code>console.log</code></td><td><code>console.log</code></td></tr>
+      <tr><td><strong>Fetch API</strong></td><td>Built-in</td><td>Built-in (since Node 18+)</td></tr>
+      <tr><td><strong>File system</strong></td><td>Not available</td><td><code>require('fs')</code></td></tr>
+      <tr><td><strong>Alert / Prompt</strong></td><td><code>alert()</code>, <code>prompt()</code></td><td>Not available (no UI)</td></tr>
+      <tr><td><strong>Universal reference</strong></td><td colspan="2" style="text-align:center"><code>globalThis</code> (works in both!)</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ===== CH 5 — THE `this` MYSTERY ===== -->
+  <div class="chapter ch-pk">
+    <div class="chapter-num">Chapter 05</div>
+    <h2>The <code>this</code> Mystery & <code>globalThis</code></h2>
+  </div>
+
+  <p class="story">
+    Here's a surprise that trips up many developers. If you type <code>console.log(this)</code> at the top level of a Node.js file, you might expect it to log the <code>global</code> object. But instead, you get:
+  </p>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span>app.js — The this surprise</span>
+    </div>
+    <div class="terminal-body">
+      console.<span class="fn">log</span>(<span class="kw">this</span>);  <span class="comment">// Outputs: {}</span><br><br>
+      <span class="comment">// Wait... an empty object? Not `global`?</span>
+    </div>
+  </div>
+
+  <p class="story">
+    Why? Because in Node.js, each file is treated as a <strong>module</strong>. At the top level of a module, <code>this</code> refers to <code>module.exports</code>, which starts as an empty object <code>{}</code>. This is different from the browser, where top-level <code>this</code> refers to <code>window</code>.
+  </p>
+
+  <div class="callout c-pk">
+    <div class="ci">&#128270;</div>
+    <p><strong>Remember:</strong> In Node.js files, <code>this</code> at the top level is <code>module.exports</code> (an empty object), <strong>not</strong> the <code>global</code> object. If you want to access the global object, use <code>global</code> or the universal <code>globalThis</code>.</p>
+  </div>
+
+  <p class="story">
+    To solve the confusion across environments, <strong>ECMAScript 2020</strong> introduced <code>globalThis</code> — a universal reference to the global object that works <em>everywhere</em>:
+  </p>
+
+  <div class="info-grid">
+    <div class="info-card">
+      <div class="icon">&#127760;</div>
+      <h4>In Browsers</h4>
+      <p><code>globalThis === window</code> — They point to the same object. You can use either one.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#9881;&#65039;</div>
+      <h4>In Node.js</h4>
+      <p><code>globalThis === global</code> — They point to the same object. Both give you access to timers, console, etc.</p>
+    </div>
+    <div class="info-card">
+      <div class="icon">&#128295;</div>
+      <h4>Why It Matters</h4>
+      <p><code>globalThis</code> provides a <strong>consistent</strong> way to access the global object without worrying about which environment your code runs in. Write once, run anywhere.</p>
+    </div>
+  </div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="terminal-dot r"></div>
+      <div class="terminal-dot y"></div>
+      <div class="terminal-dot g"></div>
+      <span>app.js — globalThis in action</span>
+    </div>
+    <div class="terminal-body">
+      console.<span class="fn">log</span>(<span class="kw">globalThis</span>);<br><br>
+      <span class="comment">// Output: Object [global] {</span><br>
+      <span class="comment">//   global: [Circular *1],</span><br>
+      <span class="comment">//   clearImmediate: [Function],</span><br>
+      <span class="comment">//   setImmediate: [Function],</span><br>
+      <span class="comment">//   clearInterval: [Function],</span><br>
+      <span class="comment">//   clearTimeout: [Function],</span><br>
+      <span class="comment">//   setInterval: [Function],</span><br>
+      <span class="comment">//   setTimeout: [Function],</span><br>
+      <span class="comment">//   queueMicrotask: [Function],</span><br>
+      <span class="comment">//   fetch: [Function],</span><br>
+      <span class="comment">//   crypto: [Getter],</span><br>
+      <span class="comment">//   performance: [Getter/Setter],</span><br>
+      <span class="comment">//   ... }</span>
+    </div>
+  </div>
+
+
+  <!-- ===== QUICK REFERENCE ===== -->
+  <div class="chapter ch-o">
+    <div class="chapter-num">Quick Reference</div>
+    <h2>Episode 03 — At a Glance</h2>
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th style="color:var(--orange)">Concept</th>
+        <th style="color:var(--accent)">Key Detail</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Install Node.js</strong></td><td>Download LTS from <code>nodejs.org</code>, comes with NPM</td></tr>
+      <tr><td><strong>Verify install</strong></td><td><code>node -v</code> and <code>npm -v</code> in terminal</td></tr>
+      <tr><td><strong>REPL</strong></td><td>Read-Evaluate-Print-Loop — type <code>node</code> to enter, <code>.exit</code> to leave</td></tr>
+      <tr><td><strong>Run a file</strong></td><td><code>node app.js</code> — executes the entire file</td></tr>
+      <tr><td><strong>VS Code setup</strong></td><td>Create folder → Open in VS Code → Create <code>app.js</code> → Ctrl+` for terminal</td></tr>
+      <tr><td><strong>Browser global</strong></td><td><code>window</code> — provides DOM, alert, localStorage, etc.</td></tr>
+      <tr><td><strong>Node.js global</strong></td><td><code>global</code> — provides setTimeout, setInterval, console, fetch, etc.</td></tr>
+      <tr><td><strong><code>this</code> at top level</strong></td><td>In Node.js files: <code>{}</code> (module.exports) — NOT <code>global</code></td></tr>
+      <tr><td><strong><code>globalThis</code></strong></td><td>Universal reference (ES2020) — works in browser (<code>window</code>) and Node (<code>global</code>)</td></tr>
+      <tr><td><strong>Who provides global?</strong></td><td>Node.js provides <code>global</code>, Browser provides <code>window</code> — NOT the V8 engine</td></tr>
+    </tbody>
+  </table>
+
+  <div class="ep-nav">
+    <span class="muted">&#8592; Episode 02 — JS on Server</span>
+    <span class="muted">Episode 04 — Coming Soon &#8594;</span>
+  </div>
+
+  <div class="footer">
+    Node.js Episode 03 — Writing Code &nbsp;|&nbsp; Story-format notes for deep learning &nbsp;|&nbsp; Series continues...
+  </div>
+
+</div>
+</body>
+</html>

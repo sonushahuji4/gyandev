@@ -1,0 +1,44 @@
+---
+readingMinutes: 5
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Sync blocks, async offloads" subtitle="V8 handles the call stack; libuv does the waiting.">
+- V8 runs **synchronous** JS in microseconds — assignment, math, function calls on the call stack.
+- V8 **cannot** do async work itself — file I/O, networking, timers go to **libuv**.
+- Any function ending in `Sync` (`readFileSync`, `writeFileSync`, `pbkdf2Sync`) **blocks the main thread**.
+- Async version (same name, no `Sync`) → libuv thread pool or OS kernel → callback fires later.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="fs.readFileSync freezes everything" subtitle="The ice-cream-shop analogy.">
+- While `fs.readFileSync()` runs, V8 is **frozen** — next line waits.
+- HTTP request, timers, async readFile — none of them move forward either.
+- The main thread is like a shop owner who refuses the next customer until the current one is fully served.
+- **Best practice:** never use `Sync` methods in a server's request path.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="crypto.pbkdf2Sync can block for seconds" subtitle="50 million iterations on the main thread.">
+- `pbkdf2Sync("password", "salt", 50000000, 50, "sha512")` — blocks until done.
+- Mixed sync + async order: `"Hello World"` → `"First Key is Generated"` → multiplication result → `"Second Key is generated"`.
+- Async `pbkdf2()` offloads to libuv's **thread pool** (default 4 threads) — event loop stays responsive.
+- Rule of thumb: `Sync` suffix = blocks; no suffix = async.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="setTimeout(0) doesn't run at 0ms" subtitle='The "trust issues" question.'>
+- Even with `0` delay, `setTimeout` is always **async** — the callback goes to libuv's timer queue.
+- The callback runs only when the **call stack is empty** and the event loop reaches the timers phase.
+- All synchronous code in the GEC finishes first — always.
+- The `0` is a **minimum threshold**, not a guarantee.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Full execution order" subtitle="Sync first, then event loop.">
+- **(1) All sync code** runs on the call stack (V8).
+- **(2) Call stack empties** → the event loop takes over.
+- **(3) Timer callbacks** (`setTimeout`, `setInterval`) fire from the timer queue.
+- **(4) I/O callbacks** (async file/crypto/network) fire when libuv signals completion.
+- Sync **always** finishes before **any** async callback — even `setTimeout(0)`.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  Sync Freezes, Libuv Saves — **S**ync suffix blocks · **F**ile/crypto need libuv · **L**oop runs only when stack is empty · **S**etTimeout(0) still waits.
+</Callout>

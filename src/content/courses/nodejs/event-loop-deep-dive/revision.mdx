@@ -1,29 +1,43 @@
 ---
-readingMinutes: 4
+readingMinutes: 5
 updated: 2026-04-21
 ---
 
-## The phases in order
+<RevisionCard numeral="i" title="JS is sync + single-threaded" subtitle="The starting truth — one thread, one stack.">
+- One thread, one call stack, one operation at a time.
+- Line N only runs after line N-1 finishes completely.
+- V8 has three parts: call stack (LIFO), memory heap, garbage collector.
+- The GEC (Global Execution Context) is the first frame pushed onto the stack.
+</RevisionCard>
 
-1. Timers
-2. Pending callbacks
-3. Idle / prepare (internal)
-4. Poll
-5. Check (`setImmediate`)
-6. Close
+<RevisionCard numeral="ii" title="Sync vs async" subtitle="One hand vs ten hands.">
+- **Sync:** total time = sum of all tasks; each task waits for the previous.
+- **Async:** total time = longest single task; tasks run independently.
+- JavaScript is synchronous by itself — async is a *Node.js* feature, not a V8 one.
+- Async work: API calls, `setTimeout`, file I/O, DB queries, DNS lookups.
+</RevisionCard>
 
-## Between every phase
+<RevisionCard numeral="iii" title="V8 execution in two phases" subtitle="Every execution context does both.">
+- **Memory creation phase:** vars allocated as `undefined`, functions stored in full.
+- **Code execution phase:** values assigned, code runs line by line.
+- Function call → new Function Execution Context pushed on top of the stack.
+- Function return → FEC popped; GC may reclaim that context's memory.
+</RevisionCard>
 
-- `process.nextTick` queue drains first
-- Microtask queue drains second
-- Then the next phase runs
+<RevisionCard numeral="iv" title="libuv — the superhero" subtitle="The C library that gives Node its powers.">
+- C library bundled inside Node; V8 can't talk to the OS, libuv does.
+- Provides the **event loop**, the **thread pool**, file I/O, networking, timers.
+- V8 offloads async ops to libuv and keeps executing — never blocks.
+- When an async op finishes, libuv hands the callback to the event loop.
+</RevisionCard>
 
-## Common gotchas
+<RevisionCard numeral="v" title="Event loop + queues" subtitle="How callbacks come home.">
+- Event loop rule: *"Is the call stack empty?"* → if yes, pull next callback onto stack.
+- Two queues: **macrotasks** (`setTimeout`, I/O callbacks) and **microtasks** (promises, `queueMicrotask`).
+- **Microtasks always run before the next macrotask.**
+- This is why `Promise.then` beats `setTimeout(…, 0)` even when scheduled later.
+</RevisionCard>
 
-- `setTimeout(fn, 0)` vs `setImmediate(fn)` order depends on where you call them.
-- Recursive `process.nextTick` starves I/O — the loop can't advance.
-- Mixing callbacks and promises: promises are microtasks, callbacks are phase-bound.
-
-## If you remember nothing else
-
-> Six phases. nextTick + microtasks run between every single one.
+<Callout type="mnemonic" title="Mnemonic">
+  V8 Stacks, Libuv Events, Callbacks Return — **V** (V8) · **S** (sync stack) · **L** (libuv) · **E** (event loop) · **C** (callback queue) · **R** (returns).
+</Callout>

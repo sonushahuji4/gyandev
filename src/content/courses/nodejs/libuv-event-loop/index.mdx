@@ -1,0 +1,557 @@
+---
+title: libuv & The Event Loop
+description: A storytelling deep-dive into the beating heart of Node.js — how a single thread handles millions of operations without breaking a sweat.
+excerpt: Six phases, two microtask queues, one single thread — the definitive event loop tour.
+course: nodejs/course
+order: 10
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 35
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - event-loop
+  - libuv
+  - microtasks
+  - nexttick
+  - setimmediate
+  - phases
+---
+
+## The Big Picture
+
+Understanding how Node.js is built and why it can handle thousands of
+connections on a single thread.
+
+Imagine you walk into a restaurant. In most restaurants, every table gets
+its own waiter — that's how traditional servers like Apache work: **one
+thread per request**. But Node.js is different. Node.js is like a
+restaurant with a _single, incredibly fast waiter_ who never stands idle.
+This waiter doesn't cook the food — he takes orders, hands them to the
+kitchen (the OS, the thread pool), and immediately moves to the next
+customer. When the food is ready, a bell rings, and the waiter delivers
+it. This is **Asynchronous, Non-Blocking I/O**.
+
+At the heart of this sits a powerful architecture. Node.js is composed of
+two engines working in concert: the **V8 JavaScript Engine** (written in
+C++, by Google), which executes your JavaScript code, and **libuv** (a
+cross-platform C library), which handles everything JavaScript can't do
+alone — file system access, networking, DNS lookups, and more.
+
+```text title="Node.js Internal Architecture"
+┌──────────────────────── NODE.JS ────────────────────────────┐
+│                                                              │
+│  ┌── V8 JS Engine ──┐                                        │
+│  │ MEMORY HEAP      │          ┌──────── libuv ─────────┐    │
+│  │ objects · vars   │          │                        │    │
+│  │ closures         │          │      EVENT LOOP        │    │
+│  │                  │  async   │      (orchestrator)    │    │
+│  │ CALL STACK       │ ───────► │                        │    │
+│  │  printA()        │          │  THREAD POOL           │    │
+│  │  console.log()   │          │  ▣ ▣ ▣ ▣  (4 threads)   │    │
+│  │  main()          │ ◄─────── │                        │    │
+│  │                  │ callback │  CALLBACK QUEUES       │    │
+│  │ GARBAGE          │          │  ─── ─── ─── ───       │    │
+│  │ COLLECTOR        │          └────────────┬───────────┘    │
+│  │                  │                       │ delegates      │
+│  │ Main Thread      │                       ▼                │
+│  │  (single)        │                  ┌────────┐            │
+│  └──────────────────┘                  │   OS   │            │
+│                                         │  📁📁  │            │
+│                                         │  🌐🌐  │            │
+│                                         │  ⚡🔒  │            │
+│                                         └────────┘            │
+│              Asynchronous I/O (Non-Blocking I/O)              │
+└──────────────────────────────────────────────────────────────┘
+```
+
+Here's the key insight: when your code calls `fs.readFile()` or
+`https.get()`, V8 doesn't wait. It **delegates** to libuv, which
+communicates with the OS. V8 moves on to the next line. When the OS
+finishes, the callback enters a **callback queue**, waiting for V8 to
+become free. This is why Node.js is called _non-blocking_.
+
+## Meet libuv
+
+The unsung hero — event loop, thread pool, and callback queues, all in
+one C library.
+
+If V8 is the brain, **libuv is the nervous system**. It's a
+cross-platform C library providing three critical components:
+
+- **🔄 Event Loop.** The orchestrator. Continuously monitors the call stack and queues, deciding what runs next.
+- **📋 Callback Queues.** Multiple waiting rooms, each with different priority. Callbacks wait here after async ops complete.
+- **🧵 Thread Pool.** 4 worker threads (default) for heavy tasks like file I/O, DNS lookups, and cryptography.
+
+<Callout type="tip" title="Key Insight">
+  Even if the OS returns data incredibly fast, the callback **must wait**
+  in the queue until V8's call stack is empty. The single main thread is
+  sacred — nothing can interrupt it. The event loop is the gatekeeper.
+</Callout>
+
+## The Event Loop — Phase Diagram
+
+The most important visual in all of Node.js.
+
+Think of the event loop as a _security guard at a building entrance_. The
+guard constantly checks: is the lobby (call stack) empty? If yes, look at
+the waiting list (callback queues) and let the next person (callback) in,
+following strict priority rules and a fixed patrol route.
+
+The event loop cycles through four main outer phases clockwise: **Timer →
+Poll → Check → Close**. Two inner microtask phases (`process.nextTick()`
+and Promise callbacks) drain completely between every transition.
+
+**Phases — what each one does:**
+
+- **1. Timer Phase.** Executes callbacks scheduled by `setTimeout()` & `setInterval()`. The delay is a minimum, not exact.
+- **2. Poll Phase (I/O Callbacks).** Incoming connections, data from network / files, `fs`, `crypto`, `http.get` callbacks. If idle, event loop WAITS here for I/O.
+- **3. Check Phase.** Executes callbacks from `setImmediate()`. Always runs right after Poll phase.
+- **4. Close Callbacks Phase.** Handles close events like `socket.on("close")`. Cleanup phase — releasing resources.
+
+<Callout type="tip" title="⚡ MICROTASKS (run between EVERY phase)">
+  **1st:** ALL `process.nextTick()` callbacks drain.
+
+  **2nd:** ALL Promise callbacks drain.
+
+  Both drain completely before next phase starts.
+</Callout>
+
+## All 6 Phases — Deep Dive with Examples
+
+Including the two microtask phases (nextTick & Promises) that many people
+forget aren't "regular" phases but run before each one.
+
+### 🥇 Phase 0A: process.nextTick() — The Platinum VIP
+
+Imagine a hospital emergency room. `process.nextTick()` is the patient
+who arrives by ambulance — they skip the entire waiting room and go
+straight in. This callback has the **absolute highest priority** among
+all asynchronous operations. It runs after the current synchronous
+operation completes and before the event loop checks any other phase.
+
+**Real-world analogy:** You're a chef plating a dish. Before you hand it
+to the waiter (event loop phase), you always taste it first (nextTick).
+The tasting happens automatically between every dish, no matter what.
+
+```js title="nextTick-example.js"
+// process.nextTick runs BEFORE everything else async
+console.log("Start");
+
+process.nextTick(() => {
+  console.log("nextTick 1");
+});
+
+process.nextTick(() => {
+  console.log("nextTick 2");
+});
+
+console.log("End");
+
+// Output: Start → End → nextTick 1 → nextTick 2
+```
+
+### 🥈 Phase 0B: Promise Callbacks — The Gold VIP
+
+Promises are like the _gold members of an airline lounge_ — they board
+before economy (regular phases) but after platinum members (nextTick).
+When a Promise resolves, its `.then()` / `.catch()` / `.finally()`
+callback enters the microtask queue and is processed right after all
+nextTick callbacks drain.
+
+**Key rule:** ALL nextTick callbacks drain first, then ALL Promise
+callbacks, then the next event loop phase begins. Even if a nextTick
+schedules another nextTick during draining — that new one runs too,
+before Promises get their turn.
+
+```js title="promise-vs-nexttick.js"
+console.log("Start");
+
+Promise.resolve().then(() => console.log("Promise 1"));
+process.nextTick(() => console.log("nextTick 1"));
+Promise.resolve().then(() => console.log("Promise 2"));
+process.nextTick(() => console.log("nextTick 2"));
+
+console.log("End");
+
+// Output: Start → End → nextTick 1 → nextTick 2 → Promise 1 → Promise 2
+// ALL nextTicks drain first, THEN all Promises
+```
+
+### ⏱️ Phase 1: Timers — setTimeout & setInterval
+
+Think of a pizza delivery guarantee: "Your pizza in 30 minutes." The
+timer starts when you order, but the pizza arrives only when the delivery
+person is free AND 30 minutes have passed. `setTimeout(fn, 1000)` means
+"execute fn **no sooner than** 1000ms." If the event loop is busy, it
+could be 1050ms, 1200ms, or even later.
+
+**Important:** `setTimeout(fn, 0)` does NOT mean "run immediately." It
+means "run as soon as the event loop reaches the Timers phase AND the
+call stack is empty AND all microtasks are drained." In practice, it's
+never truly instant.
+
+```js title="timer-example.js"
+console.log("Start");
+
+setTimeout(() => console.log("Timeout 0ms"), 0);
+setTimeout(() => console.log("Timeout 100ms"), 100);
+
+// Blocking the main thread for 200ms
+const start = Date.now();
+while (Date.now() - start < 200) {} // busy wait
+
+console.log("End (after 200ms block)");
+
+// Output: Start → End (after 200ms block) → Timeout 0ms → Timeout 100ms
+// BOTH timers fire together because main thread was blocked past both delays!
+```
+
+### 📡 Phase 2: Poll — The I/O Powerhouse
+
+The Poll phase is the _central station of a railway network_. Most
+trains (I/O operations) arrive here. It handles incoming connections,
+data from file reads, HTTP responses, crypto results — essentially
+everything that involves the OS. When there's nothing to do and no
+timers are pending, **the event loop parks here and waits**, like a taxi
+driver at a stand.
+
+**This is why:** A Node.js server with `http.createServer()` runs forever
+— the Poll phase keeps the event loop alive waiting for incoming
+connections. But a script with only synchronous code exits immediately —
+nothing holds the loop open.
+
+```js title="poll-example.js"
+const fs = require("fs");
+
+console.log("Before readFile");
+
+fs.readFile("./file.txt", "utf8", (err, data) => {
+  // This runs in the POLL phase when file data arrives from OS
+  console.log("File content received!");
+
+  // Scheduling inside Poll: setImmediate beats setTimeout here!
+  setImmediate(() => console.log("setImmediate inside I/O"));
+  setTimeout(() => console.log("setTimeout inside I/O"), 0);
+});
+
+console.log("After readFile");
+
+// Output: Before readFile → After readFile → File content received!
+//         → setImmediate inside I/O → setTimeout inside I/O
+// setImmediate always beats setTimeout when scheduled INSIDE an I/O callback
+// because Check phase comes right after Poll, before Timers on next cycle
+```
+
+### ✅ Phase 3: Check — setImmediate()
+
+Picture a bakery with a "just finished" shelf. Right after the oven
+(Poll) produces bread, the baker puts it on this shelf (Check)
+immediately. `setImmediate()` was designed specifically to execute
+callbacks **right after the Poll phase**. Its name is a bit misleading —
+it's not truly "immediate" in the absolute sense, but it is immediate
+relative to I/O completion.
+
+**Golden rule:** Inside an I/O callback, `setImmediate()` always fires
+before `setTimeout(fn, 0)` because Check comes right after Poll, but
+Timers won't run until the next loop iteration.
+
+```js title="setImmediate-example.js"
+// OUTSIDE I/O: order between setTimeout(0) and setImmediate is NON-DETERMINISTIC
+setTimeout(() => console.log("setTimeout"), 0);
+setImmediate(() => console.log("setImmediate"));
+// Could be either order! Depends on system performance.
+
+// INSIDE I/O: setImmediate ALWAYS wins
+const fs = require("fs");
+fs.readFile(__filename, () => {
+  setTimeout(() => console.log("setTimeout in I/O"), 0);
+  setImmediate(() => console.log("setImmediate in I/O"));
+});
+// ALWAYS: setImmediate in I/O → setTimeout in I/O
+```
+
+### 🚪 Phase 4: Close Callbacks — The Cleanup Crew
+
+Think of the closing shift at a store. After all customers leave and all
+transactions are done, the staff cleans up, locks doors, and shuts down
+registers. The Close phase handles cleanup callbacks like
+`socket.on('close')`. When a socket or handle is destroyed, its close
+callback fires here.
+
+```js title="close-example.js"
+const net = require("net");
+const server = net.createServer((socket) => {
+  socket.on("close", () => {
+    console.log("Socket closed — runs in Close Callbacks phase");
+  });
+  socket.destroy(); // triggers the close event
+});
+
+// socket.destroy() or process.exit() triggers close callbacks
+```
+
+## Execution Priority — The Complete Pecking Order
+
+When everything finishes at the same time, who runs first? Here's the
+definitive ranking.
+
+| #   | Name                          | Description                                                                              |
+| --- | ----------------------------- | ---------------------------------------------------------------------------------------- |
+| 1   | **Synchronous Code**          | Always first. Always. `main()`, function calls, assignments — anything on the call stack. |
+| 2   | **`process.nextTick()`**      | Highest-priority microtask. Runs before Promises, before any event loop phase.            |
+| 3   | **Promise Callbacks**         | Second microtask tier. Runs after nextTick, still before any phase.                      |
+| 4   | **`setTimeout / setInterval`** | Timers phase — first regular phase. Even `setTimeout(fn, 0)` waits here.                |
+| 5   | **I/O Callbacks (Poll)**      | File reads, network responses, crypto — all I/O runs in the Poll phase.                  |
+| 6   | **`setImmediate()`**          | Check phase — designed to run right after I/O completes.                                 |
+| 7   | **Close Callbacks**           | Cleanup: `socket.on('close')`.                                                           |
+
+## Code Walkthrough Q1 — Basic, no microtasks
+
+```js title="q1.js"
+const a = 100;
+
+// Ⓐ
+setImmediate(() => console.log("setImmediate"));
+
+// Ⓒ
+fs.readFile("./file.txt", "utf8", () => {
+  console.log("File Reading CB");
+});
+
+// Ⓑ
+setTimeout(() => console.log("Timer expired"), 0);
+
+function printA() { console.log("a=", a); }
+printA();
+console.log("Last line of the file.");
+```
+
+- **Sync Execution.** `a=100` stored. `setImmediate` → Ⓐ to Check queue. `fs.readFile` → delegated to OS. `setTimeout(0)` → Ⓑ to Timer queue. `printA()` prints **"a= 100"**. `console.log` prints **"Last line of the file."**
+- **Timer Phase.** No microtasks. Event loop enters Timers → finds Ⓑ → **"Timer expired"**
+- **Poll Phase.** File not ready yet. Nothing here. Moves on.
+- **Check Phase.** Finds Ⓐ → **"setImmediate"**
+- **Later: Poll Phase (next iteration).** File read completes → Ⓒ → **"File Reading CB"**
+
+```text title="$ node q1.js"
+1  a= 100
+2  Last line of the file.
+3  Timer expired
+4  setImmediate
+5  File Reading CB
+```
+
+## Code Walkthrough Q2 — With Microtasks
+
+```js title="q2.js"
+const a = 100;
+// Ⓐ
+setImmediate(() => console.log("setImmediate"));
+// Ⓑ
+Promise.resolve().then(() => console.log("Promise"));
+fs.readFile("./file.txt", "utf8", () => { console.log("File Reading CB"); });
+// Ⓒ
+setTimeout(() => console.log("Timer expired"), 0);
+// Ⓓ
+process.nextTick(() => console.log("process.nextTick"));
+function printA() { console.log("a=", a); }
+printA();
+console.log("Last line of the file.");
+```
+
+The twist: `process.nextTick()` and `Promise.resolve()` are here. After
+sync code, the event loop checks microtasks FIRST. **Ⓓ (nextTick)** runs
+before **Ⓑ (Promise)** because nextTick has platinum priority. Only then
+does the loop enter Timers for Ⓒ, and Check for Ⓐ.
+
+```text title="$ node q2.js"
+1  a= 100
+2  Last line of the file.
+3  process.nextTick
+4  Promise
+5  Timer expired
+6  setImmediate
+7  File Reading CB
+```
+
+## Code Walkthrough Q3 — Nested Callbacks Inside readFile
+
+```js title="q3.js"
+setImmediate(() => console.log("setImmediate"));
+setTimeout(() => console.log("Timer expired"), 0);
+Promise.resolve("promise").then(console.log);
+
+fs.readFile("./file.txt", "utf8", () => {
+  setTimeout(() => console.log("2nd timer"), 0);
+  process.nextTick(() => console.log("2nd nextTick"));
+  setImmediate(() => console.log("2nd setImmediate"));
+  console.log("File reading CB");
+});
+
+process.nextTick(() => console.log("nextTick"));
+console.log("Last line of the file.");
+```
+
+The key insight: when the `readFile` callback runs (in Poll phase), it
+schedules NEW async tasks. After its synchronous code prints **"File
+reading CB"**, microtasks drain → **"2nd nextTick"**. Then Check phase →
+**"2nd setImmediate"**. Then next Timer phase → **"2nd timer"**. Inside
+I/O, setImmediate always beats setTimeout!
+
+<Callout type="insight" title='🔍 Why "2nd setImmediate" before "2nd timer"?'>
+  The file callback ran during **Poll**. After Poll, the loop goes to
+  **Check** (setImmediate) BEFORE looping back to **Timers**. So
+  setImmediate scheduled inside I/O always beats `setTimeout(fn, 0)`.
+</Callout>
+
+```text title="$ node q3.js"
+1  Last line of the file.
+2  nextTick
+3  promise
+4  Timer expired
+5  setImmediate
+6  File reading CB
+7  2nd nextTick
+8  2nd setImmediate
+9  2nd timer
+```
+
+## Code Walkthrough Q4 — Nested process.nextTick() — Boss Level
+
+```js title="q4.js"
+setImmediate(() => console.log("setImmediate"));
+setTimeout(() => console.log("Timer expired"), 0);
+Promise.resolve("promise").then(console.log);
+
+fs.readFile("./file.txt", "utf8", () => {
+  console.log("File reading CB");
+});
+
+process.nextTick(() => {
+  process.nextTick(() => console.log("inner nextTick"));
+  console.log("Process.nextTick");
+});
+
+console.log("Last line of the file.");
+```
+
+The outer nextTick runs and prints **"Process.nextTick"**. But inside it,
+another nextTick is scheduled. The event loop **drains ALL nextTick
+callbacks** — including newly added ones! So **"inner nextTick"** runs
+before Promises. Recursive nextTick can starve the event loop!
+
+<Callout type="warning" title="⚠️ Starvation Warning">
+  Recursive `process.nextTick()` calls block the event loop from ever
+  advancing. All I/O, timers, and setImmediate will starve. Use
+  `setImmediate()` for recursive async patterns instead.
+</Callout>
+
+```text title="$ node q4.js"
+1  Last line of the file.
+2  Process.nextTick
+3  inner nextTick
+4  promise
+5  Timer expired
+6  setImmediate
+7  File reading CB
+```
+
+## Bonus Scenarios — Edge Cases & Interview Traps
+
+### TRAP 1: setTimeout(0) vs setImmediate — Outside I/O
+
+```js
+setTimeout(() => console.log("timeout"), 0);
+setImmediate(() => console.log("immediate"));
+// Output: NON-DETERMINISTIC! Could be either order.
+// Depends on system clock granularity and process performance.
+// Sometimes timer fires before loop reaches Check, sometimes after.
+```
+
+**Interview answer:** Outside an I/O callback, the order of
+`setTimeout(0)` and `setImmediate` is _non-deterministic_ because it
+depends on how quickly the process boots up. If the timer has already
+expired by the time the event loop starts, it fires first. Otherwise,
+setImmediate goes first.
+
+### TRAP 2: Promise inside Promise + nextTick
+
+```js
+Promise.resolve().then(() => {
+  console.log("promise 1");
+  process.nextTick(() => console.log("nextTick inside promise"));
+});
+Promise.resolve().then(() => console.log("promise 2"));
+
+// Output: promise 1 → promise 2 → nextTick inside promise
+// Promise queue drains fully first, THEN newly added nextTick runs
+// (nextTick added DURING promise draining waits for current batch)
+```
+
+### TRAP 3: async/await is just Promises underneath
+
+```js
+async function main() {
+  console.log("1");
+  await Promise.resolve();
+  console.log("2"); // This becomes a .then() callback — microtask!
+}
+main();
+console.log("3");
+
+// Output: 1 → 3 → 2
+// Everything after 'await' is like a .then() — runs as a microtask
+```
+
+### TRAP 4: Multiple setTimeouts with different delays
+
+```js
+setTimeout(() => console.log("A"), 0);
+setTimeout(() => console.log("B"), 0);
+setTimeout(() => console.log("C"), 100);
+
+setImmediate(() => console.log("D"));
+setImmediate(() => console.log("E"));
+
+// Likely output: A → B → D → E → C
+// Timer phase runs A & B (both expired), Check runs D & E,
+// then C fires 100ms later on a future Timer phase iteration.
+```
+
+## Cheat Sheet & Comparison Tables
+
+### setTimeout vs setImmediate vs process.nextTick
+
+| Feature            | `setTimeout(fn,0)`             | `setImmediate(fn)`          | `process.nextTick(fn)`         |
+| ------------------ | ------------------------------ | --------------------------- | ------------------------------ |
+| **Phase**          | Timers                         | Check                       | Microtask (before any phase)   |
+| **Priority**       | Medium                         | Lower than timers\*         | Highest async                  |
+| **Inside I/O**     | Runs on next Timer iteration   | Always before setTimeout    | Runs before either             |
+| **Can starve I/O?** | No                             | No                          | **Yes!**                       |
+| **Use case**       | Delayed execution              | After I/O, yield to loop    | API consistency, run-first     |
+
+\*Outside I/O, order between `setTimeout(0)` and `setImmediate` is non-deterministic.
+
+### Microtasks vs Macrotasks
+
+| Microtasks (VIP)                | Macrotasks (Regular)                 |
+| ------------------------------- | ------------------------------------ |
+| `process.nextTick()`            | `setTimeout()`                       |
+| `Promise.then/catch/finally`    | `setInterval()`                      |
+| `queueMicrotask()`              | `setImmediate()`                     |
+| `await` (continuation)          | `fs.readFile()`, I/O operations      |
+
+All microtasks drain before the event loop advances to the next
+macrotask phase.
+
+### The 7 Golden Rules
+
+- **Rule 1:** Synchronous code always runs first. Always. No exceptions.
+- **Rule 2:** `process.nextTick()` is highest-priority async. Runs before Promises.
+- **Rule 3:** All microtasks (nextTick + Promises) drain completely between every phase.
+- **Rule 4:** Inside I/O callbacks, `setImmediate()` always beats `setTimeout(fn, 0)`.
+- **Rule 5:** Outside I/O, `setTimeout(0)` vs `setImmediate` order is non-deterministic.
+- **Rule 6:** When idle, the event loop parks in Poll phase, waiting for I/O.
+- **Rule 7:** Recursive `process.nextTick()` starves the event loop. Use `setImmediate()` instead.

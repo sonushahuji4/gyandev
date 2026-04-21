@@ -1,0 +1,45 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Function scope = module scope" subtitle="The same JS rule, renamed.">
+- Variables declared inside a function are unreachable from outside.
+- Node applies the same rule: each `.js` file is wrapped in a function before V8 sees it.
+- That's why module variables can't collide across files.
+- The **only** way data leaves a module is through explicit `module.exports`.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="IIFE — the pattern behind it" subtitle="Create and immediately invoke.">
+- `(function() { ... })()` — declared + executed in one shot.
+- The outer `()` turns the declaration into an expression.
+- The trailing `()` runs it immediately.
+- Great for isolating state without polluting any scope — exactly what a module needs.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Module Wrapper & its 5 params" subtitle="What Node actually wraps your file with.">
+- `(function (exports, require, module, __filename, __dirname) { YOUR_CODE })`.
+- **`exports`** — shorthand pointer to `module.exports`.
+- **`require`** — the import function (it's a *parameter*, not a global).
+- **`module`** — the current module object; `module.exports` is its return value.
+- **`__filename` / `__dirname`** — absolute path of the file and its folder.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="require() in 5 steps" subtitle="The interview question — drilled.">
+- **Resolve** — figure out the absolute path (local file / core / npm / json).
+- **Load** — read the source from disk into memory (not executed yet).
+- **Wrap** — inject into the Module Wrapper Function.
+- **Evaluate** — V8 executes; `module.exports` is populated and returned.
+- **Cache** — store the module; subsequent `require` calls return the cached object.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="V8 + libuv — the two pillars" subtitle="Where JS ends and the OS begins.">
+- **V8 (C++):** runs JS, manages call stack + memory heap, runs the garbage collector.
+- **libuv (C):** event loop, thread pool, talks to the OS for file I/O, networking, timers.
+- Core modules (`fs`, `http`, `path`) are JS files under `lib/` in the Node repo.
+- `require` itself is built by `makeRequireFunction` in `lib/internal/modules/helpers.js`.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **R-L-W-E-C**: Resolve, Load, Wrap, Evaluate, Cache. "Real Lazy Wrappers Execute Cached code." Every `require()` call walks these five steps — or skips straight to step 5 on a cache hit.
+</Callout>

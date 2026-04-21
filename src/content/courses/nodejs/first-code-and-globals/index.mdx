@@ -1,0 +1,265 @@
+---
+title: First Code — REPL, Files & Globals
+description: Install Node, meet the REPL, write your first program, and discover the mysterious global objects that live inside Node.js.
+excerpt: Install Node, the REPL, your first file, and the `global` / `globalThis` / top-level `this` puzzle.
+course: nodejs/course
+order: 3
+season: 1
+difficulty: beginner
+type: tutorial
+readingMinutes: 15
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - install
+  - repl
+  - globals
+  - globalthis
+---
+
+<Callout type="quote" title="">
+  Time to stop talking about Node.js and start using it. We'll install
+  Node, meet the REPL, write our first program, and discover the
+  mysterious global objects that live inside Node.js.
+</Callout>
+
+## Setting Up — Installing Node.js
+
+Every journey starts with a first step — and for us, that step is
+**installing Node.js**. Think of it like installing a new language on your
+computer. Once installed, your machine will understand JavaScript not just
+in the browser, but *everywhere*.
+
+1. **Download Node.js.** Head to `https://nodejs.org` and download the
+   **LTS (Long Term Support)** version. LTS is recommended for most users
+   because it's stable and receives security updates for longer. The
+   "Current" version has the latest features but may be less stable.
+2. **Run the installer.** Follow the installation wizard. It will install
+   two things: **Node.js** (the runtime) and **NPM** (the package
+   manager). Both are essential. Accept the default settings — they work
+   perfectly for beginners.
+3. **Verify the installation.** Open your terminal (Command Prompt on
+   Windows, Terminal on Mac/Linux) and run the verification commands
+   below. If you see version numbers, you're all set.
+
+```bash title="Terminal — verify installation"
+# Check Node.js version
+$ node -v
+v20.15.0
+
+# Check NPM version
+$ npm -v
+10.7.0
+
+# If you see "command not found", Node.js is NOT installed
+```
+
+<Callout type="warning" title="Troubleshooting">
+  If `node -v` returns "command not found", the installation may have
+  failed or the PATH environment variable wasn't set correctly. Try
+  restarting your terminal, or reinstall Node.js making sure to check the
+  "Add to PATH" option.
+</Callout>
+
+## The Playground — Node REPL
+
+Now that Node.js is installed, you have a secret playground available
+right in your terminal. It's called the **REPL** — and it's one of the
+fastest ways to experiment with JavaScript outside a browser.
+
+<Callout type="insight" title="What is REPL?">
+  **REPL** stands for **Read, Evaluate, Print, Loop**. It reads the code
+  you type, evaluates (executes) it, prints the result, and then loops
+  back — waiting for your next input. It's like a conversation with the
+  JavaScript engine, one line at a time.
+</Callout>
+
+| Step      | What it does                               |
+| --------- | ------------------------------------------ |
+| Read      | Takes your input                           |
+| Evaluate  | Executes the line via V8                   |
+| Print     | Shows the return value                     |
+| Loop      | Waits for your next line                   |
+
+To enter the REPL, simply type `node` in your terminal and press Enter.
+You'll see a `>` prompt — that's the REPL waiting for your JavaScript.
+It's similar to the browser's developer console, but powered by Node.js
+instead.
+
+```bash title="Terminal — Node REPL in action"
+$ node
+Welcome to Node.js v20.15.0.
+Type ".help" for more information.
+
+> 1 + 1
+2
+
+> let a = "jatin";
+undefined
+
+> let b = "sharma";
+undefined
+
+> a + b
+'jatinsharma'
+
+// Press Ctrl+C twice or type .exit to leave the REPL
+```
+
+<Callout type="tip" title="Why &quot;undefined&quot;?">
+  When you declare a variable with `let`, the statement itself doesn't
+  produce a value — so the REPL prints `undefined`. It's not an error;
+  it's just the REPL being honest about the return value of a
+  declaration.
+</Callout>
+
+The REPL is great for quick experiments, but it's not practical for real
+projects. You lose all your code when you close the terminal. That's why,
+for actual development, we write code in **files**.
+
+## Real Code — Files & VS Code
+
+The REPL is a playground, but your real workshop is a **code editor**. VS
+Code (Visual Studio Code) is the most popular choice for Node.js
+development — it's free, powerful, and has excellent JavaScript support
+built in.
+
+1. **Create a project folder** (e.g., `my-nodejs-project`). This is where
+   all your project files will live.
+2. **Open it in VS Code.** Launch VS Code and go to *File → Open Folder*.
+   Select your new folder. This sets up your workspace.
+3. **Create `app.js`.** In the VS Code file explorer, create a new file
+   called `app.js`. This is the conventional entry point for a Node.js
+   application.
+4. **Write & run.** Write your JavaScript code in the file, open the
+   integrated terminal with `Ctrl + ` `` ` `` , and run it with
+   `node app.js`.
+
+```js title="app.js — your first Node.js program"
+// app.js
+let name = "Node JS 03";
+let a = 5;
+let b = 10;
+let c = a + b;
+
+console.log(name);  // "Node JS 03"
+console.log(c);     // 15
+```
+
+```bash title="Terminal — running the file"
+$ node app.js
+Node JS 03
+15
+```
+
+And just like that, you've written JavaScript that runs *outside* any
+browser. No HTML file, no `<script>` tag, no web page needed. Just a
+`.js` file and the `node` command. This is the Node.js runtime
+environment in action — using V8 behind the scenes.
+
+| Mode      | How to invoke    | Behaviour                                  | Best for                  |
+| --------- | ---------------- | ------------------------------------------ | ------------------------- |
+| REPL      | `node`           | Interactive, one line at a time            | Quick experiments         |
+| File      | `node app.js`    | Runs the entire file at once               | Real projects             |
+
+The REPL is great when you want to poke at a single expression. File
+mode is where real work happens: code persists, gets committed, and can
+be shared with the rest of your team.
+
+## The Hidden World — Global Objects
+
+If you've used JavaScript in a browser, you know about the **`window`**
+object — the all-powerful global object that gives you access to
+`alert()`, `document`, `localStorage`, and more. But here's the thing:
+the `window` object is *provided by the browser, not by V8*.
+
+So what happens in Node.js, where there is no browser and no window?
+Node.js provides its own global object, simply called **`global`**.
+
+<Callout type="insight" title="Global objects in Node.js">
+  In Node.js, the global object is called **`global`**. It's the
+  equivalent of the browser's `window`. The `global` object is **not part
+  of V8** — it's a feature provided by Node.js itself. It gives you
+  access to built-in functions like `setTimeout()`, `setInterval()`,
+  `setImmediate()`, `console`, `fetch`, `queueMicrotask()`, and more.
+</Callout>
+
+| Feature              | Browser                                | Node.js                                        |
+| -------------------- | -------------------------------------- | ---------------------------------------------- |
+| Global object        | `window`                               | `global`                                       |
+| DOM access           | `document`, `getElementById`           | Not available (no DOM)                         |
+| Timers               | `setTimeout`, `setInterval`            | `setTimeout`, `setInterval`, `setImmediate`    |
+| Console              | `console.log`                          | `console.log`                                  |
+| Fetch API            | Built-in                               | Built-in (since Node 18+)                      |
+| File system          | Not available                          | `require('fs')`                                |
+| Alert / Prompt       | `alert()`, `prompt()`                  | Not available (no UI)                          |
+| Universal reference  | `globalThis` (works in both)           | `globalThis` (works in both)                   |
+
+## The `this` Mystery & `globalThis`
+
+Here's a surprise that trips up many developers. If you type
+`console.log(this)` at the top level of a Node.js file, you might expect
+it to log the `global` object. But instead, you get:
+
+```js title="app.js — the this surprise"
+console.log(this);  // Outputs: {}
+
+// Wait... an empty object? Not `global`?
+```
+
+Why? Because in Node.js, each file is treated as a **module**. At the top
+level of a module, `this` refers to `module.exports`, which starts as an
+empty object `{}`. This is different from the browser, where top-level
+`this` refers to `window`.
+
+<Callout type="warning" title="Remember">
+  In Node.js files, `this` at the top level is `module.exports` (an empty
+  object), **not** the `global` object. If you want to access the global
+  object, use `global` or the universal `globalThis`.
+</Callout>
+
+To solve the confusion across environments, **ECMAScript 2020** introduced
+`globalThis` — a universal reference to the global object that works
+*everywhere*:
+
+- **In browsers:** `globalThis === window`. They point to the same
+  object. You can use either one.
+- **In Node.js:** `globalThis === global`. They point to the same object.
+  Both give you access to timers, console, and so on.
+- **Why it matters:** `globalThis` provides a **consistent** way to
+  access the global object without worrying about which environment your
+  code runs in. Write once, run anywhere.
+
+```js title="app.js — globalThis in action"
+console.log(globalThis);
+
+// Output: Object [global] {
+//   global: [Circular *1],
+//   clearImmediate: [Function],
+//   setImmediate: [Function],
+//   clearInterval: [Function],
+//   clearTimeout: [Function],
+//   setInterval: [Function],
+//   setTimeout: [Function],
+//   queueMicrotask: [Function],
+//   fetch: [Function],
+//   crypto: [Getter],
+//   performance: [Getter/Setter],
+//   ... }
+```
+
+## Episode 03 — At a Glance
+
+| Concept                  | Key detail                                                              |
+| ------------------------ | ----------------------------------------------------------------------- |
+| Install Node.js          | Download LTS from `nodejs.org`; comes with NPM.                         |
+| Verify install           | `node -v` and `npm -v` in terminal.                                     |
+| REPL                     | Read-Evaluate-Print-Loop — type `node` to enter, `.exit` to leave.      |
+| Run a file               | `node app.js` — executes the entire file.                               |
+| VS Code setup            | Create folder → Open in VS Code → Create `app.js` → `` Ctrl+` `` .      |
+| Browser global           | `window` — provides DOM, `alert`, `localStorage`, etc.                  |
+| Node.js global           | `global` — provides `setTimeout`, `setInterval`, `console`, `fetch`.    |
+| `this` at top level      | In Node.js files: `{}` (module.exports) — **not** `global`.             |
+| `globalThis`             | Universal reference (ES2020) — `window` in browsers, `global` in Node.  |
+| Who provides global?     | Node.js provides `global`; the browser provides `window`. Not V8.       |

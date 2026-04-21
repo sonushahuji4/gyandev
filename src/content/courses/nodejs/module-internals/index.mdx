@@ -1,0 +1,245 @@
+---
+title: Module Internals — IIFE, Wrapper & require()
+description: Behind the curtain of Node.js modules — the IIFE, the 5 wrapper parameters, and the 5-step mechanics of require().
+excerpt: The module wrapper function, the 5 injected parameters, and the 5 steps of require() — interview gold.
+course: nodejs/course
+order: 5
+season: 1
+difficulty: intermediate
+type: explanation
+readingMinutes: 16
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - modules
+  - require
+  - iife
+  - module-wrapper
+  - libuv
+---
+
+<Callout type="quote" title="">
+  Go behind the curtain. Discover how Node.js wraps your code in secret
+  functions, the five-step mechanics of `require()`, and the architecture
+  that makes it all possible.
+</Callout>
+
+## The Fundamental Principle — Function Scope
+
+Before we talk about modules, we need to talk about one of JavaScript's
+oldest and most important rules: **function scope**. Everything declared
+inside a function is *trapped* inside that function. It's like a room
+with no windows — nothing escapes unless you carry it out yourself.
+
+```js title="Function scope in plain JavaScript"
+function x() {
+  let a = 10;
+  function b() {
+    console.log("I'm private!");
+  }
+}
+
+console.log(a); // ReferenceError: a is not defined
+b();            // ReferenceError: b is not defined
+```
+
+Variable `a` and function `b` are locked inside function `x`. They don't
+exist outside of it. This is basic JavaScript. Now here's the key
+insight:
+
+**Node.js modules work exactly the same way.** When you create a file in
+Node.js, all the code in that file is *automatically wrapped inside a
+function* before V8 ever sees it. This is why variables in one file
+can't leak into another — they're trapped inside their own function
+wrapper.
+
+<Callout type="insight" title="The core principle">
+  **Function scope in JavaScript = Module scope in Node.js.** Both create
+  private spaces where variables and functions are invisible to the
+  outside world. The only way to share data between modules is through
+  explicit exports (`module.exports`).
+</Callout>
+
+## The Secret Wrapper — IIFE & Module Wrapper Function
+
+So Node.js wraps your code in a function. But what *kind* of function?
+The answer comes from a classic JavaScript pattern called an **IIFE** —
+Immediately Invoked Function Expression.
+
+<Callout type="insight" title="What is an IIFE?">
+  An **IIFE** is a function that is **created and immediately executed**
+  — on the fly, with no separate call needed. The pattern looks like
+  `(function() { ... })()`. It runs the moment the JavaScript engine
+  encounters it.
+</Callout>
+
+Let's break down the IIFE anatomy piece by piece:
+
+```js title="Anatomy of an IIFE"
+// The three parts of an IIFE:
+
+(function() {                   // 1. Wrapping () turns declaration → expression
+  let secret = "hidden";        // 2. Body — your code lives here
+})();                           // 3. Trailing () immediately invokes it
+
+// 'secret' is completely isolated — unreachable from outside
+console.log(secret); // ReferenceError!
+```
+
+Now, Node.js doesn't use a plain IIFE. It uses a specialised version
+called the **Module Wrapper Function**. The critical difference? Node.js
+passes *five special parameters* into this wrapper:
+
+```js title="The Module Wrapper Function — what Node.js ACTUALLY uses"
+(function (exports, require, module, __filename, __dirname) {
+
+  // 👆 YOUR ENTIRE MODULE CODE GOES HERE 👆
+  // Every .js file you write is wrapped in this function
+  // before Node.js gives it to V8 for execution
+
+});
+```
+
+- **`exports`** — a shorthand reference to `module.exports`. You can
+  attach properties to it to export values.
+- **`require`** — the function you use to import other modules. Node.js
+  injects it as a parameter; it's not a global.
+- **`module`** — an object representing the current module.
+  `module.exports` is what gets returned when someone requires this
+  file.
+- **`__filename`** — the absolute path of the current file (e.g.
+  `/Users/you/project/app.js`).
+- **`__dirname`** — the absolute path of the directory containing the
+  current file (e.g. `/Users/you/project`).
+
+<Callout type="tip" title="Interview answer">
+  "How does Node.js keep module variables private?" — Node.js wraps every
+  module's code inside a **Module Wrapper Function** (based on the IIFE
+  concept). This creates a private scope. The wrapper also injects five
+  special parameters: `exports`, `require`, `module`, `__filename`, and
+  `__dirname`.
+</Callout>
+
+## The 5-Step Mechanics of `require()`
+
+When you write `require("./sum")`, a lot more happens than just "loading
+a file." Node.js executes **five precise steps** behind the scenes. This
+is one of the most popular Node.js interview questions.
+
+1. **Resolving.** Node.js determines *what* you're trying to load and
+   finds its absolute path. Is it a local file (`./sum`)? A JSON file?
+   A built-in core module (`fs`, `http`)? A third-party package from
+   `node_modules`? The resolver checks file extensions, folder
+   structures, and module registries to figure it out.
+2. **Loading.** After resolving the path, Node.js **reads the file
+   content from disk into memory**. For `.js` files, it reads the
+   JavaScript source code. For `.json`, it reads the JSON text. For core
+   modules, it loads from internal binaries. Important: the code is
+   read but *not yet executed* at this stage.
+3. **Wrapping.** Node.js takes the loaded source code and **wraps it
+   inside the Module Wrapper Function**:
+   `(function(exports, require, module, __filename, __dirname) { YOUR_CODE })`.
+   This establishes the private scope and injects the five special
+   parameters.
+4. **Evaluation (execution).** The wrapped function is **handed to V8
+   for execution**. The JavaScript engine runs your code: variables are
+   created, functions are defined, and most importantly,
+   `module.exports` gets populated with whatever you export. The
+   `require()` call then **returns** the value of `module.exports`.
+5. **Caching.** After execution, Node.js **caches the module in
+   memory**. If *any* file calls `require("./sum")` again, Node.js skips
+   all previous steps and **returns the cached version instantly**. A
+   module is executed only once — every subsequent require returns the
+   same cached object. This drastically improves performance.
+
+```text title="The 5-step require() pipeline"
+  STEP 1          STEP 2         STEP 3          STEP 4          STEP 5
+┌─────────┐    ┌─────────┐    ┌─────────┐    ┌──────────┐    ┌─────────┐
+│ Resolve │ → │  Load   │ → │  Wrap   │ → │ Evaluate │ → │  Cache  │
+│ find    │    │ read    │    │ module  │    │ V8       │    │ store   │
+│ path    │    │ disk    │    │ wrapper │    │ executes │    │ memory  │
+└─────────┘    └─────────┘    └─────────┘    └──────────┘    └─────────┘
+```
+
+<Callout type="tip" title="Interview answer">
+  "What happens internally when you call `require()`?" — Node.js performs
+  five steps: **Resolve** (find the path), **Load** (read from disk),
+  **Wrap** (Module Wrapper Function), **Evaluate** (V8 executes), and
+  **Cache** (store for reuse). Modules are only executed once —
+  subsequent requires return the cached version.
+</Callout>
+
+## Under the Hood — Node.js Architecture
+
+Now that you understand modules deeply, let's zoom out and look at the
+**two pillars** that make Node.js work: V8 and libuv. Understanding this
+architecture will help you connect everything you've learned across all
+episodes.
+
+| Pillar      | Layer                            | Responsibilities                                               |
+| ----------- | -------------------------------- | -------------------------------------------------------------- |
+| **V8**      | JavaScript execution (C++)       | Call stack & memory heap · JIT compilation (JS → machine) · Garbage collection |
+| **libuv**   | Async I/O & system access (C)    | Event loop · Thread pool · File I/O, networking, timers        |
+
+V8 runs your JavaScript. libuv does everything V8 can't — talking to the
+OS, scheduling async work, managing the event loop. The runtime
+environment binds them together so your single `node app.js` process can
+serve thousands of concurrent connections on one thread.
+
+<Callout type="tip" title="Source-code deep dive">
+  If you explore the Node.js GitHub repo, core built-in modules (`fs`,
+  `http`, `path`) are JavaScript files in the `lib/` directory. The
+  actual `require` function is generated by `makeRequireFunction` in
+  `lib/internal/modules/helpers.js`. Passing an empty argument to
+  `require()` throws a `TypeError`.
+</Callout>
+
+## The Complete Picture — Putting It All Together
+
+Let's trace the entire journey from the moment you write
+`require("./sum")` to the moment you use the exported function.
+
+```text title="The full journey of require('./sum')"
+  const sum = require("./sum");
+            │
+            ▼
+  1. Resolve  →  finds /project/sum.js
+            │
+            ▼
+  2. Load     →  reads file from disk into memory
+            │
+            ▼
+  3. Wrap inside Module Wrapper Function:
+     (function(exports, require, module, __filename, __dirname) { YOUR_CODE })
+            │
+            ▼
+  4. Evaluate →  V8 executes, returns module.exports
+            │
+            ▼
+  5. Cache    →  stored in memory for future requires
+            │
+            ▼
+       sum is now ready to use!
+```
+
+This is what happens — *every time* — behind every single `require()`
+call in your codebase. For the first call, Node does all five steps. For
+every subsequent call, it jumps straight to the cached result.
+
+## Episode 05 — At a Glance
+
+| Concept                    | Key detail                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------ |
+| Module privacy             | All code is wrapped in a function → variables/functions are private by default.      |
+| IIFE                       | Immediately Invoked Function Expression — `(function(){...})()` — runs on definition.|
+| Module Wrapper             | `(function(exports, require, module, __filename, __dirname) { ... })`                |
+| 5 wrapper params           | `exports`, `require`, `module`, `__filename`, `__dirname`.                           |
+| Step 1: Resolve            | Find the absolute path and module type (local / core / npm / json).                  |
+| Step 2: Load               | Read file content from disk into memory (not yet executed).                          |
+| Step 3: Wrap               | Encapsulate code in the Module Wrapper Function.                                     |
+| Step 4: Evaluate           | V8 executes the code; `module.exports` is returned.                                  |
+| Step 5: Cache              | Module stored in memory — never re-executed, just reused.                            |
+| V8 role                    | Executes JS, manages call stack & memory, JIT compilation.                           |
+| libuv role                 | Event loop, thread pool, async I/O, networking, timers.                              |
+| Source code                | Core modules in `lib/`; `require` built by `makeRequireFunction`.                    |

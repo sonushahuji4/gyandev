@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episode 06 — libuv & Async I/O — Complete Deep Dive</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,700;9..144,900&family=DM+Sans:wght@300;400;500;700&family=Fira+Code:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c10;
+  --bg-card: #12151c;
+  --bg-alt: #181c26;
+  --bg-code: #0d1117;
+  --accent: #4ade80;
+  --accent-dim: #22c55e;
+  --accent-glow: rgba(74,222,128,.1);
+  --orange: #fb923c;
+  --orange-dim: #ea580c;
+  --orange-glow: rgba(251,146,60,.08);
+  --blue: #60a5fa;
+  --blue-dim: #2563eb;
+  --purple: #a78bfa;
+  --pink: #f472b6;
+  --red: #f87171;
+  --cyan: #22d3ee;
+  --yellow: #facc15;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --text-muted: #64748b;
+  --border: #1e293b;
+  --syn-kw: #c084fc;
+  --syn-fn: #facc15;
+  --syn-str: #4ade80;
+  --syn-num: #fb923c;
+  --syn-cm: #475569;
+  --syn-op: #94a3b8;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { background:var(--bg); color:var(--text); font-family:'DM Sans',sans-serif; font-weight:400; line-height:1.8; overflow-x:hidden; }
+
+/* Hero */
+.hero { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2rem; position:relative; overflow:hidden; }
+.hero::before { content:''; position:absolute; inset:0; background:radial-gradient(ellipse 60% 50% at 30% 40%,rgba(251,146,60,.06),transparent 70%),radial-gradient(ellipse 50% 40% at 70% 60%,rgba(74,222,128,.05),transparent 70%); pointer-events:none; }
+.hero-ep { display:inline-block; padding:.35rem 1.4rem; border:1px solid var(--orange-dim); border-radius:999px; font-size:.75rem; letter-spacing:.2em; text-transform:uppercase; color:var(--orange); margin-bottom:1.5rem; animation:fadeDown .7s ease; }
+.hero h1 { font-family:'Fraunces',serif; font-weight:900; font-size:clamp(2.2rem,6vw,4.5rem); line-height:1.08; margin-bottom:1rem; animation:fadeUp .9s ease; }
+.hero h1 .ho { color:var(--orange); } .hero h1 .hg { color:var(--accent); } .hero h1 .hb { color:var(--blue); }
+.hero-sub { font-size:clamp(.95rem,2.2vw,1.15rem); color:var(--text-dim); max-width:700px; margin-bottom:2.5rem; animation:fadeUp 1.1s ease; }
+.scroll-cue { animation:bounce 2s infinite; color:var(--text-muted); font-size:1.4rem; }
+
+/* Container */
+.container { max-width:880px; margin:0 auto; padding:0 1.5rem 5rem; }
+
+/* Chapter headings */
+.ch { margin-top:5rem; margin-bottom:2rem; position:relative; padding-left:1.8rem; }
+.ch::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; border-radius:3px; }
+.ch-o::before { background:linear-gradient(to bottom,var(--orange),transparent); }
+.ch-g::before { background:linear-gradient(to bottom,var(--accent),transparent); }
+.ch-b::before { background:linear-gradient(to bottom,var(--blue),transparent); }
+.ch-p::before { background:linear-gradient(to bottom,var(--purple),transparent); }
+.ch-c::before { background:linear-gradient(to bottom,var(--cyan),transparent); }
+.ch-y::before { background:linear-gradient(to bottom,var(--yellow),transparent); }
+.ch-label { font-family:'Fira Code',monospace; font-size:.7rem; letter-spacing:.18em; text-transform:uppercase; margin-bottom:.4rem; }
+.ch-o .ch-label { color:var(--orange); } .ch-g .ch-label { color:var(--accent); } .ch-b .ch-label { color:var(--blue); } .ch-p .ch-label { color:var(--purple); } .ch-c .ch-label { color:var(--cyan); } .ch-y .ch-label { color:var(--yellow); }
+.ch h2 { font-family:'Fraunces',serif; font-size:clamp(1.6rem,3.5vw,2.3rem); font-weight:700; line-height:1.2; }
+
+/* Prose */
+.prose { font-size:1.05rem; color:var(--text-dim); margin-bottom:1.4rem; }
+.prose strong { color:var(--text); font-weight:600; }
+.prose em { color:var(--accent); font-style:normal; font-weight:500; }
+.prose .hl { color:var(--orange); font-weight:600; }
+.prose code { font-family:'Fira Code',monospace; font-size:.85em; background:var(--bg-card); padding:.15em .45em; border-radius:4px; color:var(--orange); }
+
+/* Definition box */
+.def { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.4rem 1.6rem; margin:1.8rem 0; }
+.def.bo { border-left:3px solid var(--orange); } .def.bg { border-left:3px solid var(--accent); } .def.bb { border-left:3px solid var(--blue); } .def.bp { border-left:3px solid var(--purple); }
+.def .dt { font-family:'Fira Code',monospace; font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; margin-bottom:.5rem; }
+.def.bo .dt { color:var(--orange); } .def.bg .dt { color:var(--accent); } .def.bb .dt { color:var(--blue); } .def.bp .dt { color:var(--purple); }
+.def p { font-size:1rem; line-height:1.7; }
+
+/* Callout */
+.callout { display:flex; gap:1rem; align-items:flex-start; border-radius:10px; padding:1.2rem 1.4rem; margin:1.8rem 0; }
+.callout.cg { background:var(--accent-glow); border:1px solid rgba(74,222,128,.18); }
+.callout.co { background:var(--orange-glow); border:1px solid rgba(251,146,60,.18); }
+.callout.cb { background:rgba(96,165,250,.07); border:1px solid rgba(96,165,250,.18); }
+.callout.cp { background:rgba(167,139,250,.06); border:1px solid rgba(167,139,250,.18); }
+.callout.cy { background:rgba(250,204,21,.05); border:1px solid rgba(250,204,21,.18); }
+.callout .ci { font-size:1.3rem; flex-shrink:0; margin-top:.1rem; }
+.callout p { font-size:.92rem; line-height:1.65; }
+
+/* Code terminal */
+.term { background:var(--bg-code); border:1px solid var(--border); border-radius:10px; margin:1.8rem 0; overflow:hidden; font-family:'Fira Code',monospace; font-size:.82rem; line-height:1.75; }
+.term-bar { background:#161b22; padding:.45rem 1rem; display:flex; gap:6px; align-items:center; }
+.dot { width:10px; height:10px; border-radius:50%; } .dot.r { background:#f87171; } .dot.y { background:#facc15; } .dot.g { background:#4ade80; }
+.term-bar span { color:var(--text-muted); font-size:.72rem; margin-left:.8rem; }
+.term pre { padding:1rem 1.3rem; overflow-x:auto; white-space:pre; }
+.kw { color:var(--syn-kw); } .fn { color:var(--syn-fn); } .str { color:var(--syn-str); } .num { color:var(--syn-num); } .cm { color:var(--syn-cm); } .op { color:var(--syn-op); }
+
+/* Info grid */
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:1.1rem; margin:1.8rem 0; }
+.card { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.4rem; transition:border-color .3s,transform .3s; }
+.card:hover { border-color:var(--orange-dim); transform:translateY(-2px); }
+.card .ic { font-size:1.5rem; margin-bottom:.7rem; }
+.card h4 { font-family:'Fraunces',serif; font-size:1.05rem; margin-bottom:.4rem; }
+.card p { font-size:.88rem; color:var(--text-muted); line-height:1.55; }
+
+/* Step cards */
+.step { background:var(--bg-card); border:1px solid var(--border); border-radius:10px; padding:1.3rem 1.5rem 1.3rem 4.2rem; margin:1.3rem 0; position:relative; }
+.step .sn { position:absolute; left:1rem; top:1.1rem; width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Fira Code',monospace; font-weight:600; font-size:.82rem; }
+.step h4 { font-family:'Fraunces',serif; font-size:1rem; margin-bottom:.3rem; }
+.step p { font-size:.92rem; color:var(--text-dim); line-height:1.6; }
+.step p code { font-family:'Fira Code',monospace; font-size:.82em; background:var(--bg-alt); padding:.12em .4em; border-radius:4px; color:var(--orange); }
+.s1 { border-left:3px solid var(--blue); } .s1 .sn { background:rgba(96,165,250,.1); color:var(--blue); border:1px solid rgba(96,165,250,.25); }
+.s2 { border-left:3px solid var(--purple); } .s2 .sn { background:rgba(167,139,250,.1); color:var(--purple); border:1px solid rgba(167,139,250,.25); }
+.s3 { border-left:3px solid var(--orange); } .s3 .sn { background:var(--orange-glow); color:var(--orange); border:1px solid rgba(251,146,60,.25); }
+.s4 { border-left:3px solid var(--cyan); } .s4 .sn { background:rgba(34,211,238,.08); color:var(--cyan); border:1px solid rgba(34,211,238,.25); }
+.s5 { border-left:3px solid var(--accent); } .s5 .sn { background:var(--accent-glow); color:var(--accent); border:1px solid rgba(74,222,128,.25); }
+.s6 { border-left:3px solid var(--pink); } .s6 .sn { background:rgba(244,114,182,.07); color:var(--pink); border:1px solid rgba(244,114,182,.25); }
+.s7 { border-left:3px solid var(--yellow); } .s7 .sn { background:rgba(250,204,21,.07); color:var(--yellow); border:1px solid rgba(250,204,21,.25); }
+.s8 { border-left:3px solid var(--red); } .s8 .sn { background:rgba(248,113,113,.07); color:var(--red); border:1px solid rgba(248,113,113,.25); }
+.s9 { border-left:3px solid var(--text-muted); } .s9 .sn { background:rgba(100,116,139,.1); color:var(--text-dim); border:1px solid rgba(100,116,139,.25); }
+
+/* Table */
+.tbl { width:100%; border-collapse:collapse; margin:1.8rem 0; font-size:.92rem; }
+.tbl th { font-family:'Fira Code',monospace; font-size:.7rem; letter-spacing:.1em; text-transform:uppercase; text-align:left; padding:.7rem 1rem; border-bottom:2px solid var(--border); }
+.tbl td { padding:.7rem 1rem; border-bottom:1px solid var(--border); color:var(--text-dim); vertical-align:top; }
+.tbl tr:hover td { background:var(--bg-card); }
+
+/* Diagram wrapper */
+.dia { margin:2.2rem 0; background:var(--bg-card); border:1px solid var(--border); border-radius:12px; padding:1.8rem; overflow-x:auto; }
+.dia .dia-t { font-family:'Fira Code',monospace; font-size:.68rem; letter-spacing:.15em; text-transform:uppercase; margin-bottom:1rem; }
+.dia svg { display:block; margin:0 auto; width:100%; }
+
+/* ASCII diagram */
+.ascii { background:var(--bg-code); border:1px solid var(--border); border-radius:10px; padding:1.2rem 1.5rem; margin:1.8rem 0; font-family:'Fira Code',monospace; font-size:.78rem; line-height:1.6; color:var(--text-dim); overflow-x:auto; white-space:pre; }
+
+/* Section separator */
+.sep { height:1px; background:linear-gradient(90deg,transparent,var(--border),transparent); margin:3rem 0; }
+
+/* Footer */
+.footer { text-align:center; padding:2.5rem 1rem; color:var(--text-muted); font-size:.82rem; border-top:1px solid var(--border); margin-top:3rem; }
+
+@keyframes fadeUp { from { opacity:0; transform:translateY(25px); } to { opacity:1; transform:translateY(0); } }
+@keyframes fadeDown { from { opacity:0; transform:translateY(-18px); } to { opacity:1; transform:translateY(0); } }
+@keyframes bounce { 0%,100% { transform:translateY(0); } 50% { transform:translateY(7px); } }
+@media(max-width:600px) { .container { padding:0 1rem 4rem; } .ch { padding-left:1.2rem; } .term pre { padding:.8rem; font-size:.75rem; } .step { padding-left:3.5rem; } .step .sn { left:.7rem; width:28px; height:28px; font-size:.72rem; } }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-ep">Episode 06 &mdash; Complete Notes</div>
+  <h1><span class="ho">libuv</span> &amp; <span class="hg">Async</span> <span class="hb">I/O</span></h1>
+  <p class="hero-sub">JavaScript is synchronous and single-threaded. So how does Node.js handle thousands of concurrent operations? The answer lies in V8, libuv, the call stack, and the event loop working in perfect harmony.</p>
+  <div class="scroll-cue">&#8595;</div>
+</section>
+
+<div class="container">
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 1 -->
+<div class="ch ch-o">
+  <div class="ch-label">Chapter 01</div>
+  <h2>The Foundation &mdash; JavaScript Is Synchronous &amp; Single-Threaded</h2>
+</div>
+
+<p class="prose">Before we can understand how Node.js handles async operations, we need to be crystal clear about what JavaScript <strong>actually is</strong> at its core.</p>
+
+<div class="def bo">
+  <div class="dt">Definition &mdash; What is a Thread?</div>
+  <p>A <strong>thread</strong> is the smallest unit of execution within a process in an operating system. It represents a single sequence of instructions that can be managed independently by the OS scheduler. Multiple threads can exist within a single process, sharing the same memory space but executing independently. Programs can be <strong>single-threaded</strong> (one instruction sequence) or <strong>multi-threaded</strong> (multiple sequences running in parallel).</p>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <div class="ic">&#9654;&#65039;</div>
+    <h4>Single-Threaded</h4>
+    <p>JavaScript runs on <strong>one thread</strong> with a <strong>single call stack</strong>. At any given moment, only one piece of code is being processed. There is no parallelism inside the JS engine itself.</p>
+  </div>
+  <div class="card">
+    <div class="ic">&#128260;</div>
+    <h4>Synchronous</h4>
+    <p>Code executes <strong>line by line, in order</strong>. Line 2 only runs after Line 1 finishes completely. If a function takes time, it <strong>blocks</strong> everything after it.</p>
+  </div>
+  <div class="card">
+    <div class="ic">&#9881;&#65039;</div>
+    <h4>V8 Engine</h4>
+    <p>The V8 engine (used in Chrome and Node.js) runs on this single thread, parsing and executing JavaScript code sequentially. It manages the call stack, memory heap, and garbage collection.</p>
+  </div>
+</div>
+
+<p class="prose">In languages like <strong>C++ or Java</strong>, code can run across multiple threads simultaneously &mdash; one part on Thread 1, another on Thread 2. JavaScript doesn't do this. It executes one line, then the next, then the next. If you're executing line 2, it will <strong>only run after line 1 has completely finished</strong>. This is the essence of synchronous execution.</p>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 2 — Sync vs Async -->
+<div class="ch ch-g">
+  <div class="ch-label">Chapter 02</div>
+  <h2>Synchronous vs Asynchronous &mdash; The Ice Cream Shop Analogy</h2>
+</div>
+
+<div class="def bg">
+  <div class="dt">Synchronous System</div>
+  <p>Tasks are completed <strong>one after another</strong>. Think of it as having just one hand to accomplish 10 tasks &mdash; you must complete one before starting the next. Like an ice cream shop with a single server: each customer's order is fully completed before the next customer is even acknowledged. Total time = sum of all individual task times.</p>
+</div>
+
+<div class="def bg">
+  <div class="dt">Asynchronous System</div>
+  <p>Tasks are completed <strong>independently</strong>. Imagine having 10 hands for 10 tasks &mdash; each hand works on its task at the same time. In the ice cream shop: Coke orders are served instantly (0 min), ice cream orders take 5 min, complex orders take 10 min &mdash; but <strong>no one waits for anyone else's order</strong>. Total time = the longest single task.</p>
+</div>
+
+<div class="dia">
+  <div class="dia-t" style="color:var(--orange)">Synchronous vs Asynchronous &mdash; Visual Comparison</div>
+  <svg viewBox="0 0 750 220" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="20" width="340" height="180" rx="12" fill="#12151c" stroke="#fb923c"/>
+    <text x="190" y="12" text-anchor="middle" fill="#fb923c" font-family="Fira Code,monospace" font-size="10" letter-spacing=".1em">SYNCHRONOUS</text>
+    <text x="190" y="52" text-anchor="middle" fill="#e2e8f0" font-family="Fraunces,serif" font-size="15" font-weight="700">One Hand, 10 Tasks</text>
+    <text x="190" y="78" text-anchor="middle" fill="#94a3b8" font-family="DM Sans,sans-serif" font-size="12">Complete one before starting the next</text>
+    <rect x="50" y="100" width="280" height="6" rx="3" fill="#1e293b"/>
+    <rect x="50" y="100" width="60" height="6" rx="3" fill="#fb923c"/>
+    <rect x="115" y="100" width="60" height="6" rx="3" fill="#ea580c"/>
+    <rect x="180" y="100" width="60" height="6" rx="3" fill="#fb923c"/>
+    <rect x="245" y="100" width="60" height="6" rx="3" fill="#ea580c"/>
+    <text x="80" y="125" text-anchor="middle" fill="#64748b" font-family="Fira Code,monospace" font-size="9">Task 1</text>
+    <text x="145" y="125" text-anchor="middle" fill="#64748b" font-family="Fira Code,monospace" font-size="9">Task 2</text>
+    <text x="210" y="125" text-anchor="middle" fill="#64748b" font-family="Fira Code,monospace" font-size="9">Task 3</text>
+    <text x="275" y="125" text-anchor="middle" fill="#64748b" font-family="Fira Code,monospace" font-size="9">Task 4</text>
+    <text x="190" y="165" text-anchor="middle" fill="#f87171" font-family="DM Sans,sans-serif" font-size="11">Each task waits for the previous one</text>
+    <text x="190" y="185" text-anchor="middle" fill="#475569" font-family="DM Sans,sans-serif" font-size="10">Total time = sum of all tasks</text>
+    <rect x="390" y="20" width="340" height="180" rx="12" fill="#12151c" stroke="#22c55e"/>
+    <text x="560" y="12" text-anchor="middle" fill="#4ade80" font-family="Fira Code,monospace" font-size="10" letter-spacing=".1em">ASYNCHRONOUS</text>
+    <text x="560" y="52" text-anchor="middle" fill="#e2e8f0" font-family="Fraunces,serif" font-size="15" font-weight="700">10 Hands, 10 Tasks</text>
+    <text x="560" y="78" text-anchor="middle" fill="#94a3b8" font-family="DM Sans,sans-serif" font-size="12">All tasks run independently, at the same time</text>
+    <rect x="420" y="96" width="120" height="6" rx="3" fill="#4ade80"/>
+    <rect x="420" y="108" width="80" height="6" rx="3" fill="#22c55e"/>
+    <rect x="420" y="120" width="140" height="6" rx="3" fill="#4ade80"/>
+    <rect x="420" y="132" width="60" height="6" rx="3" fill="#22c55e"/>
+    <text x="555" y="101" fill="#64748b" font-family="Fira Code,monospace" font-size="8">Task 1</text>
+    <text x="515" y="113" fill="#64748b" font-family="Fira Code,monospace" font-size="8">Task 2</text>
+    <text x="575" y="125" fill="#64748b" font-family="Fira Code,monospace" font-size="8">Task 3</text>
+    <text x="495" y="137" fill="#64748b" font-family="Fira Code,monospace" font-size="8">Task 4</text>
+    <text x="560" y="165" text-anchor="middle" fill="#4ade80" font-family="DM Sans,sans-serif" font-size="11">No task waits for another</text>
+    <text x="560" y="185" text-anchor="middle" fill="#475569" font-family="DM Sans,sans-serif" font-size="10">Total time = longest single task</text>
+  </svg>
+</div>
+
+<div class="callout co">
+  <div class="ci">&#128161;</div>
+  <p><strong>The Big Paradox:</strong> JavaScript <em>itself</em> is synchronous. But with the power of <strong>Node.js</strong> (specifically <span class="hl">libuv</span>), it can handle asynchronous operations &mdash; making it <em>appear</em> to perform multiple tasks concurrently while the JS engine still processes one thing at a time.</p>
+</div>
+
+<p class="prose"><strong>Code examples that illustrate the difference:</strong></p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span>synchronous-example.js &mdash; executes immediately, top to bottom</span></div>
+  <pre><span class="kw">let</span> a = <span class="num">10786</span>;
+<span class="kw">let</span> b = <span class="num">20987</span>;
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = x * y;
+  <span class="kw">return</span> result;
+}
+
+<span class="kw">let</span> c = <span class="fn">multiplyFn</span>(a, b);
+console.<span class="fn">log</span>(c); <span class="cm">// 226215682</span></pre>
+</div>
+
+<div class="term">
+  <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span>asynchronous-example.js &mdash; these tasks take time, handled by libuv</span></div>
+  <pre><span class="cm">// 1. API Call — network request, takes time</span>
+<span class="fn">https.get</span>(<span class="str">"https://api.fbi.com"</span>, (res) => {
+  console.<span class="fn">log</span>(<span class="str">"secret data:"</span>, res.secret);
+});
+
+<span class="cm">// 2. File Read — disk I/O, takes time</span>
+fs.<span class="fn">readFile</span>(<span class="str">"./gossip.txt"</span>, <span class="str">"utf8"</span>, (data) => {
+  console.<span class="fn">log</span>(<span class="str">"File Data"</span>, data);
+});
+
+<span class="cm">// 3. Timer — waits 5 seconds</span>
+<span class="fn">setTimeout</span>(() => {
+  console.<span class="fn">log</span>(<span class="str">"wait here for 5 seconds"</span>);
+}, <span class="num">5000</span>);</pre>
+</div>
+
+<p class="prose">The synchronous code executes immediately &mdash; plain math, variable assignment, function calls. The asynchronous code involves <strong>waiting</strong>: waiting for a network response, waiting for a file to be read from disk, waiting for a timer to expire. These are the operations that Node.js offloads to <em>libuv</em>.</p>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 3 — V8 Internals -->
+<div class="ch ch-b">
+  <div class="ch-label">Chapter 03</div>
+  <h2>Inside V8 &mdash; Call Stack, Memory Heap &amp; Garbage Collector</h2>
+</div>
+
+<p class="prose">The V8 engine has three key components that work together to run your JavaScript:</p>
+
+<div class="grid">
+  <div class="card">
+    <div class="ic">&#128218;</div>
+    <h4>Call Stack (LIFO)</h4>
+    <p>A stack data structure where function calls are pushed and popped. The currently executing function sits on top. Only <strong>one function</strong> runs at a time &mdash; this is why JS is single-threaded.</p>
+  </div>
+  <div class="card">
+    <div class="ic">&#128451;&#65039;</div>
+    <h4>Memory Heap</h4>
+    <p>An unstructured pool of memory where <strong>variables, objects, closures, and function definitions</strong> are stored. This is where your data lives while the program runs.</p>
+  </div>
+  <div class="card">
+    <div class="ic">&#128465;&#65039;</div>
+    <h4>Garbage Collector</h4>
+    <p>Automatically identifies variables and objects that are no longer referenced and <strong>frees their memory</strong>. Unlike C++, you never manage memory manually in JavaScript.</p>
+  </div>
+</div>
+
+<div class="ascii">┌─────────────────────────────────────────────────────────┐
+│                   V8 JS ENGINE (Single Thread)           │
+│                                                          │
+│  ┌──────────────┐   ┌──────────────────┐   ┌──────────┐ │
+│  │  Call Stack   │   │   Memory Heap    │   │ Garbage  │ │
+│  │   (LIFO)     │   │ (objects, vars,  │   │Collector │ │
+│  │              │   │  closures, fns)  │   │          │ │
+│  │ multiplyFn() │   │                  │   │ Finds &  │ │
+│  │ ──────────── │   │  a = 10786       │   │ frees    │ │
+│  │   GEC        │   │  b = 20987       │   │ unused   │ │
+│  │              │   │  multiplyFn=fn{} │   │ memory   │ │
+│  └──────────────┘   └──────────────────┘   └──────────┘ │
+│        ↑                                                 │
+│   Executes code line by line                             │
+└─────────────────────────────────────────────────────────┘</div>
+
+<p class="prose"><strong>Key insight:</strong> When you write synchronous code, it all happens step by step in the call stack, using memory from the heap, and the garbage collector quietly tidies up behind the scenes. No interruptions, no parallel tasks &mdash; just one thing at a time.</p>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 4 — Sync Step by Step -->
+<div class="ch ch-p">
+  <div class="ch-label">Chapter 04</div>
+  <h2>How Synchronous Code Executes &mdash; Step by Step</h2>
+</div>
+
+<p class="prose">Let's trace exactly how the V8 engine executes this synchronous code through the call stack:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span>The code we're tracing step by step</span></div>
+  <pre><span class="kw">let</span> a = <span class="num">10786</span>;         <span class="cm">// Line 1</span>
+<span class="kw">let</span> b = <span class="num">20987</span>;         <span class="cm">// Line 2</span>
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {  <span class="cm">// Line 4</span>
+  <span class="kw">const</span> result = x * y;       <span class="cm">// Line 5</span>
+  <span class="kw">return</span> result;              <span class="cm">// Line 6</span>
+}                              <span class="cm">// Line 7</span>
+
+<span class="kw">let</span> c = <span class="fn">multiplyFn</span>(a, b);  <span class="cm">// Line 9</span>
+console.<span class="fn">log</span>(c);              <span class="cm">// Line 10 → outputs 226215682</span></pre>
+</div>
+
+<div class="step s1"><div class="sn">1</div><h4>Global Execution Context (GEC) Created</h4><p>As soon as V8 begins, it creates the <strong>GEC</strong> &mdash; the main environment for top-level code. This is always the first thing pushed onto the call stack. The call stack now has: <code>[GEC]</code></p></div>
+
+<div class="step s2"><div class="sn">2</div><h4>Memory Creation Phase (Hoisting)</h4><p>Before any code runs, V8 scans the entire file. Variables <code>a</code> and <code>b</code> are allocated in memory and set to <code>undefined</code>. The function <code>multiplyFn</code> is stored in memory with its <strong>entire function definition</strong> (this is why function declarations can be called before they appear in code).</p></div>
+
+<div class="step s3"><div class="sn">3</div><h4>Code Execution Phase Begins</h4><p><code>let a = 10786</code> executes: <code>a</code> is now assigned <code>10786</code> in memory. Then <code>let b = 20987</code> executes: <code>b</code> gets <code>20987</code>. V8 processes these line by line, top to bottom. The function definition on line 4 is skipped (already stored in memory).</p></div>
+
+<div class="step s4"><div class="sn">4</div><h4>Function Invocation &mdash; New Execution Context</h4><p>When <code>multiplyFn(a, b)</code> is called on line 9, V8 creates a <strong>new Function Execution Context (FEC)</strong> and pushes it onto the top of the call stack. Parameters <code>x</code> and <code>y</code> receive the values of <code>a</code> (10786) and <code>b</code> (20987). Call stack: <code>[FEC(multiplyFn), GEC]</code></p></div>
+
+<div class="step s5"><div class="sn">5</div><h4>Execute Inside multiplyFn</h4><p>Inside the function, <code>result</code> is initialized as <code>undefined</code> (memory phase), then assigned <code>10786 × 20987 = 226215682</code> (execution phase). Then <code>return result</code> is hit &mdash; the function returns <code>226215682</code>, and its execution context is <strong>popped off</strong> the call stack. The garbage collector may now clean up memory used by this context.</p></div>
+
+<div class="step s6"><div class="sn">6</div><h4>Resume GEC &mdash; Assign Return Value</h4><p>Back in the GEC, the returned value <code>226215682</code> is assigned to variable <code>c</code>. Then <code>console.log(c)</code> prints the result to the console. Call stack: <code>[GEC]</code></p></div>
+
+<div class="step s7"><div class="sn">7</div><h4>GEC Popped &mdash; Call Stack Empty</h4><p>All code has been executed. The GEC is removed from the call stack. The stack is now <strong>completely empty</strong>, and the JS engine is idle. Program ends.</p></div>
+
+<div class="callout cy">
+  <div class="ci">&#128161;</div>
+  <p><strong>Important Concept:</strong> When a function's execution context is popped off the call stack, the <strong>garbage collector</strong> may clear memory allocated for that context. Once the GEC is popped and the stack is empty, V8 is done with synchronous work.</p>
+</div>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 5 — The Superhero: libuv -->
+<div class="ch ch-g">
+  <div class="ch-label">Chapter 05</div>
+  <h2>The Superhero &mdash; libuv &amp; How Async Code Executes</h2>
+</div>
+
+<p class="prose">Here's the million-dollar question: if V8 is single-threaded and synchronous, how does Node.js handle things like <strong>API calls, file reads, and timers</strong> without blocking everything?</p>
+
+<p class="prose">The answer: <strong>V8 doesn't do it alone.</strong> The JavaScript engine has <span class="hl">no concept of time or waiting</span>. It needs superpowers. This is where Node.js comes in, and it grants those powers through a C library called <span class="hl">libuv</span>.</p>
+
+<div class="def bg">
+  <div class="dt">What is libuv?</div>
+  <p><strong>libuv</strong> is a C library (not JavaScript!) that provides Node.js with its async I/O superpowers. It handles the <strong>Event Loop</strong>, <strong>Thread Pool</strong>, file system operations, networking, DNS resolution, and timers. It is written in <strong>C language</strong>, which makes it very efficient at communicating with the operating system. libuv acts as a <strong>bridge between JavaScript and the OS</strong> &mdash; V8 can't talk to the OS directly, so libuv does it on its behalf.</p>
+</div>
+
+<div class="ascii">┌──────────────────┐          ┌──────────┐          ┌──────────────┐
+│    V8 ENGINE     │          │  LIBUV   │          │      OS      │
+│                  │  async   │          │  talks   │              │
+│  Call Stack      │ ──────→  │ Event    │ ──────→  │  Files       │
+│  Memory Heap     │  offload │ Loop     │   to     │  Network     │
+│  Garbage         │          │ Thread   │          │  Database    │
+│  Collector       │ ←──────  │ Pool     │ ←──────  │  Timers      │
+│                  │ callback │          │ results  │              │
+└──────────────────┘          └──────────┘          └──────────────┘
+                                                                    
+       JS code runs here      Manages async          System-level   
+       synchronously          operations             resources      </div>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 6 — Full Async Walkthrough -->
+<div class="ch ch-c">
+  <div class="ch-label">Chapter 06</div>
+  <h2>Complete Async Execution Walkthrough &mdash; The Big Picture</h2>
+</div>
+
+<p class="prose">Let's trace through a <strong>mixed sync + async program</strong> &mdash; the exact code shown in the PDF diagrams &mdash; to see how V8 and libuv work together:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot r"></div><div class="dot y"></div><div class="dot g"></div><span>mixed-code.js &mdash; sync + async together</span></div>
+  <pre><span class="kw">let</span> a = <span class="num">10786</span>;
+<span class="kw">let</span> b = <span class="num">20987</span>;
+
+<span class="cm">// Async operation 1: API call (callback A)</span>
+https.<span class="fn">get</span>(<span class="str">"https://api.fbi.com"</span>, (res) => {       <span class="cm">// ← Callback A</span>
+  console.<span class="fn">log</span>(res.secret);
+});
+
+<span class="cm">// Async operation 2: Timer (callback B)</span>
+<span class="fn">setTimeout</span>(() => {                                <span class="cm">// ← Callback B</span>
+  console.<span class="fn">log</span>(<span class="str">"setTimeout"</span>);
+}, <span class="num">5000</span>);
+
+<span class="cm">// Async operation 3: File read (callback C)</span>
+fs.<span class="fn">readFile</span>(<span class="str">"./gossip.txt"</span>, <span class="str">"utf8"</span>, (data) => {  <span class="cm">// ← Callback C</span>
+  console.<span class="fn">log</span>(<span class="str">"File Data"</span>, data);
+});
+
+<span class="cm">// Sync: function definition + call</span>
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = x * y;
+  <span class="kw">return</span> result;
+}
+
+<span class="kw">let</span> c = <span class="fn">multiplyFn</span>(a, b);
+console.<span class="fn">log</span>(c);  <span class="cm">// 226215682</span></pre>
+</div>
+
+<p class="prose">Now let's walk through each line and see where it goes:</p>
+
+<div class="step s1"><div class="sn">1</div><h4>GEC created &mdash; <code>a</code> and <code>b</code> assigned</h4><p><code>let a = 10786</code> and <code>let b = 20987</code> execute synchronously in the call stack within the GEC. These are simple variable assignments &mdash; V8 handles them directly.</p></div>
+
+<div class="step s2"><div class="sn">2</div><h4><code>https.get()</code> hit &mdash; async! Offloaded to libuv</h4><p>V8 encounters the API call and recognizes it as an asynchronous operation. It signals <span class="hl">libuv</span> to handle it. libuv registers this API call with its associated <strong>callback function A</strong> in its event loop. V8 <strong>does not wait</strong> &mdash; it immediately moves to the next line.</p></div>
+
+<div class="step s3"><div class="sn">3</div><h4><code>setTimeout()</code> hit &mdash; async! Offloaded to libuv</h4><p>V8 sees another async operation. It hands the timer off to libuv with <strong>callback B</strong>. libuv registers it and starts tracking the 5-second timer. V8 keeps going.</p></div>
+
+<div class="step s4"><div class="sn">4</div><h4><code>fs.readFile()</code> hit &mdash; async! Offloaded to libuv</h4><p>Yet another async operation. V8 offloads the file read to libuv with <strong>callback C</strong>. libuv uses its <strong>thread pool</strong> to perform the file system operation in the background. V8 continues without waiting.</p></div>
+
+<div class="step s5"><div class="sn">5</div><h4><code>multiplyFn(a, b)</code> &mdash; sync! Runs on call stack</h4><p>V8 encounters the function call. A new <strong>Function Execution Context</strong> is created and pushed onto the call stack. <code>x</code> gets 10786, <code>y</code> gets 20987. <code>result = 10786 * 20987 = 226215682</code>. The function returns, its context is popped, and <code>c</code> receives the value.</p></div>
+
+<div class="step s6"><div class="sn">6</div><h4><code>console.log(c)</code> &mdash; prints 226215682</h4><p>The result is printed. This is the last synchronous line. The GEC is now popped off the call stack. <strong>The call stack is empty.</strong> V8 is idle.</p></div>
+
+<div class="step s7"><div class="sn">7</div><h4>libuv takes over &mdash; heavy lifting in the background</h4><p>While V8 relaxes, libuv is busy: it's processing the 5-second timer, waiting for the network response from the API, and reading gossip.txt from disk. It handles all these operations by communicating with the OS.</p></div>
+
+<div class="step s8"><div class="sn">8</div><h4>Async operations complete &mdash; callbacks return via Event Loop</h4><p>As each async operation finishes, libuv pushes the corresponding callback onto the <strong>callback queue</strong>. The <strong>event loop</strong> checks: "Is the call stack empty?" If yes, it moves the callback from the queue onto the call stack, and V8 executes it.</p></div>
+
+<div class="step s9"><div class="sn">9</div><h4>Callbacks execute one by one</h4><p>Callback C (file read) might finish first &mdash; it runs. Then maybe Callback A (API response) comes back &mdash; it runs. Finally Callback B (timer) fires after 5 seconds &mdash; it runs. Each callback is executed <strong>one at a time</strong> on the single-threaded call stack, but the <em>waiting</em> happened in parallel via libuv.</p></div>
+
+<div class="dia">
+  <div class="dia-t" style="color:var(--accent)">How Async Code Flows Through Node.js</div>
+  <svg viewBox="0 0 750 360" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <marker id="ag" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#4ade80"/></marker>
+      <marker id="ao" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#fb923c"/></marker>
+      <marker id="ab2" markerWidth="7" markerHeight="5" refX="7" refY="2.5" orient="auto"><polygon points="0 0,7 2.5,0 5" fill="#60a5fa"/></marker>
+    </defs>
+    <rect x="30" y="20" width="250" height="310" rx="12" fill="rgba(251,146,60,.03)" stroke="#fb923c"/>
+    <text x="155" y="45" text-anchor="middle" fill="#fb923c" font-family="Fira Code,monospace" font-size="10" letter-spacing=".1em">V8 ENGINE (Call Stack)</text>
+    <rect x="55" y="60" width="200" height="26" rx="5" fill="#1e293b"/><text x="155" y="78" text-anchor="middle" fill="#94a3b8" font-family="Fira Code,monospace" font-size="9">let a = 10786; let b = 20987;</text>
+    <rect x="55" y="93" width="200" height="26" rx="5" fill="rgba(251,146,60,.08)" stroke="rgba(251,146,60,.25)"/><text x="155" y="111" text-anchor="middle" fill="#fb923c" font-family="Fira Code,monospace" font-size="9">https.get(API) → async!</text>
+    <rect x="55" y="126" width="200" height="26" rx="5" fill="rgba(167,139,250,.08)" stroke="rgba(167,139,250,.25)"/><text x="155" y="144" text-anchor="middle" fill="#a78bfa" font-family="Fira Code,monospace" font-size="9">setTimeout() → async!</text>
+    <rect x="55" y="159" width="200" height="26" rx="5" fill="rgba(96,165,250,.08)" stroke="rgba(96,165,250,.25)"/><text x="155" y="177" text-anchor="middle" fill="#60a5fa" font-family="Fira Code,monospace" font-size="9">fs.readFile() → async!</text>
+    <rect x="55" y="197" width="200" height="26" rx="5" fill="#1e293b"/><text x="155" y="215" text-anchor="middle" fill="#94a3b8" font-family="Fira Code,monospace" font-size="9">let c = multiplyFn(a,b)</text>
+    <rect x="55" y="230" width="200" height="26" rx="5" fill="#1e293b"/><text x="155" y="248" text-anchor="middle" fill="#94a3b8" font-family="Fira Code,monospace" font-size="9">console.log(c)</text>
+    <text x="155" y="288" text-anchor="middle" fill="#475569" font-family="DM Sans,sans-serif" font-size="10">Sync code runs here.</text>
+    <text x="155" y="308" text-anchor="middle" fill="#475569" font-family="DM Sans,sans-serif" font-size="10">Async offloaded to libuv →</text>
+    <line x1="260" y1="106" x2="340" y2="106" stroke="#fb923c" stroke-width="1.5" marker-end="url(#ao)"/>
+    <line x1="260" y1="139" x2="340" y2="165" stroke="#a78bfa" stroke-width="1.5" marker-end="url(#ab2)"/>
+    <line x1="260" y1="172" x2="340" y2="225" stroke="#60a5fa" stroke-width="1.5" marker-end="url(#ab2)"/>
+    <rect x="345" y="20" width="250" height="310" rx="12" fill="rgba(74,222,128,.03)" stroke="#22c55e"/>
+    <text x="470" y="45" text-anchor="middle" fill="#4ade80" font-family="Fira Code,monospace" font-size="10" letter-spacing=".1em">LIBUV (C Library)</text>
+    <rect x="370" y="65" width="200" height="55" rx="8" fill="rgba(74,222,128,.05)" stroke="rgba(74,222,128,.15)"/>
+    <text x="470" y="86" text-anchor="middle" fill="#4ade80" font-family="Fraunces,serif" font-size="13" font-weight="700">Event Loop</text>
+    <text x="470" y="108" text-anchor="middle" fill="#64748b" font-family="DM Sans,sans-serif" font-size="10">Registers callbacks, manages queues</text>
+    <rect x="370" y="135" width="200" height="36" rx="6" fill="rgba(251,146,60,.05)" stroke="rgba(251,146,60,.15)"/><text x="470" y="158" text-anchor="middle" fill="#fb923c" font-family="Fira Code,monospace" font-size="10">API callback (A) → www</text>
+    <rect x="370" y="182" width="200" height="36" rx="6" fill="rgba(167,139,250,.05)" stroke="rgba(167,139,250,.15)"/><text x="470" y="205" text-anchor="middle" fill="#a78bfa" font-family="Fira Code,monospace" font-size="10">Timer callback (B) → timer</text>
+    <rect x="370" y="229" width="200" height="36" rx="6" fill="rgba(96,165,250,.05)" stroke="rgba(96,165,250,.15)"/><text x="470" y="252" text-anchor="middle" fill="#60a5fa" font-family="Fira Code,monospace" font-size="10">File callback (C) → disk</text>
+    <text x="470" y="295" text-anchor="middle" fill="#475569" font-family="DM Sans,sans-serif" font-size="10">Talks to OS, returns results</text>
+    <text x="470" y="315" text-anchor="middle" fill="#475569" font-family="DM Sans,sans-serif" font-size="10">Callbacks → back to call stack</text>
+    <rect x="620" y="115" width="110" height="125" rx="8" fill="rgba(250,204,21,.03)" stroke="rgba(250,204,21,.2)"/>
+    <text x="675" y="140" text-anchor="middle" fill="#facc15" font-family="Fira Code,monospace" font-size="9" letter-spacing=".05em">WHEN DONE</text>
+    <text x="675" y="163" text-anchor="middle" fill="#94a3b8" font-family="DM Sans,sans-serif" font-size="10">Callbacks pushed</text>
+    <text x="675" y="180" text-anchor="middle" fill="#94a3b8" font-family="DM Sans,sans-serif" font-size="10">back to V8's</text>
+    <text x="675" y="197" text-anchor="middle" fill="#94a3b8" font-family="DM Sans,sans-serif" font-size="10">call stack via</text>
+    <text x="675" y="222" text-anchor="middle" fill="#facc15" font-family="Fraunces,serif" font-size="13" font-weight="700">Event Loop</text>
+    <line x1="596" y1="180" x2="625" y2="180" stroke="#4ade80" stroke-width="1.5" marker-end="url(#ag)"/>
+  </svg>
+</div>
+
+<div class="callout cg">
+  <div class="ci">&#127919;</div>
+  <p><strong>The Key Insight:</strong> V8 handles synchronous JS execution. libuv handles async operations (file I/O, networking, timers) by talking to the OS. The <strong>event loop</strong> is the coordinator that pushes completed async callbacks back to V8's call stack when it's free. This is why Node.js is called <strong>"non-blocking I/O"</strong> &mdash; the main thread never waits.</p>
+</div>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- CH 7 — Event Loop Architecture -->
+<div class="ch ch-y">
+  <div class="ch-label">Chapter 07</div>
+  <h2>The Event Loop &amp; Callback Queue &mdash; Connecting Everything</h2>
+</div>
+
+<p class="prose">The architecture from the DOCX includes this important detail about how the event loop and task queues connect everything:</p>
+
+<div class="ascii">┌─────────────────────────────────────────────────────────┐
+│                 Main Thread (V8)                          │
+│  ┌──────────────┐       ┌──────────────────────┐         │
+│  │  Call Stack   │       │    Memory Heap        │         │
+│  │   (LIFO)     │       │  (objects, closures)  │         │
+│  └──────────────┘       └──────────────────────┘         │
+│         ↑                                                 │
+│    Executes code line by line                             │
+└─────────────────────────────────────────────────────────┘
+          │
+          │ Async operations handed off to Web APIs / Node APIs
+          ▼
+┌─────────────────────────────────────────────────────────┐
+│            Event Loop & Task Queues                       │
+│                                                          │
+│   ┌──────────────────┐    ┌──────────────────┐          │
+│   │  Macrotask Queue  │    │ Microtask Queue   │          │
+│   │  (setTimeout,     │    │ (Promises,        │          │
+│   │   setInterval,    │    │  queueMicrotask,  │          │
+│   │   I/O callbacks)  │    │  MutationObserver)│          │
+│   └──────────────────┘    └──────────────────┘          │
+│                                                          │
+│   Event loop checks: "Is call stack empty?"              │
+│   If YES → move next callback to call stack              │
+│   Microtasks always run before the next macrotask        │
+└─────────────────────────────────────────────────────────┘</div>
+
+<p class="prose">The event loop follows a simple but powerful rule: it continuously checks whether the call stack is empty. If it is, it picks the next callback from the queue and pushes it onto the call stack for V8 to execute. <strong>Microtasks</strong> (like Promise callbacks) always have priority over <strong>macrotasks</strong> (like setTimeout callbacks).</p>
+
+<p class="prose">Wherever V8 encounters an asynchronous operation, it offloads it to <span class="hl">libuv</span>. libuv does the further processing, and once the operation is complete, it returns the result to V8 through the event loop. V8 then quickly executes the callback. Examples of async operations: API Calls, setTimeout, File Read/Write, Database queries, DNS lookups, etc.</p>
+
+<div class="sep"></div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- Quick Reference -->
+<div class="ch ch-o">
+  <div class="ch-label">Quick Reference</div>
+  <h2>Episode 06 &mdash; At a Glance</h2>
+</div>
+
+<table class="tbl">
+  <thead><tr><th style="color:var(--orange)">Concept</th><th style="color:var(--accent)">Key Detail</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Thread</strong></td><td>Smallest unit of execution in a process; JS uses a single thread</td></tr>
+    <tr><td><strong>Synchronous</strong></td><td>Code runs line by line; each operation blocks the next until complete</td></tr>
+    <tr><td><strong>Asynchronous</strong></td><td>Tasks run independently; no waiting for others to finish</td></tr>
+    <tr><td><strong>JS nature</strong></td><td>Synchronous + single-threaded &mdash; but Node.js adds async powers</td></tr>
+    <tr><td><strong>Call Stack</strong></td><td>LIFO stack where function calls are pushed/popped; one at a time</td></tr>
+    <tr><td><strong>Memory Heap</strong></td><td>Stores variables, objects, functions &mdash; unstructured memory pool</td></tr>
+    <tr><td><strong>Garbage Collector</strong></td><td>Auto-frees unused memory; no manual deallocation needed (unlike C++)</td></tr>
+    <tr><td><strong>GEC</strong></td><td>Global Execution Context &mdash; first thing pushed on the call stack</td></tr>
+    <tr><td><strong>Execution phases</strong></td><td>Memory Creation (vars = undefined, fns stored) → Code Execution (assign values, run code)</td></tr>
+    <tr><td><strong>libuv</strong></td><td>C library giving Node.js async powers: Event Loop, Thread Pool, OS communication</td></tr>
+    <tr><td><strong>Async flow</strong></td><td>V8 offloads async ops to libuv → libuv handles in background → callbacks return via event loop</td></tr>
+    <tr><td><strong>Non-blocking I/O</strong></td><td>Main thread never waits; async work happens in libuv while V8 continues</td></tr>
+    <tr><td><strong>Event Loop</strong></td><td>Continuously checks if call stack is empty, then moves callbacks from queue to stack</td></tr>
+    <tr><td><strong>Microtasks vs Macrotasks</strong></td><td>Promises (microtask) always execute before setTimeout (macrotask) callbacks</td></tr>
+  </tbody>
+</table>
+
+<div class="footer">
+  Node.js Episode 06 &mdash; libuv &amp; Async I/O &nbsp;|&nbsp; Complete deep-dive notes with all code examples &nbsp;|&nbsp; Source: PDF + DOCX + HTML
+</div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,46 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  The five-step pipeline every `require()` call walks through — from a
+  string in your code to a fully cached module in memory. Once the
+  module is cached, every subsequent `require()` for the same path
+  short-circuits straight to the cached value. The legend below decodes
+  each step.
+</Callout>
+
+## The 5-step require() pipeline
+
+```mermaid
+flowchart LR
+    CALL["<b>require('./sum')</b>"]
+      --> S1["<b>i · Resolve</b><br/>find absolute path<br/>local / core / npm / json"]
+    S1 --> S2["<b>ii · Load</b><br/>read source from disk<br/>into memory"]
+    S2 --> S3["<b>iii · Wrap</b><br/>Module Wrapper Function<br/>(exports, require, module,<br/>__filename, __dirname)"]
+    S3 --> S4["<b>iv · Evaluate</b><br/>V8 executes the wrapper<br/>module.exports is populated"]
+    S4 --> S5["<b>v · Cache</b><br/>stored in memory<br/>keyed by absolute path"]
+    S5 --> OUT["<b>vi · return</b><br/>module.exports<br/>handed back to caller"]
+    S5 -. "future calls skip steps i-iv" .-> OUT
+
+    classDef call fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef early fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef wrap fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    classDef run fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef cache fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class CALL,OUT call
+    class S1,S2 early
+    class S3 wrap
+    class S4 run
+    class S5 cache
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Resolve',   description: 'Map the string argument to an absolute path. Classifies the target as a local file, a core module, an npm package, or a JSON file.' },
+  { numeral: 'ii',  name: 'Load',      description: 'Read the file bytes from disk into memory. Still just text — not executed yet.' },
+  { numeral: 'iii', name: 'Wrap',      description: 'Insert the source into `(function(exports, require, module, __filename, __dirname) { ... })`. This is how private scope + the 5 magic parameters appear.' },
+  { numeral: 'iv',  name: 'Evaluate',  description: 'Hand the wrapper to V8. It runs top to bottom; whatever you assign to `module.exports` becomes the return value.' },
+  { numeral: 'v',   name: 'Cache',     description: 'Store the completed module in an in-memory cache keyed by absolute path. Future require() calls for the same path skip steps i–iv.' },
+  { numeral: 'vi',  name: 'Return',    description: 'The `require()` expression evaluates to whatever `module.exports` is now pointing at — a function, object, class, primitive, anything.' },
+]} />

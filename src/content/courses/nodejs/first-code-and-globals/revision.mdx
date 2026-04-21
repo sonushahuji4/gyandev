@@ -1,0 +1,43 @@
+---
+readingMinutes: 4
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Install + verify" subtitle="From nodejs.org to a live terminal.">
+- Download the **LTS** build from `nodejs.org`.
+- Installer bundles **Node.js + NPM** — both arrive together.
+- Verify with `node -v` and `npm -v`.
+- "Command not found" → PATH issue; restart terminal or reinstall with *Add to PATH* checked.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="REPL — the playground" subtitle="Read, Evaluate, Print, Loop.">
+- Type `node` in the terminal; exit with `.exit` or `Ctrl+C` twice.
+- Reads one line, evaluates via V8, prints the return value, loops back.
+- `let x = 5` prints `undefined` — declarations have no return value.
+- Good for experiments; bad for real projects (nothing persists).
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="File mode" subtitle="The real workshop.">
+- Create a folder → open in VS Code → create `app.js`.
+- Run with `node app.js` — the whole file executes top to bottom.
+- No HTML, no `<script>` tag, no browser needed.
+- Use the integrated terminal with `` Ctrl+` `` to keep editor + runner in one place.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="global vs window" subtitle="Every runtime has a global object.">
+- Browser: `window` — DOM, `alert`, `localStorage`.
+- Node.js: `global` — `setTimeout`, `setInterval`, `setImmediate`, `console`, `fetch`.
+- `global` is provided by **Node**, not V8 — V8 itself knows nothing about it.
+- Node has no DOM, no `alert`, no `prompt`.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="top-level this + globalThis" subtitle="The interview trap.">
+- In a Node file, top-level `this` is `module.exports` — an empty `{}`, **not** `global`.
+- In a browser, top-level `this` is `window`.
+- **`globalThis`** (ES2020) is the universal reference — `window` in browsers, `global` in Node.
+- Use `globalThis` when you want isomorphic code; use `global` inside Node when you don't care about portability.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  Install, REPL, File, Global, This — **I-R-F-G-T**. ("I'm Running Files, Go Think" — install, REPL, file mode, global object, top-level this.)
+</Callout>

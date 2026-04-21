@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Node.js Deep Dive — libuv & The Event Loop</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Source+Code+Pro:wght@400;600&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #090d14;
+  --bg2: #0f1520;
+  --bg3: #151d2e;
+  --bg4: #1a2540;
+  --card: #111a2b;
+  --code-bg: #0a0f18;
+  --amber: #f59e0b;
+  --gold: #fbbf24;
+  --red: #ef4444;
+  --green: #10b981;
+  --blue: #3b82f6;
+  --cyan: #06b6d4;
+  --purple: #8b5cf6;
+  --pink: #ec4899;
+  --lime: #84cc16;
+  --txt: #e8edf5;
+  --txt2: #8e9baf;
+  --txt3: #5a6577;
+  --border: #1c2a42;
+  --glow-a: 0 0 60px #f59e0b15, 0 0 120px #f59e0b08;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--txt);
+  line-height: 1.85;
+  font-size: 16.5px;
+  overflow-x: hidden;
+}
+
+::selection { background: #f59e0b44; color: #fff; }
+
+/* ═════ HERO ═════ */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  background:
+    radial-gradient(ellipse at 25% 40%, #f59e0b06 0%, transparent 55%),
+    radial-gradient(ellipse at 75% 60%, #3b82f606 0%, transparent 55%),
+    var(--bg);
+}
+
+.hero::before {
+  content:'';
+  position:absolute;inset:0;
+  background: repeating-linear-gradient(0deg,transparent,transparent 60px,#ffffff02 60px,#ffffff02 61px),
+              repeating-linear-gradient(90deg,transparent,transparent 60px,#ffffff02 60px,#ffffff02 61px);
+}
+
+.hero-inner { position:relative;z-index:1;max-width:850px;padding:2rem; }
+
+.badge {
+  display:inline-block;padding:5px 18px;border:1px solid var(--amber);border-radius:99px;
+  font-size:.72rem;letter-spacing:4px;text-transform:uppercase;color:var(--amber);margin-bottom:2rem;
+  animation: fadeDown .7s ease-out;
+}
+
+.hero h1 {
+  font-family:'Playfair Display',serif;font-size:clamp(2.8rem,7vw,5.5rem);font-weight:900;line-height:1.08;
+  margin-bottom:1.2rem;animation:fadeUp .9s ease-out .15s both;
+}
+.hero h1 .hl { background:linear-gradient(135deg,var(--amber),#fb923c);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+
+.hero p { font-size:1.15rem;color:var(--txt2);max-width:580px;margin:0 auto 2rem;animation:fadeUp .9s ease-out .3s both; }
+
+.hero-tags { display:flex;gap:10px;justify-content:center;flex-wrap:wrap;animation:fadeUp .9s ease-out .45s both; }
+.hero-tags span { padding:5px 14px;background:var(--card);border-radius:7px;font-size:.82rem;color:var(--txt2);border:1px solid var(--border); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(25px)}to{opacity:1;transform:translateY(0)} }
+@keyframes fadeDown { from{opacity:0;transform:translateY(-15px)}to{opacity:1;transform:translateY(0)} }
+
+/* ═════ LAYOUT ═════ */
+.wrap { max-width:1020px;margin:0 auto;padding:0 1.8rem; }
+section { padding:5rem 0; }
+
+/* ═════ HEADINGS ═════ */
+.ch-label {
+  display:inline-block;font-size:.72rem;letter-spacing:4px;text-transform:uppercase;
+  color:var(--amber);margin-bottom:.8rem;padding-left:36px;position:relative;
+}
+.ch-label::before { content:'';position:absolute;left:0;top:50%;width:24px;height:1px;background:var(--amber); }
+
+.sec-title {
+  font-family:'Playfair Display',serif;font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:700;
+  margin-bottom:1.2rem;line-height:1.2;
+}
+.sec-sub { font-size:1.05rem;color:var(--txt2);margin-bottom:2.5rem;max-width:680px; }
+
+/* ═════ PROSE ═════ */
+.story { font-size:1.05rem;line-height:2;color:var(--txt2);margin-bottom:1.8rem; }
+.story strong { color:var(--txt);font-weight:600; }
+.story em { color:var(--gold);font-style:italic;font-family:'Playfair Display',serif; }
+
+.ic {
+  background:var(--code-bg);padding:1px 7px;border-radius:4px;
+  font-family:'Source Code Pro',monospace;font-size:.86rem;color:var(--cyan);border:1px solid var(--border);
+}
+
+/* ═════ CARDS ═════ */
+.card {
+  background:var(--card);border:1px solid var(--border);border-radius:14px;padding:2.2rem;
+  margin-bottom:1.8rem;position:relative;overflow:hidden;transition:border-color .3s, box-shadow .3s;
+}
+.card:hover { border-color:var(--amber); box-shadow:var(--glow-a); }
+.card::before { content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(to bottom,var(--amber),var(--red));border-radius:3px 0 0 3px; }
+.card h3 { font-family:'Playfair Display',serif;font-size:1.35rem;margin-bottom:.8rem; }
+.card p { color:var(--txt2);line-height:1.85; }
+
+/* ═════ CODE BLOCKS ═════ */
+.codeblk {
+  background:var(--code-bg);border:1px solid var(--border);border-radius:11px;margin:1.8rem 0;overflow:hidden;
+}
+.codeblk-head {
+  display:flex;align-items:center;gap:7px;padding:10px 18px;background:#080c14;border-bottom:1px solid var(--border);
+  font-size:.78rem;color:var(--txt3);
+}
+.dot { width:9px;height:9px;border-radius:50%; }
+.dot-r { background:#ef4444; } .dot-y { background:#f59e0b; } .dot-g { background:#22c55e; }
+
+.codeblk pre {
+  padding:1.3rem 1.6rem;overflow-x:auto;font-family:'Source Code Pro',monospace;font-size:.88rem;
+  line-height:1.85;color:#dde4ee;tab-size:2;
+}
+.kw { color:var(--purple); } .fn { color:var(--blue); } .str { color:var(--green); }
+.cm { color:var(--txt3);font-style:italic; } .num { color:var(--amber); } .mt { color:var(--cyan); }
+.lb { color:var(--pink);font-weight:700; }
+
+/* ═════ CONSOLE ═════ */
+.console {
+  background:#030710;border:1px solid #16213a;border-radius:11px;padding:1.3rem 1.6rem;margin:1.5rem 0;
+  font-family:'Source Code Pro',monospace;font-size:.86rem;line-height:2.1;
+}
+.console .pr { color:var(--green); }
+.console .ln { color:#b8c5d8; }
+.console .lnum { color:var(--txt3);margin-right:10px;user-select:none;display:inline-block;min-width:18px; }
+
+/* ═════ CALLOUT ═════ */
+.callout {
+  border-radius:0 11px 11px 0;padding:1.3rem 1.8rem;margin:1.8rem 0;border-left:4px solid;
+}
+.callout.tip { background:linear-gradient(135deg,#1a1a08,#191508);border-color:var(--amber); }
+.callout.warn { background:linear-gradient(135deg,#1a0808,#190c10);border-color:var(--red); }
+.callout.info { background:linear-gradient(135deg,#08101a,#0a1320);border-color:var(--blue); }
+.callout-t { font-weight:700;font-size:.88rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:.4rem; }
+.callout.tip .callout-t { color:var(--amber); }
+.callout.warn .callout-t { color:var(--red); }
+.callout.info .callout-t { color:var(--blue); }
+.callout p { color:var(--txt2);font-size:.93rem;line-height:1.8; }
+
+/* ═════ DIAGRAM CONTAINER ═════ */
+.dia {
+  background:var(--card);border:1px solid var(--border);border-radius:14px;padding:2rem;margin:2.5rem 0;
+  overflow-x:auto;text-align:center;
+}
+.dia svg { max-width:100%;height:auto; }
+.dia-title { font-family:'Playfair Display',serif;font-size:1.2rem;margin-bottom:1.2rem;color:var(--gold);text-align:center; }
+.dia-cap { font-size:.82rem;color:var(--txt3);text-align:center;margin-top:1rem;font-style:italic; }
+
+/* ═════ TABLE ═════ */
+.tbl { width:100%;border-collapse:separate;border-spacing:0;margin:1.8rem 0;border-radius:11px;overflow:hidden;border:1px solid var(--border); }
+.tbl th { background:#0c1322;padding:14px 18px;text-align:left;font-size:.8rem;letter-spacing:1px;text-transform:uppercase;color:var(--amber);border-bottom:2px solid var(--amber); }
+.tbl td { padding:12px 18px;border-bottom:1px solid var(--border);color:var(--txt2);font-size:.92rem;vertical-align:top; }
+.tbl tr:last-child td { border-bottom:none; }
+.tbl tr:nth-child(even) td { background:#0a1020; }
+.tbl code { background:var(--code-bg);padding:1px 6px;border-radius:3px;font-family:'Source Code Pro',monospace;font-size:.82rem;color:var(--cyan); }
+
+/* ═════ PRIORITY STACK ═════ */
+.pstack { display:flex;flex-direction:column;margin:1.8rem 0;border-radius:14px;overflow:hidden;border:1px solid var(--border); }
+.pitem { padding:1rem 1.6rem;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border);transition:background .2s; }
+.pitem:last-child { border-bottom:none; }
+.pitem:hover { background:#ffffff04; }
+.prank { width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.82rem;flex-shrink:0; }
+.pname { font-weight:600;color:var(--txt);min-width:170px; }
+.pdesc { color:var(--txt2);font-size:.9rem; }
+
+/* ═════ QA SECTION ═════ */
+.qa { background:var(--card);border:1px solid var(--border);border-radius:14px;margin:2.5rem 0;overflow:hidden; }
+.qa-head { padding:1.3rem 2rem;background:linear-gradient(135deg,#15102a,#120c22);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px; }
+.qa-badge { background:linear-gradient(135deg,var(--purple),var(--pink));color:#fff;padding:5px 14px;border-radius:7px;font-weight:700;font-size:.82rem;letter-spacing:1px; }
+.qa-head h3 { font-family:'Playfair Display',serif;font-size:1.2rem; }
+.qa-body { padding:1.8rem 2rem; }
+
+/* ═════ TOC ═════ */
+.toc { background:var(--card);border:1px solid var(--border);border-radius:14px;padding:2.2rem;margin:2.5rem 0; }
+.toc h3 { font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:1.2rem;color:var(--gold); }
+.toc-list { list-style:none;counter-reset:toc; }
+.toc-list li { counter-increment:toc;padding:8px 0;border-bottom:1px solid #ffffff05; }
+.toc-list li:last-child { border-bottom:none; }
+.toc-list li a { color:var(--txt2);text-decoration:none;display:flex;align-items:center;gap:10px;transition:color .2s; }
+.toc-list li a:hover { color:var(--amber); }
+.toc-list li a::before { content:counter(toc,decimal-leading-zero);font-family:'Source Code Pro',monospace;font-size:.78rem;color:var(--amber);min-width:26px; }
+
+/* ═════ PHASE GRID ═════ */
+.pgrid { display:grid;grid-template-columns:1fr 1fr;gap:1.4rem;margin:1.8rem 0; }
+.pcard { background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.8rem;position:relative;overflow:hidden;transition:transform .3s, box-shadow .3s; }
+.pcard:hover { transform:translateY(-3px);box-shadow:0 0 40px #3b82f610; }
+.pcard-num { font-family:'Playfair Display',serif;font-size:2.8rem;font-weight:900;color:#ffffff06;position:absolute;top:8px;right:16px; }
+.pcard-icon { width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;margin-bottom:.8rem; }
+.pcard h4 { font-family:'Playfair Display',serif;font-size:1.1rem;margin-bottom:.6rem; }
+.pcard p { font-size:.92rem;color:var(--txt2);line-height:1.75; }
+.pcard .apis { margin-top:.8rem;display:flex;gap:5px;flex-wrap:wrap; }
+.pcard .apis span { padding:2px 8px;background:var(--code-bg);border-radius:5px;font-family:'Source Code Pro',monospace;font-size:.75rem;color:var(--cyan); }
+
+/* ═════ WALKTHROUGH ═════ */
+.wt { position:relative;padding-left:36px;margin:1.8rem 0; }
+.wt::before { content:'';position:absolute;left:13px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--amber),var(--blue),var(--purple),var(--green)); }
+.ws { position:relative;margin-bottom:1.5rem;padding:1.2rem 1.6rem;background:var(--card);border:1px solid var(--border);border-radius:10px; }
+.ws::before { content:'';position:absolute;left:-31px;top:18px;width:12px;height:12px;border-radius:50%;background:var(--amber);border:3px solid var(--bg);z-index:1; }
+.ws-label { font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:.3rem; }
+.ws p { color:var(--txt2);line-height:1.8;font-size:.95rem; }
+.ws code { background:var(--code-bg);padding:1px 6px;border-radius:3px;font-family:'Source Code Pro',monospace;font-size:.84rem;color:var(--cyan); }
+
+/* ═════ DIVIDER ═════ */
+.divider { height:1px;background:linear-gradient(to right,transparent,var(--border),transparent);margin:3.5rem 0; }
+
+/* ═════ SIMULATION CONTAINER ═════ */
+.sim-container {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 2rem;
+  margin: 2.5rem 0;
+}
+
+.sim-controls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.sim-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--amber);
+  background: transparent;
+  color: var(--amber);
+  border-radius: 8px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: .85rem;
+  cursor: pointer;
+  transition: all .2s;
+}
+.sim-btn:hover { background: var(--amber); color: var(--bg); }
+.sim-btn.active { background: var(--amber); color: var(--bg); }
+
+.sim-btn.reset-btn { border-color: var(--txt3); color: var(--txt3); }
+.sim-btn.reset-btn:hover { background: var(--txt3); color: var(--bg); }
+
+.sim-grid {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 1.5rem;
+  min-height: 400px;
+}
+
+.sim-loop {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem;
+  position: relative;
+}
+
+.sim-phase {
+  padding: 8px 14px;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  font-size: .82rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  transition: all .35s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sim-phase .phase-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: all .35s;
+}
+
+.sim-phase.active-phase {
+  border-color: var(--amber);
+  background: #f59e0b15;
+  box-shadow: 0 0 20px #f59e0b15;
+}
+
+.sim-phase.done-phase {
+  opacity: .45;
+}
+
+.sim-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.sim-callstack, .sim-output, .sim-queues {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+}
+
+.sim-section-title {
+  font-size: .72rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--amber);
+  margin-bottom: .6rem;
+}
+
+.sim-queue-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: .4rem;
+  min-height: 28px;
+  align-items: center;
+}
+
+.sim-queue-label {
+  font-size: .72rem;
+  color: var(--txt3);
+  min-width: 90px;
+  flex-shrink: 0;
+}
+
+.sim-chip {
+  padding: 3px 10px;
+  border-radius: 5px;
+  font-size: .75rem;
+  font-family: 'Source Code Pro', monospace;
+  animation: chipIn .3s ease-out;
+  white-space: nowrap;
+}
+
+@keyframes chipIn { from { opacity:0; transform:scale(.8); } to { opacity:1; transform:scale(1); } }
+
+.sim-chip.nexttick { background: #f59e0b22; color: var(--amber); border: 1px solid #f59e0b44; }
+.sim-chip.promise { background: #8b5cf622; color: var(--purple); border: 1px solid #8b5cf644; }
+.sim-chip.timer { background: #ef444422; color: var(--red); border: 1px solid #ef444444; }
+.sim-chip.poll { background: #3b82f622; color: var(--blue); border: 1px solid #3b82f644; }
+.sim-chip.check { background: #10b98122; color: var(--green); border: 1px solid #10b98144; }
+.sim-chip.close { background: #64748b22; color: var(--txt2); border: 1px solid #64748b44; }
+.sim-chip.stack { background: #06b6d422; color: var(--cyan); border: 1px solid #06b6d444; }
+.sim-chip.removing { animation: chipOut .3s ease-in forwards; }
+
+@keyframes chipOut { to { opacity:0; transform:scale(.7) translateY(-5px); } }
+
+.sim-output-line {
+  font-family: 'Source Code Pro', monospace;
+  font-size: .82rem;
+  color: #b8c5d8;
+  padding: 2px 0;
+  animation: fadeUp .3s ease-out;
+}
+
+.sim-narrative {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  font-size: .88rem;
+  color: var(--txt2);
+  line-height: 1.7;
+  min-height: 60px;
+}
+
+.sim-narrative strong { color: var(--amber); }
+.sim-narrative code { background: var(--code-bg); padding: 1px 5px; border-radius: 3px; font-family: 'Source Code Pro', monospace; font-size: .8rem; color: var(--cyan); }
+
+/* ═════ FOOTER ═════ */
+.footer { text-align:center;padding:3.5rem 1.5rem;border-top:1px solid var(--border);color:var(--txt3);font-size:.88rem; }
+.footer .fbrand { font-family:'Playfair Display',serif;font-size:1.4rem;color:var(--txt);margin-bottom:.4rem; }
+
+/* ═════ RESPONSIVE ═════ */
+@media(max-width:768px) {
+  .wrap { padding:0 1.1rem; }
+  section { padding:3rem 0; }
+  .pgrid { grid-template-columns:1fr; }
+  .sim-grid { grid-template-columns:1fr; }
+  .pitem { flex-direction:column;align-items:flex-start;gap:5px; }
+  .pname { min-width:auto; }
+  .tbl { font-size:.82rem; }
+  .tbl th,.tbl td { padding:8px 10px; }
+  .qa-body { padding:1.3rem 1.2rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- ██ HERO ██ -->
+<header class="hero">
+  <div class="hero-inner">
+    <div class="badge">Episode 09 — Namaste Node.js</div>
+    <h1><span class="hl">libuv</span> &amp; The<br>Event Loop</h1>
+    <p>A storytelling deep-dive into the beating heart of Node.js — how a single thread handles millions of operations without breaking a sweat.</p>
+    <div class="hero-tags">
+      <span>Asynchronous I/O</span><span>Callback Queues</span><span>Thread Pool</span><span>Microtasks</span><span>Event-Driven</span>
+    </div>
+  </div>
+</header>
+
+<!-- ██ TOC ██ -->
+<section>
+<div class="wrap">
+  <div class="toc">
+    <h3>What's Inside</h3>
+    <ul class="toc-list">
+      <li><a href="#ch1">The Big Picture — Node.js Architecture &amp; Non-Blocking I/O</a></li>
+      <li><a href="#ch2">Meet libuv — Event Loop, Thread Pool &amp; Callback Queues</a></li>
+      <li><a href="#ch3">The Event Loop Phase Diagram — Accurate &amp; Detailed</a></li>
+      <li><a href="#ch4">All 6 Phases Deep-Dive with Code Examples</a></li>
+      <li><a href="#ch5">Event Loop Cycle with Microtasks — Circle Diagram</a></li>
+      <li><a href="#ch6">Execution Priority — The Complete Pecking Order</a></li>
+      <li><a href="#ch7">Interactive Event Loop Simulator</a></li>
+      <li><a href="#ch8">Code Walkthrough Q1 — The Basics</a></li>
+      <li><a href="#ch9">Code Walkthrough Q2 — Microtasks Enter the Chat</a></li>
+      <li><a href="#ch10">Code Walkthrough Q3 — Nested Callbacks Inside readFile</a></li>
+      <li><a href="#ch11">Code Walkthrough Q4 — Nested process.nextTick()</a></li>
+      <li><a href="#ch12">Bonus Scenarios — Edge Cases &amp; Interview Traps</a></li>
+      <li><a href="#ch13">Cheat Sheet &amp; Comparison Tables</a></li>
+    </ul>
+  </div>
+</div>
+</section>
+
+<!-- ██ CH1: BIG PICTURE ██ -->
+<section id="ch1">
+<div class="wrap">
+  <div class="ch-label">Chapter 01</div>
+  <h2 class="sec-title">The Big Picture</h2>
+  <p class="sec-sub">Understanding how Node.js is built and why it can handle thousands of connections on a single thread.</p>
+
+  <p class="story">Imagine you walk into a restaurant. In most restaurants, every table gets its own waiter — that's how traditional servers like Apache work: <strong>one thread per request</strong>. But Node.js is different. Node.js is like a restaurant with a <em>single, incredibly fast waiter</em> who never stands idle. This waiter doesn't cook the food — he takes orders, hands them to the kitchen (the OS, the thread pool), and immediately moves to the next customer. When the food is ready, a bell rings, and the waiter delivers it. This is <strong>Asynchronous, Non-Blocking I/O</strong>.</p>
+
+  <p class="story">At the heart of this sits a powerful architecture. Node.js is composed of two engines working in concert: the <strong>V8 JavaScript Engine</strong> (written in C++, by Google), which executes your JavaScript code, and <strong>libuv</strong> (a cross-platform C library), which handles everything JavaScript can't do alone — file system access, networking, DNS lookups, and more.</p>
+
+  <!-- Architecture Diagram -->
+  <div class="dia">
+    <div class="dia-title">Node.js Internal Architecture</div>
+    <svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+      <rect x="15" y="15" width="870" height="450" rx="14" fill="#111827" stroke="#1c2a42" stroke-width="1.5"/>
+      <text x="450" y="48" text-anchor="middle" fill="#f59e0b" font-size="16" font-weight="700" letter-spacing="3">— N O D E . J S —</text>
+
+      <!-- V8 -->
+      <rect x="40" y="70" width="240" height="370" rx="10" fill="#0d1520" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="160" y="98" text-anchor="middle" fill="#3b82f6" font-size="14" font-weight="700">V8 JS Engine</text>
+      <rect x="58" y="115" width="204" height="60" rx="7" fill="#1a2234" stroke="#1e293b"/>
+      <text x="160" y="138" text-anchor="middle" fill="#8e9baf" font-size="10" font-weight="600">MEMORY HEAP</text>
+      <text x="160" y="158" text-anchor="middle" fill="#5a6577" font-size="9">Objects, Variables, Closures</text>
+      <rect x="58" y="190" width="204" height="110" rx="7" fill="#1a2234" stroke="#1e293b"/>
+      <text x="160" y="213" text-anchor="middle" fill="#8e9baf" font-size="10" font-weight="600">CALL STACK</text>
+      <rect x="78" y="225" width="164" height="18" rx="3" fill="#22c55e15" stroke="#22c55e44"/><text x="160" y="238" text-anchor="middle" fill="#22c55e" font-size="8">printA()</text>
+      <rect x="78" y="247" width="164" height="18" rx="3" fill="#3b82f615" stroke="#3b82f644"/><text x="160" y="260" text-anchor="middle" fill="#3b82f6" font-size="8">console.log()</text>
+      <rect x="78" y="269" width="164" height="18" rx="3" fill="#8b5cf615" stroke="#8b5cf644"/><text x="160" y="282" text-anchor="middle" fill="#8b5cf6" font-size="8">main()</text>
+      <rect x="58" y="315" width="204" height="42" rx="7" fill="#1a2234" stroke="#1e293b"/>
+      <text x="160" y="341" text-anchor="middle" fill="#8e9baf" font-size="10" font-weight="600">GARBAGE COLLECTOR</text>
+      <text x="160" y="400" text-anchor="middle" fill="#3b82f6" font-size="10" font-style="italic">Main Thread (Single)</text>
+
+      <!-- libuv -->
+      <rect x="310" y="70" width="380" height="370" rx="10" fill="#0d1520" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3"/>
+      <text x="500" y="98" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="700">libuv</text>
+      <ellipse cx="400" cy="185" rx="48" ry="38" fill="none" stroke="#10b981" stroke-width="1.8"/>
+      <text x="400" y="182" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">EVENT</text>
+      <text x="400" y="196" text-anchor="middle" fill="#10b981" font-size="10" font-weight="600">LOOP</text>
+      <path d="M 438 160 A 45 35 0 1 1 432 156" fill="none" stroke="#10b98188" stroke-width="1.2" marker-end="url(#aG)"/>
+      <defs><marker id="aG" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#10b98188"/></marker></defs>
+
+      <rect x="495" y="130" width="175" height="100" rx="8" fill="#1a2234" stroke="#ef444488"/>
+      <text x="582" y="155" text-anchor="middle" fill="#ef4444" font-size="12" font-weight="700">THREAD POOL</text>
+      <rect x="510" y="168" width="30" height="22" rx="3" fill="#ef444418" stroke="#ef444455"/>
+      <rect x="546" y="168" width="30" height="22" rx="3" fill="#ef444418" stroke="#ef444455"/>
+      <rect x="582" y="168" width="30" height="22" rx="3" fill="#ef444418" stroke="#ef444455"/>
+      <rect x="618" y="168" width="30" height="22" rx="3" fill="#ef444418" stroke="#ef444455"/>
+      <text x="582" y="214" text-anchor="middle" fill="#5a6577" font-size="8">Default: 4 threads</text>
+
+      <rect x="340" y="270" width="330" height="88" rx="8" fill="#1a2234" stroke="#8b5cf688"/>
+      <text x="505" y="294" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="600">CALLBACK QUEUES</text>
+      <rect x="358" y="306" width="130" height="15" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <rect x="358" y="326" width="95" height="15" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <rect x="500" y="306" width="110" height="15" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <rect x="500" y="326" width="80" height="15" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+
+      <!-- OS -->
+      <rect x="720" y="85" width="90" height="280" rx="8" fill="#0d1520" stroke="#06b6d488"/>
+      <text x="765" y="112" text-anchor="middle" fill="#06b6d4" font-size="11" font-weight="700">OS</text>
+      <text x="765" y="152" text-anchor="middle" font-size="18">📁</text><text x="765" y="168" text-anchor="middle" fill="#5a6577" font-size="8">File</text>
+      <text x="765" y="208" text-anchor="middle" font-size="18">🌐</text><text x="765" y="224" text-anchor="middle" fill="#5a6577" font-size="8">Network</text>
+      <text x="765" y="264" text-anchor="middle" font-size="18">⚡</text><text x="765" y="280" text-anchor="middle" fill="#5a6577" font-size="8">API</text>
+      <text x="765" y="320" text-anchor="middle" font-size="18">🔒</text><text x="765" y="336" text-anchor="middle" fill="#5a6577" font-size="8">Crypto</text>
+
+      <!-- Arrows -->
+      <line x1="280" y1="230" x2="310" y2="230" stroke="#5a6577" stroke-width="1" marker-end="url(#aW)"/>
+      <line x1="670" y1="180" x2="718" y2="180" stroke="#5a6577" stroke-width="1" marker-end="url(#aW)"/>
+      <line x1="718" y1="240" x2="670" y2="240" stroke="#5a6577" stroke-width="1" marker-end="url(#aW)"/>
+      <defs><marker id="aW" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#5a6577"/></marker></defs>
+
+      <text x="450" y="455" text-anchor="middle" fill="#5a6577" font-size="10" font-style="italic">Asynchronous I/O (Non-Blocking I/O)</text>
+    </svg>
+    <p class="dia-cap">V8 handles JavaScript execution on the main thread. libuv manages async operations, thread pool, event loop, and callback queues. The OS does the actual heavy lifting.</p>
+  </div>
+
+  <p class="story">Here's the key insight: when your code calls <span class="ic">fs.readFile()</span> or <span class="ic">https.get()</span>, V8 doesn't wait. It <strong>delegates</strong> to libuv, which communicates with the OS. V8 moves on to the next line. When the OS finishes, the callback enters a <strong>callback queue</strong>, waiting for V8 to become free. This is why Node.js is called <em>non-blocking</em>.</p>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH2: LIBUV ██ -->
+<section id="ch2">
+<div class="wrap">
+  <div class="ch-label">Chapter 02</div>
+  <h2 class="sec-title">Meet libuv</h2>
+  <p class="sec-sub">The unsung hero — event loop, thread pool, and callback queues, all in one C library.</p>
+
+  <p class="story">If V8 is the brain, <strong>libuv is the nervous system</strong>. It's a cross-platform C library providing three critical components:</p>
+
+  <div class="pgrid" style="grid-template-columns:1fr 1fr 1fr;">
+    <div class="pcard" style="border-top:3px solid var(--green)">
+      <div class="pcard-icon" style="background:#10b98118;color:#10b981;">🔄</div>
+      <h4>Event Loop</h4>
+      <p>The orchestrator. Continuously monitors the call stack and queues, deciding what runs next.</p>
+    </div>
+    <div class="pcard" style="border-top:3px solid var(--purple)">
+      <div class="pcard-icon" style="background:#8b5cf618;color:#8b5cf6;">📋</div>
+      <h4>Callback Queues</h4>
+      <p>Multiple waiting rooms, each with different priority. Callbacks wait here after async ops complete.</p>
+    </div>
+    <div class="pcard" style="border-top:3px solid var(--red)">
+      <div class="pcard-icon" style="background:#ef444418;color:#ef4444;">🧵</div>
+      <h4>Thread Pool</h4>
+      <p>4 worker threads (default) for heavy tasks like file I/O, DNS lookups, and cryptography.</p>
+    </div>
+  </div>
+
+  <div class="callout tip">
+    <div class="callout-t">💡 Key Insight</div>
+    <p>Even if the OS returns data incredibly fast, the callback <strong>must wait</strong> in the queue until V8's call stack is empty. The single main thread is sacred — nothing can interrupt it. The event loop is the gatekeeper.</p>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH3: EVENT LOOP PHASE DIAGRAM ██ -->
+<section id="ch3">
+<div class="wrap">
+  <div class="ch-label">Chapter 03</div>
+  <h2 class="sec-title">The Event Loop — Phase Diagram</h2>
+  <p class="sec-sub">The most important visual in all of Node.js. This diagram matches the Namaste Node.js lecture exactly.</p>
+
+  <p class="story">Think of the event loop as a <em>security guard at a building entrance</em>. The guard constantly checks: is the lobby (call stack) empty? If yes, look at the waiting list (callback queues) and let the next person (callback) in, following strict priority rules and a fixed patrol route.</p>
+
+  <!-- ═══ THE MAIN EVENT LOOP DIAGRAM ═══ -->
+  <div class="dia">
+    <div class="dia-title">EVENT LOOP — The Complete Phase Cycle</div>
+    <svg viewBox="0 0 940 620" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+
+      <!-- ──── V8 ENGINE (left) ──── -->
+      <rect x="20" y="90" width="120" height="140" rx="8" fill="#0d1520" stroke="#3b82f688" stroke-width="1.2"/>
+      <text x="80" y="115" text-anchor="middle" fill="#3b82f6" font-size="10" font-weight="600">V8 JS Engine</text>
+      <rect x="32" y="125" width="96" height="14" rx="3" fill="#3b82f610" stroke="#3b82f633"/><text x="80" y="136" text-anchor="middle" fill="#3b82f6" font-size="7">fn()</text>
+      <rect x="32" y="143" width="96" height="14" rx="3" fill="#3b82f610" stroke="#3b82f633"/><text x="80" y="154" text-anchor="middle" fill="#3b82f6" font-size="7">console.log()</text>
+      <rect x="32" y="161" width="96" height="14" rx="3" fill="#3b82f610" stroke="#3b82f633"/><text x="80" y="172" text-anchor="middle" fill="#3b82f6" font-size="7">main()</text>
+      <rect x="32" y="185" width="96" height="26" rx="4" fill="#1a2234" stroke="#1e293b"/>
+      <text x="80" y="202" text-anchor="middle" fill="#5a6577" font-size="8">GARBAGE COLLECTOR</text>
+      <text x="80" y="246" text-anchor="middle" fill="#3b82f6" font-size="9" font-style="italic">Call Stack</text>
+
+      <!-- ──── MAIN CIRCULAR LOOP ──── -->
+      <!-- Outer circle path for the main loop -->
+      <circle cx="310" cy="260" r="145" fill="none" stroke="#1c2a42" stroke-width="1.5" stroke-dasharray="4,4"/>
+
+      <!-- Directional arrows on the circle (clockwise) -->
+      <path d="M 310 115 A 145 145 0 0 1 455 260" fill="none" stroke="#5a657788" stroke-width="2" marker-end="url(#arrC)"/>
+      <path d="M 455 260 A 145 145 0 0 1 310 405" fill="none" stroke="#5a657788" stroke-width="2" marker-end="url(#arrC)"/>
+      <path d="M 310 405 A 145 145 0 0 1 165 260" fill="none" stroke="#5a657788" stroke-width="2" marker-end="url(#arrC)"/>
+      <path d="M 165 260 A 145 145 0 0 1 310 115" fill="none" stroke="#5a657788" stroke-width="2" marker-end="url(#arrC)"/>
+      <defs>
+        <marker id="arrC" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0,1 L8,5 L0,9 Z" fill="#5a657788"/>
+        </marker>
+      </defs>
+
+      <!-- Entry arrow -->
+      <line x1="220" y1="115" x2="275" y2="130" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrE)"/>
+      <text x="215" y="108" fill="#f59e0b" font-size="10" font-weight="600">Start →</text>
+      <defs><marker id="arrE" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,1 L8,5 L0,9 Z" fill="#f59e0b"/></marker></defs>
+
+      <!-- ═══ TIMER PHASE (top) ═══ -->
+      <rect x="270" y="96" width="105" height="40" rx="8" fill="#1a2234" stroke="#ef4444" stroke-width="2"/>
+      <text x="322" y="121" text-anchor="middle" fill="#ef4444" font-size="13" font-weight="700">timer</text>
+
+      <!-- Timer description -->
+      <text x="395" y="100" fill="#f59e0b" font-size="10" font-weight="600">setTimeout</text>
+      <text x="395" y="114" fill="#f59e0b" font-size="10" font-weight="600">setInterval</text>
+
+      <!-- ═══ process.nextTick (inner, top-left) ═══ -->
+      <rect x="240" y="175" width="100" height="32" rx="6" fill="#1a2234" stroke="#f59e0b" stroke-width="1.5"/>
+      <text x="290" y="189" text-anchor="middle" fill="#f59e0b" font-size="8.5" font-weight="600">process.</text>
+      <text x="290" y="201" text-anchor="middle" fill="#f59e0b" font-size="8.5" font-weight="600">nextTick()</text>
+
+      <!-- ═══ promise callbacks (inner, lower-left) ═══ -->
+      <rect x="240" y="218" width="100" height="32" rx="6" fill="#1a2234" stroke="#8b5cf6" stroke-width="1.5"/>
+      <text x="290" y="238" text-anchor="middle" fill="#8b5cf6" font-size="8.5" font-weight="600">promise callbacks</text>
+
+      <!-- Inner loop arrow: nextTick → promise → (back to nextTick) -->
+      <path d="M 295 208 Q 300 213 295 218" fill="none" stroke="#f59e0b88" stroke-width="1.2" marker-end="url(#arrNT)"/>
+      <defs><marker id="arrNT" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#f59e0b88"/></marker></defs>
+      <!-- Arrow from promise back up to nextTick (the inner microtask loop) -->
+      <path d="M 240 232 Q 225 215 240 195" fill="none" stroke="#8b5cf688" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#arrPR)"/>
+      <defs><marker id="arrPR" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#8b5cf688"/></marker></defs>
+      <!-- Label -->
+      <text x="210" y="215" text-anchor="middle" fill="#5a6577" font-size="7" transform="rotate(-90, 210, 215)">drain all</text>
+
+      <!-- Arrows from microtasks out to each phase (showing they run between phases) -->
+      <!-- nextTick to timer -->
+      <path d="M 310 175 L 322 140" fill="none" stroke="#f59e0b33" stroke-width="1" stroke-dasharray="3,2"/>
+      <!-- nextTick to poll -->
+      <path d="M 340 210 L 370 240" fill="none" stroke="#f59e0b33" stroke-width="1" stroke-dasharray="3,2"/>
+
+      <!-- ═══ POLL PHASE (right) ═══ -->
+      <rect x="395" y="240" width="80" height="40" rx="8" fill="#1a2234" stroke="#ef4444" stroke-width="2"/>
+      <text x="435" y="265" text-anchor="middle" fill="#ef4444" font-size="13" font-weight="700">poll</text>
+
+      <!-- ═══ CHECK PHASE (bottom) ═══ -->
+      <rect x="260" y="375" width="100" height="40" rx="8" fill="#1a2234" stroke="#ef4444" stroke-width="2"/>
+      <text x="310" y="400" text-anchor="middle" fill="#ef4444" font-size="13" font-weight="700">check</text>
+      <text x="310" y="432" fill="#f59e0b" font-size="10" font-weight="600" text-anchor="middle">setImmediate</text>
+
+      <!-- ═══ CLOSE PHASE (left) ═══ -->
+      <rect x="155" y="310" width="80" height="40" rx="8" fill="#1a2234" stroke="#ef4444" stroke-width="2"/>
+      <text x="195" y="335" text-anchor="middle" fill="#ef4444" font-size="13" font-weight="700">close</text>
+      <text x="130" y="370" fill="#8e9baf" font-size="9">socket</text>
+      <text x="120" y="383" fill="#8e9baf" font-size="9">.on("close")</text>
+
+      <!-- ═══════════ RIGHT PANEL: PHASES DETAIL ═══════════ -->
+      <rect x="520" y="70" width="400" height="510" rx="12" fill="#0d1520" stroke="#1c2a42" stroke-width="1"/>
+      <text x="540" y="100" fill="#f59e0b" font-size="16" font-weight="700" font-family="Playfair Display, serif" text-decoration="underline">Phases — What Each One Does</text>
+
+      <!-- Timer detail -->
+      <rect x="540" y="118" width="16" height="16" rx="4" fill="#ef4444"/>
+      <text x="565" y="131" fill="#ef4444" font-size="11" font-weight="700">1. Timer Phase</text>
+      <text x="540" y="150" fill="#8e9baf" font-size="9.5">Executes callbacks scheduled by</text>
+      <text x="540" y="164" fill="#06b6d4" font-size="9.5" font-family="Source Code Pro, monospace">setTimeout() &amp; setInterval()</text>
+      <text x="540" y="180" fill="#5a6577" font-size="8.5" font-style="italic">The delay is a minimum, not exact.</text>
+
+      <!-- Poll detail -->
+      <rect x="540" y="198" width="16" height="16" rx="4" fill="#3b82f6"/>
+      <text x="565" y="211" fill="#3b82f6" font-size="11" font-weight="700">2. Poll Phase (I/O Callbacks)</text>
+      <text x="540" y="230" fill="#8e9baf" font-size="9.5">→ incoming connections</text>
+      <text x="540" y="244" fill="#8e9baf" font-size="9.5">→ data from network / files</text>
+      <text x="540" y="258" fill="#8e9baf" font-size="9.5">→ fs, crypto, http.get callbacks</text>
+      <text x="540" y="274" fill="#5a6577" font-size="8.5" font-style="italic">If idle, event loop WAITS here for I/O.</text>
+
+      <!-- Check detail -->
+      <rect x="540" y="292" width="16" height="16" rx="4" fill="#10b981"/>
+      <text x="565" y="305" fill="#10b981" font-size="11" font-weight="700">3. Check Phase</text>
+      <text x="540" y="324" fill="#8e9baf" font-size="9.5">Executes callbacks from</text>
+      <text x="540" y="338" fill="#06b6d4" font-size="9.5" font-family="Source Code Pro, monospace">setImmediate()</text>
+      <text x="540" y="354" fill="#5a6577" font-size="8.5" font-style="italic">Always runs right after Poll phase.</text>
+
+      <!-- Close detail -->
+      <rect x="540" y="372" width="16" height="16" rx="4" fill="#64748b"/>
+      <text x="565" y="385" fill="#8e9baf" font-size="11" font-weight="700">4. Close Callbacks Phase</text>
+      <text x="540" y="404" fill="#8e9baf" font-size="9.5">Handles close events like</text>
+      <text x="540" y="418" fill="#06b6d4" font-size="9.5" font-family="Source Code Pro, monospace">socket.on("close")</text>
+      <text x="540" y="434" fill="#5a6577" font-size="8.5" font-style="italic">Cleanup phase — releasing resources.</text>
+
+      <!-- Microtasks detail -->
+      <rect x="540" y="458" width="360" height="55" rx="8" fill="#f59e0b08" stroke="#f59e0b44"/>
+      <text x="550" y="477" fill="#f59e0b" font-size="10" font-weight="700">⚡ MICROTASKS (run between EVERY phase):</text>
+      <text x="550" y="494" fill="#f59e0b" font-size="9.5">1st: ALL process.nextTick()</text>
+      <text x="720" y="494" fill="#8b5cf6" font-size="9.5">2nd: ALL Promise callbacks</text>
+      <text x="550" y="508" fill="#5a6577" font-size="8.5">Both drain completely before next phase starts.</text>
+
+      <!-- ═══ OS PANEL ═══ -->
+      <!-- Arrow from Poll to OS panel -->
+      <line x1="475" y1="260" x2="510" y2="260" stroke="#5a6577" stroke-width="1.2" marker-end="url(#aW)"/>
+      <text x="480" y="252" fill="#5a6577" font-size="7">delegates</text>
+
+      <!-- ═══ CALLBACK QUEUES (bottom) ═══ -->
+      <rect x="510" y="535" width="155" height="14" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <rect x="510" y="554" width="120" height="14" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <rect x="680" y="535" width="100" height="14" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <rect x="680" y="554" width="75" height="14" rx="3" fill="#8b5cf610" stroke="#8b5cf633"/>
+      <text x="620" y="590" text-anchor="middle" fill="#8b5cf6" font-size="11" font-weight="600">Callback Queues</text>
+    </svg>
+    <p class="dia-cap">The event loop cycle — Timer → Poll → Check → Close. process.nextTick() and Promise callbacks form an inner microtask loop that drains between EVERY phase transition. The Poll phase is connected to the OS for I/O operations (fs, crypto, http.get).</p>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH4: ALL 6 PHASES DEEP DIVE ██ -->
+<section id="ch4">
+<div class="wrap">
+  <div class="ch-label">Chapter 04</div>
+  <h2 class="sec-title">All 6 Phases — Deep Dive with Examples</h2>
+  <p class="sec-sub">Including the two microtask phases (nextTick & Promises) that many people forget aren't "regular" phases but run before each one.</p>
+
+  <!-- PHASE 1: process.nextTick -->
+  <div class="card" style="border-top:3px solid var(--amber);">
+    <h3>🥇 Phase 0A: process.nextTick() — The Platinum VIP</h3>
+    <p>Imagine a hospital emergency room. <span class="ic">process.nextTick()</span> is the patient who arrives by ambulance — they skip the entire waiting room and go straight in. This callback has the <strong>absolute highest priority</strong> among all asynchronous operations. It runs after the current synchronous operation completes and before the event loop checks any other phase.</p>
+    <p style="margin-top:1rem;"><strong>Real-world analogy:</strong> You're a chef plating a dish. Before you hand it to the waiter (event loop phase), you always taste it first (nextTick). The tasting happens automatically between every dish, no matter what.</p>
+  </div>
+
+  <div class="codeblk">
+    <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">nextTick-example.js</span></div>
+<pre><span class="cm">// process.nextTick runs BEFORE everything else async</span>
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Start"</span>);
+
+<span class="fn">process</span>.<span class="mt">nextTick</span>(() => {
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"nextTick 1"</span>);
+});
+
+<span class="fn">process</span>.<span class="mt">nextTick</span>(() => {
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"nextTick 2"</span>);
+});
+
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"End"</span>);
+
+<span class="cm">// Output: Start → End → nextTick 1 → nextTick 2</span></pre>
+  </div>
+
+  <!-- PHASE 2: Promise callbacks -->
+  <div class="card" style="border-top:3px solid var(--purple);">
+    <h3>🥈 Phase 0B: Promise Callbacks — The Gold VIP</h3>
+    <p>Promises are like the <em>gold members of an airline lounge</em> — they board before economy (regular phases) but after platinum members (nextTick). When a Promise resolves, its <span class="ic">.then()</span> / <span class="ic">.catch()</span> / <span class="ic">.finally()</span> callback enters the microtask queue and is processed right after all nextTick callbacks drain.</p>
+    <p style="margin-top:1rem;"><strong>Key rule:</strong> ALL nextTick callbacks drain first, then ALL Promise callbacks, then the next event loop phase begins. Even if a nextTick schedules another nextTick during draining — that new one runs too, before Promises get their turn.</p>
+  </div>
+
+  <div class="codeblk">
+    <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">promise-vs-nexttick.js</span></div>
+<pre><span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Start"</span>);
+
+<span class="fn">Promise</span>.<span class="mt">resolve</span>().<span class="mt">then</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Promise 1"</span>));
+<span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"nextTick 1"</span>));
+<span class="fn">Promise</span>.<span class="mt">resolve</span>().<span class="mt">then</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Promise 2"</span>));
+<span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"nextTick 2"</span>));
+
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"End"</span>);
+
+<span class="cm">// Output: Start → End → nextTick 1 → nextTick 2 → Promise 1 → Promise 2</span>
+<span class="cm">// ALL nextTicks drain first, THEN all Promises</span></pre>
+  </div>
+
+  <!-- PHASE 3: Timers -->
+  <div class="card" style="border-top:3px solid var(--red);">
+    <h3>⏱️ Phase 1: Timers — setTimeout &amp; setInterval</h3>
+    <p>Think of a pizza delivery guarantee: "Your pizza in 30 minutes." The timer starts when you order, but the pizza arrives only when the delivery person is free AND 30 minutes have passed. <span class="ic">setTimeout(fn, 1000)</span> means "execute fn <strong>no sooner than</strong> 1000ms." If the event loop is busy, it could be 1050ms, 1200ms, or even later.</p>
+    <p style="margin-top:1rem;"><strong>Important:</strong> <span class="ic">setTimeout(fn, 0)</span> does NOT mean "run immediately." It means "run as soon as the event loop reaches the Timers phase AND the call stack is empty AND all microtasks are drained." In practice, it's never truly instant.</p>
+  </div>
+
+  <div class="codeblk">
+    <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">timer-example.js</span></div>
+<pre><span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Start"</span>);
+
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Timeout 0ms"</span>), <span class="num">0</span>);
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Timeout 100ms"</span>), <span class="num">100</span>);
+
+<span class="cm">// Blocking the main thread for 200ms</span>
+<span class="kw">const</span> start = <span class="fn">Date</span>.<span class="mt">now</span>();
+<span class="kw">while</span> (<span class="fn">Date</span>.<span class="mt">now</span>() - start < <span class="num">200</span>) {} <span class="cm">// busy wait</span>
+
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"End (after 200ms block)"</span>);
+
+<span class="cm">// Output: Start → End (after 200ms block) → Timeout 0ms → Timeout 100ms</span>
+<span class="cm">// BOTH timers fire together because main thread was blocked past both delays!</span></pre>
+  </div>
+
+  <!-- PHASE 4: Poll (I/O) -->
+  <div class="card" style="border-top:3px solid var(--blue);">
+    <h3>📡 Phase 2: Poll — The I/O Powerhouse</h3>
+    <p>The Poll phase is the <em>central station of a railway network</em>. Most trains (I/O operations) arrive here. It handles incoming connections, data from file reads, HTTP responses, crypto results — essentially everything that involves the OS. When there's nothing to do and no timers are pending, <strong>the event loop parks here and waits</strong>, like a taxi driver at a stand.</p>
+    <p style="margin-top:1rem;"><strong>This is why:</strong> A Node.js server with <span class="ic">http.createServer()</span> runs forever — the Poll phase keeps the event loop alive waiting for incoming connections. But a script with only synchronous code exits immediately — nothing holds the loop open.</p>
+  </div>
+
+  <div class="codeblk">
+    <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">poll-example.js</span></div>
+<pre><span class="kw">const</span> fs = <span class="fn">require</span>(<span class="str">"fs"</span>);
+
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Before readFile"</span>);
+
+fs.<span class="fn">readFile</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>, (err, data) => {
+  <span class="cm">// This runs in the POLL phase when file data arrives from OS</span>
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"File content received!"</span>);
+  
+  <span class="cm">// Scheduling inside Poll: setImmediate beats setTimeout here!</span>
+  <span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate inside I/O"</span>));
+  <span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setTimeout inside I/O"</span>), <span class="num">0</span>);
+});
+
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"After readFile"</span>);
+
+<span class="cm">// Output: Before readFile → After readFile → File content received!</span>
+<span class="cm">//         → setImmediate inside I/O → setTimeout inside I/O</span>
+<span class="cm">// setImmediate always beats setTimeout when scheduled INSIDE an I/O callback</span>
+<span class="cm">// because Check phase comes right after Poll, before Timers on next cycle</span></pre>
+  </div>
+
+  <!-- PHASE 5: Check -->
+  <div class="card" style="border-top:3px solid var(--green);">
+    <h3>✅ Phase 3: Check — setImmediate()</h3>
+    <p>Picture a bakery with a "just finished" shelf. Right after the oven (Poll) produces bread, the baker puts it on this shelf (Check) immediately. <span class="ic">setImmediate()</span> was designed specifically to execute callbacks <strong>right after the Poll phase</strong>. Its name is a bit misleading — it's not truly "immediate" in the absolute sense, but it is immediate relative to I/O completion.</p>
+    <p style="margin-top:1rem;"><strong>Golden rule:</strong> Inside an I/O callback, <span class="ic">setImmediate()</span> always fires before <span class="ic">setTimeout(fn, 0)</span> because Check comes right after Poll, but Timers won't run until the next loop iteration.</p>
+  </div>
+
+  <div class="codeblk">
+    <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">setImmediate-example.js</span></div>
+<pre><span class="cm">// OUTSIDE I/O: order between setTimeout(0) and setImmediate is NON-DETERMINISTIC</span>
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setTimeout"</span>), <span class="num">0</span>);
+<span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate"</span>));
+<span class="cm">// Could be either order! Depends on system performance.</span>
+
+<span class="cm">// INSIDE I/O: setImmediate ALWAYS wins</span>
+<span class="kw">const</span> fs = <span class="fn">require</span>(<span class="str">"fs"</span>);
+fs.<span class="fn">readFile</span>(<span class="str">__filename</span>, () => {
+  <span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setTimeout in I/O"</span>), <span class="num">0</span>);
+  <span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate in I/O"</span>));
+});
+<span class="cm">// ALWAYS: setImmediate in I/O → setTimeout in I/O</span></pre>
+  </div>
+
+  <!-- PHASE 6: Close -->
+  <div class="card" style="border-top:3px solid var(--txt3);">
+    <h3>🚪 Phase 4: Close Callbacks — The Cleanup Crew</h3>
+    <p>Think of the closing shift at a store. After all customers leave and all transactions are done, the staff cleans up, locks doors, and shuts down registers. The Close phase handles cleanup callbacks like <span class="ic">socket.on('close')</span>. When a socket or handle is destroyed, its close callback fires here.</p>
+  </div>
+
+  <div class="codeblk">
+    <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">close-example.js</span></div>
+<pre><span class="kw">const</span> net = <span class="fn">require</span>(<span class="str">"net"</span>);
+<span class="kw">const</span> server = net.<span class="fn">createServer</span>((socket) => {
+  socket.<span class="mt">on</span>(<span class="str">"close"</span>, () => {
+    <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Socket closed — runs in Close Callbacks phase"</span>);
+  });
+  socket.<span class="mt">destroy</span>(); <span class="cm">// triggers the close event</span>
+});
+
+<span class="cm">// socket.destroy() or process.exit() triggers close callbacks</span></pre>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH5: EVENT LOOP CYCLE - CIRCLE DIAGRAM ██ -->
+<section id="ch5">
+<div class="wrap">
+  <div class="ch-label">Chapter 05</div>
+  <h2 class="sec-title">Event Loop Cycle — Circle Diagram</h2>
+  <p class="sec-sub">The outer circle shows the 4 main phases. The inner circle shows microtasks that run between every phase transition.</p>
+
+  <div class="dia">
+    <div class="dia-title">The Dual-Ring Event Loop Cycle</div>
+    <svg viewBox="0 0 800 700" xmlns="http://www.w3.org/2000/svg" font-family="DM Sans, sans-serif">
+
+      <!-- ─── OUTER RING (Main Phases) ─── -->
+      <circle cx="400" cy="320" r="230" fill="none" stroke="#1c2a42" stroke-width="2"/>
+
+      <!-- Outer ring directional arrows (clockwise) -->
+      <path d="M 400 90 A 230 230 0 0 1 630 320" fill="none" stroke="#5a657766" stroke-width="2.5" marker-end="url(#oArr)"/>
+      <path d="M 630 320 A 230 230 0 0 1 400 550" fill="none" stroke="#5a657766" stroke-width="2.5" marker-end="url(#oArr)"/>
+      <path d="M 400 550 A 230 230 0 0 1 170 320" fill="none" stroke="#5a657766" stroke-width="2.5" marker-end="url(#oArr)"/>
+      <path d="M 170 320 A 230 230 0 0 1 400 90" fill="none" stroke="#5a657766" stroke-width="2.5" marker-end="url(#oArr)"/>
+      <defs><marker id="oArr" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,1 L10,6 L0,11 Z" fill="#5a657766"/></marker></defs>
+
+      <!-- OUTER: TIMER (top, 12 o'clock) -->
+      <rect x="345" y="70" width="110" height="48" rx="10" fill="#1a2234" stroke="#ef4444" stroke-width="2.5"/>
+      <text x="400" y="99" text-anchor="middle" fill="#ef4444" font-size="15" font-weight="700">TIMER</text>
+      <text x="400" y="52" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="600">setTimeout / setInterval</text>
+
+      <!-- OUTER: POLL (right, 3 o'clock) -->
+      <rect x="580" y="296" width="110" height="48" rx="10" fill="#1a2234" stroke="#3b82f6" stroke-width="2.5"/>
+      <text x="635" y="325" text-anchor="middle" fill="#3b82f6" font-size="15" font-weight="700">POLL</text>
+      <text x="720" y="310" fill="#8e9baf" font-size="8">I/O callbacks</text>
+      <text x="720" y="324" fill="#8e9baf" font-size="8">fs, http, crypto</text>
+      <text x="720" y="338" fill="#5a6577" font-size="7.5" font-style="italic">Waits here if idle</text>
+
+      <!-- OUTER: CHECK (bottom, 6 o'clock) -->
+      <rect x="345" y="522" width="110" height="48" rx="10" fill="#1a2234" stroke="#10b981" stroke-width="2.5"/>
+      <text x="400" y="551" text-anchor="middle" fill="#10b981" font-size="15" font-weight="700">CHECK</text>
+      <text x="400" y="590" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="600">setImmediate()</text>
+
+      <!-- OUTER: CLOSE (left, 9 o'clock) -->
+      <rect x="110" y="296" width="110" height="48" rx="10" fill="#1a2234" stroke="#64748b" stroke-width="2.5"/>
+      <text x="165" y="325" text-anchor="middle" fill="#8e9baf" font-size="15" font-weight="700">CLOSE</text>
+      <text x="70" y="316" fill="#8e9baf" font-size="8" text-anchor="middle">socket</text>
+      <text x="70" y="330" fill="#8e9baf" font-size="8" text-anchor="middle">.on("close")</text>
+
+      <!-- ─── INNER RING (Microtasks) ─── -->
+      <circle cx="400" cy="320" r="100" fill="#f59e0b06" stroke="#f59e0b44" stroke-width="1.5" stroke-dasharray="6,3"/>
+
+      <!-- Inner ring loop arrows -->
+      <path d="M 400 220 A 100 100 0 0 1 500 320" fill="none" stroke="#f59e0b55" stroke-width="1.8" marker-end="url(#iArr)"/>
+      <path d="M 500 320 A 100 100 0 0 1 400 420" fill="none" stroke="#8b5cf655" stroke-width="1.8" marker-end="url(#iArr2)"/>
+      <path d="M 400 420 A 100 100 0 0 1 300 320" fill="none" stroke="#8b5cf655" stroke-width="1.8"/>
+      <path d="M 300 320 A 100 100 0 0 1 400 220" fill="none" stroke="#f59e0b55" stroke-width="1.8"/>
+      <defs>
+        <marker id="iArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#f59e0b55"/></marker>
+        <marker id="iArr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#8b5cf655"/></marker>
+      </defs>
+
+      <!-- INNER: nextTick (top of inner ring) -->
+      <rect x="345" y="244" width="110" height="36" rx="8" fill="#1a2234" stroke="#f59e0b" stroke-width="1.8"/>
+      <text x="400" y="267" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="700">process.nextTick()</text>
+
+      <!-- Arrow: nextTick → promise -->
+      <path d="M 400 280 L 400 310" fill="none" stroke="#f59e0b88" stroke-width="1.5" marker-end="url(#mArr)"/>
+      <defs><marker id="mArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#f59e0b88"/></marker></defs>
+
+      <!-- INNER: Promise (center of inner ring) -->
+      <rect x="340" y="312" width="120" height="36" rx="8" fill="#1a2234" stroke="#8b5cf6" stroke-width="1.8"/>
+      <text x="400" y="335" text-anchor="middle" fill="#8b5cf6" font-size="10" font-weight="700">Promise callbacks</text>
+
+      <!-- Arrow: promise back to nextTick (drain loop) -->
+      <path d="M 340 335 Q 310 300 345 267" fill="none" stroke="#8b5cf655" stroke-width="1.2" stroke-dasharray="3,2" marker-end="url(#mArr2)"/>
+      <defs><marker id="mArr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#8b5cf655"/></marker></defs>
+      <text x="315" y="295" fill="#5a6577" font-size="7">drain</text>
+      <text x="315" y="306" fill="#5a6577" font-size="7">loop</text>
+
+      <!-- Label: INNER RING -->
+      <text x="400" y="380" text-anchor="middle" fill="#f59e0b88" font-size="8" font-weight="600">MICROTASK RING</text>
+      <text x="400" y="393" text-anchor="middle" fill="#5a6577" font-size="7">(runs between every phase)</text>
+
+      <!-- ─── Connecting arrows: inner ring to outer ring ─── -->
+      <!-- nextTick → Timer -->
+      <line x1="400" y1="244" x2="400" y2="118" stroke="#f59e0b33" stroke-width="1" stroke-dasharray="4,3"/>
+      <!-- promise → Poll -->
+      <line x1="460" y1="330" x2="580" y2="320" stroke="#8b5cf633" stroke-width="1" stroke-dasharray="4,3"/>
+      <!-- promise → Check -->
+      <line x1="400" y1="348" x2="400" y2="522" stroke="#8b5cf633" stroke-width="1" stroke-dasharray="4,3"/>
+      <!-- nextTick → Close -->
+      <line x1="340" y1="262" x2="220" y2="310" stroke="#f59e0b33" stroke-width="1" stroke-dasharray="4,3"/>
+
+      <!-- ─── LEGEND ─── -->
+      <rect x="140" y="620" width="520" height="55" rx="8" fill="#0d1520" stroke="#1c2a42"/>
+      <rect x="160" y="635" width="14" height="14" rx="3" fill="#f59e0b"/>
+      <text x="182" y="647" fill="#f59e0b" font-size="10" font-weight="600">Inner Ring: nextTick → Promise (drain all before each phase)</text>
+      <rect x="160" y="656" width="14" height="14" rx="3" fill="#ef4444"/>
+      <text x="182" y="667" fill="#8e9baf" font-size="10">Outer Ring: Timer → Poll → Check → Close (repeat)</text>
+    </svg>
+    <p class="dia-cap">Dual-ring model: The outer ring cycles through the 4 main phases. The inner microtask ring drains completely (nextTick first, then Promises) before the event loop advances to any outer-ring phase.</p>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH6: EXECUTION PRIORITY ██ -->
+<section id="ch6">
+<div class="wrap">
+  <div class="ch-label">Chapter 06</div>
+  <h2 class="sec-title">Execution Priority — The Complete Pecking Order</h2>
+  <p class="sec-sub">When everything finishes at the same time, who runs first? Here's the definitive ranking.</p>
+
+  <div class="pstack">
+    <div class="pitem"><div class="prank" style="background:#ef444422;color:#ef4444;">1</div><div class="pname">Synchronous Code</div><div class="pdesc">Always first. main(), function calls, assignments — anything on the call stack.</div></div>
+    <div class="pitem"><div class="prank" style="background:#f59e0b22;color:#f59e0b;">2</div><div class="pname"><code>process.nextTick()</code></div><div class="pdesc">Highest-priority microtask. Runs before Promises, before any event loop phase.</div></div>
+    <div class="pitem"><div class="prank" style="background:#8b5cf622;color:#8b5cf6;">3</div><div class="pname">Promise Callbacks</div><div class="pdesc">Second microtask tier. Runs after nextTick, still before any phase.</div></div>
+    <div class="pitem"><div class="prank" style="background:#ef444422;color:#ef4444;">4</div><div class="pname"><code>setTimeout / setInterval</code></div><div class="pdesc">Timers phase — first regular phase. Even <code>setTimeout(fn, 0)</code> waits here.</div></div>
+    <div class="pitem"><div class="prank" style="background:#3b82f622;color:#3b82f6;">5</div><div class="pname">I/O Callbacks (Poll)</div><div class="pdesc">File reads, network responses, crypto — all I/O runs in the Poll phase.</div></div>
+    <div class="pitem"><div class="prank" style="background:#10b98122;color:#10b981;">6</div><div class="pname"><code>setImmediate()</code></div><div class="pdesc">Check phase — designed to run right after I/O completes.</div></div>
+    <div class="pitem"><div class="prank" style="background:#64748b22;color:#8e9baf;">7</div><div class="pname">Close Callbacks</div><div class="pdesc">Cleanup: <code>socket.on('close')</code>.</div></div>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH7: INTERACTIVE SIMULATOR ██ -->
+<section id="ch7">
+<div class="wrap">
+  <div class="ch-label">Chapter 07</div>
+  <h2 class="sec-title">Interactive Event Loop Simulator</h2>
+  <p class="sec-sub">Watch exactly how each line of code flows through the event loop, step by step. Click "Next Step" to advance.</p>
+
+  <div class="sim-container" id="simulator">
+    <div class="dia-title" style="text-align:left;">Choose a Scenario:</div>
+    <div class="sim-controls">
+      <button class="sim-btn active" onclick="loadScenario(0)">Q1: Basic</button>
+      <button class="sim-btn" onclick="loadScenario(1)">Q2: Microtasks</button>
+      <button class="sim-btn" onclick="loadScenario(2)">Q3: Nested I/O</button>
+      <button class="sim-btn" onclick="loadScenario(3)">Q4: Nested nextTick</button>
+      <button class="sim-btn" onclick="loadScenario(4)">Q5: setImmediate vs setTimeout</button>
+      <div style="flex-grow:1;"></div>
+      <button class="sim-btn" onclick="nextStep()" style="background:var(--amber);color:var(--bg);font-weight:700;">▶ Next Step</button>
+      <button class="sim-btn reset-btn" onclick="resetSim()">↺ Reset</button>
+    </div>
+
+    <div class="sim-grid">
+      <!-- Left: Event Loop Phases -->
+      <div class="sim-loop">
+        <div style="font-size:.72rem;letter-spacing:2px;text-transform:uppercase;color:var(--amber);margin-bottom:.8rem;">Event Loop Phases</div>
+        <div class="sim-phase" id="sp-sync"><span class="phase-dot" style="background:var(--cyan);"></span>Synchronous Code</div>
+        <div class="sim-phase" id="sp-nexttick"><span class="phase-dot" style="background:var(--amber);"></span>process.nextTick()</div>
+        <div class="sim-phase" id="sp-promise"><span class="phase-dot" style="background:var(--purple);"></span>Promise Callbacks</div>
+        <div class="sim-phase" id="sp-timer"><span class="phase-dot" style="background:var(--red);"></span>Timers (setTimeout)</div>
+        <div class="sim-phase" id="sp-poll"><span class="phase-dot" style="background:var(--blue);"></span>Poll (I/O)</div>
+        <div class="sim-phase" id="sp-check"><span class="phase-dot" style="background:var(--green);"></span>Check (setImmediate)</div>
+        <div class="sim-phase" id="sp-close"><span class="phase-dot" style="background:#64748b;"></span>Close Callbacks</div>
+
+        <div style="margin-top:1.2rem;">
+          <div class="sim-section-title">Callback Queues</div>
+          <div id="queues-display">
+            <div class="sim-queue-row"><span class="sim-queue-label" style="color:var(--amber);">nextTick:</span><span id="q-nexttick"></span></div>
+            <div class="sim-queue-row"><span class="sim-queue-label" style="color:var(--purple);">Promise:</span><span id="q-promise"></span></div>
+            <div class="sim-queue-row"><span class="sim-queue-label" style="color:var(--red);">Timer:</span><span id="q-timer"></span></div>
+            <div class="sim-queue-row"><span class="sim-queue-label" style="color:var(--blue);">Poll:</span><span id="q-poll"></span></div>
+            <div class="sim-queue-row"><span class="sim-queue-label" style="color:var(--green);">Check:</span><span id="q-check"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Output & Narrative -->
+      <div class="sim-right">
+        <div class="sim-callstack">
+          <div class="sim-section-title">Call Stack</div>
+          <div id="callstack-display" style="min-height:30px;"></div>
+        </div>
+        <div class="sim-narrative" id="narrative">
+          <strong>Ready.</strong> Click "Next Step" to begin executing the code line by line. Watch how each async operation gets queued and when it actually executes.
+        </div>
+        <div class="sim-output">
+          <div class="sim-section-title">Console Output</div>
+          <div id="output-display" style="min-height:40px;"></div>
+        </div>
+        <div class="codeblk" style="margin:0;">
+          <div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;" id="scenario-filename">scenario.js</span></div>
+          <pre id="scenario-code" style="font-size:.82rem;line-height:1.7;max-height:220px;overflow-y:auto;"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH8-11: CODE WALKTHROUGHS ██ -->
+<section id="ch8">
+<div class="wrap">
+  <div class="ch-label">Chapter 08</div>
+  <h2 class="sec-title">Code Walkthroughs</h2>
+  <p class="sec-sub">Four progressively harder problems from the Namaste Node.js lecture. Each one teaches a new concept.</p>
+
+  <!-- Q1 -->
+  <div class="qa" id="q1">
+    <div class="qa-head"><span class="qa-badge">Q1</span><h3>Basic — No Microtasks</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">q1.js</span></div>
+<pre><span class="kw">const</span> a = <span class="num">100</span>;
+
+<span class="lb">Ⓐ</span> <span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate"</span>));
+
+<span class="lb">Ⓒ</span> fs.<span class="fn">readFile</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>, () => {
+     <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"File Reading CB"</span>);
+   });
+
+<span class="lb">Ⓑ</span> <span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Timer expired"</span>), <span class="num">0</span>);
+
+<span class="kw">function</span> <span class="fn">printA</span>() { <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"a="</span>, a); }
+<span class="fn">printA</span>();
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Last line of the file."</span>);</pre></div>
+
+      <div class="wt">
+        <div class="ws"><div class="ws-label">Sync Execution</div><p><code>a=100</code> stored. <code>setImmediate</code>→ Ⓐ to Check queue. <code>fs.readFile</code>→ delegated to OS. <code>setTimeout(0)</code>→ Ⓑ to Timer queue. <code>printA()</code> prints <strong>"a= 100"</strong>. <code>console.log</code> prints <strong>"Last line of the file."</strong></p></div>
+        <div class="ws"><div class="ws-label">Timer Phase</div><p>No microtasks. Event loop enters Timers → finds Ⓑ → <strong>"Timer expired"</strong></p></div>
+        <div class="ws"><div class="ws-label">Poll Phase</div><p>File not ready yet. Nothing here. Moves on.</p></div>
+        <div class="ws"><div class="ws-label">Check Phase</div><p>Finds Ⓐ → <strong>"setImmediate"</strong></p></div>
+        <div class="ws"><div class="ws-label">Later: Poll Phase (next iteration)</div><p>File read completes → Ⓒ → <strong>"File Reading CB"</strong></p></div>
+      </div>
+
+      <div class="console"><div class="ln"><span class="pr">$</span> node q1.js</div><div class="ln"><span class="lnum">1</span>a= 100</div><div class="ln"><span class="lnum">2</span>Last line of the file.</div><div class="ln"><span class="lnum">3</span>Timer expired</div><div class="ln"><span class="lnum">4</span>setImmediate</div><div class="ln"><span class="lnum">5</span>File Reading CB</div></div>
+    </div>
+  </div>
+
+  <!-- Q2 -->
+  <div class="qa" id="ch9">
+    <div class="qa-head"><span class="qa-badge">Q2</span><h3>With Microtasks — nextTick &amp; Promises</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">q2.js</span></div>
+<pre><span class="kw">const</span> a = <span class="num">100</span>;
+<span class="lb">Ⓐ</span> <span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate"</span>));
+<span class="lb">Ⓑ</span> <span class="fn">Promise</span>.<span class="mt">resolve</span>().<span class="mt">then</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Promise"</span>));
+   fs.<span class="fn">readFile</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>, () => { <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"File Reading CB"</span>); });
+<span class="lb">Ⓒ</span> <span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Timer expired"</span>), <span class="num">0</span>);
+<span class="lb">Ⓓ</span> <span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"process.nextTick"</span>));
+<span class="kw">function</span> <span class="fn">printA</span>() { <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"a="</span>, a); }
+<span class="fn">printA</span>();
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Last line of the file."</span>);</pre></div>
+
+      <p class="story">The twist: <span class="ic">process.nextTick()</span> and <span class="ic">Promise.resolve()</span> are here. After sync code, the event loop checks microtasks FIRST. <strong>Ⓓ (nextTick)</strong> runs before <strong>Ⓑ (Promise)</strong> because nextTick has platinum priority. Only then does the loop enter Timers for Ⓒ, and Check for Ⓐ.</p>
+
+      <div class="console"><div class="ln"><span class="pr">$</span> node q2.js</div><div class="ln"><span class="lnum">1</span>a= 100</div><div class="ln"><span class="lnum">2</span>Last line of the file.</div><div class="ln"><span class="lnum">3</span>process.nextTick</div><div class="ln"><span class="lnum">4</span>Promise</div><div class="ln"><span class="lnum">5</span>Timer expired</div><div class="ln"><span class="lnum">6</span>setImmediate</div><div class="ln"><span class="lnum">7</span>File Reading CB</div></div>
+    </div>
+  </div>
+
+  <!-- Q3 -->
+  <div class="qa" id="ch10">
+    <div class="qa-head"><span class="qa-badge">Q3</span><h3>Nested Callbacks Inside readFile</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">q3.js</span></div>
+<pre><span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate"</span>));
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Timer expired"</span>), <span class="num">0</span>);
+<span class="fn">Promise</span>.<span class="mt">resolve</span>(<span class="str">"promise"</span>).<span class="mt">then</span>(<span class="kw">console</span>.<span class="mt">log</span>);
+
+fs.<span class="fn">readFile</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>, () => {
+  <span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"2nd timer"</span>), <span class="num">0</span>);
+  <span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"2nd nextTick"</span>));
+  <span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"2nd setImmediate"</span>));
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"File reading CB"</span>);
+});
+
+<span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"nextTick"</span>));
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Last line of the file."</span>);</pre></div>
+
+      <p class="story">The key insight: when the <span class="ic">readFile</span> callback runs (in Poll phase), it schedules NEW async tasks. After its synchronous code prints <strong>"File reading CB"</strong>, microtasks drain → <strong>"2nd nextTick"</strong>. Then Check phase → <strong>"2nd setImmediate"</strong>. Then next Timer phase → <strong>"2nd timer"</strong>. Inside I/O, setImmediate always beats setTimeout!</p>
+
+      <div class="callout info">
+        <div class="callout-t">🔍 Why "2nd setImmediate" before "2nd timer"?</div>
+        <p>The file callback ran during <strong>Poll</strong>. After Poll, the loop goes to <strong>Check</strong> (setImmediate) BEFORE looping back to <strong>Timers</strong>. So setImmediate scheduled inside I/O always beats setTimeout(fn, 0).</p>
+      </div>
+
+      <div class="console"><div class="ln"><span class="pr">$</span> node q3.js</div><div class="ln"><span class="lnum">1</span>Last line of the file.</div><div class="ln"><span class="lnum">2</span>nextTick</div><div class="ln"><span class="lnum">3</span>promise</div><div class="ln"><span class="lnum">4</span>Timer expired</div><div class="ln"><span class="lnum">5</span>setImmediate</div><div class="ln"><span class="lnum">6</span>File reading CB</div><div class="ln"><span class="lnum">7</span>2nd nextTick</div><div class="ln"><span class="lnum">8</span>2nd setImmediate</div><div class="ln"><span class="lnum">9</span>2nd timer</div></div>
+    </div>
+  </div>
+
+  <!-- Q4 -->
+  <div class="qa" id="ch11">
+    <div class="qa-head"><span class="qa-badge">Q4</span><h3>Nested process.nextTick() — Boss Level</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span><span style="margin-left:auto;">q4.js</span></div>
+<pre><span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"setImmediate"</span>));
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Timer expired"</span>), <span class="num">0</span>);
+<span class="fn">Promise</span>.<span class="mt">resolve</span>(<span class="str">"promise"</span>).<span class="mt">then</span>(<span class="kw">console</span>.<span class="mt">log</span>);
+
+fs.<span class="fn">readFile</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>, () => {
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"File reading CB"</span>);
+});
+
+<span class="fn">process</span>.<span class="mt">nextTick</span>(() => {
+  <span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"inner nextTick"</span>));
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Process.nextTick"</span>);
+});
+
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"Last line of the file."</span>);</pre></div>
+
+      <p class="story">The outer nextTick runs and prints <strong>"Process.nextTick"</strong>. But inside it, another nextTick is scheduled. The event loop <strong>drains ALL nextTick callbacks</strong> — including newly added ones! So <strong>"inner nextTick"</strong> runs before Promises. Recursive nextTick can starve the event loop!</p>
+
+      <div class="callout warn">
+        <div class="callout-t">⚠️ Starvation Warning</div>
+        <p>Recursive <code>process.nextTick()</code> calls block the event loop from ever advancing. All I/O, timers, and setImmediate will starve. Use <code>setImmediate()</code> for recursive async patterns instead.</p>
+      </div>
+
+      <div class="console"><div class="ln"><span class="pr">$</span> node q4.js</div><div class="ln"><span class="lnum">1</span>Last line of the file.</div><div class="ln"><span class="lnum">2</span>Process.nextTick</div><div class="ln"><span class="lnum">3</span>inner nextTick</div><div class="ln"><span class="lnum">4</span>promise</div><div class="ln"><span class="lnum">5</span>Timer expired</div><div class="ln"><span class="lnum">6</span>setImmediate</div><div class="ln"><span class="lnum">7</span>File reading CB</div></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH12: BONUS SCENARIOS ██ -->
+<section id="ch12">
+<div class="wrap">
+  <div class="ch-label">Chapter 12</div>
+  <h2 class="sec-title">Bonus Scenarios — Edge Cases &amp; Interview Traps</h2>
+
+  <!-- Scenario 1 -->
+  <div class="qa">
+    <div class="qa-head"><span class="qa-badge">TRAP 1</span><h3>setTimeout(0) vs setImmediate — Outside I/O</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+<pre><span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"timeout"</span>), <span class="num">0</span>);
+<span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"immediate"</span>));
+<span class="cm">// Output: NON-DETERMINISTIC! Could be either order.</span>
+<span class="cm">// Depends on system clock granularity and process performance.</span>
+<span class="cm">// Sometimes timer fires before loop reaches Check, sometimes after.</span></pre></div>
+      <p class="story"><strong>Interview answer:</strong> Outside an I/O callback, the order of setTimeout(0) and setImmediate is <em>non-deterministic</em> because it depends on how quickly the process boots up. If the timer has already expired by the time the event loop starts, it fires first. Otherwise, setImmediate goes first.</p>
+    </div>
+  </div>
+
+  <!-- Scenario 2 -->
+  <div class="qa">
+    <div class="qa-head"><span class="qa-badge">TRAP 2</span><h3>Promise inside Promise + nextTick</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+<pre><span class="fn">Promise</span>.<span class="mt">resolve</span>().<span class="mt">then</span>(() => {
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"promise 1"</span>);
+  <span class="fn">process</span>.<span class="mt">nextTick</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"nextTick inside promise"</span>));
+});
+<span class="fn">Promise</span>.<span class="mt">resolve</span>().<span class="mt">then</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"promise 2"</span>));
+
+<span class="cm">// Output: promise 1 → promise 2 → nextTick inside promise</span>
+<span class="cm">// Promise queue drains fully first, THEN newly added nextTick runs</span>
+<span class="cm">// (nextTick added DURING promise draining waits for current batch)</span></pre></div>
+    </div>
+  </div>
+
+  <!-- Scenario 3 -->
+  <div class="qa">
+    <div class="qa-head"><span class="qa-badge">TRAP 3</span><h3>async/await is just Promises underneath</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+<pre><span class="kw">async function</span> <span class="fn">main</span>() {
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"1"</span>);
+  <span class="kw">await</span> <span class="fn">Promise</span>.<span class="mt">resolve</span>();
+  <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"2"</span>); <span class="cm">// This becomes a .then() callback — microtask!</span>
+}
+<span class="fn">main</span>();
+<span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"3"</span>);
+
+<span class="cm">// Output: 1 → 3 → 2</span>
+<span class="cm">// Everything after 'await' is like a .then() — runs as a microtask</span></pre></div>
+    </div>
+  </div>
+
+  <!-- Scenario 4 -->
+  <div class="qa">
+    <div class="qa-head"><span class="qa-badge">TRAP 4</span><h3>Multiple setTimeouts with different delays</h3></div>
+    <div class="qa-body">
+      <div class="codeblk"><div class="codeblk-head"><span class="dot dot-r"></span><span class="dot dot-y"></span><span class="dot dot-g"></span></div>
+<pre><span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"A"</span>), <span class="num">0</span>);
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"B"</span>), <span class="num">0</span>);
+<span class="fn">setTimeout</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"C"</span>), <span class="num">100</span>);
+
+<span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"D"</span>));
+<span class="fn">setImmediate</span>(() => <span class="kw">console</span>.<span class="mt">log</span>(<span class="str">"E"</span>));
+
+<span class="cm">// Likely output: A → B → D → E → C</span>
+<span class="cm">// Timer phase runs A & B (both expired), Check runs D & E,</span>
+<span class="cm">// then C fires 100ms later on a future Timer phase iteration.</span></pre></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<div class="wrap"><div class="divider"></div></div>
+
+<!-- ██ CH13: CHEAT SHEET ██ -->
+<section id="ch13">
+<div class="wrap">
+  <div class="ch-label">Chapter 13</div>
+  <h2 class="sec-title">Cheat Sheet &amp; Comparison Tables</h2>
+
+  <h3 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin:2rem 0 1rem;color:var(--gold);">setTimeout vs setImmediate vs process.nextTick</h3>
+  <table class="tbl">
+    <thead><tr><th>Feature</th><th><code>setTimeout(fn,0)</code></th><th><code>setImmediate(fn)</code></th><th><code>process.nextTick(fn)</code></th></tr></thead>
+    <tbody>
+      <tr><td><strong>Phase</strong></td><td>Timers</td><td>Check</td><td>Microtask (before any phase)</td></tr>
+      <tr><td><strong>Priority</strong></td><td>Medium</td><td>Lower than timers*</td><td>Highest async</td></tr>
+      <tr><td><strong>Inside I/O</strong></td><td>Runs on next Timer iteration</td><td>Always before setTimeout</td><td>Runs before either</td></tr>
+      <tr><td><strong>Can starve I/O?</strong></td><td>No</td><td>No</td><td><strong>Yes!</strong></td></tr>
+      <tr><td><strong>Use case</strong></td><td>Delayed execution</td><td>After I/O, yield to loop</td><td>API consistency, run-first</td></tr>
+    </tbody>
+  </table>
+  <p style="font-size:.82rem;color:var(--txt3);margin-top:.3rem;">*Outside I/O, order between setTimeout(0) and setImmediate is non-deterministic.</p>
+
+  <h3 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin:2.5rem 0 1rem;color:var(--gold);">Microtasks vs Macrotasks</h3>
+  <table class="tbl">
+    <thead><tr><th>Microtasks (VIP)</th><th>Macrotasks (Regular)</th></tr></thead>
+    <tbody>
+      <tr><td><code>process.nextTick()</code></td><td><code>setTimeout()</code></td></tr>
+      <tr><td><code>Promise.then/catch/finally</code></td><td><code>setInterval()</code></td></tr>
+      <tr><td><code>queueMicrotask()</code></td><td><code>setImmediate()</code></td></tr>
+      <tr><td><code>await</code> (continuation)</td><td><code>fs.readFile()</code>, I/O operations</td></tr>
+      <tr><td colspan="2" style="text-align:center;color:var(--amber);font-weight:600;padding:.8rem;">All microtasks drain before the event loop advances to the next macrotask phase.</td></tr>
+    </tbody>
+  </table>
+
+  <h3 style="font-family:'Playfair Display',serif;font-size:1.2rem;margin:2.5rem 0 1rem;color:var(--gold);">The 7 Golden Rules</h3>
+  <div class="card">
+    <p style="line-height:2.3;">
+      <strong style="color:var(--amber);">Rule 1:</strong> Synchronous code always runs first. Always. No exceptions.<br>
+      <strong style="color:var(--amber);">Rule 2:</strong> <code>process.nextTick()</code> is highest-priority async. Runs before Promises.<br>
+      <strong style="color:var(--amber);">Rule 3:</strong> All microtasks (nextTick + Promises) drain completely between every phase.<br>
+      <strong style="color:var(--amber);">Rule 4:</strong> Inside I/O callbacks, <code>setImmediate()</code> always beats <code>setTimeout(fn, 0)</code>.<br>
+      <strong style="color:var(--amber);">Rule 5:</strong> Outside I/O, setTimeout(0) vs setImmediate order is non-deterministic.<br>
+      <strong style="color:var(--amber);">Rule 6:</strong> When idle, the event loop parks in Poll phase, waiting for I/O.<br>
+      <strong style="color:var(--amber);">Rule 7:</strong> Recursive <code>process.nextTick()</code> starves the event loop. Use <code>setImmediate()</code> instead.
+    </p>
+  </div>
+</div>
+</section>
+
+<!-- ██ FOOTER ██ -->
+<footer class="footer">
+  <div class="fbrand">Node.js Deep Dive</div>
+  <p>Episode 09 — libuv &amp; The Event Loop | Based on Namaste Node.js</p>
+  <p style="margin-top:.3rem;font-size:.78rem;">Crafted for deep understanding.</p>
+</footer>
+
+<!-- ██ SIMULATOR SCRIPT ██ -->
+<script>
+const scenarios = [
+  { // Q1: Basic
+    name: "q1.js",
+    code: `const a = 100;\nsetImmediate(() => console.log("setImmediate"));\nfs.readFile("./file.txt", "utf8", () => {\n  console.log("File Reading CB");\n});\nsetTimeout(() => console.log("Timer expired"), 0);\nfunction printA() { console.log("a=", a); }\nprintA();\nconsole.log("Last line of the file.");`,
+    steps: [
+      { phase:"sync", stack:["main()"], queues:{}, output:[], narr:'<strong>Script starts.</strong> V8 begins executing from the top. <code>const a = 100</code> is stored in memory.' },
+      { phase:"sync", stack:["main()"], queues:{check:["Ⓐ setImmediate"]}, output:[], narr:'<code>setImmediate()</code> encountered — async! V8 hands callback <strong>Ⓐ</strong> to libuv. It goes to the <strong>Check queue</strong>.' },
+      { phase:"sync", stack:["main()"], queues:{check:["Ⓐ setImmediate"]}, output:[], narr:'<code>fs.readFile()</code> encountered — async I/O! Delegated to libuv → OS via thread pool. Callback <strong>Ⓒ</strong> will arrive in Poll queue later.' },
+      { phase:"sync", stack:["main()"], queues:{timer:["Ⓑ setTimeout(0)"],check:["Ⓐ setImmediate"]}, output:[], narr:'<code>setTimeout(fn, 0)</code> — callback <strong>Ⓑ</strong> goes to the <strong>Timers queue</strong>. Timer has 0ms delay but still waits.' },
+      { phase:"sync", stack:["printA()","main()"], queues:{timer:["Ⓑ setTimeout(0)"],check:["Ⓐ setImmediate"]}, output:["a= 100"], narr:'<code>printA()</code> is pushed onto the call stack. It prints <strong>"a= 100"</strong>. Stack pops printA().' },
+      { phase:"sync", stack:["main()"], queues:{timer:["Ⓑ setTimeout(0)"],check:["Ⓐ setImmediate"]}, output:["a= 100","Last line of the file."], narr:'<code>console.log("Last line...")</code> prints. <strong>All synchronous code done!</strong> Call stack is now empty. Event loop takes over.' },
+      { phase:"timer", stack:["Ⓑ callback"], queues:{check:["Ⓐ setImmediate"]}, output:["a= 100","Last line of the file.","Timer expired"], narr:'<strong>Timers Phase:</strong> Event loop finds Ⓑ in timer queue (0ms expired). Pushes to call stack → prints <strong>"Timer expired"</strong>.' },
+      { phase:"poll", stack:[], queues:{check:["Ⓐ setImmediate"]}, output:["a= 100","Last line of the file.","Timer expired"], narr:'<strong>Poll Phase:</strong> File read not complete yet. Nothing in poll queue. Moving on.' },
+      { phase:"check", stack:["Ⓐ callback"], queues:{}, output:["a= 100","Last line of the file.","Timer expired","setImmediate"], narr:'<strong>Check Phase:</strong> Finds Ⓐ → pushes to call stack → prints <strong>"setImmediate"</strong>.' },
+      { phase:"poll", stack:["Ⓒ callback"], queues:{}, output:["a= 100","Last line of the file.","Timer expired","setImmediate","File Reading CB"], narr:'<strong>Poll Phase (later):</strong> File read completes! OS returns data to libuv → Ⓒ executes → <strong>"File Reading CB"</strong>. ✅ Done!' },
+    ]
+  },
+  { // Q2: Microtasks
+    name: "q2.js",
+    code: `const a = 100;\nsetImmediate(() => console.log("setImmediate"));\nPromise.resolve().then(() => console.log("Promise"));\nfs.readFile("./file.txt", "utf8", () => {\n  console.log("File Reading CB");\n});\nsetTimeout(() => console.log("Timer expired"), 0);\nprocess.nextTick(() => console.log("process.nextTick"));\nfunction printA() { console.log("a=", a); }\nprintA();\nconsole.log("Last line of the file.");`,
+    steps: [
+      { phase:"sync", stack:["main()"], queues:{check:["Ⓐ setImmediate"],promise:["Ⓑ Promise"],timer:["Ⓒ setTimeout"],nexttick:["Ⓓ nextTick"]}, output:["a= 100","Last line of the file."], narr:'<strong>Sync code done.</strong> All async callbacks registered: Ⓐ→Check, Ⓑ→Promise, Ⓒ→Timer, Ⓓ→nextTick. Sync output: <strong>"a= 100"</strong> and <strong>"Last line..."</strong>.' },
+      { phase:"nexttick", stack:["Ⓓ nextTick cb"], queues:{check:["Ⓐ setImmediate"],promise:["Ⓑ Promise"],timer:["Ⓒ setTimeout"]}, output:["a= 100","Last line of the file.","process.nextTick"], narr:'<strong>Microtasks — nextTick:</strong> Platinum VIP! Ⓓ runs first → <strong>"process.nextTick"</strong>. nextTick queue is now empty.' },
+      { phase:"promise", stack:["Ⓑ Promise cb"], queues:{check:["Ⓐ setImmediate"],timer:["Ⓒ setTimeout"]}, output:["a= 100","Last line of the file.","process.nextTick","Promise"], narr:'<strong>Microtasks — Promises:</strong> Gold VIP! Ⓑ runs → <strong>"Promise"</strong>. All microtasks drained. Now enter event loop phases.' },
+      { phase:"timer", stack:["Ⓒ setTimeout cb"], queues:{check:["Ⓐ setImmediate"]}, output:["a= 100","Last line of the file.","process.nextTick","Promise","Timer expired"], narr:'<strong>Timers Phase:</strong> Ⓒ fires → <strong>"Timer expired"</strong>.' },
+      { phase:"check", stack:["Ⓐ setImmediate cb"], queues:{}, output:["a= 100","Last line of the file.","process.nextTick","Promise","Timer expired","setImmediate"], narr:'<strong>Check Phase:</strong> Ⓐ fires → <strong>"setImmediate"</strong>.' },
+      { phase:"poll", stack:["readFile cb"], queues:{}, output:["a= 100","Last line of the file.","process.nextTick","Promise","Timer expired","setImmediate","File Reading CB"], narr:'<strong>Poll Phase (later):</strong> File data arrives → <strong>"File Reading CB"</strong>. ✅ Done!' },
+    ]
+  },
+  { // Q3: Nested I/O
+    name: "q3.js",
+    code: `setImmediate(() => console.log("setImmediate"));\nsetTimeout(() => console.log("Timer expired"), 0);\nPromise.resolve("promise").then(console.log);\nfs.readFile("./file.txt", "utf8", () => {\n  setTimeout(() => console.log("2nd timer"), 0);\n  process.nextTick(() => console.log("2nd nextTick"));\n  setImmediate(() => console.log("2nd setImmediate"));\n  console.log("File reading CB");\n});\nprocess.nextTick(() => console.log("nextTick"));\nconsole.log("Last line of the file.");`,
+    steps: [
+      { phase:"sync", stack:[], queues:{check:["Ⓐ setImmediate"],timer:["Ⓑ setTimeout"],promise:["promise"],nexttick:["nextTick"]}, output:["Last line of the file."], narr:'<strong>Sync done.</strong> Prints <strong>"Last line..."</strong>. Queues loaded.' },
+      { phase:"nexttick", stack:["nextTick cb"], queues:{check:["Ⓐ setImmediate"],timer:["Ⓑ setTimeout"],promise:["promise"]}, output:["Last line of the file.","nextTick"], narr:'<strong>Microtasks — nextTick:</strong> → <strong>"nextTick"</strong>.' },
+      { phase:"promise", stack:["Promise cb"], queues:{check:["Ⓐ setImmediate"],timer:["Ⓑ setTimeout"]}, output:["Last line of the file.","nextTick","promise"], narr:'<strong>Microtasks — Promise:</strong> → <strong>"promise"</strong>. Microtasks drained.' },
+      { phase:"timer", stack:["Ⓑ cb"], queues:{check:["Ⓐ setImmediate"]}, output:["Last line of the file.","nextTick","promise","Timer expired"], narr:'<strong>Timers:</strong> → <strong>"Timer expired"</strong>.' },
+      { phase:"check", stack:["Ⓐ cb"], queues:{}, output:["Last line of the file.","nextTick","promise","Timer expired","setImmediate"], narr:'<strong>Check:</strong> → <strong>"setImmediate"</strong>.' },
+      { phase:"poll", stack:["readFile cb"], queues:{timer:["2nd timer"],nexttick:["2nd nextTick"],check:["2nd setImmediate"]}, output:["Last line of the file.","nextTick","promise","Timer expired","setImmediate","File reading CB"], narr:'<strong>Poll:</strong> File arrives! Callback runs — prints <strong>"File reading CB"</strong>. Inside, it schedules 3 new async tasks!' },
+      { phase:"nexttick", stack:["2nd nextTick cb"], queues:{timer:["2nd timer"],check:["2nd setImmediate"]}, output:["Last line of the file.","nextTick","promise","Timer expired","setImmediate","File reading CB","2nd nextTick"], narr:'<strong>Microtasks after Poll:</strong> 2nd nextTick → <strong>"2nd nextTick"</strong>.' },
+      { phase:"check", stack:["2nd setImmediate cb"], queues:{timer:["2nd timer"]}, output:["Last line of the file.","nextTick","promise","Timer expired","setImmediate","File reading CB","2nd nextTick","2nd setImmediate"], narr:'<strong>Check (after Poll!):</strong> setImmediate beats setTimeout because Check comes AFTER Poll → <strong>"2nd setImmediate"</strong>.' },
+      { phase:"timer", stack:["2nd timer cb"], queues:{}, output:["Last line of the file.","nextTick","promise","Timer expired","setImmediate","File reading CB","2nd nextTick","2nd setImmediate","2nd timer"], narr:'<strong>Timers (next iteration):</strong> → <strong>"2nd timer"</strong>. ✅ Done! Inside I/O: setImmediate always beats setTimeout!' },
+    ]
+  },
+  { // Q4: Nested nextTick
+    name: "q4.js",
+    code: `setImmediate(() => console.log("setImmediate"));\nsetTimeout(() => console.log("Timer expired"), 0);\nPromise.resolve("promise").then(console.log);\nfs.readFile("./file.txt", "utf8", () => {\n  console.log("File reading CB");\n});\nprocess.nextTick(() => {\n  process.nextTick(() => console.log("inner nextTick"));\n  console.log("Process.nextTick");\n});\nconsole.log("Last line of the file.");`,
+    steps: [
+      { phase:"sync", stack:[], queues:{check:["setImmediate"],timer:["setTimeout"],promise:["promise"],nexttick:["outer nextTick"]}, output:["Last line of the file."], narr:'<strong>Sync done.</strong> Prints <strong>"Last line..."</strong>.' },
+      { phase:"nexttick", stack:["outer nextTick cb"], queues:{check:["setImmediate"],timer:["setTimeout"],promise:["promise"],nexttick:["inner nextTick"]}, output:["Last line of the file.","Process.nextTick"], narr:'<strong>nextTick drain:</strong> Outer runs → <strong>"Process.nextTick"</strong>. But it also schedules a NEW nextTick (inner)! The queue is not empty yet...' },
+      { phase:"nexttick", stack:["inner nextTick cb"], queues:{check:["setImmediate"],timer:["setTimeout"],promise:["promise"]}, output:["Last line of the file.","Process.nextTick","inner nextTick"], narr:'<strong>nextTick keeps draining:</strong> Inner runs → <strong>"inner nextTick"</strong>. NOW the nextTick queue is empty. Move to Promises.' },
+      { phase:"promise", stack:["Promise cb"], queues:{check:["setImmediate"],timer:["setTimeout"]}, output:["Last line of the file.","Process.nextTick","inner nextTick","promise"], narr:'<strong>Promise:</strong> → <strong>"promise"</strong>. All microtasks done.' },
+      { phase:"timer", stack:["setTimeout cb"], queues:{check:["setImmediate"]}, output:["Last line of the file.","Process.nextTick","inner nextTick","promise","Timer expired"], narr:'<strong>Timers:</strong> → <strong>"Timer expired"</strong>.' },
+      { phase:"check", stack:["setImmediate cb"], queues:{}, output:["Last line of the file.","Process.nextTick","inner nextTick","promise","Timer expired","setImmediate"], narr:'<strong>Check:</strong> → <strong>"setImmediate"</strong>.' },
+      { phase:"poll", stack:["readFile cb"], queues:{}, output:["Last line of the file.","Process.nextTick","inner nextTick","promise","Timer expired","setImmediate","File reading CB"], narr:'<strong>Poll:</strong> → <strong>"File reading CB"</strong>. ✅ Done! Key lesson: nextTick drains recursively!' },
+    ]
+  },
+  { // Q5: setImmediate vs setTimeout inside I/O
+    name: "trap-io.js",
+    code: `const fs = require("fs");\nfs.readFile(__filename, () => {\n  setTimeout(() => console.log("setTimeout"), 0);\n  setImmediate(() => console.log("setImmediate"));\n  process.nextTick(() => console.log("nextTick"));\n  Promise.resolve().then(() => console.log("Promise"));\n  console.log("I/O callback");\n});`,
+    steps: [
+      { phase:"sync", stack:[], queues:{}, output:[], narr:'<strong>Sync:</strong> <code>fs.readFile</code> delegated to OS. Call stack empty. Event loop waits in Poll phase for I/O.' },
+      { phase:"poll", stack:["readFile cb"], queues:{timer:["setTimeout"],check:["setImmediate"],nexttick:["nextTick"],promise:["Promise"]}, output:["I/O callback"], narr:'<strong>Poll:</strong> File data arrives! Callback runs, prints <strong>"I/O callback"</strong>. Inside, it schedules 4 async operations.' },
+      { phase:"nexttick", stack:["nextTick cb"], queues:{timer:["setTimeout"],check:["setImmediate"],promise:["Promise"]}, output:["I/O callback","nextTick"], narr:'<strong>Microtasks — nextTick:</strong> → <strong>"nextTick"</strong>.' },
+      { phase:"promise", stack:["Promise cb"], queues:{timer:["setTimeout"],check:["setImmediate"]}, output:["I/O callback","nextTick","Promise"], narr:'<strong>Microtasks — Promise:</strong> → <strong>"Promise"</strong>.' },
+      { phase:"check", stack:["setImmediate cb"], queues:{timer:["setTimeout"]}, output:["I/O callback","nextTick","Promise","setImmediate"], narr:'<strong>Check (after Poll):</strong> → <strong>"setImmediate"</strong>. Beats setTimeout because we\'re still in the same loop iteration — Check comes after Poll!' },
+      { phase:"timer", stack:["setTimeout cb"], queues:{}, output:["I/O callback","nextTick","Promise","setImmediate","setTimeout"], narr:'<strong>Timers (next iteration):</strong> → <strong>"setTimeout"</strong>. ✅ This proves the golden rule: inside I/O, the order is always nextTick → Promise → setImmediate → setTimeout.' },
+    ]
+  }
+];
+
+let currentScenario = 0;
+let currentStep = -1;
+
+function loadScenario(idx) {
+  currentScenario = idx;
+  currentStep = -1;
+  const s = scenarios[idx];
+  document.getElementById('scenario-filename').textContent = s.name;
+  document.getElementById('scenario-code').textContent = s.code;
+  document.getElementById('output-display').innerHTML = '';
+  document.getElementById('callstack-display').innerHTML = '';
+  document.getElementById('narrative').innerHTML = '<strong>Ready.</strong> Click "Next Step" to begin.';
+
+  // Clear queues
+  ['nexttick','promise','timer','poll','check'].forEach(q => {
+    document.getElementById('q-'+q).innerHTML = '';
+  });
+
+  // Reset phase highlights
+  document.querySelectorAll('.sim-phase').forEach(el => {
+    el.classList.remove('active-phase','done-phase');
+  });
+
+  // Update buttons
+  document.querySelectorAll('.sim-controls .sim-btn').forEach((btn, i) => {
+    if(i < scenarios.length) btn.classList.toggle('active', i === idx);
+  });
+}
+
+function nextStep() {
+  const s = scenarios[currentScenario];
+  currentStep++;
+  if(currentStep >= s.steps.length) {
+    document.getElementById('narrative').innerHTML = '<strong>✅ Execution complete!</strong> Try another scenario or click Reset.';
+    return;
+  }
+
+  const step = s.steps[currentStep];
+
+  // Highlight active phase
+  document.querySelectorAll('.sim-phase').forEach(el => {
+    el.classList.remove('active-phase');
+    // Mark previous phases as done
+  });
+  const phaseMap = { sync:'sp-sync', nexttick:'sp-nexttick', promise:'sp-promise', timer:'sp-timer', poll:'sp-poll', check:'sp-check', close:'sp-close' };
+  if(phaseMap[step.phase]) {
+    document.getElementById(phaseMap[step.phase]).classList.add('active-phase');
+  }
+
+  // Update call stack
+  const csEl = document.getElementById('callstack-display');
+  csEl.innerHTML = step.stack.map(s => `<span class="sim-chip stack">${s}</span> `).join('');
+
+  // Update queues
+  ['nexttick','promise','timer','poll','check'].forEach(q => {
+    const el = document.getElementById('q-'+q);
+    const items = step.queues && step.queues[q] ? step.queues[q] : [];
+    el.innerHTML = items.map(i => `<span class="sim-chip ${q}">${i}</span>`).join(' ');
+  });
+
+  // Update output
+  const outEl = document.getElementById('output-display');
+  outEl.innerHTML = step.output.map((l,i) => `<div class="sim-output-line"><span style="color:var(--txt3);margin-right:8px;">${i+1}</span>${l}</div>`).join('');
+
+  // Update narrative
+  document.getElementById('narrative').innerHTML = step.narr;
+}
+
+function resetSim() {
+  loadScenario(currentScenario);
+}
+
+// Initialize
+loadScenario(0);
+</script>
+
+</body>
+</html>

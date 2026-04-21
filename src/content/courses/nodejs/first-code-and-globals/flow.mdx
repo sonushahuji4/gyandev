@@ -1,0 +1,45 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  Your first Node.js workflow in a single frame: from installing the
+  binary, to exploring in the REPL, to running a file, to reaching the
+  runtime's global objects. The legend below decodes each phase.
+</Callout>
+
+## From install to globals — your first Node workflow
+
+```mermaid
+flowchart TD
+    A["<b>i · Install</b><br/>node + npm via LTS<br/>verify with node -v"]
+      --> B["<b>ii · REPL</b><br/>node ↵<br/>one line at a time"]
+    A --> C["<b>iii · File mode</b><br/>node app.js<br/>full file executed"]
+    B --> D["<b>iv · Node runtime</b><br/>V8 + Node APIs<br/>(the 'superpowers')"]
+    C --> D
+    D --> E["<b>v · global</b><br/>setTimeout, console,<br/>fetch, setImmediate"]
+    D --> F["<b>vi · globalThis</b><br/>universal reference<br/>(window ≡ global)"]
+    D --> G["<b>vii · top-level this</b><br/>= module.exports ({})<br/>NOT global"]
+
+    classDef setup fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef run fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef rt fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef global fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    classDef gotcha fill:#fde8e8,stroke:#c53030,stroke-width:2px,color:#1a1915;
+    class A setup
+    class B,C run
+    class D rt
+    class E,F global
+    class G gotcha
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Install',              description: 'Install the LTS build from nodejs.org — bundles Node + NPM. Verify with `node -v` / `npm -v`.' },
+  { numeral: 'ii',  name: 'REPL',                 description: 'Interactive mode: type `node`, evaluate one line at a time. Great for quick experiments; nothing persists.' },
+  { numeral: 'iii', name: 'File mode',            description: 'Write `app.js` in a folder, run with `node app.js`. The whole file executes top to bottom.' },
+  { numeral: 'iv',  name: 'Node runtime',         description: 'V8 engine + Node APIs (fs, http, net, os). Runs your code in either REPL or file mode.' },
+  { numeral: 'v',   name: 'global',               description: 'Node\'s global object. Provides setTimeout, setInterval, setImmediate, console, fetch, queueMicrotask.' },
+  { numeral: 'vi',  name: 'globalThis',           description: 'ES2020 universal reference. In Node, `globalThis === global`. In browsers, `globalThis === window`.' },
+  { numeral: 'vii', name: 'top-level `this`',     description: 'Trap: at the top level of a Node file, `this` is the empty `module.exports`, not the global object.' },
+]} />

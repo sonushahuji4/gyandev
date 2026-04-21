@@ -3,23 +3,43 @@ readingMinutes: 2
 updated: 2026-04-21
 ---
 
-## One tick of the event loop
+<Callout type="insight" title="One-picture recall">
+  A single glance at how a line of Node.js code flows from V8's call stack
+  through libuv to the OS and back. Sync work stays on the left; async
+  work detours through libuv and the event loop before returning as a
+  callback. The legend below decodes each phase.
+</Callout>
+
+## How async code flows through Node.js
 
 ```mermaid
-flowchart TD
-    A[Start tick] --> B[Timers phase]
-    B --> N1[drain nextTick + microtasks]
-    N1 --> C[Pending callbacks]
-    C --> N2[drain nextTick + microtasks]
-    N2 --> D[Poll — wait for I/O]
-    D --> N3[drain nextTick + microtasks]
-    N3 --> E[Check — setImmediate]
-    E --> N4[drain nextTick + microtasks]
-    N4 --> F[Close callbacks]
-    F --> G{any handles left?}
-    G -->|yes| A
-    G -->|no| H[Exit]
+flowchart LR
+    A["<b>i · Call stack</b><br/>V8 runs sync code<br/>GEC + function frames"]
+      -->|"sync"| D["<b>vi · console.log</b><br/>output printed<br/>stack drained"]
+    A -->|"async call<br/>(fs / http / timer)"| B["<b>ii · libuv</b><br/>registers callback<br/>uses thread pool + OS"]
+    B -->|"OS does the work"| C["<b>iii · OS</b><br/>disk · network · timer<br/>(libuv talks to kernel)"]
+    C -->|"result ready"| B
+    B -->|"push callback"| Q["<b>iv · Task queues</b><br/>macrotasks · microtasks"]
+    Q -->|"event loop checks<br/>'is stack empty?'"| E["<b>v · Event loop</b><br/>moves callback<br/>onto the call stack"]
+    E --> A
+
+    classDef v8 fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef libuv fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef os fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef queue fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    classDef out fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    class A,D v8
+    class B libuv
+    class C os
+    class Q queue
+    class E out
 ```
 
-The nextTick + microtask drain between phases is why Promise.then can arrive earlier than
-you'd expect from a setTimeout scheduled on the same line.
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Call stack (V8)',    description: 'V8 executes synchronous code one frame at a time — GEC plus any active function contexts.' },
+  { numeral: 'ii',  name: 'libuv',              description: 'C library bundled with Node. Registers async ops with their callbacks and uses the thread pool + OS syscalls to do the work.' },
+  { numeral: 'iii', name: 'Operating system',   description: 'Disk, network, timers. libuv is the only part of Node that can talk to the kernel.' },
+  { numeral: 'iv',  name: 'Task queues',        description: 'Macrotasks (timers, I/O callbacks) and microtasks (promises, queueMicrotask). Microtasks drain first.' },
+  { numeral: 'v',   name: 'Event loop',         description: 'Checks whether the call stack is empty; if yes, moves the next ready callback onto it.' },
+  { numeral: 'vi',  name: 'Output',             description: 'Sync output prints immediately; async output prints only after libuv + the event loop hand the callback back to V8.' },
+]} />

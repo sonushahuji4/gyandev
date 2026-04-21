@@ -1,0 +1,264 @@
+---
+title: Modules, Exports & Require
+description: How Node.js keeps a project of hundreds of files organised with private-by-default modules, `require()`, `module.exports`, and barrel files.
+excerpt: CommonJS basics — `require`, `module.exports`, the `index.js` barrel, and how ESM differs.
+course: nodejs/course
+order: 4
+season: 1
+difficulty: beginner
+type: explanation
+readingMinutes: 15
+status: published
+published: 2026-04-21
+updated: 2026-04-21
+tags:
+  - modules
+  - commonjs
+  - require
+  - esm
+---
+
+<Callout type="quote" title="">
+  Real projects have hundreds of files. Node.js keeps them organised with
+  modules — building blocks that let code talk to each other without
+  leaking secrets.
+</Callout>
+
+## The Problem — One File Is Not Enough
+
+In the previous chapter, we wrote all our code in a single `app.js`. That
+works for tiny experiments, but imagine building an e-commerce site —
+authentication, product listings, shopping cart, payment processing,
+email notifications. Stuffing all of that into one file would be
+**chaos**.
+
+This is why Node.js uses a **module system**. Every `.js` file in Node.js
+is automatically its own module. Each file has its own private scope —
+variables and functions defined in one file are *invisible* to other
+files by default.
+
+<Callout type="insight" title="What is a module?">
+  A **module** is a self-contained unit of JavaScript code — it can be a
+  single file or an entire folder. Everything inside a module is
+  **private by default**. If you want to share something with the outside
+  world, you must explicitly **export** it.
+</Callout>
+
+<Callout type="warning" title="Critical rule">
+  Modules protect their variables and functions from leaking. If you
+  define a function in `sum.js` and try to call it from `app.js` without
+  exporting it, you'll get a `ReferenceError`. This isn't a bug — it's a
+  feature that prevents naming conflicts and keeps your code organised.
+</Callout>
+
+```text title="Module isolation — each file is a fortress"
+┌──────────── sum.js ────────────┐     ✗      ┌──────────── app.js ─────────┐
+│ function calculateSum() {...}  │ ─────────→ │ calculateSum(5, 10)         │
+│ let x = "hello"                │  (blocked) │ // ReferenceError!          │
+│   PRIVATE by default           │            │ // calculateSum is not      │
+│   Cannot be accessed outside   │            │ //   defined                │
+└────────────────────────────────┘            └─────────────────────────────┘
+
+                         ↓ SOLUTION ↓
+              1. Export from sum.js   — module.exports
+              2. Import in app.js     — require("./sum")
+```
+
+## The Bridge — `require()` & `module.exports`
+
+Node.js gives you two tools to connect modules together:
+**`module.exports`** (the sender) and **`require()`** (the receiver). Think
+of it like a delivery service — one module *packages* what it wants to
+share, and another module *receives* the package.
+
+<Callout type="insight" title="require()">
+  **`require()`** is a built-in Node.js function that lets you include
+  other modules into your code. When you call `require("./sum.js")`,
+  Node.js loads that file, executes it, and returns whatever
+  `module.exports` was set to.
+</Callout>
+
+<Callout type="insight" title="module.exports">
+  **`module.exports`** is an empty object `{}` by default. Whatever you
+  assign to it becomes the "public API" of that module — the only thing
+  visible to the outside world when someone `require()`s your file.
+</Callout>
+
+Let's walk through the complete flow with code.
+
+```js title="sum.js — exporting a function"
+// sum.js
+function calculateSum(a, b) {
+  let sum = a + b;
+  console.log(sum);
+}
+
+// Make it available to the outside world
+module.exports = calculateSum;
+```
+
+```js title="app.js — importing and using it"
+// app.js
+const calculateSum = require("./sum.js");
+
+calculateSum(5, 10); // Output: 15
+```
+
+<Callout type="tip" title="Pro tip">
+  You can omit the `.js` extension when requiring files —
+  `require("./sum")` works perfectly. Node.js automatically resolves the
+  extension for you.
+</Callout>
+
+## Exporting Multiple Things
+
+What if you need to export *more than one* thing from a module — say, a
+variable and a function? You wrap them in an **object**:
+
+```js title="sum.js — exporting multiple items"
+let x = "export in React exports in Node";
+
+function calculateSum(a, b) {
+  console.log(a + b);
+}
+
+// Export as an object
+module.exports = { x, calculateSum };
+```
+
+```js title="app.js — using destructuring to import"
+// Destructuring — the clean, professional way
+const { x, calculateSum } = require("./sum.js");
+
+calculateSum(5, 10); // 15
+console.log(x);      // "export in React exports in Node"
+```
+
+**Destructuring** is a JavaScript feature that lets you unpack properties
+from an object into separate variables. Most professional Node.js
+developers use this pattern daily — you'll see it everywhere in
+production codebases.
+
+<Callout type="tip" title="Alternative pattern">
+  Instead of assigning one big object, some developers add properties one
+  at a time:
+
+  ```js
+  module.exports.x = x;
+  module.exports.calculateSum = calculateSum;
+  ```
+
+  Both approaches produce the same result.
+</Callout>
+
+## Scaling Up — Folders, Nested Modules & `index.js`
+
+As your project grows, you'll want to group related modules into
+**folders**. For example, a `calculate/` folder might contain `sum.js`
+and `multiply.js`. You can import from subfolders using relative paths:
+
+```js title="Importing from subfolders"
+const { calculateSum } = require("./calculate/sum");
+const { calculateMultiply } = require("./calculate/multiply");
+```
+
+But there's an even cleaner pattern: create an **`index.js`** file inside
+the folder. This file acts as a "receptionist" — it gathers all exports
+from sibling files and re-exports them as a single package.
+
+```js title="calculate/index.js — the barrel file"
+const { calculateMultiply } = require("./multiply");
+const { calculateSum } = require("./sum");
+
+module.exports = { calculateMultiply, calculateSum };
+```
+
+```js title="app.js — one clean import from the folder"
+// Node.js automatically looks for index.js inside the folder!
+const { calculateSum, calculateMultiply } = require("./calculate");
+
+calculateSum(5, 10);       // 15
+calculateMultiply(5, 10);  // 50
+```
+
+```text title="Project structure with nested modules"
+project/
+├─ app.js             ← entry point, requires ./calculate
+├─ data.json          ← JSON files can be required too!
+├─ xyz.js
+└─ calculate/         ← folder acts as a module
+   ├─ index.js        ← barrel file (auto-loaded by Node)
+   ├─ sum.js          ← exports calculateSum
+   └─ multiply.js     ← exports calculateMultiply
+```
+
+<Callout type="tip" title="Bonus — requiring JSON and built-ins">
+  You can import JSON files directly with `require("./data.json")`.
+  Node.js parses it and returns a JavaScript object. And built-in modules
+  like `util` can be imported with `require('node:util')`.
+</Callout>
+
+## The Two Worlds — CommonJS vs ES Modules
+
+Everything we've learned so far uses **CommonJS (CJS)** — the original
+module system built into Node.js. But there's a newer system called **ES
+Modules (ESM)** that's becoming the future standard. You need to know
+both.
+
+| Feature          | CommonJS (CJS)                          | ES Modules (ESM)                          |
+| ---------------- | --------------------------------------- | ----------------------------------------- |
+| Syntax           | `require()` / `module.exports`          | `import` / `export`                       |
+| File extension   | `.js` (default)                         | `.mjs` or `.js` with config               |
+| Loading          | Synchronous                             | Asynchronous                              |
+| Strict mode      | Non-strict (sloppy mode)                | Always strict mode                        |
+| Default in       | Node.js (traditional)                   | Browsers, React, Angular                  |
+| Era              | Older, established                      | Newer, the future                         |
+| How to enable    | Default — works out of the box          | Add `"type": "module"` in `package.json`  |
+
+Here's what ES Module syntax looks like compared to CommonJS.
+
+```js title="ES Modules — sum.js"
+// ESM: use the 'export' keyword directly
+export let x = "export in React exports in Node";
+
+export function calculateSum(a, b) {
+  console.log(a + b);
+}
+```
+
+```js title="ES Modules — app.js"
+// ESM: use 'import' instead of 'require'
+import { calculateSum, x } from "./sum.js";
+
+calculateSum(5, 10); // 15
+console.log(x);
+```
+
+<Callout type="warning" title="Strict mode difference (interview tip!)">
+  In CommonJS, you can write `z = "hello"` without `let`/`const`/`var`
+  and it works (non-strict). In ES Modules, the same code throws a
+  `ReferenceError` because ESM always enforces strict mode. This makes
+  ESM safer and more predictable.
+</Callout>
+
+To enable ES Modules in your project, create a `package.json` file and
+add `"type": "module"`. The industry is gradually shifting toward ESM —
+most new frameworks and libraries already use it.
+
+## Episode 04 — At a Glance
+
+| Concept              | Key detail                                                               |
+| -------------------- | ------------------------------------------------------------------------ |
+| Module               | A file or folder with private JS code — nothing leaks by default.        |
+| `require()`          | Built-in function to import another module's exports.                    |
+| `module.exports`     | Empty object by default — assign to it to make things public.            |
+| Export one thing     | `module.exports = calculateSum;`                                         |
+| Export multiple      | `module.exports = { x, calculateSum };`                                  |
+| Destructured import  | `const { x, calculateSum } = require("./sum");`                          |
+| Omit `.js`           | Node.js auto-resolves file extensions.                                   |
+| `index.js` pattern   | Barrel file in a folder — lets you `require("./folder")`.                |
+| Require JSON         | `const data = require("./data.json");`                                   |
+| Built-in modules     | `require('node:util')`, `require('node:fs')`, etc.                       |
+| CommonJS (CJS)       | `require`/`exports`, synchronous, non-strict, Node.js default.           |
+| ES Modules (ESM)     | `import`/`export`, async, strict mode, the future standard.              |
+| Enable ESM           | Add `"type": "module"` to `package.json`.                                |

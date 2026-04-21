@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Episode 07 — Sync, Async & setTimeout(0) — Complete Deep Dive</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Geist+Mono:wght@400;500;600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#090b10;--bg2:#0f1218;--bg3:#151a24;--bg4:#1c2231;--text:#e4e7ef;--text2:#9ca3b8;--text3:#5e6577;--border:#1e2536;--border2:#2a3348;--accent:#60a5fa;--accent-bg:rgba(96,165,250,.08);--accent-border:rgba(96,165,250,.2);--green:#34d399;--green-bg:rgba(52,211,153,.08);--green-border:rgba(52,211,153,.2);--orange:#fb923c;--orange-bg:rgba(251,146,60,.07);--orange-border:rgba(251,146,60,.2);--purple:#a78bfa;--purple-bg:rgba(167,139,250,.07);--purple-border:rgba(167,139,250,.2);--red:#f87171;--red-bg:rgba(248,113,113,.07);--red-border:rgba(248,113,113,.2);--yellow:#fbbf24;--yellow-bg:rgba(251,191,36,.07);--yellow-border:rgba(251,191,36,.2);--cyan:#22d3ee;--pink:#f472b6;--mono:'Geist Mono',monospace;--sans:'Outfit',sans-serif;--serif:'Instrument Serif',serif}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.8;-webkit-font-smoothing:antialiased}
+.hero{text-align:center;padding:4rem 1.5rem 2rem;position:relative}
+.hero::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent)}
+.badge{display:inline-block;font-family:var(--mono);font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--orange);border:1px solid var(--orange-border);background:var(--orange-bg);padding:.3rem 1.2rem;border-radius:99px;margin-bottom:1.5rem}
+.hero h1{font-family:var(--serif);font-size:clamp(2rem,5vw,3.5rem);font-weight:400;line-height:1.15;margin-bottom:.8rem;font-style:italic}
+.hero h1 em{color:var(--orange);font-style:italic}
+.hero h1 .hg{color:var(--green)}.hero h1 .hr{color:var(--red)}
+.hero p{color:var(--text2);max-width:620px;margin:0 auto;font-size:1rem}
+.container{max-width:900px;margin:0 auto;padding:2rem 1.5rem 4rem}
+.ch{margin-top:4rem;margin-bottom:1.5rem;position:relative;padding-left:1.5rem}
+.ch::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px}
+.ch-o::before{background:linear-gradient(to bottom,var(--orange),transparent)}
+.ch-g::before{background:linear-gradient(to bottom,var(--green),transparent)}
+.ch-b::before{background:linear-gradient(to bottom,var(--accent),transparent)}
+.ch-r::before{background:linear-gradient(to bottom,var(--red),transparent)}
+.ch-p::before{background:linear-gradient(to bottom,var(--purple),transparent)}
+.ch-c::before{background:linear-gradient(to bottom,var(--cyan),transparent)}
+.ch-label{font-family:var(--mono);font-size:.65rem;letter-spacing:.18em;text-transform:uppercase}
+.ch-o .ch-label{color:var(--orange)}.ch-g .ch-label{color:var(--green)}.ch-b .ch-label{color:var(--accent)}.ch-r .ch-label{color:var(--red)}.ch-p .ch-label{color:var(--purple)}.ch-c .ch-label{color:var(--cyan)}
+.ch h2{font-family:var(--serif);font-size:clamp(1.5rem,3vw,2.2rem);font-weight:400;font-style:italic;line-height:1.25}
+p.prose{font-size:1rem;color:var(--text2);margin-bottom:1.2rem}
+p.prose strong{color:var(--text);font-weight:500}
+p.prose code{font-family:var(--mono);font-size:.82em;background:var(--bg3);padding:.12em .4em;border-radius:4px;color:var(--orange)}
+.def{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0}
+.def.bo{border-left:3px solid var(--orange)}.def.bg{border-left:3px solid var(--green)}.def.br{border-left:3px solid var(--red)}.def.bb{border-left:3px solid var(--accent)}.def.bp{border-left:3px solid var(--purple)}
+.def .dt{font-family:var(--mono);font-size:.65rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.4rem}
+.def.bo .dt{color:var(--orange)}.def.bg .dt{color:var(--green)}.def.br .dt{color:var(--red)}.def.bb .dt{color:var(--accent)}.def.bp .dt{color:var(--purple)}
+.def p,.def ul{font-size:.92rem;line-height:1.7}
+.def ul{padding-left:1.2rem;margin-top:.3rem}
+.def ul li{margin:.3rem 0;color:var(--text2)}
+.def ul li strong{color:var(--text);font-weight:500}
+.def ul li code{font-family:var(--mono);font-size:.8em;background:var(--bg3);padding:.1em .35em;border-radius:3px;color:var(--orange)}
+.callout{border-radius:10px;padding:1rem 1.2rem;margin:1.5rem 0;font-size:.88rem;line-height:1.65}
+.callout strong{font-weight:600}
+.c-red{background:var(--red-bg);border:1px solid var(--red-border);color:var(--red)}
+.c-green{background:var(--green-bg);border:1px solid var(--green-border);color:var(--green)}
+.c-orange{background:var(--orange-bg);border:1px solid var(--orange-border);color:var(--orange)}
+.c-blue{background:var(--accent-bg);border:1px solid var(--accent-border);color:var(--accent)}
+.c-purple{background:var(--purple-bg);border:1px solid var(--purple-border);color:var(--purple)}
+.term{background:#0c0e14;border:1px solid var(--border);border-radius:10px;margin:1.5rem 0;overflow:hidden}
+.term-bar{background:var(--bg3);padding:5px 12px;display:flex;gap:5px;align-items:center}
+.dot{width:8px;height:8px;border-radius:50%}.dot-r{background:#f87171}.dot-y{background:#fbbf24}.dot-g{background:#34d399}
+.term-bar span{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-left:8px}
+.term pre{padding:.8rem 1.2rem;font-family:var(--mono);font-size:.8rem;line-height:1.8;overflow-x:auto;white-space:pre}
+.kw{color:#c084fc}.fn{color:#fbbf24}.str{color:#34d399}.num{color:#fb923c}.cm{color:#475569}.op{color:#94a3b8}
+.term-output{border-top:1px solid var(--border);padding:.6rem 1.2rem;font-family:var(--mono);font-size:.75rem;line-height:1.7;color:var(--green);background:#0a0c10}
+.term-output .out-label{color:var(--text3);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.2rem;display:block}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin:1.5rem 0}
+@media(max-width:650px){.grid{grid-template-columns:1fr}}
+.vs-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.2rem;position:relative;overflow:hidden}
+.vs-card h4{font-size:.95rem;font-weight:500;margin-bottom:.5rem;display:flex;align-items:center;gap:6px}
+.vs-card h4 .ind{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.vs-card p,.vs-card ul{font-size:.85rem;color:var(--text2);line-height:1.6}
+.vs-card ul{padding-left:1rem;margin-top:.3rem}
+.vs-card ul li{margin:.2rem 0}
+.vs-card code{font-family:var(--mono);font-size:.78em;background:var(--bg3);padding:.1em .35em;border-radius:3px;color:var(--orange)}
+.vs-card.bad{border-color:rgba(248,113,113,.2);background:rgba(248,113,113,.03)}
+.vs-card.good{border-color:rgba(52,211,153,.2);background:rgba(52,211,153,.03)}
+.interview{background:var(--bg2);border:1px solid var(--yellow-border);border-left:3px solid var(--yellow);border-radius:10px;padding:1.2rem 1.4rem;margin:1.5rem 0}
+.interview h4{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--yellow);margin-bottom:.5rem}
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:3rem 0}
+.tbl{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.88rem}
+.tbl th{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;text-align:left;padding:.6rem .8rem;border-bottom:2px solid var(--border);color:var(--text3)}
+.tbl td{padding:.6rem .8rem;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:top}
+.tbl td code{font-family:var(--mono);font-size:.78em;background:var(--bg3);padding:.1em .3em;border-radius:3px;color:var(--orange)}
+.tbl td strong{color:var(--text);font-weight:500}
+.footer{text-align:center;padding:2.5rem 1rem;color:var(--text3);font-size:.75rem;border-top:1px solid var(--border);margin-top:3rem}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="badge">Episode 07 — Complete Notes</div>
+  <h1><em>Sync</em>, <span class="hg">Async</span> &amp; the magic of <span class="hr">setTimeout(0)</span></h1>
+  <p>Why blocking the main thread is dangerous, how the crypto module can freeze your app, and why setTimeout(0) doesn't run at 0ms.</p>
+</section>
+
+<div class="container">
+
+<!-- CH 1 -->
+<div class="ch ch-o">
+  <div class="ch-label">Chapter 01</div>
+  <h2>V8 is fast — but it can't do everything alone</h2>
+</div>
+
+<p class="prose">From Episode 06, we learned that V8 executes synchronous code in <strong>microseconds</strong>. Simple variable assignments, math, function calls — all happen almost instantly on the call stack. But V8 <strong>cannot</strong> handle async operations (file I/O, networking, timers) by itself. It offloads those to <strong>libuv</strong>, which talks to the OS and returns the callback to V8 when done.</p>
+
+<p class="prose">This episode dives deeper into what happens when you use <strong>synchronous versions</strong> of normally-async operations, and introduces a tricky interview concept: <code>setTimeout(0)</code>.</p>
+
+<div class="sep"></div>
+
+<!-- CH 2 -->
+<div class="ch ch-r">
+  <div class="ch-label">Chapter 02</div>
+  <h2>Blocking the main thread — fs.readFileSync()</h2>
+</div>
+
+<p class="prose">The PDF shows a critical code example. Look at this program with both sync and async operations together:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>xyz.js — mixing sync and async (from PDF page 2)</span></div>
+  <pre>console.<span class="fn">log</span>(<span class="str">"Hello world"</span>);
+
+<span class="kw">var</span> a = <span class="num">107</span>;
+<span class="kw">var</span> b = <span class="num">20</span>;
+
+<span class="cm">// Synchronous — BLOCKS the main thread!</span>
+fs.<span class="fn">readFileSync</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>); <span class="cm">// ~10ms</span>
+console.<span class="fn">log</span>(<span class="str">"this will execute only after file read"</span>);
+
+Https.<span class="fn">get</span>(<span class="str">"https://dummyjson.com/products/1"</span>, (res) =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"fetched data success"</span>);
+});
+
+<span class="fn">setTimeout</span>(() =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"setTimeout called after 5 seconds"</span>);
+}, <span class="num">5000</span>);
+
+<span class="cm">// Async function</span>
+fs.<span class="fn">readFile</span>(<span class="str">"./file.txt"</span>, <span class="str">"utf8"</span>, (err, data) =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"File Data : "</span>, data);
+});
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = a * b;
+  <span class="kw">return</span> result;
+}</pre>
+</div>
+
+<div class="def br">
+  <div class="dt">Key concept — fs.readFileSync() blocks everything</div>
+  <p><code>fs.readFileSync("./file.txt", "utf8")</code> reads a file <strong>synchronously</strong>. This means:</p>
+  <ul>
+    <li>V8 <strong>cannot offload</strong> this to libuv — it must wait for the file to be completely read</li>
+    <li>The main thread is <strong>frozen</strong> at line 7 until the file reading is done</li>
+    <li>Line 8 (<code>console.log</code>) will NOT execute until the file read completes</li>
+    <li>No other code runs — not the HTTP request, not the timer, nothing</li>
+  </ul>
+  <p style="margin-top:.6rem"><strong>Analogy:</strong> Think of an ice cream shop where the owner insists on serving each customer one at a time, refusing to even acknowledge the next customer until the current one is fully served. That's what <code>readFileSync</code> does to your main thread.</p>
+</div>
+
+<div class="grid">
+  <div class="vs-card bad">
+    <h4><div class="ind" style="background:var(--red)"></div>Synchronous (blocking)</h4>
+    <ul>
+      <li><code>fs.readFileSync()</code></li>
+      <li>Blocks the main thread</li>
+      <li>V8 waits — cannot move to next line</li>
+      <li>libuv is NOT involved</li>
+      <li>Event loop is frozen</li>
+      <li>Application becomes unresponsive</li>
+    </ul>
+  </div>
+  <div class="vs-card good">
+    <h4><div class="ind" style="background:var(--green)"></div>Asynchronous (non-blocking)</h4>
+    <ul>
+      <li><code>fs.readFile()</code></li>
+      <li>Offloaded to libuv's thread pool</li>
+      <li>V8 immediately moves to next line</li>
+      <li>Callback runs when file read is done</li>
+      <li>Event loop stays responsive</li>
+      <li>Other requests can be handled</li>
+    </ul>
+  </div>
+</div>
+
+<div class="callout c-red"><strong>Best Practice:</strong> Avoid using synchronous methods (<code>readFileSync</code>, <code>writeFileSync</code>, etc.) in production code, especially in servers. They block the event loop and can make your entire application unresponsive. Use async versions (<code>readFile</code>, <code>writeFile</code>) that keep the app responsive.</div>
+
+<div class="sep"></div>
+
+<!-- CH 3 -->
+<div class="ch ch-p">
+  <div class="ch-label">Chapter 03</div>
+  <h2>The crypto module — another blocking example</h2>
+</div>
+
+<p class="prose">Node.js has a core module called <code>crypto</code> used for cryptographic operations like generating secure keys, hashing passwords, and more. It's built into Node.js just like <code>https</code>, <code>fs</code>, and <code>zlib</code>.</p>
+
+<div class="def bp">
+  <div class="dt">What is pbkdf2?</div>
+  <p><strong>PBKDF2</strong> stands for <strong>Password-Based Key Derivation Function 2</strong>. It generates a cryptographic key from a password + salt. Here's what you pass to it:</p>
+  <ul>
+    <li><strong>Password:</strong> The password string to derive a key from</li>
+    <li><strong>Salt:</strong> A random value combined with the password to prevent rainbow table attacks</li>
+    <li><strong>Iterations:</strong> Number of hashing rounds (e.g., 5,000,000) — more = harder to crack but slower</li>
+    <li><strong>Key Length:</strong> The output key length in bytes (e.g., 50)</li>
+    <li><strong>Digest Algorithm:</strong> The hashing algorithm, like <code>sha512</code></li>
+    <li><strong>Callback:</strong> (async version only) Function called when key generation is complete</li>
+  </ul>
+</div>
+
+<p class="prose">The PDF shows two code examples — one with <code>pbkdf2Sync</code> (blocking) and one with <code>pbkdf2</code> (async). Here's the first example:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>blocking.js — crypto.pbkdf2 async only (PDF page 5)</span></div>
+  <pre><span class="kw">const</span> crypto = <span class="fn">require</span>(<span class="str">"node:crypto"</span>);
+
+console.<span class="fn">log</span>(<span class="str">"Hello World"</span>);
+
+<span class="kw">var</span> a = <span class="num">1078698</span>;
+<span class="kw">var</span> b = <span class="num">20986</span>;
+
+<span class="cm">// pbkdf2 - Password Base Key Derivative Function</span>
+
+<span class="cm">// Async Function — offloaded to libuv</span>
+crypto.<span class="fn">pbkdf2</span>(<span class="str">"password"</span>, <span class="str">"salt"</span>, <span class="num">5000000</span>, <span class="num">50</span>, <span class="str">"sha512"</span>, (err, key) =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"Second Key is generated"</span>);
+});
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = a * b;
+  <span class="kw">return</span> result;
+}
+
+<span class="kw">var</span> c = <span class="fn">multiplyFn</span>(a, b);
+
+console.<span class="fn">log</span>(<span class="str">"Multiplication result is : "</span>, c);</pre>
+  <div class="term-output">
+    <span class="out-label">Output:</span>
+Hello World
+Multiplication result is :  22637556228
+Second Key is generated</div>
+</div>
+
+<p class="prose">Notice the output order: "Hello World" and the multiplication result print <strong>first</strong> (synchronous), then "Second Key is generated" prints <strong>last</strong> (async — offloaded to libuv's thread pool). Now here's the version with <strong>both sync and async</strong>:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>blocking.js — sync + async crypto (PDF page 6-7)</span></div>
+  <pre><span class="kw">const</span> crypto = <span class="fn">require</span>(<span class="str">"node:crypto"</span>);
+
+console.<span class="fn">log</span>(<span class="str">"Hello World"</span>);
+
+<span class="kw">var</span> a = <span class="num">1078698</span>;
+<span class="kw">var</span> b = <span class="num">20986</span>;
+
+<span class="cm">// Synchronous — BLOCKS THE MAIN THREAD — DON'T USE IT</span>
+crypto.<span class="fn">pbkdf2Sync</span>(<span class="str">"password"</span>, <span class="str">"salt"</span>, <span class="num">50000000</span>, <span class="num">50</span>, <span class="str">"sha512"</span>);
+console.<span class="fn">log</span>(<span class="str">"First Key is Generated"</span>);
+
+<span class="cm">// Async Function — offloaded to libuv</span>
+crypto.<span class="fn">pbkdf2</span>(<span class="str">"password"</span>, <span class="str">"salt"</span>, <span class="num">5000000</span>, <span class="num">50</span>, <span class="str">"sha512"</span>, (err, key) =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"Second Key is generated"</span>);
+});
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = a * b;
+  <span class="kw">return</span> result;
+}
+
+<span class="kw">var</span> c = <span class="fn">multiplyFn</span>(a, b);
+console.<span class="fn">log</span>(<span class="str">"Multiplication result is : "</span>, c);</pre>
+  <div class="term-output">
+    <span class="out-label">Output:</span>
+Hello World
+First Key is Generated
+Multiplication result is :  22637556228
+Second Key is generated</div>
+</div>
+
+<div class="def bp">
+  <div class="dt">Why this output order?</div>
+  <p><strong>Step by step:</strong></p>
+  <ul>
+    <li><code>"Hello World"</code> — sync, prints immediately</li>
+    <li><code>pbkdf2Sync()</code> — sync, <strong>BLOCKS the main thread</strong> for several seconds while computing 50 million iterations. Nothing else runs.</li>
+    <li><code>"First Key is Generated"</code> — only prints after the sync crypto is done</li>
+    <li><code>pbkdf2()</code> — async, offloaded to libuv's thread pool. V8 moves on immediately.</li>
+    <li><code>multiplyFn()</code> — sync, runs on call stack instantly</li>
+    <li><code>"Multiplication result"</code> — sync, prints</li>
+    <li>Call stack empties → event loop → <code>"Second Key is generated"</code> — async callback runs last</li>
+  </ul>
+</div>
+
+<div class="callout c-purple"><strong>Rule of thumb:</strong> If a function name ends with <code>Sync</code> (like <code>pbkdf2Sync</code>, <code>readFileSync</code>, <code>writeFileSync</code>), it is synchronous and will <strong>block the main thread</strong>. The async version (without Sync) offloads to libuv. Always prefer the async version in production.</div>
+
+<div class="sep"></div>
+
+<!-- CH 4 -->
+<div class="ch ch-c">
+  <div class="ch-label">Chapter 04</div>
+  <h2>The magic of setTimeout(0) — a classic interview question</h2>
+</div>
+
+<p class="prose">This is one of the most asked JavaScript/Node.js interview questions. What happens when you set a timer with <strong>0 milliseconds</strong> delay?</p>
+
+<div class="interview">
+  <h4>Interview question</h4>
+  <p style="font-size:.95rem;color:var(--text)"><strong>Q: What will be the output of the following code?</strong></p>
+</div>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>setTimeoutZero.js (from PDF page 11)</span></div>
+  <pre>console.<span class="fn">log</span>(<span class="str">"Hello World"</span>);
+
+<span class="kw">var</span> a = <span class="num">1078698</span>;
+<span class="kw">var</span> b = <span class="num">20986</span>;
+
+<span class="fn">setTimeout</span>(() =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"call me right now "</span>);
+}, <span class="num">0</span>); <span class="cm">// Trust issues with setTimeout!</span>
+
+<span class="fn">setTimeout</span>(() =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"call me after 3 seconds"</span>);
+}, <span class="num">3000</span>);
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = a * b;
+  <span class="kw">return</span> result;
+}
+
+<span class="kw">var</span> c = <span class="fn">multiplyFn</span>(a, b);
+
+console.<span class="fn">log</span>(<span class="str">"Multiplication result is : "</span>, c);</pre>
+  <div class="term-output">
+    <span class="out-label">Output:</span>
+Hello World
+Multiplication result is :  22637556228
+call me right now
+call me after 3 seconds</div>
+</div>
+
+<p class="prose">Wait — <code>"call me right now"</code> has a delay of <strong>0ms</strong>, but it prints <strong>AFTER</strong> the multiplication result? Shouldn't 0ms mean "run immediately"?</p>
+
+<div class="def bb">
+  <div class="dt">Why setTimeout(0) doesn't run at 0ms</div>
+  <p>Three key reasons:</p>
+  <ul>
+    <li><strong>setTimeout is always async:</strong> Even with 0ms delay, <code>setTimeout</code> is an asynchronous function. The callback is immediately handed off to libuv — it does NOT execute inline.</li>
+    <li><strong>The callback goes to the timer queue:</strong> libuv registers the callback and it waits in the event loop's timer queue. It can only run when the <strong>call stack is empty</strong>.</li>
+    <li><strong>All synchronous code runs first:</strong> V8 must finish executing ALL synchronous code in the GEC before the event loop can push any callbacks onto the call stack. So the multiplication and its console.log always run before any setTimeout callback.</li>
+  </ul>
+</div>
+
+<p class="prose">Let me trace through the execution step by step:</p>
+
+<table class="tbl">
+  <thead><tr><th style="color:var(--cyan)">Step</th><th style="color:var(--orange)">What executes</th><th style="color:var(--green)">Where</th></tr></thead>
+  <tbody>
+    <tr><td><strong>1</strong></td><td><code>console.log("Hello World")</code></td><td>V8 call stack (sync)</td></tr>
+    <tr><td><strong>2</strong></td><td><code>a = 1078698, b = 20986</code></td><td>V8 call stack (sync)</td></tr>
+    <tr><td><strong>3</strong></td><td><code>setTimeout(..., 0)</code> — offloaded to libuv</td><td>libuv timer queue</td></tr>
+    <tr><td><strong>4</strong></td><td><code>setTimeout(..., 3000)</code> — offloaded to libuv</td><td>libuv timer queue</td></tr>
+    <tr><td><strong>5</strong></td><td><code>multiplyFn(a, b)</code> — sync execution</td><td>V8 call stack (sync)</td></tr>
+    <tr><td><strong>6</strong></td><td><code>console.log("Multiplication result...")</code></td><td>V8 call stack (sync)</td></tr>
+    <tr><td><strong>7</strong></td><td>Call stack empty → event loop kicks in</td><td>Event loop</td></tr>
+    <tr><td><strong>8</strong></td><td><code>"call me right now"</code> — timer(0) callback runs</td><td>V8 via event loop</td></tr>
+    <tr><td><strong>9</strong></td><td><code>"call me after 3 seconds"</code> — timer(3000) callback</td><td>V8 via event loop</td></tr>
+  </tbody>
+</table>
+
+<div class="callout c-orange"><strong>"Trust issues" with setTimeout(0):</strong> When you ask the code to run after 0 milliseconds, it doesn't necessarily run immediately after that time. It runs <strong>only when the call stack is empty</strong>. The 0ms is a minimum threshold, not a guarantee. The actual execution depends entirely on the state of the call stack. This is why the notes say "don't trust setTimeout blindly!"</div>
+
+<div class="sep"></div>
+
+<!-- CH 5 -->
+<div class="ch ch-g">
+  <div class="ch-label">Chapter 05</div>
+  <h2>The complete picture — all three examples combined</h2>
+</div>
+
+<p class="prose">The PDF's last code screenshot (page 12) shows the most complex example combining <strong>everything</strong> — sync crypto, setTimeout(0), async crypto, and synchronous math:</p>
+
+<div class="term">
+  <div class="term-bar"><div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div><span>blocking.js — everything combined (PDF page 12)</span></div>
+  <pre><span class="kw">const</span> crypto = <span class="fn">require</span>(<span class="str">"node:crypto"</span>);
+
+console.<span class="fn">log</span>(<span class="str">"Hello World"</span>);
+
+<span class="kw">var</span> a = <span class="num">1078698</span>;
+<span class="kw">var</span> b = <span class="num">20986</span>;
+
+<span class="cm">// pbkdf2 - Password Base Key Derivative Function</span>
+<span class="cm">// Synchronous — BLOCKS THE MAIN THREAD</span>
+console.<span class="fn">log</span>(<span class="str">"========"</span>);
+crypto.<span class="fn">pbkdf2Sync</span>(<span class="str">"password"</span>, <span class="str">"salt"</span>, <span class="num">50000000</span>, <span class="num">50</span>, <span class="str">"sha512"</span>);
+console.<span class="fn">log</span>(<span class="str">"First Key is Generated"</span>);
+
+<span class="fn">setTimeout</span>(() =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"call me right now !!!! "</span>);
+}, <span class="num">0</span>); <span class="cm">// it will only be called once call stack of main thread is empty</span>
+
+<span class="cm">// Async Function</span>
+crypto.<span class="fn">pbkdf2</span>(<span class="str">"password"</span>, <span class="str">"salt"</span>, <span class="num">5000000</span>, <span class="num">50</span>, <span class="str">"sha512"</span>, (err, key) =&gt; {
+  console.<span class="fn">log</span>(<span class="str">"Second Key is generated"</span>);
+});
+
+<span class="kw">function</span> <span class="fn">multiplyFn</span>(x, y) {
+  <span class="kw">const</span> result = a * b;
+  <span class="kw">return</span> result;
+}
+
+<span class="kw">var</span> c = <span class="fn">multiplyFn</span>(a, b);
+console.<span class="fn">log</span>(<span class="str">"Multiplication result is : "</span>, c);</pre>
+  <div class="term-output">
+    <span class="out-label">Output:</span>
+Hello World
+========
+First Key is Generated
+Multiplication result is :  22637556228
+call me right now !!!!
+Second Key is generated</div>
+</div>
+
+<div class="def bg">
+  <div class="dt">Execution trace — every line explained</div>
+  <ul>
+    <li><code>"Hello World"</code> — sync, immediate</li>
+    <li><code>"========"</code> — sync, immediate</li>
+    <li><code>pbkdf2Sync()</code> — <strong>BLOCKS for seconds</strong> while computing 50M iterations. Everything freezes.</li>
+    <li><code>"First Key is Generated"</code> — only after sync crypto completes</li>
+    <li><code>setTimeout(..., 0)</code> — async, offloaded to libuv timer. V8 moves on.</li>
+    <li><code>pbkdf2()</code> — async, offloaded to libuv thread pool. V8 moves on.</li>
+    <li><code>multiplyFn()</code> — sync, instant math on call stack</li>
+    <li><code>"Multiplication result"</code> — sync, prints immediately</li>
+    <li><strong>Call stack is now empty → event loop takes over</strong></li>
+    <li><code>"call me right now !!!!"</code> — setTimeout(0) callback, runs from timer queue</li>
+    <li><code>"Second Key is generated"</code> — async pbkdf2 callback, runs when thread pool finishes</li>
+  </ul>
+</div>
+
+<div class="sep"></div>
+
+<!-- CH 6: Quick Reference -->
+<div class="ch ch-o">
+  <div class="ch-label">Quick Reference</div>
+  <h2>Episode 07 — at a glance</h2>
+</div>
+
+<table class="tbl">
+  <thead><tr><th style="color:var(--orange)">Concept</th><th style="color:var(--green)">Key detail</th></tr></thead>
+  <tbody>
+    <tr><td><strong>V8 speed</strong></td><td>Executes synchronous code in microseconds — variable assignment, math, function calls are instant</td></tr>
+    <tr><td><strong>Sync functions</strong></td><td>Any function ending in <code>Sync</code> blocks the main thread. V8 waits, event loop freezes. Examples: <code>readFileSync</code>, <code>pbkdf2Sync</code>, <code>writeFileSync</code></td></tr>
+    <tr><td><strong>Async functions</strong></td><td>Without the Sync suffix — offloaded to libuv (thread pool for file/crypto, OS kernel for network). V8 moves on immediately.</td></tr>
+    <tr><td><strong>crypto module</strong></td><td>Core Node.js module for cryptographic operations. Import with <code>require("crypto")</code> or <code>require("node:crypto")</code></td></tr>
+    <tr><td><strong>pbkdf2Sync</strong></td><td>Synchronous key derivation — blocks the main thread for the entire computation. Never use in production servers.</td></tr>
+    <tr><td><strong>pbkdf2</strong></td><td>Async key derivation — offloaded to libuv thread pool. Event loop stays responsive.</td></tr>
+    <tr><td><strong>setTimeout(0)</strong></td><td>Does NOT run at 0ms. The callback is async — it's offloaded to libuv and only runs after the <strong>call stack is empty</strong>. The 0 is a minimum threshold, not a guarantee.</td></tr>
+    <tr><td><strong>Execution order</strong></td><td>All sync code → then event loop → then timer callbacks → then I/O callbacks</td></tr>
+    <tr><td><strong>Best practice</strong></td><td>Always prefer async methods in production. Sync methods are acceptable only during app startup or in CLI scripts.</td></tr>
+    <tr><td><strong>Interview tip</strong></td><td>setTimeout(0) output questions test understanding of the call stack, event loop, and callback queues. Sync always runs before any async callback.</td></tr>
+  </tbody>
+</table>
+
+<div class="callout c-blue" style="text-align:center;font-size:.9rem"><strong>The golden rule:</strong> Synchronous code <strong>always</strong> finishes before <strong>any</strong> async callback runs — even setTimeout(0). The event loop can only push callbacks to the call stack when it's completely empty.</div>
+
+</div>
+
+<footer class="footer">Node.js Episode 07 — Sync, Async & setTimeout(0) — Complete Notes with all code examples from PDF &amp; DOCX</footer>
+
+</body>
+</html>

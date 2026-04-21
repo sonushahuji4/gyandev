@@ -1,0 +1,61 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture recall">
+  The dual-ring event loop: the outer ring cycles through the four main
+  phases (Timer → Poll → Check → Close). The inner ring drains the two
+  microtask queues (`process.nextTick()` first, then Promise callbacks)
+  between every single phase transition. The legend below decodes each
+  stop.
+</Callout>
+
+## Event loop — outer phases and inner microtask ring
+
+```mermaid
+flowchart TD
+    Start(["<b>start</b><br/>call stack empty"]) --> NT
+
+    subgraph INNER ["Inner ring — microtasks (drain between every phase)"]
+      NT["<b>i · process.nextTick()</b><br/>platinum VIP<br/>drains fully"] --> PR["<b>ii · Promise callbacks</b><br/>gold VIP<br/>drains fully"]
+    end
+
+    PR --> T["<b>iii · Timer phase</b><br/>setTimeout / setInterval"]
+    T --> NT2["drain microtasks"]
+    NT2 --> PC["<b>iv · Pending callbacks</b><br/>deferred I/O (TCP errors)"]
+    PC --> NT3["drain microtasks"]
+    NT3 --> IP["<b>v · Idle / Prepare</b><br/>internal housekeeping"]
+    IP --> NT4["drain microtasks"]
+    NT4 --> P["<b>vi · Poll phase</b><br/>I/O callbacks: fs, http, crypto<br/>parks here if idle"]
+    P --> NT5["drain microtasks"]
+    NT5 --> CH["<b>vii · Check phase</b><br/>setImmediate()"]
+    CH --> NT6["drain microtasks"]
+    NT6 --> CL["<b>viii · Close callbacks</b><br/>socket.on('close')"]
+    CL --> NT7["drain microtasks"]
+    NT7 --> T
+
+    classDef micro fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef timer fill:#fde8e8,stroke:#b91c1c,stroke-width:2px,color:#1a1915;
+    classDef poll fill:#eaf2f8,stroke:#3a6ea5,stroke-width:2px,color:#1a1915;
+    classDef check fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef close fill:#ece5f5,stroke:#6b46c1,stroke-width:2px,color:#1a1915;
+    classDef drain fill:#f5efe1,stroke:#6a8a4f,stroke-width:1px,color:#1a1915;
+    class NT,PR micro
+    class T timer
+    class P poll
+    class CH check
+    class CL close
+    class PC,IP,NT2,NT3,NT4,NT5,NT6,NT7 drain
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'process.nextTick()',  description: 'Platinum VIP. Highest async priority. All queued nextTick callbacks drain first — including any scheduled during the drain.' },
+  { numeral: 'ii',   name: 'Promise callbacks',   description: 'Gold VIP. .then / .catch / .finally and async/await continuations. Drain after nextTick, before any phase.' },
+  { numeral: 'iii',  name: 'Timer phase',         description: 'Executes setTimeout / setInterval callbacks whose delay has elapsed. Delay is a minimum, not guaranteed.' },
+  { numeral: 'iv',   name: 'Pending callbacks',   description: 'Deferred I/O callbacks — e.g. TCP error callbacks that slipped past their own phase.' },
+  { numeral: 'v',    name: 'Idle / Prepare',      description: 'Internal Node.js housekeeping. Not exposed to user code.' },
+  { numeral: 'vi',   name: 'Poll phase',          description: 'I/O results: fs, http, net, crypto callbacks. The loop parks here when idle, waiting for I/O from the OS.' },
+  { numeral: 'vii',  name: 'Check phase',         description: 'setImmediate() callbacks. Always runs right after Poll — which is why setImmediate beats setTimeout(0) inside I/O.' },
+  { numeral: 'viii', name: 'Close callbacks',     description: 'socket.on("close") and similar cleanup callbacks. Final stop before the loop cycles back to Timers.' },
+]} />
