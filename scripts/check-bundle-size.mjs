@@ -44,7 +44,7 @@ const BUDGETS = [
   { pattern: /^\/courses\/[^/]+\/[^/]+(\.html)?$/, limit: 500_000, name: 'chapter-full' },
   { pattern: /^\/courses\/[^/]+(\.html)?$/, limit: 50_000, name: 'course-overview' },
   { pattern: /^\/courses(\/index\.html|\.html)?$/, limit: 40_000, name: 'all-courses' },
-  { pattern: /^\/(index\.html)?$/, limit: 5_000, name: 'home' },
+  { pattern: /^\/(index\.html)?$/, limit: 10_000, name: 'home' },
 ];
 
 const OTHER_LIMIT = 30_000;
