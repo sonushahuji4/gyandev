@@ -1,0 +1,373 @@
+---
+title: "Heaps — Fundamentals"
+description: "Foundations of binary heaps and priority queues — index arithmetic, operations, recognition signals, and the five templates that unlock every heap problem."
+excerpt: "Heap property, array-level-order layout, and the mental shortcuts behind every priority-queue problem."
+course: dsa/course
+order: 1
+kind: theory
+difficulty: intermediate
+type: explanation
+readingMinutes: 14
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - priority-queue
+  - greedy
+  - two-heaps
+  - k-way-merge
+---
+
+## What is a Heap, Really?
+
+A **heap** is a specialized tree-based data structure that satisfies one simple rule — the **heap property** — at every single node:
+
+| Variant | Parent–child rule | Root always holds |
+| --- | --- | --- |
+| **Min-Heap** | every parent `≤` both children | the smallest element |
+| **Max-Heap** | every parent `≥` both children | the largest element |
+
+Critically, a heap is **not a sorted structure**. Siblings have no defined order between them; the only ordering guarantee is between a parent and its children. That weaker invariant is exactly why heaps are fast — we only maintain enough order to find the extremum, nothing more.
+
+<Callout type="insight" title="Key insight">
+  Think of a heap as a **"best-element-on-tap"** machine. You don't care
+  about full ordering — you only care about the element with the highest
+  priority at any moment, and being able to add or remove fast.
+</Callout>
+
+### Structural property
+
+A binary heap is always a **complete binary tree**: every level is fully filled except possibly the last, which fills left-to-right. This compactness is what lets us store a heap in a plain array with no pointers at all.
+
+### The priority-queue connection
+
+When an interviewer says *"priority queue"*, they usually mean *"heap"*. A priority queue is the abstract concept — *"give me the highest-priority thing next"* — and a binary heap is the concrete, efficient implementation. Java exposes `PriorityQueue`; Python exposes `heapq`; the mechanism underneath is the same.
+
+## Index Arithmetic — The One Mental Model
+
+Because a heap is a complete binary tree, we can flatten it into an array and navigate between parents and children using only arithmetic — no pointers, no node objects.
+
+```text title="Min-heap laid out two ways"
+               [1]  i=0
+              /   \
+            [3]    [6]           array (level-order):
+           i=1    i=2
+           /  \   /  \             idx:  0  1  2  3  4  5  6
+         [5] [9] [8] [7]           val:  1  3  6  5  9  8  7
+         i=3 i=4 i=5 i=6                  ^root
+```
+
+| Formula (0-indexed) | Expression |
+| --- | --- |
+| `parent(i)` | `(i − 1) // 2` |
+| `left(i)` | `2i + 1` |
+| `right(i)` | `2i + 2` |
+| is leaf? | `i ≥ n // 2` |
+| height | `⌊log₂(n)⌋` |
+
+Verify with the diagram: node at index `1` (value `3`) has parent at `(1−1)//2 = 0` (value `1`). Its children sit at `2·1+1 = 3` (value `5`) and `2·1+2 = 4` (value `9`). Every parent is `≤` its children, so the min-heap property holds.
+
+<Callout type="tip" title="Remember">
+  Whenever you see heap index math on a whiteboard, mentally picture the
+  tree above. The array is just the **level-order traversal** of a
+  complete binary tree.
+</Callout>
+
+## Heap Operations & Complexities
+
+| Operation | What it does | Time | Mechanism |
+| --- | --- | --- | --- |
+| `peek()` / `top()` | Look at root without removing | `O(1)` | Read index `0` |
+| `push(x)` | Add while preserving invariant | `O(log n)` | Append at end, sift up |
+| `pop()` | Remove and return the root | `O(log n)` | Swap root with last, shrink, sift down |
+| `heapify(arr)` | Turn arbitrary array into a heap | `O(n)` | Sift-down from last non-leaf to root (Floyd's method) |
+| `replace(x)` | Pop root and push new in one shot | `O(log n)` | Overwrite root, single sift-down |
+| search for arbitrary value | Find a non-root element | `O(n)` | No sibling ordering — full scan |
+
+<Callout type="warning" title="Surprise result">
+  Building a heap from `n` arbitrary elements is **O(n)**, not `O(n log n)`.
+  Most leaves sift down zero levels; only the root sifts the full height.
+  The geometric sum collapses to linear. This is why `heapq.heapify` is
+  preferred over `n` individual pushes when you have all the data upfront.
+</Callout>
+
+### Sift-up vs sift-down
+
+All heap mutation reduces to two primitives. When a value arrives at the **bottom** and might be too small (for a min-heap), we **sift up** — compare with parent, swap if smaller, repeat. When a value arrives at the **top** and might be too large, we **sift down** — compare with the smaller child, swap, repeat. Each sift costs at most `O(log n)` because a complete binary tree has that height.
+
+## How to Identify a Heap Problem
+
+The single strongest signal is the letter **K** paired with a superlative word. If the problem asks for "top K", "K-th something", "K closest", "K most frequent", or any variation where `k` is a small, specific count — reach for a heap first.
+
+```text title="Keyword radar"
+Strong signals:   Kth largest   Kth smallest   top K
+                  K closest     K most frequent
+
+Supporting cues:  smallest   largest   closest   most/least frequent
+                  priority   schedule  merge K   median of stream
+                  minimum cost to combine
+```
+
+### Choosing the right heap — counterintuitive but crucial
+
+The rule most beginners get backwards: **to find the K largest, you use a min-heap** of size K. It feels wrong. Here's why it's right. If you maintain a min-heap of size K as you stream through all `n` elements, the root is always the *smallest of your current top K*. When a new element arrives bigger than the root, it belongs in the top K — so you pop the root and push the new one. At the end, the heap contains exactly the K largest, and the root is the K-th largest. Symmetrically, to find the K smallest, use a max-heap of size K.
+
+| Problem asks for… | Use | Why |
+| --- | --- | --- |
+| K **largest** / top K | Min-heap of size K | Root is smallest of best-so-far; easy to evict |
+| K **smallest** | Max-heap of size K | Root is largest of best-so-far; easy to evict |
+| K **closest** to target | Max-heap of size K on distance | Treat distance as "smallness"; farthest at root |
+| K **most frequent** | Min-heap of size K on frequency | Low-frequency root gets evicted |
+| Repeatedly combine smallest pair | Min-heap (no size cap) | Always grab the two smallest in `O(log n)` |
+| Running median | Two heaps (max-left, min-right) | Balance halves; medians are at both roots |
+
+### Quick decision flow
+
+<Callout type="tip" title="From problem phrasing to template">
+  1. Does it mention **K**? → think heap.
+  2. Want **largest / top**? → **min-heap** of size K.
+  3. Want **smallest / closest**? → **max-heap** of size K.
+  4. Need a running answer from a **stream**? → **two heaps**.
+  5. Need to **merge K sorted things**? → **min-heap of heads**.
+  6. If `k ≪ n`, a heap is strictly faster than sorting.
+</Callout>
+
+## Why Heap Beats Sorting
+
+Sorting is `O(n log n)`. A heap-of-size-K approach is `O(n log k)`. When `k` is much smaller than `n`, the gap is enormous.
+
+```text title="Sort vs heap-of-K"
+Sorting, then slicing:            Heap-of-K:
+  nums.sort()         # O(n log n)  for x in nums:     # n iterations
+  answer = nums[-k:]  # last k        heappush(h, x)   # O(log k)
+                                      if len(h) > k:
+                                          heappop(h)    # O(log k)
+```
+
+<Callout type="insight" title="Concrete win">
+  With `n = 10⁶` and `k = 10`: sorting does ~20 million ops; heap-of-K
+  does ~3.3 million. That's a **6× speedup** for the same answer, and
+  the gap grows as `n` grows.
+</Callout>
+
+## Python & TypeScript Tooling
+
+### Python's `heapq`
+
+Python ships with a min-heap implementation in the standard library. Everything operates on a plain `list`, in place.
+
+| Call | Effect | Complexity |
+| --- | --- | --- |
+| `heapq.heappush(h, x)` | Add `x` to heap `h` | `O(log n)` |
+| `heapq.heappop(h)` | Remove and return the smallest | `O(log n)` |
+| `heapq.heapify(h)` | Turn list into a heap, in place | `O(n)` |
+| `heapq.heappushpop(h, x)` | Push then pop — one operation | `O(log n)` |
+| `heapq.heapreplace(h, x)` | Pop then push — item must exist | `O(log n)` |
+| `heapq.nlargest(k, it)` | K largest from iterable | `O(n log k)` |
+| `heapq.nsmallest(k, it)` | K smallest from iterable | `O(n log k)` |
+
+<Callout type="warning" title="Max-heap trick">
+  Python offers no native max-heap. Negate on push and negate on pop:
+  `heappush(h, -x)` / `-heappop(h)`. For tuples, negate only the sort
+  key: `(-freq, word)`.
+</Callout>
+
+### TypeScript — rolling your own
+
+TypeScript/JavaScript has no built-in priority queue. A reusable `Heap` class with a custom comparator is interview-essential — it handles min-heap, max-heap, or any ordering over tuples. Every pattern in this season reuses this class.
+
+```ts title="heap.ts (shared across every pattern)"
+// Comparator returns < 0 if `a` has higher priority than `b`.
+class Heap<T> {
+  private data: T[] = [];
+  constructor(private cmp: (a: T, b: T) => number, init: T[] = []) {
+    this.data = [...init];
+    for (let i = (this.data.length >> 1) - 1; i >= 0; i--) this.siftDown(i);
+  }
+  get size(): number { return this.data.length; }
+  peek(): T | undefined { return this.data[0]; }
+
+  push(v: T): void {
+    this.data.push(v);
+    this.siftUp(this.data.length - 1);
+  }
+  pop(): T | undefined {
+    if (this.data.length === 0) return undefined;
+    const top = this.data[0];
+    const last = this.data.pop()!;
+    if (this.data.length > 0) { this.data[0] = last; this.siftDown(0); }
+    return top;
+  }
+  private siftUp(i: number): void {
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (this.cmp(this.data[i], this.data[p]) < 0) {
+        [this.data[i], this.data[p]] = [this.data[p], this.data[i]];
+        i = p;
+      } else break;
+    }
+  }
+  private siftDown(i: number): void {
+    const n = this.data.length;
+    while (true) {
+      const l = 2 * i + 1, r = 2 * i + 2;
+      let best = i;
+      if (l < n && this.cmp(this.data[l], this.data[best]) < 0) best = l;
+      if (r < n && this.cmp(this.data[r], this.data[best]) < 0) best = r;
+      if (best === i) break;
+      [this.data[i], this.data[best]] = [this.data[best], this.data[i]];
+      i = best;
+    }
+  }
+}
+
+const minHeap = <T extends number | string>() =>
+  new Heap<T>((a, b) => a < b ? -1 : a > b ? 1 : 0);
+const maxHeap = <T extends number | string>() =>
+  new Heap<T>((a, b) => a < b ? 1 : a > b ? -1 : 0);
+```
+
+## The Five Canonical Templates
+
+Every heap problem is a recombination of five templates. Learn these cold — everything else is decoration.
+
+### ① Top-K
+
+Maintain a heap capped at size K, with the **opposite polarity** of what you want (min-heap for K-largest, max-heap for K-smallest). Time `O(n log k)`, space `O(k)`.
+
+```python title="Top-K template"
+h = []
+for x in stream:
+    heapq.heappush(h, x)
+    if len(h) > k:
+        heapq.heappop(h)          # evict the worst candidate
+# h now holds the answer; h[0] is the K-th boundary element
+```
+
+### ② Two Heaps
+
+Split a stream into a smaller half (max-heap) and a larger half (min-heap). Keep sizes within 1. Median + percentile-style problems. Each insert is `O(log n)`; peek is `O(1)`.
+
+```python title="Two-heaps template"
+low, high = [], []                 # max-heap (negated), min-heap
+def add(x):
+    if not low or x <= -low[0]:
+        heapq.heappush(low, -x)
+    else:
+        heapq.heappush(high, x)
+    if len(low) > len(high) + 1:
+        heapq.heappush(high, -heapq.heappop(low))
+    elif len(high) > len(low):
+        heapq.heappush(low, -heapq.heappop(high))
+```
+
+### ③ K-Way Merge
+
+Merge K sorted sources. Push the head of each into a min-heap. Pop the smallest, advance that source, push its next. Classic for merging lists, matrix rows, or streams.
+
+```python title="K-way merge template"
+h = [(src[0], i, 0) for i, src in enumerate(sources) if src]
+heapq.heapify(h)
+out = []
+while h:
+    val, si, idx = heapq.heappop(h)
+    out.append(val)
+    if idx + 1 < len(sources[si]):
+        heapq.heappush(h, (sources[si][idx + 1], si, idx + 1))
+```
+
+### ④ Greedy-with-Heap
+
+Each step, greedily pick the best (or worst) remaining option. Heap is a *priority inbox* that keeps updating. Covers Huffman-style combining and many optimization problems.
+
+```python title="Greedy-combine template"
+heapq.heapify(h)
+while len(h) >= 2:
+    a = heapq.heappop(h)
+    b = heapq.heappop(h)
+    combined = f(a, b)             # problem-specific
+    heapq.heappush(h, combined)
+```
+
+### ⑤ Scheduling-with-Deadline
+
+Sort events by deadline; as you scan, keep a heap of the K best things taken so far where K is constrained by the current time. Evict the weakest when capacity is exceeded.
+
+```python title="Scheduling-with-deadline template"
+events.sort(key=lambda e: e.deadline)
+h = []
+for e in events:
+    heapq.heappush(h, e.value)
+    if len(h) > e.deadline:        # capacity exceeded
+        heapq.heappop(h)           # drop least-valuable
+answer = sum(h)
+```
+
+## Tips, Tricks & Pitfalls
+
+### Tricks the pros use
+
+- **Negate for max-heap in Python.** `-val` on push, `-heappop()` on pop. For tuple keys, negate only the comparison key: `(-freq, word)`.
+- **Use tuples for custom priority.** `heappush(h, (priority, tie_breaker, payload))`. Tie-breakers matter — Python will compare the next tuple element on a tie; make sure that's meaningful or use an incrementing counter.
+- **Prefer `heappushpop` over push+pop.** When the heap is at size K and a new element arrives, `heappushpop(h, x)` is one operation and avoids an unnecessary sift.
+- **Build with `heapify`, not individual pushes.** If you have all data upfront, `heapify(list)` is `O(n)` — far better than `n` pushes at `O(n log n)`.
+- **Lazy deletion for middle-removal.** If you need to "remove" an element that isn't the root, don't; mark it stale in a hash-map and skip stale items when they reach the top. Standard trick in sliding-window heap problems.
+- **Heaps + hash maps beat heaps alone** when you need frequency or index lookups. Hash map answers *"how many?"* in `O(1)`; heap answers *"who's on top?"* in `O(log n)`.
+
+### Common pitfalls
+
+- **Wrong heap polarity.** "Find K largest" → min-heap (not max-heap). If you catch yourself pushing everything without bounding the heap, you're probably inverting the logic.
+- **Forgetting the size cap.** Without `if len(h) > k: heappop(h)` you're essentially sorting — you've lost the whole point.
+- **Tuple comparisons that crash.** If two tuples tie on the first element, Python compares the next. If that next element is an unorderable object, you'll get `TypeError: '<' not supported`. Always insert a unique tie-breaker.
+- **Mutating the heap directly.** Don't `del h[3]` or `h.sort()` — you've corrupted the invariant. Only use `heapq` functions.
+- **Reaching for a heap when `O(n)` exists.** If K == 1, use `min`/`max`. If K == N, just sort. Heap shines in the middle.
+- **Counting heap space as O(n) when it's really O(k).** Bounded heaps have bounded space; this matters for memory-constrained problems.
+
+<Callout type="insight" title="Interview move">
+  When you spot a "K + superlative" problem, say out loud: *"I'll use a
+  bounded heap of size K — that gives us O(n log k) time and O(k) space,
+  which beats sorting when k is small."* One sentence, anchors your
+  solution, signals complexity awareness before you write a single line.
+</Callout>
+
+## The 16 Pattern Map
+
+Every heap problem in this season maps to one of three archetypes. Use this table as your index.
+
+| # | Pattern | LC # | Heap | Time | Archetype |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Kth Largest Element | #215 | Min-heap (size k) | `O(n log k)` | Top-K |
+| 2 | Kth Smallest Element | — | Max-heap (size k) | `O(n log k)` | Top-K |
+| 3 | Sort Nearly Sorted Array | — | Min-heap (size k+1) | `O(n log k)` | Top-K (sliding) |
+| 4 | K Closest to X | #658 | Max-heap on distance | `O(n log k)` | Top-K |
+| 5 | Top K Frequent Elements | #347 | Counter + min-heap | `O(n log k)` | Top-K |
+| 6 | Frequency Sort | #451 | Counter + max-heap | `O(n log u)` | Greedy-emit |
+| 7 | K Closest Points to Origin | #973 | Max-heap on `x²+y²` | `O(n log k)` | Top-K |
+| 8 | Connect Ropes (Min Cost) | #1167 | Min-heap | `O(n log n)` | Greedy-combine |
+| 9 | Maximum Beauty w/ Deadlines | — | Sort + min-heap | `O(n log n)` | Scheduling-w/-deadline |
+| 10 | Merge K Sorted Lists | #23 | Min-heap of heads | `O(N log k)` | K-way merge |
+| 11 | Find Median from Data Stream | #295 | Two heaps | `O(log n)` / add | Two heaps |
+| 12 | Task Scheduler | #621 | Max-heap + queue | `O(T log U)` | Greedy scheduling |
+| 13 | Meeting Rooms II | #253 | Sort + min-heap | `O(n log n)` | Greedy-w/-heap |
+| 14 | Reorganize String | #767 | Max-heap by frequency | `O(n log u)` | Greedy defer-most-recent |
+| 15 | Kth Smallest in Sorted Matrix | #378 | Min-heap (K-way merge) | `O(k log min(k,n))` | K-way merge |
+| 16 | Sliding Window Median | #480 | Two heaps + lazy delete | `O(n log k)` | Two heaps |
+
+<Callout type="insight" title="Three archetypes cover them all">
+  **Top-K** (#1–5, 7, 15) — fixed-size heap of opposite polarity, evict
+  on overflow. **Two Heaps** (#11, 16) — split data around a pivot,
+  usually the median. **Greedy-with-Heap** (#6, 8, 9, 12, 13, 14) —
+  repeatedly pick the best/worst candidate to drive a scheduling or
+  construction decision.
+</Callout>
+
+## Thirty-Second Pre-Interview Mantra
+
+<Callout type="quote" title="">
+  K-th, top, closest, most frequent → heap.
+  Largest → min-heap. Smallest → max-heap.
+  Median → two heaps. Merge K → min-heap of heads.
+  Greedy with "best now" → heap drives the loop.
+  Size k, opposite polarity, evict on overflow. That is the template.
+</Callout>

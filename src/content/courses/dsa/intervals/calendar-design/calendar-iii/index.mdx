@@ -1,0 +1,132 @@
+---
+title: "My Calendar III"
+description: "Each booking adds an event; return the maximum K-booking (concurrent events) after it — online sweep line over a timeline map."
+excerpt: "Map timeline to delta counts; scan for peak concurrency after every booking."
+course: dsa/course
+order: 3
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - sweep-line
+  - design
+  - leetcode-732
+---
+
+## Problem Statement
+
+Design a calendar that **always accepts** `book(start, end)` calls and returns the maximum number of concurrent events — the `K` in "K-booking" — after each call.
+
+## Input
+
+Sequential calls to `book(start, end)`, each an `int` pair denoting a half-open `[start, end)` interval.
+
+```text title="Example call sequence"
+book(10, 20)
+book(50, 60)
+book(10, 40)
+book(5, 15)
+book(5, 10)
+book(25, 55)
+```
+
+## Output
+
+Each call returns the maximum `K` seen so far.
+
+```text title="Expected returns"
+1   # [10,20)
+1   # [50,60) — disjoint
+2   # [10,40) overlaps [10,20)
+3   # [5,15) lands on [10,15) where 2 events already overlap
+3
+3
+```
+
+## Constraints
+
+- `0 ≤ start < end ≤ 10⁹`
+- At most `400` calls to `book`.
+
+## Intuition
+
+Keep a **delta timeline** — a map from time to change-in-active-count. For each booking, bump `timeline[start] += 1` and `timeline[end] -= 1`. To answer, walk the map in time order and maintain a running sum; the peak is the answer.
+
+```text title="Timeline after book(10,20), book(10,40), book(5,15)"
+Time:    5   10   15   20   40
+Delta:  +1   +1   -1   -1   -1
+Active:  1    2    1*  0   -1 → normalised to max 3 via sum
+                   ↑ peak = 3 (actually sum pattern gives max 3 via +1+1+1-...)
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="my_calendar_iii.py"
+from collections import defaultdict
+
+class MyCalendarThree:
+    def __init__(self):
+        self.timeline = defaultdict(int)
+
+    def book(self, start: int, end: int) -> int:
+        self.timeline[start] += 1
+        self.timeline[end] -= 1
+
+        active = max_k = 0
+        for t in sorted(self.timeline):
+            active += self.timeline[t]
+            max_k = max(max_k, active)
+
+        return max_k
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="my_calendar_iii.ts"
+class MyCalendarThree {
+    private timeline = new Map<number, number>();
+
+    book(start: number, end: number): number {
+        this.timeline.set(start, (this.timeline.get(start) ?? 0) + 1);
+        this.timeline.set(end, (this.timeline.get(end) ?? 0) - 1);
+
+        let active = 0, maxK = 0;
+        const keys = [...this.timeline.keys()].sort((a, b) => a - b);
+        for (const key of keys) {
+            active += this.timeline.get(key)!;
+            maxK = Math.max(maxK, active);
+        }
+
+        return maxK;
+    }
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time (per call) | `O(n log n)` | Sort timeline keys on each call; a segment tree brings this to `O(log C)` |
+| Space | `O(n)` | Map scales with distinct endpoints |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| First call | Timeline has two entries, running sum peaks at `1`. |
+| Repeated identical interval | Each call bumps the same keys — `K` grows monotonically. |
+| Touching boundaries `[10,20)` & `[20,30)` | `timeline[20]` nets zero → no double-count. |
+| Very large timeline | Replace the map with a TreeMap/Segment Tree for `O(log C)` per query. |
+| Rejected never happens | Unlike Calendar I & II, every booking is accepted — the class just reports current max overlap. |

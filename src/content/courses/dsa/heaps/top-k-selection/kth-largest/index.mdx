@@ -1,0 +1,115 @@
+---
+title: "Kth Largest Element"
+description: "Find the K-th largest element in an unsorted array using a bounded min-heap of size K — the canonical Top-K template."
+excerpt: "Min-heap of size K; the root is the K-th largest."
+course: dsa/course
+order: 1
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - top-k
+  - min-heap
+  - leetcode-215
+---
+
+## Problem Statement
+
+Given an unsorted array of integers `nums` and an integer `k`, return the **K-th largest** element. Note: this is the K-th in sorted order, not the K-th distinct element.
+
+## Input
+
+An integer array `nums` and an integer `k` with `1 ≤ k ≤ nums.length`.
+
+```text title="Example input"
+nums = [3, 2, 1, 5, 6, 4]
+k    = 2
+```
+
+## Output
+
+The K-th largest value — a single integer.
+
+```text title="Expected output"
+5
+
+// sorted desc: [6, 5, 4, 3, 2, 1]
+// 2nd largest → 5
+```
+
+## Constraints
+
+- `1 ≤ k ≤ nums.length ≤ 10⁵`
+- `-10⁴ ≤ nums[i] ≤ 10⁴`
+
+## Intuition
+
+We only care about the **top K** elements seen so far. Maintain a min-heap sized to exactly K. As we stream in numbers, the root of the heap is always the smallest of the current top K. When a new number arrives bigger than the root, it deserves a spot in the top K — pop the root, push the new number. After processing everything, the root *is* the K-th largest.
+
+```text title="Walkthrough — nums=[3,2,1,5,6,4], k=2"
+step  x   heap (after)   note
+ 1    3   [3]            push
+ 2    2   [2,3]          push (size == k)
+ 3    1   [2,3]          push then pop → 1 evicted
+ 4    5   [3,5]          push then pop → 2 evicted
+ 5    6   [5,6]          push then pop → 3 evicted
+ 6    4   [5,6]          push then pop → 4 evicted
+            ^root = 5 = 2nd largest ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="kth_largest.py"
+import heapq
+
+def findKthLargest(nums: list[int], k: int) -> int:
+    min_heap: list[int] = []
+    for num in nums:
+        heapq.heappush(min_heap, num)
+        if len(min_heap) > k:
+            heapq.heappop(min_heap)      # evict the smallest
+    return min_heap[0]                   # root == k-th largest
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="kth_largest.ts"
+function findKthLargest(nums: number[], k: number): number {
+  const h = minHeap<number>();
+  for (const num of nums) {
+    h.push(num);
+    if (h.size > k) h.pop();             // evict the smallest
+  }
+  return h.peek()!;                       // root == k-th largest
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log k)` | Each of `n` elements triggers a push (and possibly a pop), each `O(log k)` because the heap never grows past size `k`. |
+| Space | `O(k)` | Heap bounded to exactly `k` elements at all times, independent of `n`. |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| `k == 1` | Reduces to `max(nums)`. Heap still works; a linear scan is marginally faster. |
+| `k == n` | Heap grows to hold everything; root is the global min. Consider sorting instead. |
+| Duplicates | K-th largest is by position, not distinct value. `[1,1,1,1]` with `k=3` returns `1`. |
+| Negative numbers | No issue — integer comparison handles sign. |
+| `k > len(nums)` | Ill-defined; problem usually constrains `1 ≤ k ≤ n`. Validate if untrusted. |
+| Empty array | No K-th element exists; raise or return a sentinel. |

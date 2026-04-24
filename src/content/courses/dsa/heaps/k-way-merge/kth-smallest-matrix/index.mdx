@@ -1,0 +1,135 @@
+---
+title: "Kth Smallest in Sorted Matrix"
+description: "Find the K-th smallest value in a row- and column-sorted matrix by treating rows as K sorted lists and applying the K-way merge template."
+excerpt: "Seed a min-heap with the first column, pop-and-advance K times."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - min-heap
+  - k-way-merge
+  - matrix
+  - leetcode-378
+---
+
+## Problem Statement
+
+Given an `n × n` matrix where each row and each column is sorted in ascending order, find the **K-th smallest** element in the ordered sequence (not the K-th distinct value).
+
+## Input
+
+A square matrix and an integer `k`.
+
+```text title="Example input"
+matrix = [[ 1,  5,  9],
+          [10, 11, 13],
+          [12, 13, 15]]
+k = 8
+```
+
+## Output
+
+The K-th smallest value.
+
+```text title="Expected output"
+13
+
+// flat sorted: 1, 5, 9, 10, 11, 12, 13, 13, 15
+//                                       ^ 8th
+```
+
+## Constraints
+
+- `1 ≤ n ≤ 300`
+- `1 ≤ k ≤ n²`
+- `-10⁹ ≤ matrix[i][j] ≤ 10⁹`
+
+## Intuition
+
+Treat each row as a sorted list and apply the K-Way-Merge template. Seed a min-heap with the first column (one entry per row). Pop the smallest, push its right neighbour. After `k` pops, the last popped value is the answer. We never materialize more than one element per row in the heap — `O(n)` extra memory (`O(min(n, k))` with a small optimization).
+
+```text title="Walkthrough — 3×3 matrix above, k=8"
+seed: push (1, r=0, c=0), (10, r=1, c=0), (12, r=2, c=0)
+
+pop 1  → push (5, 0, 1)
+pop 5  → push (9, 0, 2)
+pop 9  → row 0 exhausted
+pop 10 → push (11, 1, 1)
+pop 11 → push (13, 1, 2)
+pop 12 → push (13, 2, 1)
+pop 13 (1, 2) → push …           ← 7th pop
+peek  13 (2, 1)                   ← 8th value = 13 ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="kth_smallest_matrix.py"
+import heapq
+
+def kthSmallest(matrix: list[list[int]], k: int) -> int:
+    n = len(matrix)
+    # Seed: first element of each row, up to k rows (optimization)
+    heap = [(matrix[r][0], r, 0) for r in range(min(n, k))]
+    heapq.heapify(heap)
+
+    for _ in range(k - 1):
+        val, r, c = heapq.heappop(heap)
+        if c + 1 < n:
+            heapq.heappush(heap, (matrix[r][c + 1], r, c + 1))
+    return heap[0][0]
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="kth_smallest_matrix.ts"
+function kthSmallest(matrix: number[][], k: number): number {
+  const n = matrix.length;
+  const h = new Heap<[number, number, number]>((a, b) => a[0] - b[0]);
+  const rows = Math.min(n, k);
+  for (let r = 0; r < rows; r++) h.push([matrix[r][0], r, 0]);
+
+  for (let i = 0; i < k - 1; i++) {
+    const [, r, c] = h.pop()!;
+    if (c + 1 < n) h.push([matrix[r][c + 1], r, c + 1]);
+  }
+  return h.peek()![0];
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(k log min(n, k))` | We perform `k − 1` heap operations; heap size is at most `min(n, k)`. Often quoted as `O(k log n)` when `k ≥ n`. |
+| Space | `O(min(n, k))` | Heap is capped at the number of rows we've seeded (one entry per active row). |
+
+<Callout type="tip" title="Even better — binary search on value">
+  A more advanced `O(n log(max − min))` solution binary-searches on the
+  answer value, counting how many entries in the matrix are `≤ mid`
+  using the sorted-row+column property. Worth knowing, but the heap
+  version is far cleaner under interview pressure.
+</Callout>
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| `k == 1` | Answer is `matrix[0][0]`; the loop runs zero iterations. |
+| `k == n²` | Answer is `matrix[n−1][n−1]`; algorithm traverses the entire matrix. |
+| Duplicates | Ranks are positional — duplicates count separately. Heap handles them without special care. |
+| Non-square matrices | Algorithm works for `m × n` — adjust the seed row count and column bound accordingly. |
+| Empty matrix | Undefined; guard and return a sentinel or raise. |

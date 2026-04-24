@@ -1,0 +1,125 @@
+---
+title: "Meeting Rooms II (Heap)"
+description: "Find the minimum conference rooms needed for a meeting list — sort by start, keep end-times in a min-heap, reuse the earliest-free room."
+excerpt: "Sort by start; min-heap of end times; peak size = rooms needed."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - min-heap
+  - intervals
+  - leetcode-253
+---
+
+## Problem Statement
+
+Given an array of meeting time intervals `intervals[i] = [start, end]`, return the **minimum number of conference rooms** required to hold all meetings without overlap.
+
+## Input
+
+An array of `[start, end]` pairs.
+
+```text title="Example input"
+intervals = [[0, 30], [5, 10], [15, 20]]
+```
+
+## Output
+
+The minimum number of rooms.
+
+```text title="Expected output"
+2
+
+// [0,30] and [5,10] overlap → 2 rooms
+// [15,20] starts after [5,10] ends → reuse room
+// peak concurrent meetings = 2
+```
+
+## Constraints
+
+- `0 ≤ intervals.length ≤ 10⁴`
+- `0 ≤ startᵢ < endᵢ ≤ 10⁶`
+
+## Intuition
+
+Sort meetings by start time. Walk through them in order, maintaining a **min-heap of end times** of currently-occupied rooms. For each new meeting:
+
+- If the earliest-ending room is free (its end ≤ this meeting's start), reuse it — pop and push the new end.
+- Otherwise we need a new room — push without popping.
+
+The final heap size equals the peak concurrent occupancy = minimum rooms needed.
+
+```text title="Walkthrough — intervals=[[0,30],[5,10],[15,20]]"
+sorted by start: [0,30] [5,10] [15,20]
+
+[0,30]:  heap = [30]                        (new room)
+[5,10]:  5 < 30 → new room   heap = [10,30]
+[15,20]: 15 ≥ 10 → reuse     heap = [20,30]
+
+peak / final size = 2 ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="meeting_rooms_ii.py"
+import heapq
+
+def minMeetingRooms(intervals: list[list[int]]) -> int:
+    if not intervals:
+        return 0
+    intervals.sort(key=lambda x: x[0])          # sort by start
+    rooms: list[int] = []                       # min-heap of end times
+
+    for start, end in intervals:
+        if rooms and rooms[0] <= start:
+            heapq.heappop(rooms)                # reuse earliest-freed room
+        heapq.heappush(rooms, end)              # allocate (new or reused)
+    return len(rooms)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="meeting_rooms_ii.ts"
+function minMeetingRooms(intervals: number[][]): number {
+  if (intervals.length === 0) return 0;
+  intervals.sort((a, b) => a[0] - b[0]);         // by start
+
+  const rooms = minHeap<number>();                // end times of busy rooms
+  for (const [start, end] of intervals) {
+    if (rooms.size > 0 && (rooms.peek() as number) <= start) rooms.pop();
+    rooms.push(end);
+  }
+  return rooms.size;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting dominates. Each interval does at most one push + one pop — each `O(log n)`. |
+| Space | `O(n)` | Heap can grow to `n` if every meeting overlaps (e.g. all identical intervals). |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Touching endpoints | A ends at 10 and B starts at 10 → room is reusable (`rooms[0] <= start`). Use strict `<` if the problem treats endpoints as overlapping. |
+| Identical intervals | None share a room; heap grows by exactly `len(intervals)`. |
+| Single interval | Returns `1`. |
+| Empty input | Explicit guard returns `0`. |
+| Degenerate zero-length `[5,5]` | Treat consistently with the chosen overlap convention. |

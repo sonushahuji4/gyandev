@@ -1,0 +1,156 @@
+---
+title: "Rectangle Area II"
+description: "Compute the total area covered by a set of axis-aligned rectangles, double-counted overlaps removed — coordinate compression + sweep line in 2D."
+excerpt: "Sweep x-events; at each x compute active y-coverage × x-delta."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 7
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - sweep-line
+  - geometry
+  - leetcode-850
+---
+
+## Problem Statement
+
+Given a list of axis-aligned rectangles as `[x1, y1, x2, y2]` (bottom-left and top-right corners), compute the **total area** covered by their union. The answer must be returned modulo `10⁹ + 7`.
+
+## Input
+
+An array of rectangles.
+
+```text title="Example input"
+[[0,0,2,2],[1,0,2,3],[1,0,3,1]]
+```
+
+## Output
+
+A single integer — the total covered area modulo `10⁹ + 7`.
+
+```text title="Expected output"
+6
+```
+
+## Constraints
+
+- `1 ≤ rectangles.length ≤ 200`
+- `rectanglesᵢ.length == 4`
+- `0 ≤ x1ᵢ, y1ᵢ, x2ᵢ, y2ᵢ ≤ 10⁹`
+- `x1ᵢ < x2ᵢ`, `y1ᵢ < y2ᵢ`.
+
+## Intuition
+
+Extend 1-D sweep line into 2-D. Generate open / close events sorted by `x`. As you sweep:
+
+1. At each event, compute the **merged y-coverage** of currently active rectangles.
+2. Multiply `y_coverage × (x − prev_x)` and add to the running area.
+3. Then add or remove the event's rectangle from the active set.
+
+Merging the active y-intervals is another pass of the "merge intervals" primitive, so the inner loop runs in `O(n)` worst case per event.
+
+```text title="Anatomy of one x-delta slice"
+At a given x, suppose active y-intervals are [0,2], [1,3].
+Merged y-coverage: [0,3] → length 3.
+Next event at x'.
+Area contribution: 3 × (x' − x).
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="rectangle_area_ii.py"
+def rectangleArea(rectangles: list[list[int]]) -> int:
+    MOD = 10**9 + 7
+    events = []
+    for x1, y1, x2, y2 in rectangles:
+        events.append((x1, 0, y1, y2))   # open
+        events.append((x2, 1, y1, y2))   # close
+    events.sort()
+
+    active, area, prev_x = [], 0, events[0][0]
+    for x, typ, y1, y2 in events:
+        # Merge active y-intervals and compute covered length
+        y_cover = cur = 0
+        for ay1, ay2 in sorted(active):
+            cur = max(cur, ay1)
+            y_cover += max(0, ay2 - cur)
+            cur = max(cur, ay2)
+
+        area += y_cover * (x - prev_x)
+        prev_x = x
+
+        if typ == 0:
+            active.append((y1, y2))
+        else:
+            active.remove((y1, y2))
+
+    return area % MOD
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="rectangle_area_ii.ts"
+function rectangleArea(rects: number[][]): number {
+    const MOD = 1e9 + 7;
+    const events: [number, number, number, number][] = [];
+    for (const [x1, y1, x2, y2] of rects) {
+        events.push([x1, 0, y1, y2]);
+        events.push([x2, 1, y1, y2]);
+    }
+    events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    const active: [number, number][] = [];
+    let area = 0, prevX = events[0][0];
+
+    for (const [x, typ, y1, y2] of events) {
+        let yCov = 0, cur = 0;
+        for (const [a, b] of [...active].sort((a, b) => a[0] - b[0])) {
+            cur = Math.max(cur, a);
+            yCov += Math.max(0, b - cur);
+            cur = Math.max(cur, b);
+        }
+
+        area = (area + yCov * (x - prevX)) % MOD;
+        prevX = x;
+
+        if (typ === 0) {
+            active.push([y1, y2]);
+        } else {
+            const i = active.findIndex(([a, b]) => a === y1 && b === y2);
+            active.splice(i, 1);
+        }
+    }
+
+    return area;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n²)` | Inner merge-and-scan over active list per event |
+| Space | `O(n)` | Events list + active set |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Single rectangle | One slice — area = `(x2 − x1) × (y2 − y1)`. |
+| Two disjoint rectangles | Active set grows and shrinks; y-coverage correctly sums them separately. |
+| Fully contained rectangle | Adding it doesn't change the merged y-coverage. |
+| Rectangles sharing an edge | Events sorted with opens before closes at the same `x` keeps the coverage continuous. |
+| Huge coordinates | `10⁹` inputs don't overflow because multiplications stay within `int64`; MOD is applied once per slice. |

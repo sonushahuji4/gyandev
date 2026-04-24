@@ -12,7 +12,7 @@
  * preference without an additional fetch at hydration time.
  */
 import { courseUrl, chapterUrl } from '../routes';
-import { getCourseBySlug, type CourseChapterRef } from '../courses/bySlug';
+import { getCourseBySlug, getLeafChapters, type CourseChapterRef } from '../courses/bySlug';
 import { availabilityFromId, viewsAttr } from './availabilityOf';
 
 export interface PrevNextItem {
@@ -46,11 +46,14 @@ export async function prevNext(
   const bundle = await getCourseBySlug(courseSlug);
   if (!bundle) return { prev: null, next: null };
 
-  const i = bundle.chapters.findIndex((c) => c.slug === chapterSlug);
+  // Prev/Next navigates between leaf chapters only; hubs are navigational
+  // pages and are skipped.
+  const leaves = getLeafChapters(bundle.chapters);
+  const i = leaves.findIndex((c) => c.slug === chapterSlug);
   if (i === -1) return { prev: null, next: null };
 
-  const prevRef = i > 0 ? bundle.chapters[i - 1] : null;
-  const nextRef = i < bundle.chapters.length - 1 ? bundle.chapters[i + 1] : null;
+  const prevRef = i > 0 ? leaves[i - 1] : null;
+  const nextRef = i < leaves.length - 1 ? leaves[i + 1] : null;
 
   const [prev, next] = await Promise.all([
     prevRef ? toItem(courseSlug, prevRef) : Promise.resolve(null),

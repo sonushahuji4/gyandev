@@ -1,0 +1,145 @@
+---
+title: "My Calendar II"
+description: "Accept bookings that allow double-booking but reject any that would cause a triple — maintain both bookings and double-booked regions."
+excerpt: "Two layers: all bookings + known double-booked regions."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - design
+  - leetcode-731
+---
+
+## Problem Statement
+
+Design a calendar class supporting `book(start, end)` that **allows double booking but rejects any triple booking**. Each call returns `true` if the event was added, `false` otherwise.
+
+## Input
+
+Sequential calls to `book(start, end)`. Events are half-open `[start, end)`.
+
+```text title="Example call sequence"
+book(10, 20)
+book(50, 60)
+book(10, 40)
+book(5, 15)
+book(5, 10)
+book(25, 55)
+```
+
+## Output
+
+Each call returns `true` (added) or `false` (rejected because the third concurrent booking would cause a triple).
+
+```text title="Expected returns"
+true     # [10,20) — first event
+true     # [50,60) — no conflict
+true     # [10,40) — doubles [10,20)
+false    # [5,15)  — would triple [10,15)
+true     # [5,10)  — touches but doesn't overlap
+true     # [25,55) — doubles [50,55), still no triple
+```
+
+## Constraints
+
+- `0 ≤ start < end ≤ 10⁹`
+- At most `1000` calls to `book`.
+
+## Intuition
+
+Maintain **two lists**:
+
+- `bookings` — every accepted event.
+- `overlaps` — the regions where exactly two events already overlap.
+
+For each new event:
+
+1. If it intersects any region in `overlaps` → that would be a third overlap → **reject**.
+2. Otherwise, for every existing booking it overlaps, record the intersection region in `overlaps`.
+3. Add the new event to `bookings`.
+
+```text title="Two-layer tracking"
+       bookings layer:   [══════════]       [══════════]
+       overlaps layer:        [═════]
+                              ↑ two events already share this region
+       new event:         [═══════]
+                              ↑ would land inside an overlap → REJECT
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="my_calendar_ii.py"
+class MyCalendarTwo:
+    def __init__(self):
+        self.bookings = []
+        self.overlaps = []  # double-booked regions
+
+    def book(self, start: int, end: int) -> bool:
+        # Check against triple booking
+        for os, oe in self.overlaps:
+            if start < oe and end > os:
+                return False
+
+        # Record new double-bookings
+        for bs, be in self.bookings:
+            if start < be and end > bs:
+                self.overlaps.append((max(start, bs), min(end, be)))
+
+        self.bookings.append((start, end))
+        return True
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="my_calendar_ii.ts"
+class MyCalendarTwo {
+    private bookings: [number, number][] = [];
+    private overlaps: [number, number][] = [];
+
+    book(start: number, end: number): boolean {
+        for (const [os, oe] of this.overlaps) {
+            if (start < oe && end > os) return false;
+        }
+
+        for (const [bs, be] of this.bookings) {
+            if (start < be && end > bs) {
+                this.overlaps.push([Math.max(start, bs), Math.min(end, be)]);
+            }
+        }
+
+        this.bookings.push([start, end]);
+        return true;
+    }
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time (per call) | `O(n)` | Scans both `bookings` and `overlaps` |
+| Space | `O(n)` | Two-layer tracking — bookings + overlap regions |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| First booking | `overlaps` and `bookings` both empty → accepted, nothing recorded in `overlaps`. |
+| Double booking (exactly 2) | Accepted; new region added to `overlaps`. |
+| Triple booking attempt | Rejected at the first loop — no state mutated. |
+| Touching boundary `[10,20)` & `[20,30)` | `20 < 20` is false → not treated as overlap; no double/triple created. |
+| Same interval booked twice | Second call accepted (double); third call would be rejected. |

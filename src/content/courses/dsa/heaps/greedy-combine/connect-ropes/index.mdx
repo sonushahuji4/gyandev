@@ -1,0 +1,122 @@
+---
+title: "Connect Ropes with Minimum Cost"
+description: "Repeatedly merge the two shortest ropes into one — a Huffman-style greedy that minimises total joining cost using a min-heap."
+excerpt: "Min-heap of lengths; always merge the two smallest."
+course: dsa/course
+order: 1
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - greedy
+  - min-heap
+  - leetcode-1167
+---
+
+## Problem Statement
+
+You have `n` ropes of various lengths. The cost to connect two ropes equals the **sum of their lengths** (the resulting rope has that combined length). Connect all ropes into one with **minimum total cost**.
+
+## Input
+
+An array of positive rope lengths.
+
+```text title="Example input"
+ropes = [4, 3, 2, 6]
+```
+
+## Output
+
+The minimum total cost to connect them all.
+
+```text title="Expected output"
+29
+
+// optimal sequence:
+// 2 + 3 = 5   (cost 5)
+// 4 + 5 = 9   (cost 9)
+// 6 + 9 = 15  (cost 15)
+// total: 5 + 9 + 15 = 29
+```
+
+## Constraints
+
+- `1 ≤ ropes.length ≤ 10⁵`
+- `1 ≤ ropes[i] ≤ 10⁴`
+
+## Intuition
+
+This is a Huffman-tree problem in disguise. The greedy rule: at each step, combine the two **smallest** remaining ropes. Why? Every combination cost propagates into *all future* combinations — the smaller the rope, the fewer times you want its length re-counted. A min-heap gives us instant access to the two smallest at each step.
+
+Proof sketch: in any optimal merging tree, a leaf contributes its length multiplied by its depth. Smaller values should live deeper (combined first); larger values shallower (combined last). The greedy heap strategy realizes that optimal tree.
+
+```text title="Walkthrough — ropes=[4,3,2,6]"
+heap (min):  [2, 3, 4, 6]
+pop 2, pop 3 → combined = 5   total = 5    push → [4, 5, 6]
+pop 4, pop 5 → combined = 9   total = 14   push → [6, 9]
+pop 6, pop 9 → combined = 15  total = 29   push → [15]
+                                              ^ total = 29 ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="connect_ropes.py"
+import heapq
+
+def minCostToConnectRopes(ropes: list[int]) -> int:
+    heapq.heapify(ropes)                 # O(n)
+    total_cost = 0
+    while len(ropes) > 1:
+        a = heapq.heappop(ropes)
+        b = heapq.heappop(ropes)
+        combined = a + b
+        total_cost += combined
+        heapq.heappush(ropes, combined)
+    return total_cost
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="connect_ropes.ts"
+function minCostToConnectRopes(ropes: number[]): number {
+  const h = new Heap<number>((a, b) => a - b, ropes);   // heapify in constructor
+  let total = 0;
+  while (h.size > 1) {
+    const a = h.pop()!;
+    const b = h.pop()!;
+    const combined = a + b;
+    total += combined;
+    h.push(combined);
+  }
+  return total;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Initial `heapify` is `O(n)`. We do `n − 1` combine cycles, each two pops + one push = three heap ops at `log n`. |
+| Space | `O(1)` extra | We heapify in place; no auxiliary storage. (If caller mutation is forbidden, copy first → `O(n)`.) |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| 0 or 1 rope | No connections needed; cost is 0. Loop condition `size > 1` guards it. |
+| All equal lengths | Order doesn't affect cost — heap still works, just doing balanced merges. |
+| Very large lengths | Intermediate sums can exceed 32-bit; use 64-bit or Python's unbounded ints. |
+| Mutation concern | `heapq.heapify` rearranges the input in place. If the caller expects the list intact, copy: `h = list(ropes)`. |
+| Variant — max cost | Flip to max-heap and the algorithm gives the *worst* strategy's cost — rarely asked, but good to know the mirror symmetry. |

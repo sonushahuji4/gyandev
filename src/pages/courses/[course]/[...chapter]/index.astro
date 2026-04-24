@@ -1,0 +1,161 @@
+---
+/**
+ * Chapter — Full Notes (canonical route, indexable, TechArticle JSON-LD).
+ *
+ * Two render paths:
+ *   - kind === 'hub'  — renders a listing of direct children (HubView).
+ *                       No tabs, no prev/next, no TechArticle JSON-LD.
+ *   - otherwise       — renders the MDX body inside ChapterLayout as before.
+ *
+ * Per spec §3 + §9: this is the canonical URL for every chapter; revision
+ * + flow tabs canonical → here.
+ */
+import { render } from 'astro:content';
+
+import PageShell from '../../../../components/layout/PageShell.astro';
+import ChapterLayout from '../../../../layouts/ChapterLayout.astro';
+import ChapterContent from '../../../../components/pages/chapter/ChapterContent.astro';
+import HubView from '../../../../components/pages/chapter/HubView.astro';
+import { getChapterPaths } from '../../../../lib/paths';
+import { getChapterContext } from '../../../../lib/chapter/getChapterContext';
+import { prevNext } from '../../../../lib/chapter/prevNext';
+import { canonicalFor, chapterUrl, courseUrl } from '../../../../lib/routes';
+import { breadcrumbSchema, techArticleSchema } from '../../../../lib/seo/jsonld';
+import { getChildChapters } from '../../../../lib/courses/bySlug';
+
+export { getChapterPaths as getStaticPaths };
+
+const { chapter } = Astro.props;
+const ctx = await getChapterContext(chapter);
+const { course, courseSlug, chapterSlug, revision, flow, availability, bundle } = ctx;
+
+const isHub = chapter.data.kind === 'hub';
+const canonical = canonicalFor(chapterUrl(courseSlug, chapterSlug));
+const ogImage = canonicalFor(`/og/courses/${courseSlug}/${chapterSlug}.png`);
+
+// --- Hub branch: compute children + breadcrumbs ---
+const directChildren = isHub ? getChildChapters(bundle.chapters, chapterSlug) : [];
+
+const ancestorCrumbs = isHub
+  ? chapterSlug.split('/').slice(0, -1).map((_, i) => {
+      const segs = chapterSlug.split('/').slice(0, i + 1);
+      const partialSlug = segs.join('/');
+      const ancestor = bundle.chapters.find((c) => c.slug === partialSlug);
+      return {
+        label: ancestor?.chapter.data.title ?? partialSlug,
+        href: chapterUrl(courseSlug, partialSlug),
+      };
+    })
+  : [];
+
+const hubBreadcrumbs = isHub
+  ? [
+      { label: 'Home', href: '/' },
+      { label: 'Courses', href: '/courses' },
+      { label: course.data.title, href: courseUrl(courseSlug) },
+      ...ancestorCrumbs,
+      { label: chapter.data.title },
+    ]
+  : [];
+
+const hubPageTitle = `${chapter.data.title} — ${course.data.title} — GyanDev`;
+const hubMetaDesc = isHub
+  ? (chapter.data.description.length > 155
+      ? `${chapter.data.description.slice(0, 152).trimEnd()}…`
+      : chapter.data.description)
+  : '';
+
+// --- Leaf branch: existing Full-Notes rendering path ---
+const revisionMinutes = revision?.data.readingMinutes;
+const flowMinutes = flow?.data.readingMinutes;
+
+const rendered = isHub ? null : await render(chapter);
+const { prev, next } = isHub
+  ? { prev: null, next: null }
+  : await prevNext(courseSlug, chapterSlug);
+
+const editUrl = `https://github.com/sonushahuji4/gyandev/edit/main/src/content/courses/${courseSlug}/${chapterSlug}/index.mdx`;
+const reportIssueUrl = `https://github.com/sonushahuji4/gyandev/issues/new?title=${encodeURIComponent(`[chapter] ${course.data.title} / ${chapter.data.title}`)}`;
+
+const publishedISO = (chapter.data.published ?? chapter.data.updated).toISOString();
+const modifiedISO = chapter.data.updated.toISOString();
+
+const proficiencyLevel =
+  chapter.data.difficulty === 'beginner' ? 'Beginner' :
+  chapter.data.difficulty === 'advanced' ? 'Advanced' : 'Intermediate';
+
+const jsonLd = isHub
+  ? undefined
+  : [
+      techArticleSchema({
+        title: chapter.data.title,
+        description: chapter.data.description,
+        url: canonical,
+        ogImage,
+        datePublished: publishedISO,
+        dateModified: modifiedISO,
+        section: course.data.title,
+        tags: chapter.data.tags,
+        proficiencyLevel,
+        timeRequired: `PT${chapter.data.readingMinutes}M`,
+      }),
+      breadcrumbSchema([
+        { name: 'Home', url: canonicalFor('/') },
+        { name: 'Courses', url: canonicalFor('/courses') },
+        { name: course.data.title, url: canonicalFor(`/courses/${courseSlug}`) },
+        { name: chapter.data.title, url: canonical },
+      ]),
+    ];
+
+const article = isHub
+  ? undefined
+  : {
+      publishedTime: publishedISO,
+      modifiedTime: modifiedISO,
+      author: canonicalFor('/about'),
+      section: course.data.title,
+      tags: chapter.data.tags,
+    };
+---
+
+{isHub ? (
+  <PageShell
+    title={hubPageTitle}
+    description={hubMetaDesc}
+    canonical={canonical}
+    ogImage={ogImage}
+    mainMaxWidth="full"
+  >
+    <HubView
+      chapter={chapter}
+      course={course}
+      courseSlug={courseSlug}
+      children={directChildren}
+      breadcrumbs={hubBreadcrumbs}
+    />
+  </PageShell>
+) : (
+  <ChapterLayout
+    chapter={chapter}
+    course={course}
+    courseSlug={courseSlug}
+    chapterSlug={chapterSlug}
+    tab="full"
+    availability={availability}
+    chapters={bundle.chapters}
+    headings={rendered!.headings}
+    prev={prev}
+    next={next}
+    editUrl={editUrl}
+    reportIssueUrl={reportIssueUrl}
+    ogImage={ogImage}
+    displayedReadingMinutes={chapter.data.readingMinutes}
+    displayedUpdated={chapter.data.updated}
+    revisionMinutes={revisionMinutes}
+    flowMinutes={flowMinutes}
+    jsonLd={jsonLd}
+    article={article}
+  >
+    <ChapterContent Content={rendered!.Content} tab="full" courseTitle={course.data.title} />
+  </ChapterLayout>
+)}

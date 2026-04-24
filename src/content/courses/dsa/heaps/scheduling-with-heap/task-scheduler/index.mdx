@@ -1,0 +1,158 @@
+---
+title: "Task Scheduler"
+description: "Compute the minimum CPU cycles to finish a task list with a same-task cooldown using a max-heap of remaining counts plus a cooldown queue."
+excerpt: "Max-heap by remaining count; parked tasks wait in a cooldown queue."
+course: dsa/course
+order: 1
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 8
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - max-heap
+  - greedy
+  - scheduling
+  - leetcode-621
+---
+
+## Problem Statement
+
+Given an array of task labels `tasks` and a non-negative integer `n`, each CPU cycle executes one task or idles. The same task must be separated by at least `n` cycles. Return the minimum number of cycles to finish all tasks.
+
+## Input
+
+A list of task labels and the cooldown `n`.
+
+```text title="Example input"
+tasks = ["A", "A", "A", "B", "B", "B"]
+n     = 2
+```
+
+## Output
+
+Minimum total CPU cycles (including forced idles).
+
+```text title="Expected output"
+8
+
+// schedule: A B _ A B _ A B
+// (underscores are idles)
+```
+
+## Constraints
+
+- `1 ≤ tasks.length ≤ 10⁴`
+- `0 ≤ n ≤ 100`
+- `tasks[i]` is an uppercase letter (26 possible labels).
+
+## Intuition
+
+At each cycle, the greedy optimal move is: **run the task with the highest remaining count**, because delaying it risks forced idles later. Use a max-heap of task counts. After running a task, it's in "cooldown" — stash it in a queue with the cycle number when it becomes eligible again. Each cycle:
+
+1. Pop from heap (if any eligible) and decrement.
+2. Park it in the cooldown queue tagged with `time + n`.
+3. Promote any task whose cooldown has expired back into the heap.
+
+```text title="Walkthrough — tasks=['A','A','A','B','B','B'], n=2"
+heap (max by count): [3(A), 3(B)]        cooldown: []
+
+t=1  pop A → run → count 2, park (ready@3)   heap=[3(B)]             cd=[(3,2A)]
+t=2  pop B → run → count 2, park (ready@4)   heap=[]                 cd=[(3,2A),(4,2B)]
+t=3  heap empty → nothing runs (idle);
+      promote ready@3 → A back in             heap=[2(A)]             cd=[(4,2B)]
+t=4  pop A → run → count 1, park (ready@6);
+      promote ready@4 → B back in             heap=[2(B),1(A)]        cd=[(6,1A)]
+t=5  pop B → run → count 1, park (ready@7)    heap=[1(A)]             cd=[(6,1A),(7,1B)]
+t=6  heap has A (ready promoted at t=6);
+      actually promotion happens after pop step — careful
+... total cycles = 8 ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="task_scheduler.py"
+import heapq
+from collections import Counter, deque
+
+def leastInterval(tasks: list[str], n: int) -> int:
+    # max-heap of remaining counts (negated)
+    max_heap = [-c for c in Counter(tasks).values()]
+    heapq.heapify(max_heap)
+
+    time = 0
+    cooldown: deque[tuple[int, int]] = deque()       # (ready_time, remaining_count)
+
+    while max_heap or cooldown:
+        time += 1
+        if max_heap:
+            remaining = heapq.heappop(max_heap) + 1   # use one instance (still negative)
+            if remaining < 0:                         # more copies of this label left
+                cooldown.append((time + n, remaining))
+        # promote any task whose cooldown just expired
+        if cooldown and cooldown[0][0] == time:
+            heapq.heappush(max_heap, cooldown.popleft()[1])
+
+    return time
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="task_scheduler.ts"
+function leastInterval(tasks: string[], n: number): number {
+  const freq = new Map<string, number>();
+  for (const t of tasks) freq.set(t, (freq.get(t) ?? 0) + 1);
+
+  const h = maxHeap<number>();
+  for (const c of freq.values()) h.push(c);
+
+  const cooldown: Array<[number, number]> = [];      // [readyTime, remaining]
+  let time = 0;
+
+  while (h.size > 0 || cooldown.length > 0) {
+    time++;
+    if (h.size > 0) {
+      const remaining = (h.pop() as number) - 1;
+      if (remaining > 0) cooldown.push([time + n, remaining]);
+    }
+    if (cooldown.length > 0 && cooldown[0][0] === time) {
+      h.push(cooldown.shift()![1]);
+    }
+  }
+  return time;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(T log U)` | `T` = total cycles executed (≤ `tasks.length` + idles); `U` = distinct task types (≤ 26). Each cycle does at most `O(log U)` heap work. |
+| Space | `O(U)` | Heap and cooldown queue each hold at most `U` entries. |
+
+<Callout type="tip" title="Closed-form alternative">
+  There's a purely arithmetic `O(N)` formula: let `maxFreq` be the
+  highest task count and `ties` the number of tasks sharing that count,
+  then answer = `max(len(tasks), (maxFreq − 1) * (n + 1) + ties)`.
+  Mention it as a follow-up optimization.
+</Callout>
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| `n == 0` | No cooldown; answer is `len(tasks)`. Heap runs without queue activity. |
+| All same task | Needs `(count − 1) * (n + 1) + 1` cycles with many idles. |
+| Many unique tasks > n | No idles ever occur; answer equals `len(tasks)`. |
+| Empty `tasks` | Both heap and queue start empty; loop never enters — return `0`. |
+| Exactly one task type | Queue approach still works; task promotes back at `time + n`. |

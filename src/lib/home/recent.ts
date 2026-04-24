@@ -25,9 +25,9 @@ function courseSlugOf(course: CollectionEntry<'courses'>): string {
 
 function chapterSlugOf(chapter: CollectionEntry<'chapters'>): string | undefined {
   const parts = chapter.id.split('/');
-  if (parts.length >= 3) return parts[parts.length - 2];
-  if (parts.length === 2) return parts[1];
-  return undefined;
+  if (parts[parts.length - 1] === 'index') parts.pop();
+  if (parts.length <= 1) return undefined;
+  return parts.slice(1).join('/');
 }
 
 function courseKeyFromRef(refId: string): string {
@@ -57,6 +57,9 @@ export async function getRecentlyUpdatedChapters(
   const rows: RecentChapter[] = [];
   for (const chapter of chapters) {
     if (chapter.data.status !== 'published') continue;
+    // Hub chapters are navigational pages — never surface them on the
+    // "recently updated" home strip.
+    if (chapter.data.kind === 'hub') continue;
     const courseSlug = courseKeyFromRef(chapter.data.course.id);
     const course = publishedCourseBySlug.get(courseSlug);
     if (!course) continue;

@@ -62,6 +62,42 @@ function isValidChapterFolder(name) {
   return SLUG_RE.test(name) || NUMBERED_CHAPTER_RE.test(name);
 }
 
+/**
+ * Recursively validate chapter folders under a given directory. Ids within a
+ * single parent folder must be unique (siblings), but the same slug may
+ * appear under different parents (e.g. `heaps/task-scheduler` and
+ * `intervals/task-scheduler` for DSA).
+ */
+async function validateChapterTree(parentPath, courseSlug, relPath) {
+  const entries = await readdir(parentPath, { withFileTypes: true });
+  const chapterDirs = entries.filter((e) => e.isDirectory()).map((e) => e.name);
+
+  const seen = new Map();
+  for (const folder of chapterDirs) {
+    if (!isValidChapterFolder(folder)) {
+      errors.push(`invalid chapter folder in ${courseSlug}/${relPath}: ${folder}`);
+      continue;
+    }
+    const slug = deriveChapterSlug(folder);
+    if (RESERVED.has(slug)) {
+      errors.push(`chapter slug collides with reserved path: ${courseSlug}/${relPath}${slug}`);
+    }
+    if (seen.has(slug)) {
+      errors.push(
+        `duplicate chapter slug in ${courseSlug}/${relPath}: ${slug} ` +
+          `(folders: ${seen.get(slug)}, ${folder})`,
+      );
+    } else {
+      seen.set(slug, folder);
+    }
+
+    // Recurse into this chapter folder — it may itself contain nested
+    // chapters (DSA hub pages).
+    const childPath = join(parentPath, folder);
+    await validateChapterTree(childPath, courseSlug, `${relPath}${folder}/`);
+  }
+}
+
 async function validateCourses() {
   if (!(await exists(CONTENT_DIR))) {
     // PR-0.3 created this directory with a .gitkeep. Absence here is a real
@@ -83,28 +119,7 @@ async function validateCourses() {
     }
 
     const coursePath = join(CONTENT_DIR, courseSlug);
-    const chapterEntries = await readdir(coursePath, { withFileTypes: true });
-    const chapterDirs = chapterEntries.filter((e) => e.isDirectory()).map((e) => e.name);
-
-    const seen = new Map();
-    for (const folder of chapterDirs) {
-      if (!isValidChapterFolder(folder)) {
-        errors.push(`invalid chapter folder in ${courseSlug}/: ${folder}`);
-        continue;
-      }
-      const slug = deriveChapterSlug(folder);
-      if (RESERVED.has(slug)) {
-        errors.push(`chapter slug collides with reserved path: ${courseSlug}/${slug}`);
-      }
-      if (seen.has(slug)) {
-        errors.push(
-          `duplicate chapter slug in ${courseSlug}/: ${slug} ` +
-            `(folders: ${seen.get(slug)}, ${folder})`,
-        );
-      } else {
-        seen.set(slug, folder);
-      }
-    }
+    await validateChapterTree(coursePath, courseSlug, '');
   }
 }
 

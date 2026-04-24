@@ -1,0 +1,127 @@
+---
+title: "K Closest Elements to X"
+description: "Return the K values closest to target X by absolute difference using a size-K max-heap keyed on distance."
+excerpt: "Max-heap of size K on |value − x|; evict the farthest."
+course: dsa/course
+order: 4
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - top-k
+  - max-heap
+  - leetcode-658
+---
+
+## Problem Statement
+
+Given an array of integers `arr`, an integer `k`, and a target value `x`, return the `k` values in `arr` that are **closest** to `x` by absolute difference. Results may be returned in any order (unless the problem asks for sorted).
+
+## Input
+
+An integer array `arr`, target value `x`, and the count `k`.
+
+```text title="Example input"
+arr = [1, 2, 3, 4, 5]
+k   = 4
+x   = 3
+```
+
+## Output
+
+The `k` closest values.
+
+```text title="Expected output"
+[1, 2, 3, 4]
+
+// distances from 3:
+// 1→2  2→1  3→0  4→1  5→2
+// smallest 4 distances: 0, 1, 1, 2 → values 3, 2, 4, 1
+```
+
+## Constraints
+
+- `1 ≤ k ≤ arr.length ≤ 10⁴`
+- `-10⁴ ≤ arr[i], x ≤ 10⁴`
+
+## Intuition
+
+"Closest to X" is just "smallest by `|x − value|`". We want the K smallest distances — classic max-heap-of-size-K. Push `(distance, value)` tuples and keep the heap capped at K; whatever remains is our answer.
+
+```text title="Walkthrough — arr=[1,2,3,4,5], k=4, x=3"
+num  dist  heap after push           heap after evict (size > 4)
+ 1    2    [(2,1)]                   —
+ 2    1    [(2,1),(1,2)]             —
+ 3    0    [(2,1),(1,2),(0,3)]       —
+ 4    1    [(2,1),(1,2),(0,3),(1,4)] —
+ 5    2    push → (2,1) & (2,5) tie  pop max → {(1,2),(0,3),(1,4),(2,?)}
+
+result values (sorted): [1, 2, 3, 4] ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="k_closest_elements.py"
+import heapq
+
+def findClosestElements(arr: list[int], k: int, x: int) -> list[int]:
+    max_heap: list[tuple[int, int]] = []    # (-distance, value)
+    for num in arr:
+        dist = abs(num - x)
+        heapq.heappush(max_heap, (-dist, num))
+        if len(max_heap) > k:
+            heapq.heappop(max_heap)         # evict the farthest
+    return sorted(v for _, v in max_heap)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="k_closest_elements.ts"
+function findClosestElements(arr: number[], k: number, x: number): number[] {
+  // max-heap by distance — larger distance has higher priority to be evicted
+  const h = new Heap<[number, number]>((a, b) => b[0] - a[0]);
+  for (const num of arr) {
+    const dist = Math.abs(num - x);
+    h.push([dist, num]);
+    if (h.size > k) h.pop();
+  }
+  const out: number[] = [];
+  while (h.size > 0) out.push(h.pop()![1]);
+  return out.sort((a, b) => a - b);
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log k)` | Same structure as any Top-K. Final sort of heap contents adds `O(k log k)`, dominated by the first term. |
+| Space | `O(k)` | Heap capped at K. Output list is also K elements. |
+
+<Callout type="tip" title="Faster if input is sorted">
+  If `arr` is already sorted, you can do it in `O(log n + k)` with
+  binary search + two-pointer expansion around `x`. The heap solution
+  works on **any** order, at the cost of `log k` per element.
+</Callout>
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Ties in distance | LeetCode 658 requires the smaller value to win ties. Use `(-dist, -value)` in the max-heap so smaller values survive eviction. |
+| `x` outside array range | Algorithm still works — nothing assumes `x` is in-bounds. |
+| `k == len(arr)` | Entire array is the answer; heap grows to full size with no evictions. |
+| Duplicates | Each occurrence treated independently — duplicates near `x` are all valid answers. |
+| Empty array or `k == 0` | Return `[]`. |

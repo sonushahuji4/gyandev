@@ -1,0 +1,116 @@
+---
+title: "Sort a Nearly Sorted Array"
+description: "Sort a K-sorted array — where every element is at most K positions from its final place — in O(n log k) using a size-(k+1) min-heap window."
+excerpt: "Min-heap of size k+1 slides the window; the root is always the next smallest."
+course: dsa/course
+order: 3
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - min-heap
+  - sliding-window
+---
+
+## Problem Statement
+
+An array is **nearly sorted** (or *K-sorted*): each element is at most `k` positions away from where it would be in the fully-sorted array. Sort it efficiently — faster than a generic `O(n log n)` sort when `k` is small.
+
+## Input
+
+An integer array `arr` that is K-sorted, and the window size `k`.
+
+```text title="Example input"
+arr = [6, 5, 3, 2, 8, 10, 9]
+k   = 3
+```
+
+## Output
+
+The fully sorted array.
+
+```text title="Expected output"
+[2, 3, 5, 6, 8, 9, 10]
+```
+
+## Constraints
+
+- `1 ≤ k < arr.length ≤ 10⁵`
+- Every element in `arr` is within `k` positions of its sorted location.
+
+## Intuition
+
+Since an element can be at most K positions away, the smallest remaining element *must* be within the next `k+1` positions. Seed a min-heap with the first `k+1` elements. The root is guaranteed to be the smallest. Pop it (it's done), push the next incoming element, repeat. We never look further ahead than `k+1` elements — that's the whole window we need.
+
+```text title="Walkthrough — arr=[6,5,3,2,8,10,9], k=3"
+seed window (first 4):   [6, 5, 3, 2]
+heap (min):              [2, 5, 3, 6]
+
+pop 2 → push 8   heap = [3, 5, 6, 8]    result = [2]
+pop 3 → push 10  heap = [5, 8, 6, 10]   result = [2, 3]
+pop 5 → push 9   heap = [6, 8, 9, 10]   result = [2, 3, 5]
+drain:           pop 6, 8, 9, 10        result = [2, 3, 5, 6, 8, 9, 10] ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="nearly_sorted.py"
+import heapq
+
+def nearlySorted(arr: list[int], k: int) -> list[int]:
+    h = arr[:k + 1]                      # seed with first k+1 elements
+    heapq.heapify(h)                     # O(k)
+    result: list[int] = []
+
+    for i in range(k + 1, len(arr)):
+        result.append(heapq.heappop(h))
+        heapq.heappush(h, arr[i])
+
+    while h:                              # drain the rest
+        result.append(heapq.heappop(h))
+    return result
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="nearly_sorted.ts"
+function nearlySorted(arr: number[], k: number): number[] {
+  const h = new Heap<number>((a, b) => a - b, arr.slice(0, k + 1));
+  const out: number[] = [];
+  for (let i = k + 1; i < arr.length; i++) {
+    out.push(h.pop()!);
+    h.push(arr[i]);
+  }
+  while (h.size > 0) out.push(h.pop()!);
+  return out;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log k)` | Heap size stays at `k+1`, so each push/pop is `O(log k)`. Over `n` elements: `n log k`. |
+| Space | `O(k)` | Heap holds `k+1` elements at any time. (Output array is required, not auxiliary.) |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| `k == 0` | Array is already sorted; loop runs `n` trivial pops. |
+| `k ≥ n` | Degenerates to a full sort — heap holds all elements, cost becomes `O(n log n)`. |
+| Wrong K claim | If the input isn't actually K-sorted, the algorithm still runs but output won't be fully sorted. Validate if untrusted. |
+| Duplicates | Heap is not stable, so equal keys may swap order — doesn't matter for sorted correctness. |
+| Empty input | Seed slice `arr[:k+1]` is empty, both loops skip, return `[]`. |

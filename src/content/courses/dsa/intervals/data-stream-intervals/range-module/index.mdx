@@ -1,0 +1,179 @@
+---
+title: "Range Module"
+description: "Maintain a set of half-open ranges with dynamic add, query, and remove — Insert Interval + Remove Interval composed into one data structure."
+excerpt: "Sorted disjoint intervals supporting add / query / remove."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 6
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - design
+  - binary-search
+  - leetcode-715
+---
+
+## Problem Statement
+
+Design a class that tracks a dynamic set of half-open ranges `[left, right)` supporting three operations:
+
+- `addRange(left, right)` — add the range.
+- `queryRange(left, right)` — return `true` iff `[left, right)` is fully covered by the current set.
+- `removeRange(left, right)` — remove the range from the current set.
+
+## Input
+
+Sequential calls to the three operations with integer range bounds.
+
+```text title="Example call sequence"
+addRange(10, 20)
+removeRange(14, 16)
+queryRange(10, 14)
+queryRange(13, 15)
+queryRange(16, 17)
+```
+
+## Output
+
+`addRange` and `removeRange` return `void`. `queryRange` returns a boolean.
+
+```text title="Expected returns"
+true    # [10,14) fully covered
+false   # [13,15) cuts through the 14..16 hole
+true    # [16,17) still covered
+```
+
+## Constraints
+
+- `1 ≤ left < right ≤ 10⁹`
+- At most `10⁴` calls combined across `addRange`, `queryRange`, `removeRange`.
+
+## Intuition
+
+Maintain a **sorted list of non-overlapping ranges**.
+
+- **add** — splice out every range that overlaps `[left, right)`, widen `[left, right)` to absorb them, and insert once. Exactly the Insert Interval pattern.
+- **query** — a single range in the list must contain `[left, right)` whole. Binary search or linear scan.
+- **remove** — for each overlapping range, keep the portion outside `[left, right)` — the left remnant and/or right remnant. Exactly the Remove Interval pattern.
+
+```text title="addRange → removeRange → queryRange"
+State after addRange(10,20):          [[10, 20)]
+State after removeRange(14,16):       [[10, 14), [16, 20)]
+queryRange(13,15) → false             (no single range contains 13..15)
+queryRange(16,17) → true              ([16,20) contains it)
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="range_module.py"
+class RangeModule:
+    def __init__(self):
+        self.ranges: list[list[int]] = []
+
+    def addRange(self, left: int, right: int) -> None:
+        new_ranges, placed = [], False
+        for s, e in self.ranges:
+            if e < left:
+                new_ranges.append([s, e])
+            elif s > right:
+                if not placed:
+                    new_ranges.append([left, right])
+                    placed = True
+                new_ranges.append([s, e])
+            else:
+                left = min(left, s)
+                right = max(right, e)
+        if not placed:
+            new_ranges.append([left, right])
+        self.ranges = new_ranges
+
+    def queryRange(self, left: int, right: int) -> bool:
+        for s, e in self.ranges:
+            if s <= left and e >= right:
+                return True
+        return False
+
+    def removeRange(self, left: int, right: int) -> None:
+        new_ranges = []
+        for s, e in self.ranges:
+            if e <= left or s >= right:
+                new_ranges.append([s, e])
+            else:
+                if s < left:  new_ranges.append([s, left])
+                if e > right: new_ranges.append([right, e])
+        self.ranges = new_ranges
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="range_module.ts"
+class RangeModule {
+    private ranges: number[][] = [];
+
+    addRange(left: number, right: number): void {
+        const nr: number[][] = [];
+        let placed = false;
+        for (const [s, e] of this.ranges) {
+            if (e < left) {
+                nr.push([s, e]);
+            } else if (s > right) {
+                if (!placed) { nr.push([left, right]); placed = true; }
+                nr.push([s, e]);
+            } else {
+                left = Math.min(left, s);
+                right = Math.max(right, e);
+            }
+        }
+        if (!placed) nr.push([left, right]);
+        this.ranges = nr;
+    }
+
+    queryRange(left: number, right: number): boolean {
+        return this.ranges.some(([s, e]) => s <= left && e >= right);
+    }
+
+    removeRange(left: number, right: number): void {
+        const nr: number[][] = [];
+        for (const [s, e] of this.ranges) {
+            if (e <= left || s >= right) {
+                nr.push([s, e]);
+            } else {
+                if (s < left)  nr.push([s, left]);
+                if (e > right) nr.push([right, e]);
+            }
+        }
+        this.ranges = nr;
+    }
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| `addRange` | `O(n)` | Rebuilds the list; `O(log n)` with a TreeMap/SortedList |
+| `queryRange` | `O(n)` | Linear scan; `O(log n)` with binary search |
+| `removeRange` | `O(n)` | Rebuilds the list |
+| Space | `O(n)` | Stores the disjoint ranges |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| `add` disjoint from all existing ranges | The loop sends every existing range into `new_ranges`; the new range is inserted once at its sorted position. |
+| `remove` with no overlap | Every range falls into the "no overlap" branch → list unchanged. |
+| `remove` splits a range | One interval yields two remnants (left + right). |
+| Touching `addRange(10,20)` + `addRange(20,30)` | The second call sees `e < left` is false (`20 < 20`), so they merge into `[10,30)`. Adjust the check if the spec expects strictly-open touching. |
+| Large coordinate space | Replace the list with a TreeMap/SortedList for `O(log n)` per operation. |

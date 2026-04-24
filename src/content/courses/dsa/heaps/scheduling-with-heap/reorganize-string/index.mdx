@@ -1,0 +1,144 @@
+---
+title: "Reorganize String"
+description: "Rearrange a string so no two adjacent characters are equal by greedily emitting the most-frequent available character and deferring the one just used."
+excerpt: "Max-heap by frequency; always emit top, defer the one used last."
+course: dsa/course
+order: 4
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 7
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - max-heap
+  - greedy
+  - strings
+  - leetcode-767
+---
+
+## Problem Statement
+
+Given a string `s`, return **any** permutation such that no two adjacent characters are equal. If impossible, return the empty string.
+
+## Input
+
+A lowercase string `s`.
+
+```text title="Example input"
+s = "aaabbc"
+```
+
+## Output
+
+Any valid rearrangement, or `""` if none exists.
+
+```text title="Expected output"
+"ababac"   // or "abacab" — any valid permutation
+```
+
+## Constraints
+
+- `1 ≤ s.length ≤ 500`
+- `s` consists of lowercase English letters.
+
+## Intuition
+
+Greedy: always place the character with the highest remaining count — unless it's the same as the previous one, in which case place the next-best. Use a max-heap keyed on frequency. Pop the top, append to output, decrement, and **don't** push it back immediately — stash it as "just used". On the next iteration, pop the new top, then push the stash back in. This guarantees no two consecutive picks are the same character.
+
+**Feasibility check:** if any character has frequency greater than `⌈n / 2⌉`, no valid arrangement exists.
+
+```text title="Walkthrough — s='aaabbc'"
+freq: {a:3, b:2, c:1}    max_freq=3 ≤ ⌈6/2⌉=3   → feasible
+
+heap (max): [(3,a),(2,b),(1,c)]    prev = (0, "")
+pop (3,a) → emit 'a' → prev=(2,a)   heap=[(2,b),(1,c)]
+pop (2,b) → emit 'b' → push prev → prev=(1,b)   heap=[(2,a),(1,c)]
+pop (2,a) → emit 'a' → push prev → prev=(1,a)   heap=[(1,b),(1,c)]
+pop (1,b) → emit 'b' → push prev → prev=(0,b)   heap=[(1,a),(1,c)]  // prev_cnt==0 → drop
+pop (1,a) → emit 'a' → push prev (0) dropped → prev=(0,a)   heap=[(1,c)]
+pop (1,c) → emit 'c' → prev=(0,c)   heap=[]
+
+result = "ababac" ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="reorganize_string.py"
+import heapq
+from collections import Counter
+
+def reorganizeString(s: str) -> str:
+    freq = Counter(s)
+    if max(freq.values()) > (len(s) + 1) // 2:
+        return ""                                   # infeasible
+
+    max_heap = [(-cnt, ch) for ch, cnt in freq.items()]
+    heapq.heapify(max_heap)
+
+    result: list[str] = []
+    prev_cnt, prev_ch = 0, ""                       # "just used" stash
+
+    while max_heap:
+        cnt, ch = heapq.heappop(max_heap)           # cnt is negative
+        result.append(ch)
+        if prev_cnt < 0:
+            heapq.heappush(max_heap, (prev_cnt, prev_ch))
+        prev_cnt, prev_ch = cnt + 1, ch             # increment toward 0
+
+    return "".join(result)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="reorganize_string.ts"
+function reorganizeString(s: string): string {
+  const freq = new Map<string, number>();
+  for (const c of s) freq.set(c, (freq.get(c) ?? 0) + 1);
+
+  let maxF = 0;
+  for (const v of freq.values()) maxF = Math.max(maxF, v);
+  if (maxF > Math.ceil(s.length / 2)) return "";
+
+  // max-heap by count
+  const h = new Heap<[number, string]>((a, b) => b[0] - a[0]);
+  for (const [ch, cnt] of freq) h.push([cnt, ch]);
+
+  const out: string[] = [];
+  let prev: [number, string] | null = null;
+
+  while (h.size > 0) {
+    const [cnt, ch] = h.pop()!;
+    out.push(ch);
+    if (prev && prev[0] > 0) h.push(prev);
+    prev = [cnt - 1, ch];
+  }
+  return out.join("");
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log u)` | Each of `n` characters requires a pop (and maybe a push): `log u` each, with `u` = distinct characters. For ASCII, `u ≤ 26` — heap ops effectively constant. |
+| Space | `O(u)` | Map + heap hold at most `u` entries. Output is `O(n)` — required, not auxiliary. |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Infeasibility | `"aaab"` — `a` has count 3 > `⌈4/2⌉ = 2`, return `""`. Check must run upfront. |
+| Single character string | Trivially valid; return `s`. |
+| Empty input | Return empty string. |
+| All distinct | Any permutation works; heap just pops them all. |
+| Exactly at threshold (`max_freq == ⌈n/2⌉`) | Still feasible but tight; the most-frequent char must lead and alternate perfectly. |

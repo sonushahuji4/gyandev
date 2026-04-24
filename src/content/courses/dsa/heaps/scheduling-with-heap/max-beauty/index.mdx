@@ -1,0 +1,124 @@
+---
+title: "Maximum Beauty with Deadlines"
+description: "Maximise total beauty of toys sold within per-toy deadlines — sort by deadline, then use a min-heap as capacity-bounded beauty tracker."
+excerpt: "Sort by deadline, evict the least-beautiful when the heap exceeds capacity."
+course: dsa/course
+order: 3
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 7
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - greedy
+  - min-heap
+  - scheduling
+---
+
+## Problem Statement
+
+Each toy `i` has an **end time** `A[i]` (last day it can be sold) and a **beauty value** `B[i]`. On each day you can sell at most one toy. Maximise the total beauty of toys sold within their deadlines.
+
+## Input
+
+Two parallel arrays `A` (deadlines) and `B` (beauty).
+
+```text title="Example input"
+A = [1, 2, 2]      // deadlines
+B = [5, 10, 20]    // beauty
+```
+
+## Output
+
+The maximum achievable total beauty.
+
+```text title="Expected output"
+30
+
+// sorted by deadline: (1, 5), (2, 10), (2, 20)
+// optimal: sell toys with beauty 10 (on day 1) and 20 (on day 2)
+// 10 + 20 = 30
+```
+
+## Constraints
+
+- `1 ≤ A.length == B.length ≤ 10⁵`
+- `1 ≤ A[i] ≤ 10⁵`, `0 ≤ B[i] ≤ 10⁹`
+
+## Intuition
+
+Sort toys by deadline. Walk through them in order, **tentatively adding** each to a min-heap of "beauties sold so far". Whenever the heap size exceeds the current deadline — meaning we've committed to more toys than days available up to this point — pop the **least beautiful** toy from the heap (un-sell it).
+
+Invariant: after processing all toys with deadline ≤ D, the heap contains at most D toys — and those are the maximum-beauty feasible selection among them. Sum of heap at the end = answer. This is the classic "Job Sequencing with Deadlines" theorem, solved in `O(n log n)` via greedy-with-heap instead of `O(n²)` DP.
+
+```text title="Walkthrough — A=[1,2,2], B=[5,10,20]"
+sorted toys (deadline, beauty):  (1,5) (2,10) (2,20)
+
+(1,5):   push 5      heap=[5]       size 1 ≤ 1   keep
+(2,10):  push 10     heap=[5,10]    size 2 ≤ 2   keep
+(2,20):  push 20     heap=[5,10,20] size 3 > 2   pop min → 5 evicted
+                     heap=[10,20]                   ✓ capacity respected
+
+answer = 10 + 20 = 30
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="max_beauty_deadlines.py"
+import heapq
+
+def maximizeBeauty(A: list[int], B: list[int]) -> int:
+    toys = sorted(zip(A, B))             # sort by deadline asc
+    min_heap: list[int] = []             # beauties tentatively selected
+
+    for deadline, beauty in toys:
+        heapq.heappush(min_heap, beauty)
+        if len(min_heap) > deadline:     # capacity exceeded
+            heapq.heappop(min_heap)      # drop the least beautiful
+    return sum(min_heap)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="max_beauty_deadlines.ts"
+function maximizeBeauty(A: number[], B: number[]): number {
+  const toys = A.map((d, i) => [d, B[i]] as [number, number])
+                .sort((x, y) => x[0] - y[0]);        // by deadline
+
+  const h = minHeap<number>();                        // beauties chosen so far
+  for (const [deadline, beauty] of toys) {
+    h.push(beauty);
+    if (h.size > deadline) h.pop();                   // drop weakest
+  }
+  let total = 0;
+  while (h.size > 0) total += h.pop()!;
+  return total;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting dominates. Heap phase is another `n log n` (each of `n` toys: at most one push + one pop). |
+| Space | `O(n)` | Sorted pair array + heap each hold up to `n` entries. Sort space varies by implementation (Timsort: `O(n)`). |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Deadline = 0 | Can't sell at all. Sorting puts it first; `len > 0` triggers immediate pop. Correctly excluded. |
+| All deadlines very large | No pops occur; answer is `sum(B)`. |
+| All deadlines = 1 | Heap never grows past 1; answer is `max(B)`. |
+| Same deadline, many toys | May overshoot capacity and pop multiple times within that deadline — correct, since only `deadline` days are available. |
+| Negative beauty | Greedy handles it: a negative entry would be the first popped when overcapacity. |

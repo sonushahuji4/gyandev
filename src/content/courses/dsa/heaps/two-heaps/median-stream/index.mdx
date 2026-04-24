@@ -1,0 +1,156 @@
+---
+title: "Find Median from Data Stream"
+description: "Maintain the running median of a number stream in O(log n) per insert using two balanced heaps — the canonical two-heaps pattern."
+excerpt: "Max-heap for the lower half, min-heap for the upper; the medians are at both roots."
+course: dsa/course
+order: 1
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 8
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - two-heaps
+  - streaming
+  - leetcode-295
+---
+
+## Problem Statement
+
+Design a data structure that supports two operations on a stream of numbers:
+
+- `addNum(x)` — record a new value.
+- `findMedian()` — return the median of all values seen so far.
+
+Both operations should be efficient (no `O(n)` rescan).
+
+## Input
+
+A sequence of `addNum` and `findMedian` calls.
+
+```text title="Example call sequence"
+addNum(1)
+addNum(2)
+findMedian()        // → 1.5
+addNum(3)
+findMedian()        // → 2.0
+```
+
+## Output
+
+Each `findMedian` returns the current median as a floating-point number.
+
+```text title="Expected outputs"
+1.5
+2.0
+```
+
+## Constraints
+
+- `-10⁵ ≤ x ≤ 10⁵`
+- Up to `5 × 10⁴` calls.
+- `findMedian` is always called after at least one `addNum`.
+
+## Intuition
+
+Split the stream into two halves: a **max-heap** holding the smaller half and a **min-heap** holding the larger half. Keep them balanced so their sizes differ by at most 1. The median is either the top of the larger heap (odd total) or the average of the two tops (even total).
+
+Each insert does one push and possibly one rebalance — both `O(log n)`. Median queries are `O(1)` — just peek both roots.
+
+```text title="After addNum(1), addNum(2), addNum(3)"
+low  (max-heap): [2]      ← stores smaller half
+high (min-heap): [3]      ← stores larger half
+                            actual elements: low={1,2}  high={3}
+                            (1 is below low's root 2)
+
+odd total (3) → median = top of larger side = -low[0] = 2
+even total (2) → median = (-low[0] + high[0]) / 2
+```
+
+This is **the** textbook Two-Heaps problem. Learn it cold — variants appear frequently.
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="median_finder.py"
+import heapq
+
+class MedianFinder:
+    def __init__(self) -> None:
+        self.low: list[int]  = []   # max-heap (negated) — smaller half
+        self.high: list[int] = []   # min-heap           — larger half
+
+    def addNum(self, num: int) -> None:
+        # Step 1: route to the appropriate half
+        if not self.low or num <= -self.low[0]:
+            heapq.heappush(self.low, -num)
+        else:
+            heapq.heappush(self.high, num)
+
+        # Step 2: rebalance so |size diff| ≤ 1, with len(low) ≥ len(high)
+        if len(self.low) > len(self.high) + 1:
+            heapq.heappush(self.high, -heapq.heappop(self.low))
+        elif len(self.high) > len(self.low):
+            heapq.heappush(self.low, -heapq.heappop(self.high))
+
+    def findMedian(self) -> float:
+        if len(self.low) > len(self.high):
+            return float(-self.low[0])
+        return (-self.low[0] + self.high[0]) / 2.0
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="median_finder.ts"
+class MedianFinder {
+  private low  = maxHeap<number>();    // smaller half
+  private high = minHeap<number>();    // larger half
+
+  addNum(num: number): void {
+    // Step 1: route
+    if (this.low.size === 0 || num <= (this.low.peek() as number)) {
+      this.low.push(num);
+    } else {
+      this.high.push(num);
+    }
+    // Step 2: rebalance
+    if (this.low.size > this.high.size + 1) {
+      this.high.push(this.low.pop()!);
+    } else if (this.high.size > this.low.size) {
+      this.low.push(this.high.pop()!);
+    }
+  }
+
+  findMedian(): number {
+    if (this.low.size > this.high.size) return this.low.peek() as number;
+    return ((this.low.peek() as number) + (this.high.peek() as number)) / 2;
+  }
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| `addNum` time | `O(log n)` | Up to two heap operations, each at `log n`. |
+| `findMedian` time | `O(1)` | Only peeks both roots. |
+| Space | `O(n)` | Must retain every seen number — any of them can affect future medians. |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| First element | `low` is empty; the route sends it to `low`. Post-rebalance, sizes are (1, 0). Median returns that single value. |
+| Equal values | Equals route into `low` via the `<=` check; balance stays correct. |
+| Negative numbers | Comparisons work on sign — no special handling. |
+| Huge stream | Memory grows linearly. For bounded memory, combine with a size-K sliding window (see "Sliding Window Median"). |
+| Integer overflow on average | Not an issue in Python/JS. In Java/C++, compute as `a/2.0 + b/2.0` to avoid overflowing `(a + b)`. |

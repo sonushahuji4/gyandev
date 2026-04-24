@@ -1,0 +1,200 @@
+---
+title: "Merge K Sorted Lists"
+description: "Merge K sorted linked lists or arrays into one sorted output using a min-heap seeded with the head of each source — the canonical K-way merge."
+excerpt: "Min-heap of heads; pop smallest, push its successor, repeat."
+course: dsa/course
+order: 1
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 8
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - min-heap
+  - k-way-merge
+  - linked-list
+  - leetcode-23
+---
+
+## Problem Statement
+
+You are given `k` individually sorted sequences (linked lists or arrays). Merge them into a single sorted sequence and return it.
+
+## Input
+
+A list of sorted sequences.
+
+```text title="Example input"
+lists = [
+  [1, 4, 5],
+  [1, 3, 4],
+  [2, 6]
+]
+```
+
+## Output
+
+The fully merged sorted sequence.
+
+```text title="Expected output"
+[1, 1, 2, 3, 4, 4, 5, 6]
+```
+
+## Constraints
+
+- `0 ≤ k ≤ 10⁴`
+- `0 ≤ lists[i].length`, total elements `≤ 10⁴`
+- Values are comparable (typically integers).
+
+## Intuition
+
+At any moment, the smallest unvisited element across all lists is the head of *one* of the lists. Push all current heads into a min-heap. Pop the smallest, append to output, push *its successor* from the same list. Repeat until the heap is empty. The heap holds at most `k` entries at a time, giving `O(log k)` per operation.
+
+Contrast: merging pairwise is `O(n · k)`; divide-and-conquer merging is also `O(n log k)` but uses more memory. The heap approach is the cleanest to implement.
+
+```text title="Walkthrough — lists=[[1,4,5],[1,3,4],[2,6]]"
+seed heap with heads: (1, lst0, 0), (1, lst1, 0), (2, lst2, 0)
+
+pop (1, lst0, 0) → emit 1, push (4, lst0, 1)
+pop (1, lst1, 0) → emit 1, push (3, lst1, 1)
+pop (2, lst2, 0) → emit 2, push (6, lst2, 1)
+pop (3, lst1, 1) → emit 3, push (4, lst1, 2)
+pop (4, lst0, 1) → emit 4, push (5, lst0, 2)
+pop (4, lst1, 2) → emit 4, lst1 exhausted
+pop (5, lst0, 2) → emit 5, lst0 exhausted
+pop (6, lst2, 1) → emit 6, lst2 exhausted
+
+result = [1, 1, 2, 3, 4, 4, 5, 6] ✓
+```
+
+## Solution
+
+### Approach A — Array-of-arrays
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="merge_k_sorted_arrays.py"
+import heapq
+
+def mergeKSortedArrays(lists: list[list[int]]) -> list[int]:
+    # seed heap with first element of each list: (value, list_idx, pos_in_list)
+    heap = [(lst[0], i, 0) for i, lst in enumerate(lists) if lst]
+    heapq.heapify(heap)
+
+    result: list[int] = []
+    while heap:
+        val, li, pi = heapq.heappop(heap)
+        result.append(val)
+        if pi + 1 < len(lists[li]):
+            heapq.heappush(heap, (lists[li][pi + 1], li, pi + 1))
+    return result
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="merge_k_sorted_arrays.ts"
+function mergeKSortedArrays(lists: number[][]): number[] {
+  type Entry = [number, number, number];    // [value, listIdx, posInList]
+  const h = new Heap<Entry>((a, b) => a[0] - b[0]);
+  for (let i = 0; i < lists.length; i++) {
+    if (lists[i].length > 0) h.push([lists[i][0], i, 0]);
+  }
+  const out: number[] = [];
+  while (h.size > 0) {
+    const [val, li, pi] = h.pop()!;
+    out.push(val);
+    if (pi + 1 < lists[li].length) h.push([lists[li][pi + 1], li, pi + 1]);
+  }
+  return out;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+### Approach B — Linked-list (LeetCode #23)
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="merge_k_lists.py"
+import heapq
+
+class ListNode:
+    def __init__(self, val=0, nxt=None):
+        self.val, self.next = val, nxt
+
+def mergeKLists(lists: list[ListNode | None]) -> ListNode | None:
+    heap: list[tuple[int, int, ListNode]] = []
+    for i, node in enumerate(lists):
+        if node:
+            heapq.heappush(heap, (node.val, i, node))   # i is tie-breaker
+
+    dummy = ListNode(0)
+    tail = dummy
+    while heap:
+        val, i, node = heapq.heappop(heap)
+        tail.next = node
+        tail = node
+        if node.next:
+            heapq.heappush(heap, (node.next.val, i, node.next))
+    return dummy.next
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="merge_k_lists.ts"
+class ListNode {
+  constructor(public val: number = 0, public next: ListNode | null = null) {}
+}
+
+function mergeKLists(lists: Array<ListNode | null>): ListNode | null {
+  type E = [number, number, ListNode];
+  const h = new Heap<E>((a, b) => a[0] - b[0] || a[1] - b[1]);
+  lists.forEach((node, i) => { if (node) h.push([node.val, i, node]); });
+
+  const dummy = new ListNode();
+  let tail = dummy;
+  while (h.size > 0) {
+    const [, i, node] = h.pop()!;
+    tail.next = node;
+    tail = node;
+    if (node.next) h.push([node.next.val, i, node.next]);
+  }
+  return dummy.next;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(N log k)` | Let `N` = total elements across all lists. Each is pushed and popped once; heap size is capped at `k`, so each op is `O(log k)`. |
+| Space | `O(k)` | Heap holds at most one entry per list. Output is `O(N)` — required, not auxiliary. |
+
+<Callout type="warning" title="Tie-breaker is not optional">
+  If two nodes have equal values, Python will try to compare the next
+  tuple element. If that next element is a `ListNode` without `__lt__`,
+  you'll get `TypeError`. Always include the list index — or a
+  monotonically increasing counter — as the second tuple element so
+  comparison never reaches the node.
+</Callout>
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Empty lists in input | Skip them when seeding. Otherwise you'd push `None` or crash on index 0. |
+| All lists empty | Heap never seeds; return empty result. |
+| `k == 1` | Degenerates to returning the single list unchanged. |
+| Highly unequal list lengths | Cost is still `N log k`; one very long list doesn't hurt the bound. |
+| Duplicate values across lists | Tie-breaker guarantees deterministic output and avoids comparator crashes. |

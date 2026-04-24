@@ -1,0 +1,129 @@
+---
+title: "Merge Intervals"
+description: "Given an array of overlapping intervals, combine them into the minimum non-overlapping set by sorting and walking once."
+excerpt: "Sort by start, merge adjacent overlaps in one pass."
+course: dsa/course
+order: 1
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - sorting
+  - leetcode-56
+---
+
+## Problem Statement
+
+Given an array of intervals where `intervals[i] = [startᵢ, endᵢ]`, merge all overlapping intervals and return an array of the non-overlapping intervals that cover all the ranges in the input.
+
+## Input
+
+An array `intervals` where each entry is a pair `[start, end]` with `start ≤ end`.
+
+```text title="Example inputs"
+intervals = [[1,3],[2,6],[8,10],[15,18]]
+intervals = [[1,4],[4,5]]
+```
+
+## Output
+
+The same intervals merged wherever they overlap, returned in sorted order.
+
+```text title="Expected outputs"
+[[1,6],[8,10],[15,18]]
+[[1,5]]
+```
+
+## Constraints
+
+- `1 ≤ intervals.length ≤ 10⁴`
+- `intervals[i].length == 2`
+- `0 ≤ startᵢ ≤ endᵢ ≤ 10⁴`
+
+## Intuition
+
+Sort by start time so overlapping intervals become neighbours. Walk left to right: if the current interval's start is `≤` the last merged interval's end, they overlap — extend the end. Otherwise, it's a new group.
+
+```text title="Walkthrough — [[1,3],[2,6],[8,10],[15,18]]"
+After sort by start:  [[1,3], [2,6], [8,10], [15,18]]  (already sorted)
+
+Step 1  merged = [[1,3]]
+Step 2  [2,6]   → 2 ≤ 3?  YES → merge → end = max(3,6) = 6 → [[1,6]]
+Step 3  [8,10]  → 8 ≤ 6?  NO  → new group → [[1,6], [8,10]]
+Step 4  [15,18] → 15 ≤ 10? NO → new group → [[1,6], [8,10], [15,18]]
+
+Timeline:
+1──██████──6      8─███─10      15─████─18
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="merge_intervals.py"
+def merge(intervals: list[list[int]]) -> list[list[int]]:
+    if not intervals:
+        return []
+
+    intervals.sort(key=lambda x: x[0])
+    merged = [intervals[0]]
+
+    for start, end in intervals[1:]:
+        if start <= merged[-1][1]:
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+
+    return merged
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="merge_intervals.ts"
+function merge(intervals: number[][]): number[][] {
+    if (intervals.length === 0) return [];
+
+    intervals.sort((a, b) => a[0] - b[0]);
+    const merged: number[][] = [intervals[0]];
+
+    for (let i = 1; i < intervals.length; i++) {
+        const last = merged[merged.length - 1];
+        const [start, end] = intervals[i];
+
+        if (start <= last[1]) {
+            last[1] = Math.max(last[1], end);
+        } else {
+            merged.push([start, end]);
+        }
+    }
+
+    return merged;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting dominates the `O(n)` linear scan |
+| Space | `O(n)` | Output can hold all `n` intervals (no-overlap case) |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Empty array | Return `[]` — always guard first. |
+| Single interval | Return it as-is; nothing to merge with. |
+| All overlapping — `[[1,10],[2,5],[3,7]]` | Everything merges into `[[1,10]]`. `max()` in the merge step handles containment. |
+| Touching endpoints `[1,2]` & `[2,3]` | Overlap — because `2 ≤ 2`. The `≤` (not `<`) is critical. |
+| Already sorted & non-overlapping | Output equals input; the `else` branch handles this. |

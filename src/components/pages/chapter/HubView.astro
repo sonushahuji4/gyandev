@@ -1,0 +1,243 @@
+---
+/**
+ * HubView — listing page for a non-leaf chapter (kind: 'hub'). Used by DSA
+ * topic and pattern hubs so `/courses/dsa/heaps` and
+ * `/courses/dsa/heaps/top-k-selection` render a table of contents instead of
+ * an MDX body. No tabs, no sidebar — hubs have no Full Notes / Revision /
+ * Flow views; they are navigation pages that link to their children.
+ */
+import { chapterUrl } from '../../../lib/routes';
+import type { CourseChapterRef } from '../../../lib/courses/bySlug';
+import type { CollectionEntry } from 'astro:content';
+
+export interface Props {
+  chapter: CollectionEntry<'chapters'>;
+  course: CollectionEntry<'courses'>;
+  courseSlug: string;
+  children: CourseChapterRef[];
+  /** Breadcrumb rows from Home → … → current hub. */
+  breadcrumbs: Array<{ label: string; href?: string }>;
+}
+
+const { chapter, course, courseSlug, children, breadcrumbs } = Astro.props;
+
+// Labels number pattern hubs starting from 1 (theory is excluded from the count).
+let patternCounter = 0;
+let problemCounter = 0;
+const rows = children.map((ref) => {
+  const k = ref.chapter.data.kind;
+  let label: string;
+  if (k === 'theory') label = 'Theory';
+  else if (k === 'hub') {
+    patternCounter += 1;
+    label = `Pattern ${String(patternCounter).padStart(2, '0')}`;
+  } else {
+    problemCounter += 1;
+    label = `Problem ${String(problemCounter).padStart(2, '0')}`;
+  }
+  return { ref, label };
+});
+---
+
+<div class="hub">
+  <nav class="hub__crumbs" aria-label="Breadcrumb">
+    <ol>
+      {breadcrumbs.map((bc, i) => (
+        <li>
+          {bc.href && i < breadcrumbs.length - 1 ? (
+            <a href={bc.href}>{bc.label}</a>
+          ) : (
+            <span aria-current={i === breadcrumbs.length - 1 ? 'page' : undefined}>
+              {bc.label}
+            </span>
+          )}
+          {i < breadcrumbs.length - 1 && <span class="hub__sep" aria-hidden="true">/</span>}
+        </li>
+      ))}
+    </ol>
+  </nav>
+
+  <header class="hub__header">
+    <p class="hub__overline">{course.data.title}</p>
+    <h1 class="hub__title">{chapter.data.title}</h1>
+    {chapter.data.description && (
+      <p class="hub__desc">{chapter.data.description}</p>
+    )}
+  </header>
+
+  {rows.length === 0 ? (
+    <p class="hub__empty">More content coming soon.</p>
+  ) : (
+    <ol class="hub__list">
+      {rows.map(({ ref, label }) => (
+        <li class="hub__item">
+          <a class="hub__link" href={chapterUrl(courseSlug, ref.slug)}>
+            <span class="hub__kind">{label}</span>
+            <span class="hub__body">
+              <span class="hub__item-title">{ref.chapter.data.title}</span>
+              {ref.chapter.data.excerpt && (
+                <span class="hub__item-excerpt">{ref.chapter.data.excerpt}</span>
+              )}
+            </span>
+            <span class="hub__meta">
+              {ref.isHub ? (
+                <span class="hub__meta-tag">→</span>
+              ) : (
+                <span class="hub__meta-time">{ref.chapter.data.readingMinutes} min</span>
+              )}
+            </span>
+          </a>
+        </li>
+      ))}
+    </ol>
+  )}
+</div>
+
+<style>
+  .hub {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-width: 56rem;
+    margin: 0 auto;
+    padding: 2rem 0 3rem;
+  }
+
+  .hub__crumbs ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+  }
+  .hub__crumbs li {
+    display: inline-flex;
+    align-items: center;
+  }
+  .hub__crumbs a {
+    color: var(--color-text-muted);
+    text-decoration: none;
+  }
+  .hub__crumbs a:hover { color: var(--color-accent); }
+  .hub__sep { margin: 0 0.5rem; opacity: 0.6; }
+
+  .hub__header {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .hub__overline {
+    margin: 0;
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+  }
+  .hub__title {
+    margin: 0;
+    font-size: clamp(1.75rem, 2.5vw, 2.25rem);
+    line-height: 1.2;
+    color: var(--color-text);
+  }
+  .hub__desc {
+    margin: 0;
+    color: var(--color-text-muted);
+    font-size: 1.0625rem;
+    line-height: 1.55;
+    max-width: 48rem;
+  }
+
+  .hub__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .hub__item {
+    border-top: 1px solid var(--color-border);
+  }
+  .hub__item:first-child { border-top: none; }
+
+  .hub__link {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr) auto;
+    gap: 1rem 1.25rem;
+    align-items: start;
+    padding: 1.125rem 0;
+    text-decoration: none;
+    color: var(--color-text);
+    transition: background-color 160ms ease;
+  }
+  .hub__link:hover {
+    background: color-mix(in srgb, var(--color-surface-muted) 55%, transparent);
+  }
+
+  .hub__kind {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    padding-top: 0.25rem;
+    white-space: nowrap;
+  }
+
+  .hub__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+  }
+  .hub__item-title {
+    color: var(--color-text);
+    font-size: 1.0625rem;
+    font-weight: 500;
+    line-height: 1.35;
+  }
+  .hub__link:hover .hub__item-title { color: var(--color-accent); }
+  .hub__item-excerpt {
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    line-height: 1.5;
+  }
+
+  .hub__meta {
+    font-size: 0.8125rem;
+    color: var(--color-text-muted);
+    padding-top: 0.4rem;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .hub__meta-tag {
+    font-size: 1.125rem;
+    color: var(--color-text-muted);
+  }
+
+  .hub__empty {
+    margin: 1rem 0 0;
+    padding: 1rem;
+    border: 1px dashed var(--color-border);
+    border-radius: 0.5rem;
+    color: var(--color-text-muted);
+    font-size: 0.9375rem;
+    text-align: center;
+  }
+
+  @media (max-width: 40rem) {
+    .hub__link {
+      grid-template-columns: 5.5rem minmax(0, 1fr);
+      gap: 0.5rem 0.875rem;
+    }
+    .hub__meta {
+      grid-column: 2;
+      padding-top: 0;
+      margin-top: 0.25rem;
+    }
+  }
+</style>

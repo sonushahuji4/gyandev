@@ -63,17 +63,15 @@ function courseSlugOf(course: CollectionEntry<'courses'>): string {
 }
 
 /**
- * Derive the chapter slug (folder name) from a chapter entry id.
- * Entry ids are like `"javascript/closures/index"` for
- * `javascript/closures/index.mdx`.
+ * Derive the chapter slug (possibly nested path) from a chapter entry id.
+ * Astro's glob loader strips `/index.mdx` so a leaf chapter id is
+ * `<courseSlug>/<…/chapterSlug>`. For DSA, this is `dsa/heaps/top-k-selection/kth-largest`.
  */
 function chapterSlugOf(chapter: CollectionEntry<'chapters'>): string | undefined {
   const parts = chapter.id.split('/');
-  // Expect `<courseSlug>/<chapterSlug>/index` (length 3) or occasionally
-  // `<courseSlug>/<chapterSlug>` when a loader strips `/index`.
-  if (parts.length >= 3) return parts[parts.length - 2];
-  if (parts.length === 2) return parts[1];
-  return undefined;
+  if (parts[parts.length - 1] === 'index') parts.pop();
+  if (parts.length <= 1) return undefined;
+  return parts.slice(1).join('/');
 }
 
 /** Fetch every entry from the `courses` collection. */
@@ -110,29 +108,39 @@ function aggregateChapters(
   entries: CollectionEntry<'chapters'>[],
   revisionMinutesBySlug: Map<string, number>,
 ): CourseStats {
-  const published = entries.filter((e) => e.data.status === 'published');
-  const firstPublished = [...published].sort((a, b) => a.data.order - b.data.order)[0];
+  // Hub chapters (kind === 'hub') are navigational-only and don't count
+  // toward reading stats or chapter totals. For flat 2-level courses this
+  // filter is a no-op.
+  const leaves = entries.filter((e) => e.data.kind !== 'hub');
+  const published = leaves.filter((e) => e.data.status === 'published');
   const revisionMinutes = published.reduce((sum, e) => {
     const chapterKey = chapterKeyOf(e);
     return sum + (chapterKey ? (revisionMinutesBySlug.get(chapterKey) ?? 0) : 0);
   }, 0);
+
+  // "First chapter" = first top-level chapter in order (depth 1). For flat
+  // courses that's still the first leaf; for DSA it's the first topic hub.
+  const topLevel = entries.filter((e) => {
+    const slug = chapterSlugOf(e);
+    return slug !== undefined && !slug.includes('/') && e.data.status === 'published';
+  });
+  const firstTopLevel = [...topLevel].sort((a, b) => a.data.order - b.data.order)[0];
+
   return {
-    chapterCount: entries.length,
+    chapterCount: leaves.length,
     publishedChapters: published.length,
     totalReadingMinutes: published.reduce((sum, e) => sum + e.data.readingMinutes, 0),
     revisionReadingMinutes: revisionMinutes,
-    firstChapterSlug: firstPublished ? chapterSlugOf(firstPublished) : undefined,
+    firstChapterSlug: firstTopLevel ? chapterSlugOf(firstTopLevel) : undefined,
   };
 }
 
 /** `"<courseSlug>/<chapterSlug>"` lookup key used to pair chapters to views. */
 function chapterKeyOf(chapter: CollectionEntry<'chapters'>): string | undefined {
   const parts = chapter.id.split('/');
-  // Accept `<courseSlug>/<chapterSlug>/index` (3 parts) or
-  // `<courseSlug>/<chapterSlug>` (2 parts).
-  if (parts.length >= 3) return `${parts[0]}/${parts[parts.length - 2]}`;
-  if (parts.length === 2) return `${parts[0]}/${parts[1]}`;
-  return undefined;
+  if (parts[parts.length - 1] === 'index') parts.pop();
+  if (parts.length <= 1) return undefined;
+  return `${parts[0]}/${parts.slice(1).join('/')}`;
 }
 
 /**
@@ -148,7 +156,11 @@ function revisionMinutesBySlugFrom(
     const parts = v.id.split('/');
     if (parts.length < 3) continue;
     if (parts[parts.length - 1] !== 'revision') continue;
-    const key = `${parts[0]}/${parts[parts.length - 2]}`;
+    // id shape: `<courseSlug>/<chapter…slug>/revision` — the chapter part
+    // may have any depth (DSA patterns nest 2-3 levels).
+    const courseSlug = parts[0]!;
+    const chapterSlug = parts.slice(1, -1).join('/');
+    const key = `${courseSlug}/${chapterSlug}`;
     const minutes = v.data.readingMinutes ?? 0;
     result.set(key, (result.get(key) ?? 0) + minutes);
   }

@@ -1,0 +1,113 @@
+---
+title: "Kth Smallest Element"
+description: "Find the K-th smallest element in an unsorted array with a bounded max-heap of size K — the mirror of the K-th largest template."
+excerpt: "Max-heap of size K; the root is the K-th smallest."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - top-k
+  - max-heap
+---
+
+## Problem Statement
+
+Given an unsorted array of integers `nums` and an integer `k`, return the **K-th smallest** element.
+
+## Input
+
+An integer array `nums` and an integer `k` with `1 ≤ k ≤ nums.length`.
+
+```text title="Example input"
+nums = [7, 10, 4, 3, 20, 15]
+k    = 3
+```
+
+## Output
+
+The K-th smallest value — a single integer.
+
+```text title="Expected output"
+7
+
+// sorted asc: [3, 4, 7, 10, 15, 20]
+// 3rd smallest → 7
+```
+
+## Constraints
+
+- `1 ≤ k ≤ nums.length ≤ 10⁵`
+- `-10⁴ ≤ nums[i] ≤ 10⁴`
+
+## Intuition
+
+Symmetric to "Kth Largest". Maintain a **max-heap** of size K. The root is the largest of the K smallest-so-far. When a new number arrives smaller than the root, evict the root. The final root is the K-th smallest. In Python, simulate a max-heap by negating the values.
+
+```text title="Walkthrough — nums=[7,10,4,3,20,15], k=3"
+step  x    heap (asc)       max-root   note
+ 1    7    [7]              7          push
+ 2    10   [7,10]           10         push
+ 3    4    [4,7,10]         10         push (size == k)
+ 4    3    [3,4,7]          7          push then pop → 10 evicted
+ 5    20   [3,4,7]          7          push then pop → 20 evicted
+ 6    15   [3,4,7]          7          push then pop → 15 evicted
+                              ^root = 7 = 3rd smallest ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="kth_smallest.py"
+import heapq
+
+def findKthSmallest(nums: list[int], k: int) -> int:
+    max_heap: list[int] = []                 # store negatives → max-heap
+    for num in nums:
+        heapq.heappush(max_heap, -num)
+        if len(max_heap) > k:
+            heapq.heappop(max_heap)          # evict the largest
+    return -max_heap[0]                      # un-negate
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="kth_smallest.ts"
+function findKthSmallest(nums: number[], k: number): number {
+  const h = maxHeap<number>();
+  for (const num of nums) {
+    h.push(num);
+    if (h.size > k) h.pop();                 // evict the largest
+  }
+  return h.peek()!;                           // root == k-th smallest
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log k)` | `n` elements, each heap op bounded by `log k` since heap size is capped. |
+| Space | `O(k)` | Only K elements retained at any moment. |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Negation overflow | Python integers are unbounded — safe. In languages with fixed-width ints, `-INT_MIN` overflows; use a custom comparator instead. |
+| Stable ordering | Heap isn't stable. If two equal values exist, the "K-th" is positional — value returns correctly, identity doesn't. |
+| All identical | `[5,5,5]` with any valid `k` returns `5`. |
+| `k == 1` | Equivalent to `min(nums)` — heap is overkill. |
+| `k == n` | Heap contains everything; root is the global max. Consider sorting. |

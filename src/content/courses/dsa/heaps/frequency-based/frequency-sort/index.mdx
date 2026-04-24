@@ -1,0 +1,121 @@
+---
+title: "Frequency Sort"
+description: "Sort array elements by descending frequency — count with a hash map, then pop from an uncapped max-heap and emit each value that many times."
+excerpt: "Counter + max-heap; pop most-frequent, emit `cnt` copies, repeat."
+course: dsa/course
+order: 2
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - heap
+  - max-heap
+  - hash-map
+  - leetcode-451
+---
+
+## Problem Statement
+
+Sort the elements of an array by frequency in **descending** order. Elements with higher frequency come first. For equal frequencies, any stable tie-break is acceptable unless otherwise specified.
+
+## Input
+
+An integer array `nums`.
+
+```text title="Example input"
+nums = [1, 1, 2, 2, 2, 3]
+```
+
+## Output
+
+The elements reordered so higher-frequency values come first.
+
+```text title="Expected output"
+[2, 2, 2, 1, 1, 3]
+
+// freq: 2→3, 1→2, 3→1
+// emit 2's first, then 1's, then 3
+```
+
+## Constraints
+
+- `1 ≤ nums.length ≤ 10⁵`
+- Values may be any integer (works identically for strings — LeetCode 451 variant).
+
+## Intuition
+
+Count frequencies, then repeatedly pull the *most frequent* element and emit that many copies. "Most frequent at top" = max-heap keyed on frequency. Unlike Top-K, we don't cap the heap — we need **all** elements in output order.
+
+```text title="Walkthrough — nums=[1,1,2,2,2,3]"
+freq:  {1:2, 2:3, 3:1}
+heap (max by count):  [(3,2), (2,1), (1,3)]
+
+pop (3,2) → emit [2,2,2]   result = [2,2,2]
+pop (2,1) → emit [1,1]     result = [2,2,2,1,1]
+pop (1,3) → emit [3]       result = [2,2,2,1,1,3] ✓
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="frequency_sort.py"
+import heapq
+from collections import Counter
+
+def frequencySort(nums: list[int]) -> list[int]:
+    freq = Counter(nums)
+    max_heap = [(-cnt, val) for val, cnt in freq.items()]   # negate → max-heap
+    heapq.heapify(max_heap)                                  # O(u)
+
+    result: list[int] = []
+    while max_heap:
+        neg_cnt, val = heapq.heappop(max_heap)
+        result.extend([val] * (-neg_cnt))
+    return result
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="frequency_sort.ts"
+function frequencySort(nums: number[]): number[] {
+  const freq = new Map<number, number>();
+  for (const n of nums) freq.set(n, (freq.get(n) ?? 0) + 1);
+
+  const h = new Heap<[number, number]>((a, b) => b[0] - a[0]);   // max-heap by count
+  for (const [val, cnt] of freq) h.push([cnt, val]);
+
+  const out: number[] = [];
+  while (h.size > 0) {
+    const [cnt, val] = h.pop()!;
+    for (let i = 0; i < cnt; i++) out.push(val);
+  }
+  return out;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log u)` | Where `u` is distinct-value count. Each of `u` heap ops is `log u`, and total output-building work is `O(n)`. Worst case `O(n log n)` when all elements are distinct. |
+| Space | `O(n)` | Map + heap together, both bounded by `u ≤ n`. Output is also `O(n)`. |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| All distinct | Every element appears once; order among them is unspecified. Use a secondary sort key if determinism matters. |
+| All identical | Heap has one entry; output is a full copy of the input. |
+| Strings instead of ints | Works identically — swap the map type (LC 451 "Sort Characters By Frequency"). |
+| Stability requirement | Heap is not stable; include an insertion index as tie-breaker: `(-cnt, idx, val)`. |
+| Empty input | Frequency map empty, heap empty, return `[]`. |

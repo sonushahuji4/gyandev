@@ -15,8 +15,12 @@ import { getCollection, type CollectionEntry } from 'astro:content';
 export interface CourseChapterRef {
   /** The underlying `chapters` collection entry. */
   chapter: CollectionEntry<'chapters'>;
-  /** URL-safe chapter segment, e.g. `"event-loop"`. */
+  /** URL-safe chapter path (possibly nested), e.g. `"event-loop"` or `"heaps/top-k-selection/kth-largest"`. */
   slug: string;
+  /** Number of slug segments — 1 for top-level, 2+ for nested (DSA topics/patterns). */
+  depth: number;
+  /** `true` when the chapter is a hub page (`kind === 'hub'`). */
+  isHub: boolean;
   /** `chapter.data.order` surfaced for convenience. */
   order: number;
   /** `chapter.data.season` surfaced for convenience (defaults to 1 via Zod). */
@@ -61,14 +65,17 @@ export interface ChapterAvailability {
 }
 
 /**
- * Extract the URL slug from a chapter entry id.
- * Ids look like `"javascript/event-loop/index"` for `event-loop/index.mdx`.
+ * Extract the URL slug path from a chapter entry id. Astro's glob loader
+ * strips `/index.mdx` so a leaf chapter id is `<courseSlug>/<…/chapterSlug>`.
+ * Returns everything after the first segment so nested chapters (DSA
+ * topics/patterns/problems) surface their full sub-path.
  */
 function chapterSlugOf(chapter: CollectionEntry<'chapters'>): string {
   const parts = chapter.id.split('/');
-  if (parts.length >= 3) return parts[parts.length - 2]!;
-  if (parts.length === 2) return parts[1]!;
-  return chapter.id;
+  // Defensive: some loader configurations leave a trailing `/index` segment.
+  if (parts[parts.length - 1] === 'index') parts.pop();
+  if (parts.length <= 1) return chapter.id;
+  return parts.slice(1).join('/');
 }
 
 /**
@@ -103,30 +110,45 @@ export async function getCourseBySlug(slug: string): Promise<CourseBundle | null
     (a, b) => a.data.season - b.data.season || a.data.order - b.data.order,
   );
 
-  const refs: CourseChapterRef[] = sorted.map((chapter) => ({
-    chapter,
-    slug: chapterSlugOf(chapter),
-    order: chapter.data.order,
-    season: chapter.data.season,
-    status: chapter.data.status,
-  }));
+  const refs: CourseChapterRef[] = sorted.map((chapter) => {
+    const slug = chapterSlugOf(chapter);
+    return {
+      chapter,
+      slug,
+      depth: slug.split('/').length,
+      isHub: chapter.data.kind === 'hub',
+      order: chapter.data.order,
+      season: chapter.data.season,
+      status: chapter.data.status,
+    };
+  });
 
-  const published = refs.filter((ref) => ref.status === 'published');
-  const totalReadingMinutes = published.reduce(
+  // Stats only count leaf chapters (hubs are navigational pages with no
+  // real reading content). For non-DSA courses with no hubs this is a no-op.
+  const leaves = refs.filter((ref) => !ref.isHub);
+  const publishedLeaves = leaves.filter((ref) => ref.status === 'published');
+  const totalReadingMinutes = publishedLeaves.reduce(
     (sum, ref) => sum + ref.chapter.data.readingMinutes,
     0,
   );
-  const totalScopedReadingMinutes = refs.reduce(
+  const totalScopedReadingMinutes = leaves.reduce(
     (sum, ref) => sum + ref.chapter.data.readingMinutes,
     0,
   );
+
+  // "First chapter" is the first top-level chapter (depth 1) in order. For
+  // flat courses every chapter is depth 1, so this reduces to the previous
+  // "first leaf" behaviour. For DSA it's the first topic hub (Heaps).
+  const firstTopLevel = refs
+    .filter((r) => r.depth === 1 && r.status === 'published')
+    .sort((a, b) => a.season - b.season || a.order - b.order)[0];
 
   const stats: CourseStatsSummary = {
-    chapterCount: refs.length,
-    publishedChapters: published.length,
+    chapterCount: leaves.length,
+    publishedChapters: publishedLeaves.length,
     totalReadingMinutes,
     totalScopedReadingMinutes,
-    firstChapterSlug: published[0]?.slug,
+    firstChapterSlug: firstTopLevel?.slug,
   };
 
   return { course, slug, chapters: refs, stats };
@@ -148,6 +170,41 @@ export function getChaptersGroupedBySeason(
     else map.set(ref.season, [ref]);
   }
   return new Map([...map.entries()].sort(([a], [b]) => a - b));
+}
+
+/**
+ * Depth-1 chapters (direct children of the course). For DSA this means the
+ * topic hubs (Heaps, Intervals). For the existing 2-level courses every
+ * chapter is depth 1, so this is a no-op filter.
+ */
+export function getTopLevelChapters(
+  chapters: CourseChapterRef[],
+): CourseChapterRef[] {
+  return chapters.filter((ref) => ref.depth === 1);
+}
+
+/**
+ * Direct children of a hub chapter. `parentSlug` is the slug path of the
+ * hub (e.g. `"heaps"` or `"heaps/top-k-selection"`). A direct child has a
+ * slug of the form `<parentSlug>/<nextSegment>` with exactly one extra
+ * segment.
+ */
+export function getChildChapters(
+  chapters: CourseChapterRef[],
+  parentSlug: string,
+): CourseChapterRef[] {
+  const prefix = `${parentSlug}/`;
+  const parentDepth = parentSlug.split('/').length;
+  return chapters.filter(
+    (ref) => ref.slug.startsWith(prefix) && ref.depth === parentDepth + 1,
+  );
+}
+
+/** Leaf chapters only (non-hub). Used for prev/next and aggregate reading stats. */
+export function getLeafChapters(
+  chapters: CourseChapterRef[],
+): CourseChapterRef[] {
+  return chapters.filter((ref) => !ref.isHub);
 }
 
 /**

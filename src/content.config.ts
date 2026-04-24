@@ -184,9 +184,11 @@ const chapters = defineCollection({
      * Optional row-label hint consumed by the course-overview
      * `<ChapterRow>`. `'theory'` renders a `THEORY` kicker; `'pattern'`
      * renders `PATTERN N` where N counts only pattern chapters within the
-     * season. Absent = classic zero-padded order numeral.
+     * season. `'hub'` marks a non-leaf chapter whose body is a listing of
+     * child chapters (used by DSA's topic + pattern landing pages).
+     * Absent = classic zero-padded order numeral.
      */
-    kind: z.enum(['theory', 'pattern']).optional(),
+    kind: z.enum(['theory', 'pattern', 'hub']).optional(),
   }),
 });
 

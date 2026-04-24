@@ -40,3 +40,12 @@ export async function getChapterPaths(): Promise<ChapterPath[]> {
     };
   });
 }
+
+/**
+ * Leaf-only chapter paths (excludes hub pages). Used by `revision.astro` and
+ * `flow.astro` — hub chapters have no Quick Revision or Flow Diagram view.
+ */
+export async function getLeafChapterPaths(): Promise<ChapterPath[]> {
+  const paths = await getChapterPaths();
+  return paths.filter((p) => p.props.chapter.data.kind !== 'hub');
+}

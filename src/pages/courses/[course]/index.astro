@@ -30,7 +30,7 @@ import ChapterList from '../../../components/pages/course-overview/ChapterList.a
 import CourseSidebar from '../../../components/pages/course-overview/CourseSidebar.astro';
 import ComingSoonHero from '../../../components/pages/course-overview/ComingSoonHero.astro';
 
-import { getCourseBySlug, getChaptersGroupedBySeason } from '../../../lib/courses/bySlug';
+import { getCourseBySlug, getChaptersGroupedBySeason, getTopLevelChapters } from '../../../lib/courses/bySlug';
 import { courseSchema } from '../../../lib/seo/jsonld';
 import { canonicalFor, courseUrl } from '../../../lib/routes';
 
@@ -90,7 +90,10 @@ const stats = bundle?.stats ?? {
   totalScopedReadingMinutes: 0,
   firstChapterSlug: undefined,
 };
-const groups = getChaptersGroupedBySeason(chapters);
+// The course-overview lists only the top-level chapters. For the existing
+// flat courses that's every chapter (depth 1). For DSA it's the two topic
+// hubs (Heaps, Intervals) — their descendants are reached by drilling in.
+const groups = getChaptersGroupedBySeason(getTopLevelChapters(chapters));
 
 const related = course.data.related.length
   ? (await getEntries(course.data.related)).filter((r) => r.id !== course.id)
