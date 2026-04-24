@@ -1,0 +1,149 @@
+---
+title: "The Skyline Problem"
+description: "Given a list of buildings, output the silhouette as key points — sweep line with a max-heap of active heights."
+excerpt: "Sweep events left-to-right; emit a key point whenever the active max height changes."
+course: dsa/course
+order: 20
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: advanced
+type: howto
+readingMinutes: 7
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - sweep-line
+  - heap
+  - leetcode-218
+---
+
+## Problem Statement
+
+Given a list of `buildings` where each entry is `[left, right, height]`, return the skyline silhouette as a list of "key points" `[x, height]` that describe the outline when viewed from afar.
+
+## Input
+
+An array of buildings, each a `[left, right, height]` triple.
+
+```text title="Example input"
+[[2,9,10],[3,7,15],[5,12,12],[15,20,10],[19,24,8]]
+```
+
+## Output
+
+The list of key points forming the silhouette, in ascending `x`. The final key point drops to height `0`.
+
+```text title="Expected output"
+[[2,10],[3,15],[7,12],[12,0],[15,10],[20,8],[24,0]]
+```
+
+## Constraints
+
+- `1 ≤ buildings.length ≤ 10⁴`
+- `0 ≤ leftᵢ < rightᵢ ≤ 2³¹ − 1`
+- `1 ≤ heightᵢ ≤ 2³¹ − 1`
+- `buildings` is sorted by `leftᵢ` ascending.
+
+## Intuition
+
+Sweep line + max-heap of active heights. For each building produce two events: a **start** `(left, −height, right)` and an **end** marker `(right, 0, 0)`. Sort events by `x`. While sweeping:
+
+1. On a start event, push the building into the active heap.
+2. Lazily evict heap entries whose right-edge is ≤ current `x`.
+3. The heap top is the current skyline height. If it differs from the previously emitted height → emit `[x, height]` as a key point.
+
+```text title="Sweep mechanics"
+Active max height changes only at two moments:
+  (a) a new building enters taller than current max → emit [x, new_max]
+  (b) the current max building exits → emit [x, new_max_after_eviction]
+
+Between those moments the silhouette is flat; no new key point needed.
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="skyline.py"
+import heapq
+
+def getSkyline(buildings: list[list[int]]) -> list[list[int]]:
+    events = []
+    for l, r, h in buildings:
+        events.append((l, -h, r))   # start — negative height for max-heap via min-heap
+        events.append((r, 0, 0))    # end marker
+    events.sort()
+
+    result = [[0, 0]]
+    active = [(0, float('inf'))]    # (neg_height, right_edge)
+
+    for x, neg_h, r in events:
+        if neg_h:
+            heapq.heappush(active, (neg_h, r))
+        # Lazy eviction of buildings whose right edge has passed
+        while active[0][1] <= x:
+            heapq.heappop(active)
+        max_h = -active[0][0]
+        if max_h != result[-1][1]:
+            result.append([x, max_h])
+
+    return result[1:]
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="skyline.ts"
+// Requires a MaxHeap. Simplified approach using a sorted array:
+function getSkyline(buildings: number[][]): number[][] {
+    const events: [number, number, number][] = [];
+    for (const [l, r, h] of buildings) {
+        events.push([l, -h, r]);
+        events.push([r, 0, 0]);
+    }
+    events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    const heights: number[] = [0];
+    const result: number[][] = [];
+    let prevMax = 0;
+
+    for (const [x, negH, r] of events) {
+        if (negH < 0) heights.push(-negH);
+        else {
+            const idx = heights.indexOf(r);
+            if (idx > -1) heights.splice(idx, 1);
+        }
+        const curMax = Math.max(...heights);
+        if (curMax !== prevMax) {
+            result.push([x, curMax]);
+            prevMax = curMax;
+        }
+    }
+
+    return result;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting events + heap ops with lazy deletion |
+| Space | `O(n)` | Events + active heap scale with building count |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Single building | Two key points: `[left, h]` and `[right, 0]`. |
+| Buildings share an edge `(l, _, h)` & `(l, _, h')` | Sort tie-breaker on `-h` first keeps the taller emission correct. |
+| Fully contained building | Never affects the outline; heap evicts it silently. |
+| Tall sliver inside a wide short building | Emits a spike — `[x, tall]` and then drops back when the sliver exits. |
+| Consecutive equal heights | Skyline does **not** emit a new key point — the equality check at the end suppresses it. |

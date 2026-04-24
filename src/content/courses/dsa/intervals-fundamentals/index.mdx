@@ -204,17 +204,18 @@ The single most important decision in any interval problem is *how* to sort. The
     **sort by start**.
 </Callout>
 
-## The 5 Common Approaches
+## The 6 Common Approaches
 
-Pattern recognition comes from knowing the toolkit. Nearly every interval problem you'll see reduces to one of these five techniques.
+Pattern recognition comes from knowing the toolkit. Nearly every interval problem you'll see reduces to one of these six techniques.
 
 | # | Approach | When to reach for it |
 | --- | --- | --- |
 | 1 | **Sort + linear scan** | Maintain a "last" interval, compare, merge or start fresh. Solves ~50% of all interval problems. |
 | 2 | **Sweep line (events)** | Decompose into start/end events, sort, sweep, keep a running counter. Answers "how many overlap at point X?" |
-| 3 | **Greedy selection** | Sort by end, greedily pick the earliest-finishing interval. For optimization — max kept, min removals, min resources. |
+| 3 | **Greedy selection** | Sort by end, greedily pick the earliest-finishing interval. For optimisation — max kept, min removals, min resources. |
 | 4 | **Priority queue (heap)** | Track active intervals by end time in a min-heap. Answers "is any room free?" for resource allocation. |
 | 5 | **Two pointers** | Two pre-sorted interval lists — advance the pointer whose interval ends first. Key for intersection problems. |
+| 6 | **Difference array** | Bounded-integer coordinates — `O(1)` range updates via `diff[l] += v; diff[r+1] -= v`, then prefix sum to recover values. |
 
 ### Pattern recognition cheat sheet
 
@@ -245,9 +246,11 @@ Before writing a single line of code, run through this checklist:
 | 8 | Negative coordinates | Make sure your math doesn't assume positives |
 | 9 | Very large values | Watch for `start + end` overflow on signed 32-bit |
 
-## The 11 Pattern Map
+## The 22 Pattern Map
 
-Every interval problem in this season maps to one of five core techniques. Use this table as your index.
+Every interval problem in this season maps to one of six core techniques. Use this table as your index — the first 11 are the FAANG core, the next 11 are advanced extensions.
+
+### Core patterns (1–11)
 
 | # | Pattern | LC # | Sort by | Approach |
 | --- | --- | --- | --- | --- |
@@ -262,3 +265,19 @@ Every interval problem in this season maps to one of five core techniques. Use t
 | 9 | My Calendar I | #729 | — | Overlap check per booking |
 | 10 | My Calendar II | #731 | — | Two-layer tracking |
 | 11 | Data Stream as Disjoint Intervals | #352 | maintained | Binary search + merge |
+
+### Advanced patterns (12–22)
+
+| # | Pattern | LC # | Sort by | Approach |
+| --- | --- | --- | --- | --- |
+| 12 | Sweep Line Template | — | Events | `+1 / −1` decomposition |
+| 13 | Min Arrows to Burst Balloons | #452 | End | Greedy group counting |
+| 14 | My Calendar III | #732 | Events | Delta timeline / TreeMap |
+| 15 | Car Pooling | #1094 | Events | Sweep or difference array |
+| 16 | Range Module | #715 | maintained | Insert + Remove composed |
+| 17 | Meeting Rooms III | #2402 | Start | Two heaps (avail + busy) |
+| 18 | Difference Array | #1109 | — | `O(1)` range update + prefix sum |
+| 19 | The Skyline Problem | #218 | Events | Sweep + max-heap |
+| 20 | Rectangle Area II | #850 | Events | 2-D sweep + merged y-coverage |
+| 21 | Interval Tree Template | — | Median | Static BST of intervals |
+| 22 | Task Scheduler | #621 | Frequency | Closed-form math on counts |

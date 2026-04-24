@@ -1,0 +1,134 @@
+---
+title: "Sweep Line Template"
+description: "The meta-pattern behind most 'how many overlap at point X?' problems — decompose intervals into +1 / -1 events, sort, and sweep."
+excerpt: "Decompose to events, sort, sweep a running counter."
+course: dsa/course
+order: 13
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - sweep-line
+  - template
+---
+
+## Problem Statement
+
+Given an array of intervals, return the **maximum number of intervals that overlap** at any single point — the canonical application of the sweep-line technique, and the template that generalises to Meeting Rooms II, Calendar III, Car Pooling, and the Skyline Problem.
+
+## Input
+
+An array of intervals `[[start, end], …]` on the number line.
+
+```text title="Example input"
+intervals = [[1,4],[2,5],[7,9]]
+```
+
+## Output
+
+A single integer — the maximum overlap count reached at any point along the timeline.
+
+```text title="Expected output"
+2
+```
+
+## Constraints
+
+- `1 ≤ intervals.length ≤ 10⁵`
+- `intervals[i].length == 2`
+- `-10⁹ ≤ startᵢ ≤ endᵢ ≤ 10⁹`
+
+## Intuition
+
+Instead of processing intervals as whole units, decompose each into **two events**: a `+1` at its start and a `-1` at its end. Sort all events by time (ties broken by delta — ends before starts for closed semantics). Sweep left-to-right maintaining a running counter; the peak value is the answer.
+
+```text title="Walkthrough — [[1,4], [2,5], [7,9]]"
+Events:   (1,+1)  (2,+1)  (4,-1)  (5,-1)  (7,+1)  (9,-1)
+
+Sweep timeline:
+Time:      1    2    3    4    5    6    7    8    9
+Delta:    +1   +1         -1   -1        +1        -1
+Active:    1    2    2    1    0    0    1    1    0
+                ↑ peak = 2  ← answer
+```
+
+<Callout type="warning" title="Tie-breaking matters">
+  When events share the same time:
+  - **Closed intervals `[a, b]`** → process ends (`-1`) before starts (`+1`)
+    so touching intervals don't double-count.
+  - **Half-open `[a, b)`** → process starts (`+1`) before ends (`-1`).
+  Sort key `(time, delta)` handles the closed case because `-1 < +1`.
+</Callout>
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="sweep_line.py"
+def sweepLine(intervals: list[list[int]]) -> int:
+    events = []
+    for start, end in intervals:
+        events.append((start, 1))
+        events.append((end, -1))
+
+    # Sort: by time; on ties, ends (-1) before starts (+1)
+    events.sort(key=lambda x: (x[0], x[1]))
+
+    active = max_active = 0
+    for _, delta in events:
+        active += delta
+        max_active = max(max_active, active)
+
+    return max_active
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="sweep_line.ts"
+function sweepLine(intervals: number[][]): number {
+    const events: [number, number][] = [];
+    for (const [start, end] of intervals) {
+        events.push([start, 1]);
+        events.push([end, -1]);
+    }
+
+    events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    let active = 0, maxActive = 0;
+    for (const [, delta] of events) {
+        active += delta;
+        maxActive = Math.max(maxActive, active);
+    }
+
+    return maxActive;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting the `2n` events dominates |
+| Space | `O(n)` | Events array holds two entries per interval |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Empty input | Return `0` — no events to process. |
+| Touching intervals `[1,2]` & `[2,3]` | Correct sort key (`end` before `start` at same time) yields peak `1`, not `2`. |
+| All intervals identical | `n` start events at the same time → peak = `n`. |
+| Very large coordinates | Events approach scales; a **difference array** is faster only when coords are small integers. |
+| Negative coordinates | Works unchanged — timeline orientation doesn't matter. |

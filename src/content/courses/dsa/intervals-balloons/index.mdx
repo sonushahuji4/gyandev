@@ -1,0 +1,122 @@
+---
+title: "Minimum Arrows to Burst Balloons"
+description: "Shoot vertical arrows to burst overlapping balloons — sort by end and count greedy groups, Activity Selection in a party hat."
+excerpt: "Sort by end; each group of overlapping intervals needs one arrow."
+course: dsa/course
+order: 14
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - greedy
+  - sorting
+  - leetcode-452
+---
+
+## Problem Statement
+
+Balloons are represented as horizontal intervals `[x_start, x_end]`. A vertical arrow shot at position `x` bursts every balloon whose range contains `x`. Return the **minimum number of arrows** needed to burst every balloon.
+
+## Input
+
+An array `points` where each entry is a balloon's horizontal span.
+
+```text title="Example input"
+[[10,16],[2,8],[1,6],[7,12]]
+```
+
+## Output
+
+A single integer — the minimum number of arrows.
+
+```text title="Expected output"
+2
+```
+
+## Constraints
+
+- `1 ≤ points.length ≤ 10⁵`
+- `points[i].length == 2`
+- `-2³¹ ≤ xstartᵢ ≤ xendᵢ ≤ 2³¹ − 1`
+
+## Intuition
+
+Sort by **end** coordinate. Shoot the first arrow at the first balloon's right edge — it automatically pops every balloon that starts at or before that edge. The next balloon whose start exceeds the arrow position begins a new group → another arrow. This is exactly the Activity Selection problem, counting *groups* instead of kept intervals.
+
+```text title="Why sort by END"
+Sort by end:  [1,6]  [7,12]  [10,16]  [2,8]
+                ↑      ↑        ↑       ↑
+Arrow at 6:   BURST  (start 7 > 6, new group)
+Arrow at 12:         BURST   BURST    BURST (start 2 ≤ 12)
+
+Total arrows: 2
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="min_arrows.py"
+def findMinArrowShots(points: list[list[int]]) -> int:
+    if not points:
+        return 0
+
+    points.sort(key=lambda x: x[1])
+    arrows, pos = 1, points[0][1]
+
+    for start, end in points[1:]:
+        if start > pos:
+            arrows += 1
+            pos = end
+
+    return arrows
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="min_arrows.ts"
+function findMinArrowShots(points: number[][]): number {
+    if (points.length === 0) return 0;
+
+    points.sort((a, b) => a[1] - b[1]);
+    let arrows = 1, pos = points[0][1];
+
+    for (let i = 1; i < points.length; i++) {
+        if (points[i][0] > pos) {
+            arrows++;
+            pos = points[i][1];
+        }
+    }
+
+    return arrows;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting dominates; the scan is `O(n)` |
+| Space | `O(1)` | Only two scalar variables tracked |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Empty `points` | Return `0`. |
+| All balloons overlap on a common point | Only `1` arrow needed — the first arrow bursts all. |
+| No two balloons overlap | One arrow per balloon → `arrows = n`. |
+| Touching edges `[1,2]` & `[2,3]` | `start > pos` is `2 > 2 = false` → same arrow; the `>` (not `≥`) matters. |
+| Sort-by-start variant | Picking the wrong sort order fails — a `[1,100]` greedy would wrongly claim one arrow for the universe. |

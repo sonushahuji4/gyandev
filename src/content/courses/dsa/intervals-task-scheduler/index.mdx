@@ -1,0 +1,118 @@
+---
+title: "Task Scheduler"
+description: "Schedule CPU tasks with a cooldown between identical ones — a closed-form math answer based on frequency counts."
+excerpt: "Frame the most frequent task; fill gaps. Closed-form: (max_f − 1) × (n + 1) + ties."
+course: dsa/course
+order: 23
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - greedy
+  - scheduling
+  - leetcode-621
+---
+
+## Problem Statement
+
+Given an array of CPU `tasks` (identified by uppercase letters) and an integer `n` — the cooldown between **two identical** tasks — return the minimum number of time units needed to finish every task. Each unit either runs a task or is idle.
+
+## Input
+
+- `tasks` — a list of character task identifiers.
+- `n` — the non-negative cooldown between identical tasks.
+
+```text title="Example input"
+tasks = ["A","A","A","B","B","B"], n = 2
+```
+
+## Output
+
+A single integer — minimum time units needed.
+
+```text title="Expected output"
+8
+```
+
+## Constraints
+
+- `1 ≤ tasks.length ≤ 10⁴`
+- `tasks[i]` is an uppercase English letter.
+- `0 ≤ n ≤ 100`
+
+## Intuition
+
+The most-frequent task dominates the schedule. Call its frequency `max_f`. Line up the `max_f` copies with `n` cooldown slots between them:
+
+```text title="Frame of the most frequent task"
+A _ _ _ A _ _ _ A          ← max_f = 3, n = 3
+└─(n+1)─┘└─(n+1)┘└A┘
+```
+
+That gives `(max_f − 1) × (n + 1) + 1` slots. If multiple tasks tie at `max_f`, each takes an extra trailing slot — add `max_count − 1` more. If there are enough *other* tasks to fill all idle gaps, the answer is simply `tasks.length` (no idle time needed).
+
+**Answer:** `max( tasks.length, (max_f − 1) × (n + 1) + max_count )`.
+
+```text title="Walkthrough — tasks AAABBB, n = 2"
+max_f = 3 (A and B)        max_count = 2
+Frame: A _ _ A _ _ A   → length (3−1)×(2+1) + 2 = 8
+Schedule:  A B _ A B _ A B  → 8 units
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="task_scheduler.py"
+from collections import Counter
+
+def leastInterval(tasks: list[str], n: int) -> int:
+    freq = Counter(tasks)
+    max_f = max(freq.values())
+    max_count = sum(1 for v in freq.values() if v == max_f)
+
+    return max(len(tasks), (max_f - 1) * (n + 1) + max_count)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="task_scheduler.ts"
+function leastInterval(tasks: string[], n: number): number {
+    const freq = new Map<string, number>();
+    for (const t of tasks) freq.set(t, (freq.get(t) ?? 0) + 1);
+
+    const maxF = Math.max(...freq.values());
+    const maxCount = [...freq.values()].filter(v => v === maxF).length;
+
+    return Math.max(tasks.length, (maxF - 1) * (n + 1) + maxCount);
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n)` | Single counting pass over `tasks`; alphabet is at most 26 |
+| Space | `O(1)` | Bounded alphabet — at most 26 frequency entries |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| `n = 0` | Cooldown is zero → formula gives `(max_f − 1) × 1 + max_count ≤ tasks.length`, so `tasks.length` wins. |
+| All tasks unique | `max_f = 1` → formula gives `0 + max_count`; `tasks.length` wins. |
+| Enough other tasks to fill gaps | `tasks.length` exceeds the framed value → no idle time needed. |
+| Dominant single task — `["A","A","A"]`, `n = 2` | Formula gives `(3−1)·3 + 1 = 7` time units (with idles). |
+| Ties at the top — AAABBB | Both `A` and `B` at max frequency; the `+ max_count` term places the last B and last A side by side. |

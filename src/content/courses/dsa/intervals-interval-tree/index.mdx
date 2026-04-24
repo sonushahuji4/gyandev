@@ -1,0 +1,119 @@
+---
+title: "Interval Tree Template"
+description: "An advanced data structure for O(log n + k) queries of 'which intervals overlap a given point?' — rarely coded by hand but essential to know by name."
+excerpt: "Median-centered BST of intervals; recurse into the side that can overlap."
+course: dsa/course
+order: 22
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: advanced
+type: explanation
+readingMinutes: 5
+updated: 2026-04-24
+status: published
+published: 2026-04-24
+tags:
+  - intervals
+  - tree
+  - advanced-ds
+---
+
+## Problem Statement
+
+Given a static set of `n` intervals, answer a stream of **point queries**: for a given point `q`, return every interval that contains `q`. The goal is `O(log n + k)` per query, where `k` is the size of the answer.
+
+## Input
+
+- A set of intervals `[[start, end], …]` known up front.
+- A sequence of integer point queries.
+
+```text title="Illustrative input"
+intervals = [[1,5],[3,7],[6,10],[8,12]]
+queries   = [4, 7, 11]
+```
+
+## Output
+
+For each query, the intervals that contain the query point.
+
+```text title="Expected output"
+query 4  → [[1,5],[3,7]]
+query 7  → [[3,7],[6,10]]
+query 11 → [[8,12]]
+```
+
+## Constraints
+
+- Intervals are known in advance (static tree).
+- `n` up to a few million in practice; queries typically `q ≤ n`.
+- Conceptual pattern — rarely coded from scratch in interviews.
+
+## Intuition
+
+Choose a **center point** (typically the median of all endpoints). Intervals are partitioned into three buckets:
+
+- **Crossing the center** — stored at this node, maintained sorted by both start and end (for fast pruning in either direction).
+- **Entirely left** — recurse into the left subtree.
+- **Entirely right** — recurse into the right subtree.
+
+To query a point `q`:
+
+1. Inspect the node's crossing intervals — those containing `q` are answers.
+2. If `q < center`, recurse left; else recurse right. Only one side can match, so the recursion depth is `O(log n)`.
+
+Total cost: `O(log n)` to descend + `O(k)` to report hits.
+
+```text title="Shape of the recursion"
+                    ┌──────────────┐
+                    │ center = m   │
+                    │ crossing:    │
+                    │  intervals   │
+                    │  spanning m  │
+                    └───┬──────┬───┘
+                        │      │
+                q < m   │      │   q > m
+                        ▼      ▼
+                     left    right
+                    subtree  subtree
+```
+
+## Solution
+
+<Callout type="insight" title="When to reach for it">
+  Use an interval tree when you have a **static** interval set and
+  **many point-overlap queries**. If intervals arrive online or are
+  updated frequently, prefer a segment tree / BIT on coordinate-compressed
+  endpoints, or simply sort + binary search when the workload allows.
+  For typical interview work, the right answer is usually "I would use an
+  interval tree for O(log n + k) queries here" — knowing the concept is
+  enough.
+</Callout>
+
+```text title="Pseudo-code of a query"
+query(node, q):
+  if node is None: return []
+  hits = [ivl for ivl in node.crossing if ivl contains q]
+  if q < node.center:
+    return hits + query(node.left, q)
+  else:
+    return hits + query(node.right, q)
+```
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Build | `O(n log n)` | Median selection + recursion over subsets |
+| Query | `O(log n + k)` | `log n` depth + `k` reports |
+| Space | `O(n)` | Each interval stored once across the node buckets |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| All intervals cross the same center | Every interval lives at the root — query is `O(k)` and degenerates gracefully. |
+| Very unbalanced endpoint distribution | Median splitting keeps the tree balanced in log depth regardless. |
+| Range-overlap queries (not point queries) | Extend the node bucket to also prune by max-end metadata — standard interval-tree variant. |
+| Dynamic inserts/deletes | Interval trees aren't naturally self-balancing; use an augmented BST (e.g. Red-Black) or a segment tree instead. |
+| Interview framing | Describe the idea — interviewers rarely ask for a full implementation. |
