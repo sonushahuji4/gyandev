@@ -1,0 +1,177 @@
+---
+title: "Meeting Rooms II — Minimum Rooms"
+description: "Find the minimum number of conference rooms to hold all meetings — via min-heap or sweep-line, two of the three FAANG-expected approaches."
+excerpt: "Min-heap of end times, or sweep-line with +1 / -1 events."
+course: dsa/course
+order: 5
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 8
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - heap
+  - sweep-line
+  - leetcode-253
+---
+
+## LeetCode #253 — Minimum Conference Rooms Required
+
+**Frequency:** 🔥🔥 Very High. **Companies:** Google · Amazon · Meta · Microsoft · Apple.
+
+## Problem Statement
+
+Given meeting time intervals, find the minimum number of conference rooms required to hold all meetings.
+
+```text title="Example 1"
+Input:  [[0,30],[5,10],[15,20]]
+Output: 2
+```
+
+```text title="Example 2"
+Input:  [[7,10],[2,4]]
+Output: 1
+```
+
+## Intuition — Three Solutions (Know ALL for FAANG)
+
+<Callout type="insight" title="Why know multiple approaches">
+  FAANG interviewers love follow-ups. They'll ask you to solve it one way,
+  then say "Can you do it differently?" Knowing three approaches signals
+  deep mastery.
+</Callout>
+
+## Solution
+
+### Approach A — Min-Heap (Most Intuitive)
+
+Sort by start. Maintain a min-heap of end times of active rooms. For each new meeting, if the earliest-ending room is free (its end ≤ new start), pop it — you reuse it. Always push the new meeting's end. Final heap size = rooms needed.
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="meeting_rooms_ii_heap.py"
+import heapq
+
+def minMeetingRooms(intervals: list[list[int]]) -> int:
+    if not intervals:
+        return 0
+
+    intervals.sort(key=lambda x: x[0])
+
+    # Heap stores end times of active rooms
+    heap = [intervals[0][1]]
+
+    for i in range(1, len(intervals)):
+        # If earliest-ending room is free, reuse it
+        if intervals[i][0] >= heap[0]:
+            heapq.heappop(heap)
+        # Assign a room (new or reused)
+        heapq.heappush(heap, intervals[i][1])
+
+    return len(heap)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="meeting_rooms_ii_heap.ts"
+// TypeScript needs a MinHeap. Using sorted array for clarity:
+function minMeetingRooms(intervals: number[][]): number {
+    if (intervals.length === 0) return 0;
+
+    intervals.sort((a, b) => a[0] - b[0]);
+    const endTimes: number[] = [intervals[0][1]];
+
+    for (let i = 1; i < intervals.length; i++) {
+        endTimes.sort((a, b) => a - b); // simulate min-heap
+        if (intervals[i][0] >= endTimes[0]) {
+            endTimes.shift();
+        }
+        endTimes.push(intervals[i][1]);
+    }
+
+    return endTimes.length;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+### Approach B — Sweep Line (Most Elegant)
+
+Turn each meeting into two events: `(start, +1)` and `(end, -1)`. Sort events. Sweep through maintaining a running count of active rooms; the peak is the answer.
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="meeting_rooms_ii_sweep.py"
+def minMeetingRooms(intervals: list[list[int]]) -> int:
+    events = []
+    for start, end in intervals:
+        events.append((start, 1))    # meeting starts
+        events.append((end, -1))     # meeting ends
+
+    events.sort(key=lambda x: (x[0], x[1]))
+
+    max_rooms = current = 0
+    for _, delta in events:
+        current += delta
+        max_rooms = max(max_rooms, current)
+
+    return max_rooms
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="meeting_rooms_ii_sweep.ts"
+function minMeetingRooms(intervals: number[][]): number {
+    const events: [number, number][] = [];
+    for (const [start, end] of intervals) {
+        events.push([start, 1]);
+        events.push([end, -1]);
+    }
+
+    events.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
+    let maxRooms = 0, current = 0;
+    for (const [, delta] of events) {
+        current += delta;
+        maxRooms = Math.max(maxRooms, current);
+    }
+
+    return maxRooms;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+<Callout type="insight" title="Why two approaches matter">
+  Both are `O(n log n)` time and `O(n)` space — they aren't a brute-force-to-optimal
+  hierarchy. FAANG interviewers typically ask for one, then the other, to
+  check whether you reach for priority queues or sweep-line
+  decomposition. Knowing both signals depth.
+</Callout>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Both approaches: sorting dominates |
+| Space | `O(n)` | Heap holds at most n end times / 2n events |
+
+## Edge Case Thinking
+
+<Callout type="tip" title="Edge cases">
+  - **No meetings:** Return 0.
+  - **No overlaps at all:** Only 1 room needed — heap never grows beyond 1.
+  - **All meetings at same time:** n rooms needed — heap grows to n.
+  - **Back-to-back `[1,2],[2,3]`:** Sweep line — end event (-1) at time 2 processes before start event (+1). So rooms go 1→0→1, peak = 1. Correct! One room suffices.
+</Callout>

@@ -1,0 +1,41 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Per-call overlap scan">
+  Each `book(start, end)` call scans existing bookings; the first overlap
+  rejects the booking, otherwise it gets appended. Half-open intervals
+  mean the overlap condition uses strict `<`/`>`.
+</Callout>
+
+## My Calendar I — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · book(start, end)</b>"]
+      --> L{"<b>ii · next existing [s, e]?</b>"}
+    L -->|"yes"| C{"<b>iii · overlap?</b><br/>start &lt; e and end &gt; s?"}
+    C -->|"yes"| F["<b>iv · return false</b>"]
+    C -->|"no"| L
+    L -->|"done"| A["<b>v · append (start, end)</b>"]
+      --> T["<b>vi · return true</b>"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef ok fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef bad fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    class S start
+    class L,C decision
+    class A,T ok
+    class F bad
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Entry',          description: 'New booking arrives as `(start, end)` — half-open interval.' },
+  { numeral: 'ii',  name: 'Iterate',        description: 'Walk existing bookings one at a time.' },
+  { numeral: 'iii', name: 'Overlap test',   description: '`start < e and end > s` — strict because `[start, end)` is half-open.' },
+  { numeral: 'iv',  name: 'Reject',         description: 'First overlap ends the scan; return `false` without mutating state.' },
+  { numeral: 'v',   name: 'Accept',         description: 'No overlaps found — append `(start, end)` to the bookings list.' },
+  { numeral: 'vi',  name: 'Return',         description: 'Signal success with `true`.' },
+]} />

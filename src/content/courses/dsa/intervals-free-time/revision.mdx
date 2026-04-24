@@ -1,0 +1,42 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #759 — one-liner.">
+- Given per-employee work schedules, return the intervals during which **nobody** is working.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Merge everything, then read the gaps.">
+- Flatten all employees' intervals → sort by start → merge (standard Merge Intervals).
+- The **gaps between merged intervals** are the common free time.
+- Follow-up: if each employee's list is already sorted, merge-K-sorted-lists via min-heap runs in `O(N log K)` instead of `O(N log N)`.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="Merge, then walk the merged list.">
+```python
+all = [iv for e in schedule for iv in e]
+all.sort(key=lambda x: x[0])
+merged = [all[0]]
+for iv in all[1:]:
+    if iv[0] <= merged[-1][1]:
+        merged[-1][1] = max(merged[-1][1], iv[1])
+    else: merged.append(iv)
+return [[merged[i-1][1], merged[i][0]] for i in range(1, len(merged))]
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="N = total intervals.">
+- **Time `O(N log N)`** — sort dominates; merge and gap-walk are linear.
+- **Space `O(N)`** — flattened + merged lists.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Three to remember.">
+- Single employee — the "common" semantics can be ambiguous; clarify with interviewer.
+- Everyone busy end-to-end → one merged block → zero gaps → return `[]`.
+- Pre-sorted per employee → min-heap variant is `O(N log K)`.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Flatten · Merge · Gaps** — same three steps every time.
+</Callout>

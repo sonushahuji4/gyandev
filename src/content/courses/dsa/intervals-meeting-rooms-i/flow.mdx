@@ -1,0 +1,38 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Consecutive-pair check">
+  The whole algorithm is a sort followed by one linear scan that bails on
+  the first overlap. The legend below decodes each numbered step.
+</Callout>
+
+## Meeting Rooms I — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · sort</b><br/>intervals.sort(key=x[0])"]
+      --> L{"<b>ii · next pair?</b><br/>i = 1…n-1"}
+    L -->|"yes"| C{"<b>iii · overlap?</b><br/>intervals[i][0] &lt; intervals[i-1][1]?"}
+    C -->|"yes"| F["<b>iv · return false</b>"]
+    C -->|"no"| L
+    L -->|"done"| T["<b>v · return true</b>"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef ok fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef bad fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    class S start
+    class L,C decision
+    class T ok
+    class F bad
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Sort by start', description: 'Overlapping meetings become adjacent, so we can check with a one-pass loop.' },
+  { numeral: 'ii',  name: 'Iterate pairs', description: 'Walk from index 1 to `n-1` comparing `intervals[i]` with `intervals[i-1]`.' },
+  { numeral: 'iii', name: 'Overlap check', description: '`intervals[i][0] < intervals[i-1][1]` — next meeting starts before previous ends.' },
+  { numeral: 'iv',  name: 'Return false',  description: 'First overlap detected → impossible to attend all.' },
+  { numeral: 'v',   name: 'Return true',   description: 'Loop finished with no conflicts → every meeting is attendable.' },
+]} />

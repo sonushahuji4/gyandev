@@ -1,0 +1,92 @@
+---
+title: "My Calendar I"
+description: "Design a calendar that accepts a booking only if it doesn't overlap any existing one — using the universal half-open overlap check."
+excerpt: "Overlap test per booking: start < existing_end AND end > existing_start."
+course: dsa/course
+order: 10
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - design
+  - leetcode-729
+---
+
+## LeetCode #729 — My Calendar I (No Double Booking)
+
+**Companies:** Google.
+
+## Problem Statement
+
+Implement a calendar where you can add events. A new event can be added if it doesn't cause a double booking (no overlap with existing events). Events are half-open intervals `[start, end)`.
+
+```text title="Example"
+book(10,20) → true
+book(15,25) → false
+book(20,30) → true
+```
+
+## Intuition
+
+For each new booking, check against all existing ones using the overlap formula: `start < existing_end AND end > existing_start`. If any overlap → reject. Otherwise → add.
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="my_calendar_i.py"
+class MyCalendar:
+    def __init__(self):
+        self.bookings = []
+
+    def book(self, start: int, end: int) -> bool:
+        for s, e in self.bookings:
+            if start < e and end > s:  # overlap check
+                return False
+        self.bookings.append((start, end))
+        return True
+
+# book() → O(n) per call.  Optimized: SortedList → O(log n)
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="my_calendar_i.ts"
+class MyCalendar {
+    private bookings: [number, number][] = [];
+
+    book(start: number, end: number): boolean {
+        for (const [s, e] of this.bookings) {
+            if (start < e && end > s) return false;
+        }
+        this.bookings.push([start, end]);
+        return true;
+    }
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time (per call) | `O(n)` | Scans all existing bookings |
+| Space | `O(n)` | Stores all bookings |
+
+## Edge Case Thinking
+
+<Callout type="tip" title="Edge cases">
+  - **Adjacent events `[10,20)` and `[20,30)`:** No overlap! `20 < 20` is false. Half-open intervals prevent false conflicts on boundaries.
+  - **Optimization path:** Using a balanced BST (e.g. SortedList in Python), you can binary search for the insertion point → `O(log n)` per call.
+</Callout>

@@ -172,6 +172,21 @@ const chapters = defineCollection({
     published: z.date().optional(),
     updated: z.date(),
     tags: z.array(z.string()).default([]),
+    /**
+     * Optional human-readable name for the chapter's season. When set on any
+     * chapter in a season, the course-overview replaces the default
+     * `Season {n}` heading with this string. Authored on chapters (not on
+     * the course) so each chapter file is self-describing. Introduced for
+     * the DSA course so the Intervals season surfaces as `Intervals`.
+     */
+    seasonTitle: z.string().optional(),
+    /**
+     * Optional row-label hint consumed by the course-overview
+     * `<ChapterRow>`. `'theory'` renders a `THEORY` kicker; `'pattern'`
+     * renders `PATTERN N` where N counts only pattern chapters within the
+     * season. Absent = classic zero-padded order numeral.
+     */
+    kind: z.enum(['theory', 'pattern']).optional(),
   }),
 });
 

@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intervals & Variations — Part 2: Advanced Patterns & Reference</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050508;--bg2:#0c0c14;--bg3:#111119;--bg4:#16161f;
+  --bdr:#1c1c2a;--bdr2:#26263a;
+  --tx:#c8c8de;--txd:#6a6a88;--txb:#efefff;
+  --ac:#7c6aef;--ac2:#9d8dfa;
+  --cy:#2dd4bf;--pk:#f472b6;--gn:#4ade80;--og:#fb923c;--rd:#f87171;--yw:#fbbf24;--bl:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.78;font-size:15.5px;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(124,106,239,.3);color:#fff}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:4px}
+a{color:var(--ac2);text-decoration:none}a:hover{color:var(--cy)}
+.wrap{max-width:1060px;margin:0 auto;padding:0 1.8rem}
+
+.hero{min-height:50vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:3rem 1.5rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 35% 35%,rgba(124,106,239,.06) 0%,transparent 55%),radial-gradient(ellipse at 65% 65%,rgba(45,212,191,.04) 0%,transparent 55%);pointer-events:none}
+.hero-chip{display:inline-flex;gap:.45rem;padding:.35rem 1rem;background:rgba(124,106,239,.08);border:1px solid rgba(124,106,239,.18);border-radius:99px;font-size:.72rem;font-weight:700;color:var(--ac2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2rem;position:relative}
+.hero h1{font-family:'Fraunces',serif;font-size:clamp(2.2rem,5vw,3.8rem);font-weight:900;color:var(--txb);line-height:1.12;margin-bottom:1rem;position:relative}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--ac),var(--cy),var(--pk));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.05rem;color:var(--txd);max-width:620px;position:relative}
+
+.topnav{position:sticky;top:0;z-index:100;background:rgba(5,5,8,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--bdr);padding:.6rem 0}
+.topnav-inner{display:flex;gap:.2rem;overflow-x:auto;scrollbar-width:none;padding:0 1rem;max-width:1200px;margin:0 auto}
+.topnav-inner::-webkit-scrollbar{display:none}
+.topnav-inner a{flex-shrink:0;padding:.32rem .72rem;font-size:.68rem;font-weight:600;color:var(--txd);border-radius:5px;white-space:nowrap;transition:all .2s}
+.topnav-inner a:hover{background:rgba(124,106,239,.1);color:var(--ac2)}
+
+.sec{padding:4.5rem 0;border-bottom:1px solid var(--bdr)}.sec:last-child{border-bottom:none}
+.sec-chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ac2);margin-bottom:.8rem;padding:.28rem .8rem;background:rgba(124,106,239,.07);border:1px solid rgba(124,106,239,.14);border-radius:5px}
+.sec-title{font-family:'Fraunces',serif;font-size:clamp(1.7rem,3.2vw,2.3rem);font-weight:800;color:var(--txb);margin-bottom:.6rem;line-height:1.2}
+.sec-desc{color:var(--txd);font-size:1rem;max-width:680px;margin-bottom:2.5rem}
+
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:14px;margin-bottom:2.2rem;overflow:hidden;transition:border-color .3s}.card:hover{border-color:var(--bdr2)}
+.card-head{padding:1.8rem 2.2rem 1.3rem;border-bottom:1px solid var(--bdr)}
+.card-num{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ac2);margin-bottom:.4rem}
+.card-title{font-size:1.35rem;font-weight:800;color:var(--txb);margin-bottom:.3rem}
+.card-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.tag{font-size:.64rem;font-weight:600;padding:.18rem .55rem;border-radius:4px;background:rgba(124,106,239,.1);color:var(--ac2);border:1px solid rgba(124,106,239,.18)}
+.tag-fire{background:rgba(251,146,60,.1);color:var(--og);border-color:rgba(251,146,60,.18)}
+.tag-new{background:rgba(244,114,182,.1);color:var(--pk);border-color:rgba(244,114,182,.18)}
+.card-body{padding:2rem 2.2rem}
+
+.sub{font-size:.95rem;font-weight:700;color:var(--cy);margin:1.6rem 0 .7rem;display:flex;align-items:center;gap:.45rem}.sub:first-child{margin-top:0}
+.box-insight{background:rgba(124,106,239,.05);border-left:3px solid var(--ac);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+.box-trick{background:rgba(45,212,191,.05);border-left:3px solid var(--cy);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+.box-warn{background:rgba(248,113,113,.05);border-left:3px solid var(--rd);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+.box-tip{background:rgba(74,222,128,.05);border-left:3px solid var(--gn);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+
+pre{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:1.4rem;overflow-x:auto;margin:1rem 0}
+pre code{font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.7;color:#c9d1d9}
+code{font-family:'JetBrains Mono',monospace;font-size:.84em}
+.il{background:rgba(124,106,239,.1);color:var(--ac2);padding:.14rem .4rem;border-radius:4px;font-size:.8em}
+.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.cm{color:#6e7681;font-style:italic}.vr{color:#ffa657}.cl{color:#f0c674}
+
+.tabs{display:flex;gap:0;margin:1rem 0 0;border-bottom:1px solid var(--bdr)}
+.tab-btn{padding:.5rem 1.2rem;font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--txd);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;position:relative;bottom:-1px}
+.tab-btn:hover{color:var(--txb)}.tab-btn.active{color:var(--ac2);border-bottom-color:var(--ac)}
+.tab-content{display:none}.tab-content.active{display:block}
+
+.vis{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:1.4rem;margin:1rem 0;font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.65;color:var(--txd);overflow-x:auto;white-space:pre}
+.vis .h1{color:var(--cy);font-weight:700}.vis .h2{color:var(--pk);font-weight:700}.vis .h3{color:var(--gn);font-weight:700}.vis .h4{color:var(--og);font-weight:700}.vis b{color:var(--txb);font-weight:700}
+
+.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bdr);border-radius:10px;overflow:hidden;margin:1rem 0}
+.io-cell{background:var(--bg2);padding:1rem 1.3rem;font-size:.88rem}.io-cell.full{grid-column:1/-1}
+.io-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txd);margin-bottom:.4rem}
+.io-val{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--txb)}
+
+.cx-grid{display:grid;grid-template-columns:auto 1fr 2fr;gap:1px;background:var(--bdr);border-radius:10px;overflow:hidden;margin:1rem 0}
+.cx{background:var(--bg2);padding:.7rem 1rem;font-size:.85rem}.cx.hd{background:var(--bg3);font-weight:700;color:var(--txb);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.cx code{color:var(--cy);font-size:.82rem}
+
+.cmp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.1rem;margin:1.5rem 0}
+.cmp{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:1.3rem}
+.cmp h4{font-size:.92rem;font-weight:700;margin-bottom:.4rem}
+.cmp p{color:var(--txd);font-size:.86rem}
+
+.flow-item{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.2rem}
+.flow-dot{width:10px;height:10px;border-radius:50%;background:var(--ac);flex-shrink:0;margin-top:.4rem}
+.flow-q{font-weight:700;color:var(--txb);font-size:.9rem}
+.flow-a{color:var(--txd);font-size:.85rem;margin-top:.15rem}
+.flow-a strong{color:var(--cy)}
+
+.master-table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.8rem}
+.master-table th{background:var(--bg3);padding:.7rem .8rem;text-align:left;font-weight:700;color:var(--txb);font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--bdr2);white-space:nowrap}
+.master-table td{padding:.6rem .8rem;border-bottom:1px solid var(--bdr);vertical-align:top}
+.master-table tr:hover td{background:rgba(124,106,239,.03)}
+.master-table td:first-child{font-weight:600;color:var(--txb);white-space:nowrap}
+.master-table code{color:var(--cy)}
+
+@media(max-width:768px){.wrap{padding:0 1rem}.card-head,.card-body{padding:1.3rem}.io-grid,.cx-grid{grid-template-columns:1fr}pre{padding:1rem}.master-table{display:block;overflow-x:auto}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-chip">FAANG Interview Mastery — Part 2 of 2</div>
+  <h1>Advanced Patterns &<br><em>Master Reference</em></h1>
+  <p class="hero-sub">Sweep Line, Skyline, Difference Arrays, Interval Trees + the complete decision framework and cheatsheet.</p>
+</header>
+
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="#p12">P12 Sweep</a>
+    <a href="#p13">P13 Balloons</a>
+    <a href="#p14">P14 Cal III</a>
+    <a href="#p15">P15 CarPool</a>
+    <a href="#p16">P16 Range</a>
+    <a href="#p17">P17 Meet III</a>
+    <a href="#p18">P18 DiffArr</a>
+    <a href="#p19">P19 Skyline</a>
+    <a href="#p20">P20 RectArea</a>
+    <a href="#p21">P21 IntTree</a>
+    <a href="#p22">P22 Task</a>
+    <a href="#decision">Decision</a>
+    <a href="#master">Master Table</a>
+    <a href="#cheatsheet">Cheatsheet</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══════ P12: SWEEP LINE ═══════ -->
+<section class="sec" id="p12">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 12 — Added</div>
+  <h2 class="sec-title">Sweep Line Algorithm</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">Meta-Pattern / Template</div>
+      <div class="card-title">Sweep Line (Line Sweep)</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag tag-fire">🔥🔥 Critical</span><span class="tag">Google</span><span class="tag">Meta</span><span class="tag">Amazon</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 What Is It?</div>
+      <p>Instead of processing intervals as whole units, decompose each into two <strong>events</strong>: start (+1) and end (-1). Sort all events, then sweep through, maintaining a running count of active intervals.</p>
+
+      <div class="sub">🎨 Visual</div>
+      <div class="vis">Intervals: [1,4], [2,5], [7,9]
+
+Events: (1,+1)  (2,+1)  (4,-1)  (5,-1)  (7,+1)  (9,-1)
+
+Sweep:
+Time:    1    2    3    4    5    6    7    8    9
+         +1   +1        -1   -1        +1        -1
+Active:  1    <span class="h1">2</span>    2    1    0    0    1    1    0
+              <span class="h1">↑ peak = 2 (this is your answer for "max overlap")</span></div>
+
+      <div class="sub">🖥️ Template</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p12-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p12-ts')">TypeScript</button>
+      </div>
+      <div id="p12-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">sweepLine</span>(intervals):
+    events = []
+    <span class="kw">for</span> start, end <span class="kw">in</span> intervals:
+        events.append((start, <span class="nm">1</span>))
+        events.append((end, -<span class="nm">1</span>))
+
+    <span class="cm"># Sort: by time; if tie, ends (-1) before starts (+1)</span>
+    events.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: (x[<span class="nm">0</span>], x[<span class="nm">1</span>]))
+
+    active = max_active = <span class="nm">0</span>
+    <span class="kw">for</span> _, delta <span class="kw">in</span> events:
+        active += delta
+        max_active = <span class="fn">max</span>(max_active, active)
+
+    <span class="kw">return</span> max_active</code></pre>
+      </div>
+      <div id="p12-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">sweepLine</span>(intervals: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    <span class="kw">const</span> events: [<span class="cl">number</span>, <span class="cl">number</span>][] = [];
+    <span class="kw">for</span> (<span class="kw">const</span> [start, end] <span class="kw">of</span> intervals) {
+        events.push([start, <span class="nm">1</span>]);
+        events.push([end, -<span class="nm">1</span>]);
+    }
+
+    events.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>] || a[<span class="nm">1</span>] - b[<span class="nm">1</span>]);
+
+    <span class="kw">let</span> active = <span class="nm">0</span>, maxActive = <span class="nm">0</span>;
+    <span class="kw">for</span> (<span class="kw">const</span> [, delta] <span class="kw">of</span> events) {
+        active += delta;
+        maxActive = Math.max(maxActive, active);
+    }
+
+    <span class="kw">return</span> maxActive;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">Used By</div>
+        <div class="cx"><code>O(n log n)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Meeting Rooms II, Calendar III, Car Pooling, Skyline</div>
+      </div>
+
+      <div class="box-warn">
+        <strong>Tie-breaking matters!</strong> When events share the same time: for closed intervals [a,b], process ends (-1) before starts (+1) so touching intervals don't double-count. For half-open [a,b), process starts before ends.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P13: BALLOONS ═══════ -->
+<section class="sec" id="p13">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 13 — Added</div>
+  <h2 class="sec-title">Min Arrows to Burst Balloons</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #452</div>
+      <div class="card-title">Minimum Number of Arrows to Burst Balloons</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Amazon</span><span class="tag">Meta</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>Balloons are intervals [x_start, x_end]. An arrow at x bursts all balloons where x_start ≤ x ≤ x_end. Find minimum arrows needed.</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[10,16],[2,8],[1,6],[7,12]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">2</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Sort by end. Shoot at the end of the first balloon. Any balloon that starts after your arrow position needs a new arrow. This is the Activity Selection problem — min arrows = number of non-overlapping groups.</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p13-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p13-ts')">TypeScript</button>
+      </div>
+      <div id="p13-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">findMinArrowShots</span>(points):
+    <span class="kw">if not</span> points: <span class="kw">return</span> <span class="nm">0</span>
+    points.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: x[<span class="nm">1</span>])
+    arrows, pos = <span class="nm">1</span>, points[<span class="nm">0</span>][<span class="nm">1</span>]
+    <span class="kw">for</span> start, end <span class="kw">in</span> points[<span class="nm">1</span>:]:
+        <span class="kw">if</span> start > pos:
+            arrows += <span class="nm">1</span>
+            pos = end
+    <span class="kw">return</span> arrows</code></pre>
+      </div>
+      <div id="p13-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">findMinArrowShots</span>(points: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    <span class="kw">if</span> (points.length === <span class="nm">0</span>) <span class="kw">return</span> <span class="nm">0</span>;
+    points.sort((a, b) => a[<span class="nm">1</span>] - b[<span class="nm">1</span>]);
+    <span class="kw">let</span> arrows = <span class="nm">1</span>, pos = points[<span class="nm">0</span>][<span class="nm">1</span>];
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; points.length; i++) {
+        <span class="kw">if</span> (points[i][<span class="nm">0</span>] > pos) {
+            arrows++;
+            pos = points[i][<span class="nm">1</span>];
+        }
+    }
+    <span class="kw">return</span> arrows;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">Key Insight</div>
+        <div class="cx"><code>O(n log n)</code></div><div class="cx"><code>O(1)</code></div><div class="cx">Identical to Non-Overlapping Intervals but counts groups instead of removals</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P14: CALENDAR III ═══════ -->
+<section class="sec" id="p14">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 14 — Added</div>
+  <h2 class="sec-title">My Calendar III</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #732</div>
+      <div class="card-title">My Calendar III — Max K-Booking</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>Each call to book(start, end) adds an event. Return the maximum number of concurrent events (the K in "K-booking").</p>
+
+      <div class="sub">🖥️ Solution — Online Sweep Line</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p14-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p14-ts')">TypeScript</button>
+      </div>
+      <div id="p14-py" class="tab-content active">
+<pre><code><span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+
+<span class="kw">class</span> <span class="cl">MyCalendarThree</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.timeline = defaultdict(<span class="cl">int</span>)
+
+    <span class="kw">def</span> <span class="fn">book</span>(self, start, end):
+        self.timeline[start] += <span class="nm">1</span>
+        self.timeline[end] -= <span class="nm">1</span>
+        active = max_k = <span class="nm">0</span>
+        <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">sorted</span>(self.timeline):
+            active += self.timeline[t]
+            max_k = <span class="fn">max</span>(max_k, active)
+        <span class="kw">return</span> max_k</code></pre>
+      </div>
+      <div id="p14-ts" class="tab-content">
+<pre><code><span class="kw">class</span> <span class="cl">MyCalendarThree</span> {
+    <span class="kw">private</span> timeline = <span class="kw">new</span> Map&lt;<span class="cl">number</span>, <span class="cl">number</span>&gt;();
+
+    book(start: <span class="cl">number</span>, end: <span class="cl">number</span>): <span class="cl">number</span> {
+        <span class="kw">this</span>.timeline.set(start, (<span class="kw">this</span>.timeline.get(start) ?? <span class="nm">0</span>) + <span class="nm">1</span>);
+        <span class="kw">this</span>.timeline.set(end, (<span class="kw">this</span>.timeline.get(end) ?? <span class="nm">0</span>) - <span class="nm">1</span>);
+
+        <span class="kw">let</span> active = <span class="nm">0</span>, maxK = <span class="nm">0</span>;
+        <span class="kw">for</span> (<span class="kw">const</span> key <span class="kw">of</span> [...<span class="kw">this</span>.timeline.keys()].sort((a,b) => a-b)) {
+            active += <span class="kw">this</span>.timeline.get(key)!;
+            maxK = Math.max(maxK, active);
+        }
+        <span class="kw">return</span> maxK;
+    }
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Per call</div><div class="cx hd">Space</div><div class="cx hd">Note</div>
+        <div class="cx"><code>O(n log n)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Optimize with Segment Tree → O(log C) per call</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P15: CAR POOLING ═══════ -->
+<section class="sec" id="p15">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 15 — Added</div>
+  <h2 class="sec-title">Car Pooling</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #1094</div>
+      <div class="card-title">Car Pooling</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Amazon</span><span class="tag">Google</span><span class="tag">Lyft</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>Given trips [numPassengers, from, to] and a car with capacity, can all passengers be picked up and dropped off without exceeding capacity?</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">trips = [[2,1,5],[3,3,7]], capacity = 4</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">false</div></div>
+      </div>
+
+      <div class="sub">🖥️ Solution — Two Approaches</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p15a-py')">Python (Sweep)</button>
+        <button class="tab-btn" onclick="switchTab(event,'p15b-py')">Python (Diff Array)</button>
+        <button class="tab-btn" onclick="switchTab(event,'p15-ts')">TypeScript</button>
+      </div>
+      <div id="p15a-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">carPooling</span>(trips, capacity):
+    events = []
+    <span class="kw">for</span> p, s, e <span class="kw">in</span> trips:
+        events.append((s, p))
+        events.append((e, -p))
+    events.sort()
+    cur = <span class="nm">0</span>
+    <span class="kw">for</span> _, delta <span class="kw">in</span> events:
+        cur += delta
+        <span class="kw">if</span> cur > capacity: <span class="kw">return False</span>
+    <span class="kw">return True</span></code></pre>
+      </div>
+      <div id="p15b-py" class="tab-content">
+<pre><code><span class="kw">def</span> <span class="fn">carPooling</span>(trips, capacity):
+    diff = [<span class="nm">0</span>] * <span class="nm">1001</span>  <span class="cm"># locations 0..1000</span>
+    <span class="kw">for</span> p, s, e <span class="kw">in</span> trips:
+        diff[s] += p
+        diff[e] -= p
+    cur = <span class="nm">0</span>
+    <span class="kw">for</span> d <span class="kw">in</span> diff:
+        cur += d
+        <span class="kw">if</span> cur > capacity: <span class="kw">return False</span>
+    <span class="kw">return True</span></code></pre>
+      </div>
+      <div id="p15-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">carPooling</span>(trips: <span class="cl">number</span>[][], capacity: <span class="cl">number</span>): <span class="cl">boolean</span> {
+    <span class="kw">const</span> diff = <span class="kw">new</span> Array(<span class="nm">1001</span>).fill(<span class="nm">0</span>);
+    <span class="kw">for</span> (<span class="kw">const</span> [p, s, e] <span class="kw">of</span> trips) {
+        diff[s] += p;
+        diff[e] -= p;
+    }
+    <span class="kw">let</span> cur = <span class="nm">0</span>;
+    <span class="kw">for</span> (<span class="kw">const</span> d <span class="kw">of</span> diff) {
+        cur += d;
+        <span class="kw">if</span> (cur > capacity) <span class="kw">return false</span>;
+    }
+    <span class="kw">return true</span>;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Approach</div><div class="cx hd">Time</div><div class="cx hd">When to Use</div>
+        <div class="cx">Sweep Line</div><div class="cx"><code>O(n log n)</code></div><div class="cx">General — sparse or large coordinates</div>
+        <div class="cx">Diff Array</div><div class="cx"><code>O(n + max)</code></div><div class="cx">When coordinates are bounded small integers</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P16: RANGE MODULE ═══════ -->
+<section class="sec" id="p16">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 16 — Added</div>
+  <h2 class="sec-title">Range Module</h2>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #715</div>
+      <div class="card-title">Range Module — Dynamic Add/Remove/Query</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Google</span><span class="tag">Amazon</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>Implement addRange(left, right), queryRange(left, right), removeRange(left, right) on a dynamic set of intervals.</p>
+      <div class="sub">💡 Intuition</div>
+      <p>Maintain a sorted list of non-overlapping intervals. For each operation, use binary search to find affected intervals, then merge/split/remove as needed. Combines Insert Interval + Remove Interval patterns.</p>
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p16-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p16-ts')">TypeScript</button>
+      </div>
+      <div id="p16-py" class="tab-content active">
+<pre><code><span class="kw">class</span> <span class="cl">RangeModule</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.ranges = []
+
+    <span class="kw">def</span> <span class="fn">addRange</span>(self, left, right):
+        new_ranges, placed = [], <span class="kw">False</span>
+        <span class="kw">for</span> s, e <span class="kw">in</span> self.ranges:
+            <span class="kw">if</span> e &lt; left:
+                new_ranges.append([s, e])
+            <span class="kw">elif</span> s > right:
+                <span class="kw">if not</span> placed:
+                    new_ranges.append([left, right])
+                    placed = <span class="kw">True</span>
+                new_ranges.append([s, e])
+            <span class="kw">else</span>:
+                left = <span class="fn">min</span>(left, s)
+                right = <span class="fn">max</span>(right, e)
+        <span class="kw">if not</span> placed:
+            new_ranges.append([left, right])
+        self.ranges = new_ranges
+
+    <span class="kw">def</span> <span class="fn">queryRange</span>(self, left, right):
+        <span class="kw">for</span> s, e <span class="kw">in</span> self.ranges:
+            <span class="kw">if</span> s &lt;= left <span class="kw">and</span> e >= right:
+                <span class="kw">return True</span>
+        <span class="kw">return False</span>
+
+    <span class="kw">def</span> <span class="fn">removeRange</span>(self, left, right):
+        new_ranges = []
+        <span class="kw">for</span> s, e <span class="kw">in</span> self.ranges:
+            <span class="kw">if</span> e &lt;= left <span class="kw">or</span> s >= right:
+                new_ranges.append([s, e])
+            <span class="kw">else</span>:
+                <span class="kw">if</span> s &lt; left: new_ranges.append([s, left])
+                <span class="kw">if</span> e > right: new_ranges.append([right, e])
+        self.ranges = new_ranges</code></pre>
+      </div>
+      <div id="p16-ts" class="tab-content">
+<pre><code><span class="kw">class</span> <span class="cl">RangeModule</span> {
+    <span class="kw">private</span> ranges: <span class="cl">number</span>[][] = [];
+
+    addRange(left: <span class="cl">number</span>, right: <span class="cl">number</span>): <span class="cl">void</span> {
+        <span class="kw">const</span> nr: <span class="cl">number</span>[][] = [];
+        <span class="kw">let</span> placed = <span class="kw">false</span>;
+        <span class="kw">for</span> (<span class="kw">const</span> [s, e] <span class="kw">of</span> <span class="kw">this</span>.ranges) {
+            <span class="kw">if</span> (e &lt; left) { nr.push([s, e]); }
+            <span class="kw">else if</span> (s > right) {
+                <span class="kw">if</span> (!placed) { nr.push([left, right]); placed = <span class="kw">true</span>; }
+                nr.push([s, e]);
+            } <span class="kw">else</span> {
+                left = Math.min(left, s);
+                right = Math.max(right, e);
+            }
+        }
+        <span class="kw">if</span> (!placed) nr.push([left, right]);
+        <span class="kw">this</span>.ranges = nr;
+    }
+
+    queryRange(left: <span class="cl">number</span>, right: <span class="cl">number</span>): <span class="cl">boolean</span> {
+        <span class="kw">return</span> <span class="kw">this</span>.ranges.some(([s, e]) => s &lt;= left && e >= right);
+    }
+
+    removeRange(left: <span class="cl">number</span>, right: <span class="cl">number</span>): <span class="cl">void</span> {
+        <span class="kw">const</span> nr: <span class="cl">number</span>[][] = [];
+        <span class="kw">for</span> (<span class="kw">const</span> [s, e] <span class="kw">of</span> <span class="kw">this</span>.ranges) {
+            <span class="kw">if</span> (e &lt;= left || s >= right) { nr.push([s, e]); }
+            <span class="kw">else</span> {
+                <span class="kw">if</span> (s &lt; left) nr.push([s, left]);
+                <span class="kw">if</span> (e > right) nr.push([right, e]);
+            }
+        }
+        <span class="kw">this</span>.ranges = nr;
+    }
+}</code></pre>
+      </div>
+      <div class="cx-grid">
+        <div class="cx hd">Operation</div><div class="cx hd">Time</div><div class="cx hd">Reason</div>
+        <div class="cx">add/remove</div><div class="cx"><code>O(n)</code></div><div class="cx">Scans and rebuilds array (O(log n) with SortedList)</div>
+        <div class="cx">query</div><div class="cx"><code>O(n)</code></div><div class="cx">Linear scan (O(log n) with binary search)</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P17: MEETING ROOMS III ═══════ -->
+<section class="sec" id="p17">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 17 — Added</div>
+  <h2 class="sec-title">Meeting Rooms III</h2>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #2402</div>
+      <div class="card-title">Meeting Rooms III — Most Used Room</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag tag-fire">🔥🔥 Trending</span><span class="tag">Google</span><span class="tag">Amazon</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>n rooms numbered 0 to n-1. Each meeting gets the lowest-numbered free room. If none free, wait for the earliest to free up. Return the room that held the most meetings.</p>
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">n = 2, meetings = [[0,10],[1,5],[2,7],[3,4]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">0</div></div>
+      </div>
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p17-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p17-ts')">TypeScript</button>
+      </div>
+      <div id="p17-py" class="tab-content active">
+<pre><code><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">mostBooked</span>(n, meetings):
+    meetings.sort()
+    count = [<span class="nm">0</span>] * n
+    avail = <span class="fn">list</span>(<span class="fn">range</span>(n))       <span class="cm"># min-heap of available rooms</span>
+    busy = []                      <span class="cm"># min-heap of (end_time, room)</span>
+
+    <span class="kw">for</span> start, end <span class="kw">in</span> meetings:
+        <span class="cm"># Free up finished rooms</span>
+        <span class="kw">while</span> busy <span class="kw">and</span> busy[<span class="nm">0</span>][<span class="nm">0</span>] &lt;= start:
+            _, room = heapq.heappop(busy)
+            heapq.heappush(avail, room)
+
+        <span class="kw">if</span> avail:
+            room = heapq.heappop(avail)
+            heapq.heappush(busy, (end, room))
+        <span class="kw">else</span>:
+            free_time, room = heapq.heappop(busy)
+            heapq.heappush(busy, (free_time + end - start, room))
+
+        count[room] += <span class="nm">1</span>
+
+    <span class="kw">return</span> count.index(<span class="fn">max</span>(count))</code></pre>
+      </div>
+      <div id="p17-ts" class="tab-content">
+<pre><code><span class="cm">// Simplified — in production use a proper MinHeap class</span>
+<span class="kw">function</span> <span class="fn">mostBooked</span>(n: <span class="cl">number</span>, meetings: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    meetings.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>]);
+    <span class="kw">const</span> count = <span class="kw">new</span> Array(n).fill(<span class="nm">0</span>);
+    <span class="kw">const</span> endTimes = <span class="kw">new</span> Array(n).fill(<span class="nm">0</span>); <span class="cm">// when each room frees up</span>
+
+    <span class="kw">for</span> (<span class="kw">const</span> [start, end] <span class="kw">of</span> meetings) {
+        <span class="kw">let</span> bestRoom = -<span class="nm">1</span>, earliest = Infinity;
+        <span class="kw">for</span> (<span class="kw">let</span> r = <span class="nm">0</span>; r &lt; n; r++) {
+            <span class="kw">if</span> (endTimes[r] &lt;= start) { bestRoom = r; <span class="kw">break</span>; }
+            <span class="kw">if</span> (endTimes[r] &lt; earliest) { earliest = endTimes[r]; bestRoom = r; }
+        }
+        <span class="kw">const</span> wait = Math.max(<span class="nm">0</span>, endTimes[bestRoom] - start);
+        endTimes[bestRoom] = start + wait + (end - start);
+        count[bestRoom]++;
+    }
+
+    <span class="kw">return</span> count.indexOf(Math.max(...count));
+}</code></pre>
+      </div>
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">Key Insight</div>
+        <div class="cx"><code>O(m log n)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Two heaps: available rooms + busy rooms with end times</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P18: DIFFERENCE ARRAY ═══════ -->
+<section class="sec" id="p18">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 18 — Added</div>
+  <h2 class="sec-title">Difference Array</h2>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #1109</div>
+      <div class="card-title">Corporate Flight Bookings / Difference Array</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Amazon</span><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Concept</div>
+      <p>Instead of updating every element in range [l, r] with value v (O(n) each), do <code class="il">diff[l] += v</code> and <code class="il">diff[r+1] -= v</code> (O(1) each). Prefix sum reconstructs actual values.</p>
+
+      <div class="vis"><b>Bookings: [[1,2,10], [2,3,20], [2,5,25]]    n = 5</b>
+
+diff = [0, 0, 0, 0, 0, 0]
+After [1,2,10]:  [<span class="h3">10</span>, 0, <span class="h2">-10</span>, 0, 0, 0]
+After [2,3,20]:  [10, <span class="h3">20</span>, -10, <span class="h2">-20</span>, 0, 0]
+After [2,5,25]:  [10, <span class="h3">45</span>, -10, -20, 0, <span class="h2">-25</span>]
+
+Prefix sum:      [<span class="h1">10</span>, <span class="h1">55</span>, <span class="h1">45</span>, <span class="h1">25</span>, <span class="h1">25</span>]</div>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p18-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p18-ts')">TypeScript</button>
+      </div>
+      <div id="p18-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">corpFlightBookings</span>(bookings, n):
+    diff = [<span class="nm">0</span>] * (n + <span class="nm">1</span>)
+    <span class="kw">for</span> first, last, seats <span class="kw">in</span> bookings:
+        diff[first - <span class="nm">1</span>] += seats
+        diff[last] -= seats
+    result, running = [], <span class="nm">0</span>
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(n):
+        running += diff[i]
+        result.append(running)
+    <span class="kw">return</span> result</code></pre>
+      </div>
+      <div id="p18-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">corpFlightBookings</span>(bookings: <span class="cl">number</span>[][], n: <span class="cl">number</span>): <span class="cl">number</span>[] {
+    <span class="kw">const</span> diff = <span class="kw">new</span> Array(n + <span class="nm">1</span>).fill(<span class="nm">0</span>);
+    <span class="kw">for</span> (<span class="kw">const</span> [first, last, seats] <span class="kw">of</span> bookings) {
+        diff[first - <span class="nm">1</span>] += seats;
+        diff[last] -= seats;
+    }
+    <span class="kw">const</span> result: <span class="cl">number</span>[] = [];
+    <span class="kw">let</span> running = <span class="nm">0</span>;
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">0</span>; i &lt; n; i++) {
+        running += diff[i];
+        result.push(running);
+    }
+    <span class="kw">return</span> result;
+}</code></pre>
+      </div>
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">vs Sweep Line</div>
+        <div class="cx"><code>O(n + m)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Better when coords are bounded integers; sweep line is more general</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P19: SKYLINE ═══════ -->
+<section class="sec" id="p19">
+<div class="wrap">
+  <div class="sec-chip">⚡ Pattern 19 — Added</div>
+  <h2 class="sec-title">The Skyline Problem</h2>
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #218</div>
+      <div class="card-title">The Skyline Problem</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag tag-fire">🔥🔥 Classic</span><span class="tag">Google</span><span class="tag">Microsoft</span><span class="tag">Meta</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>Given buildings [left, right, height], output the skyline silhouette as a list of key points [x, height].</p>
+      <div class="sub">💡 Intuition — Sweep Line + Max-Heap</div>
+      <p>Create start/end events for each building. Sweep left to right. Maintain a max-heap of active building heights. When the max height changes → that's a key point in the skyline.</p>
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p19-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p19-ts')">TypeScript</button>
+      </div>
+      <div id="p19-py" class="tab-content active">
+<pre><code><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">getSkyline</span>(buildings):
+    events = []
+    <span class="kw">for</span> l, r, h <span class="kw">in</span> buildings:
+        events.append((l, -h, r))   <span class="cm"># start: neg height for max-heap</span>
+        events.append((r, <span class="nm">0</span>, <span class="nm">0</span>))    <span class="cm"># end marker</span>
+    events.sort()
+
+    result = [[<span class="nm">0</span>, <span class="nm">0</span>]]
+    active = [(<span class="nm">0</span>, <span class="fn">float</span>(<span class="st">'inf'</span>))]  <span class="cm"># (neg_height, right_edge)</span>
+
+    <span class="kw">for</span> x, neg_h, r <span class="kw">in</span> events:
+        <span class="kw">if</span> neg_h:
+            heapq.heappush(active, (neg_h, r))
+        <span class="kw">while</span> active[<span class="nm">0</span>][<span class="nm">1</span>] &lt;= x:
+            heapq.heappop(active)
+        max_h = -active[<span class="nm">0</span>][<span class="nm">0</span>]
+        <span class="kw">if</span> max_h != result[-<span class="nm">1</span>][<span class="nm">1</span>]:
+            result.append([x, max_h])
+
+    <span class="kw">return</span> result[<span class="nm">1</span>:]</code></pre>
+      </div>
+      <div id="p19-ts" class="tab-content">
+<pre><code><span class="cm">// Requires a MaxHeap. Conceptual approach shown:</span>
+<span class="kw">function</span> <span class="fn">getSkyline</span>(buildings: <span class="cl">number</span>[][]): <span class="cl">number</span>[][] {
+    <span class="kw">const</span> events: [<span class="cl">number</span>, <span class="cl">number</span>, <span class="cl">number</span>][] = [];
+    <span class="kw">for</span> (<span class="kw">const</span> [l, r, h] <span class="kw">of</span> buildings) {
+        events.push([l, -h, r]);
+        events.push([r, <span class="nm">0</span>, <span class="nm">0</span>]);
+    }
+    events.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>] || a[<span class="nm">1</span>] - b[<span class="nm">1</span>]);
+
+    <span class="cm">// Use sorted array to simulate max-heap (simplified)</span>
+    <span class="kw">const</span> heights: <span class="cl">number</span>[] = [<span class="nm">0</span>];
+    <span class="kw">const</span> result: <span class="cl">number</span>[][] = [];
+    <span class="kw">let</span> prevMax = <span class="nm">0</span>;
+
+    <span class="kw">for</span> (<span class="kw">const</span> [x, negH, r] <span class="kw">of</span> events) {
+        <span class="kw">if</span> (negH &lt; <span class="nm">0</span>) heights.push(-negH);
+        <span class="kw">else</span> { <span class="kw">const</span> idx = heights.indexOf(r); <span class="kw">if</span>(idx>-<span class="nm">1</span>) heights.splice(idx,<span class="nm">1</span>); }
+        <span class="kw">const</span> curMax = Math.max(...heights);
+        <span class="kw">if</span> (curMax !== prevMax) {
+            result.push([x, curMax]);
+            prevMax = curMax;
+        }
+    }
+    <span class="kw">return</span> result;
+}</code></pre>
+      </div>
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">Key Insight</div>
+        <div class="cx"><code>O(n log n)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Sweep line + lazy deletion from max-heap</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════ P20-P22: Compact patterns ═══════ -->
+<section class="sec" id="p20">
+<div class="wrap">
+  <div class="sec-chip">⚡ Patterns 20–22 — Added</div>
+  <h2 class="sec-title">Rectangle Area II, Interval Tree, Task Scheduler</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #850</div>
+      <div class="card-title">P20: Rectangle Area II — Coordinate Compression + Sweep</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">💡 Core Idea</div>
+      <p>Compress y-coordinates, create open/close events sorted by x. Sweep left-to-right: at each x, compute the total active y-coverage, multiply by the x-delta. This extends 1D sweep line into 2D.</p>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p20-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p20-ts')">TypeScript</button>
+      </div>
+      <div id="p20-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">rectangleArea</span>(rectangles):
+    MOD = <span class="nm">10</span>**<span class="nm">9</span> + <span class="nm">7</span>
+    events = []
+    <span class="kw">for</span> x1, y1, x2, y2 <span class="kw">in</span> rectangles:
+        events.append((x1, <span class="nm">0</span>, y1, y2))
+        events.append((x2, <span class="nm">1</span>, y1, y2))
+    events.sort()
+    active, area, prev_x = [], <span class="nm">0</span>, events[<span class="nm">0</span>][<span class="nm">0</span>]
+    <span class="kw">for</span> x, typ, y1, y2 <span class="kw">in</span> events:
+        y_cover = cur = <span class="nm">0</span>
+        <span class="kw">for</span> ay1, ay2 <span class="kw">in</span> <span class="fn">sorted</span>(active):
+            cur = <span class="fn">max</span>(cur, ay1)
+            y_cover += <span class="fn">max</span>(<span class="nm">0</span>, ay2 - cur)
+            cur = <span class="fn">max</span>(cur, ay2)
+        area += y_cover * (x - prev_x)
+        prev_x = x
+        <span class="kw">if</span> typ == <span class="nm">0</span>: active.append((y1, y2))
+        <span class="kw">else</span>: active.remove((y1, y2))
+    <span class="kw">return</span> area % MOD</code></pre>
+      </div>
+      <div id="p20-ts" class="tab-content">
+<pre><code><span class="cm">// Same algorithm in TypeScript — sweep x-events, track active y-intervals</span>
+<span class="kw">function</span> <span class="fn">rectangleArea</span>(rects: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    <span class="kw">const</span> MOD = <span class="nm">1e9</span> + <span class="nm">7</span>;
+    <span class="kw">const</span> events: [<span class="cl">number</span>,<span class="cl">number</span>,<span class="cl">number</span>,<span class="cl">number</span>][] = [];
+    <span class="kw">for</span> (<span class="kw">const</span> [x1,y1,x2,y2] <span class="kw">of</span> rects) {
+        events.push([x1,<span class="nm">0</span>,y1,y2]);
+        events.push([x2,<span class="nm">1</span>,y1,y2]);
+    }
+    events.sort((a,b) => a[<span class="nm">0</span>]-b[<span class="nm">0</span>] || a[<span class="nm">1</span>]-b[<span class="nm">1</span>]);
+    <span class="kw">const</span> active: [<span class="cl">number</span>,<span class="cl">number</span>][] = [];
+    <span class="kw">let</span> area = <span class="nm">0</span>, prevX = events[<span class="nm">0</span>][<span class="nm">0</span>];
+    <span class="kw">for</span> (<span class="kw">const</span> [x,typ,y1,y2] <span class="kw">of</span> events) {
+        <span class="kw">let</span> yCov = <span class="nm">0</span>, cur = <span class="nm">0</span>;
+        <span class="kw">for</span> (<span class="kw">const</span> [a,b] <span class="kw">of</span> [...active].sort((a,b)=>a[<span class="nm">0</span>]-b[<span class="nm">0</span>])) {
+            cur = Math.max(cur, a);
+            yCov += Math.max(<span class="nm">0</span>, b - cur);
+            cur = Math.max(cur, b);
+        }
+        area = (area + yCov * (x - prevX)) % MOD;
+        prevX = x;
+        <span class="kw">if</span> (typ===<span class="nm">0</span>) active.push([y1,y2]);
+        <span class="kw">else</span> { <span class="kw">const</span> i=active.findIndex(([a,b])=>a===y1&&b===y2); active.splice(i,<span class="nm">1</span>); }
+    }
+    <span class="kw">return</span> area;
+}</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="p21">
+    <div class="card-head">
+      <div class="card-num">Advanced Data Structure</div>
+      <div class="card-title">P21: Interval Tree</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Google</span><span class="tag">Microsoft</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">💡 When Do You Need This?</div>
+      <p>When you need to efficiently answer: "Which intervals overlap with a given query point or range?" This gives O(log n + k) per query vs O(n) brute force. Rarely coded from scratch in interviews, but knowing the concept shows depth.</p>
+      <div class="box-insight">
+        <strong>How it works:</strong> Choose a center point (median of all endpoints). Intervals crossing the center are stored at this node (sorted by both start and end). Intervals entirely left go to the left subtree; entirely right go to the right subtree. To query a point: check center intervals, then recurse into the appropriate child.
+      </div>
+      <div class="cx-grid">
+        <div class="cx hd">Build</div><div class="cx hd">Query</div><div class="cx hd">Space</div>
+        <div class="cx"><code>O(n log n)</code></div><div class="cx"><code>O(log n + k)</code></div><div class="cx"><code>O(n)</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="p22">
+    <div class="card-head">
+      <div class="card-num">LeetCode #621</div>
+      <div class="card-title">P22: Task Scheduler</div>
+      <div class="card-tags"><span class="tag tag-new">⚡ Not In Your PDF</span><span class="tag">Meta</span><span class="tag">Google</span><span class="tag">Amazon</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem</div>
+      <p>Given tasks and cooldown n, find minimum time to finish all. Same tasks must be ≥ n apart.</p>
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">tasks = ["A","A","A","B","B","B"], n = 2</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">8</div></div>
+      </div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p22-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p22-ts')">TypeScript</button>
+      </div>
+      <div id="p22-py" class="tab-content active">
+<pre><code><span class="kw">from</span> collections <span class="kw">import</span> Counter
+
+<span class="kw">def</span> <span class="fn">leastInterval</span>(tasks, n):
+    freq = <span class="fn">Counter</span>(tasks)
+    max_f = <span class="fn">max</span>(freq.values())
+    max_count = <span class="fn">sum</span>(<span class="nm">1</span> <span class="kw">for</span> v <span class="kw">in</span> freq.values() <span class="kw">if</span> v == max_f)
+    <span class="kw">return</span> <span class="fn">max</span>(<span class="fn">len</span>(tasks), (max_f - <span class="nm">1</span>) * (n + <span class="nm">1</span>) + max_count)</code></pre>
+      </div>
+      <div id="p22-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">leastInterval</span>(tasks: <span class="cl">string</span>[], n: <span class="cl">number</span>): <span class="cl">number</span> {
+    <span class="kw">const</span> freq = <span class="kw">new</span> Map&lt;<span class="cl">string</span>, <span class="cl">number</span>&gt;();
+    <span class="kw">for</span> (<span class="kw">const</span> t <span class="kw">of</span> tasks) freq.set(t, (freq.get(t) ?? <span class="nm">0</span>) + <span class="nm">1</span>);
+    <span class="kw">const</span> maxF = Math.max(...freq.values());
+    <span class="kw">const</span> maxCount = [...freq.values()].filter(v => v === maxF).length;
+    <span class="kw">return</span> Math.max(tasks.length, (maxF - <span class="nm">1</span>) * (n + <span class="nm">1</span>) + maxCount);
+}</code></pre>
+      </div>
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">Key Insight</div>
+        <div class="cx"><code>O(n)</code></div><div class="cx"><code>O(1)</code></div><div class="cx">Math formula: frame the most frequent task, fill gaps. At most 26 unique tasks.</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ DECISION FRAMEWORK ═══════════════ -->
+<section class="sec" id="decision">
+<div class="wrap">
+  <div class="sec-chip">Decision Framework</div>
+  <h2 class="sec-title">Which Pattern Do I Use?</h2>
+  <p class="sec-desc">Use this during interviews to quickly identify the right approach.</p>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="flow-item"><div class="flow-dot" style="background:var(--ac)"></div><div><div class="flow-q">"Merge overlapping intervals"</div><div class="flow-a">→ <strong>P1: Merge Intervals</strong> — Sort by start, merge adjacent</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--cy)"></div><div><div class="flow-q">"Insert into sorted interval list"</div><div class="flow-a">→ <strong>P2: Insert Interval</strong> — Three-phase (before, merge, after)</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--gn)"></div><div><div class="flow-q">"Any conflicts?" / "Can attend all?"</div><div class="flow-a">→ <strong>P3: Meeting Rooms I</strong> — Sort + check consecutive</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--pk)"></div><div><div class="flow-q">"Minimum rooms / resources needed"</div><div class="flow-a">→ <strong>P4: Meeting Rooms II</strong> — Min-heap or Sweep Line</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--og)"></div><div><div class="flow-q">"Minimum removals" / "Max non-overlapping"</div><div class="flow-a">→ <strong>P5: Non-Overlapping</strong> — Sort by END, greedy</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--yw)"></div><div><div class="flow-q">"Intersection of two sorted lists"</div><div class="flow-a">→ <strong>P6: Interval Intersection</strong> — Two pointers</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--bl)"></div><div><div class="flow-q">"Free time / gaps across schedules"</div><div class="flow-a">→ <strong>P7: Employee Free Time</strong> — Flatten + merge + find gaps</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--rd)"></div><div><div class="flow-q">"Peak overlap count" / "Max K-booking"</div><div class="flow-a">→ <strong>P12: Sweep Line</strong> or <strong>P14: Calendar III</strong></div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--ac)"></div><div><div class="flow-q">"Range update on an array"</div><div class="flow-a">→ <strong>P18: Difference Array</strong> — O(1) per update</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--cy)"></div><div><div class="flow-q">"Capacity constraint along a route"</div><div class="flow-a">→ <strong>P15: Car Pooling</strong> — Sweep or diff array</div></div></div>
+      <div class="flow-item"><div class="flow-dot" style="background:var(--gn)"></div><div><div class="flow-q">"Skyline / contour from rectangles"</div><div class="flow-a">→ <strong>P19: Skyline</strong> — Sweep + max-heap</div></div></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ MASTER TABLE ═══════════════ -->
+<section class="sec" id="master">
+<div class="wrap">
+  <div class="sec-chip">Reference</div>
+  <h2 class="sec-title">Master Comparison Table</h2>
+
+  <div class="card">
+    <div class="card-body" style="overflow-x:auto">
+      <table class="master-table">
+        <thead><tr><th>#</th><th>Pattern</th><th>LC</th><th>Sort By</th><th>Data Structure</th><th>Time</th><th>Space</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Merge Intervals</td><td>#56</td><td>Start</td><td>Array</td><td><code>O(n log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr><td>2</td><td>Insert Interval</td><td>#57</td><td>Pre-sorted</td><td>Array</td><td><code>O(n)</code></td><td><code>O(n)</code></td></tr>
+          <tr><td>3</td><td>Meeting Rooms I</td><td>#252</td><td>Start</td><td>Array</td><td><code>O(n log n)</code></td><td><code>O(1)</code></td></tr>
+          <tr><td>4</td><td>Meeting Rooms II</td><td>#253</td><td>Start</td><td>Min-Heap</td><td><code>O(n log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr><td>5</td><td>Non-Overlapping</td><td>#435</td><td style="color:var(--gn);font-weight:700">End ⚡</td><td>Greedy</td><td><code>O(n log n)</code></td><td><code>O(1)</code></td></tr>
+          <tr><td>6</td><td>Intersection</td><td>#986</td><td>Pre-sorted</td><td>Two Ptrs</td><td><code>O(m+n)</code></td><td><code>O(m+n)</code></td></tr>
+          <tr><td>7</td><td>Free Time</td><td>#759</td><td>Start</td><td>Array/Heap</td><td><code>O(N log N)</code></td><td><code>O(N)</code></td></tr>
+          <tr><td>8</td><td>Remove Interval</td><td>#1272</td><td>—</td><td>Array</td><td><code>O(n)</code></td><td><code>O(n)</code></td></tr>
+          <tr><td>9</td><td>Calendar I</td><td>#729</td><td>—</td><td>Array/BST</td><td><code>O(n)</code></td><td><code>O(n)</code></td></tr>
+          <tr><td>10</td><td>Calendar II</td><td>#731</td><td>—</td><td>Two Lists</td><td><code>O(n²)</code></td><td><code>O(n)</code></td></tr>
+          <tr><td>11</td><td>Data Stream</td><td>#352</td><td>Maintained</td><td>SortedList</td><td><code>O(log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>12</td><td>Sweep Line ⚡</td><td>—</td><td>Events</td><td>Sort+Scan</td><td><code>O(n log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>13</td><td>Balloons ⚡</td><td>#452</td><td style="color:var(--gn);font-weight:700">End ⚡</td><td>Greedy</td><td><code>O(n log n)</code></td><td><code>O(1)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>14</td><td>Calendar III ⚡</td><td>#732</td><td>Events</td><td>TreeMap</td><td><code>O(n log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>15</td><td>Car Pooling ⚡</td><td>#1094</td><td>Events</td><td>Diff Array</td><td><code>O(n)</code></td><td><code>O(max)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>16</td><td>Range Module ⚡</td><td>#715</td><td>Maintained</td><td>SortedList</td><td><code>O(n)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>17</td><td>Meeting III ⚡</td><td>#2402</td><td>Start</td><td>Two Heaps</td><td><code>O(m log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>18</td><td>Diff Array ⚡</td><td>#1109</td><td>—</td><td>Array</td><td><code>O(n+m)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>19</td><td>Skyline ⚡</td><td>#218</td><td>Events</td><td>Max-Heap</td><td><code>O(n log n)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>20</td><td>Rect Area II ⚡</td><td>#850</td><td>Events</td><td>Sweep</td><td><code>O(n²)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>21</td><td>Interval Tree ⚡</td><td>—</td><td>Median</td><td>BST</td><td><code>O(log n+k)</code></td><td><code>O(n)</code></td></tr>
+          <tr style="background:rgba(244,114,182,.03)"><td>22</td><td>Task Scheduler ⚡</td><td>#621</td><td>Frequency</td><td>Counter</td><td><code>O(n)</code></td><td><code>O(1)</code></td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:.75rem;color:var(--txd);margin-top:.6rem">⚡ = Patterns added beyond original PDF. Pink-highlighted rows are new additions.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ CHEATSHEET ═══════════════ -->
+<section class="sec" id="cheatsheet">
+<div class="wrap">
+  <div class="sec-chip">Quick Reference</div>
+  <h2 class="sec-title">Ultimate Cheatsheet</h2>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="sub">🧠 6 Core Techniques</div>
+      <div class="cmp-grid">
+        <div class="cmp" style="border-top:3px solid var(--ac)"><h4 style="color:var(--ac2)">① Sort + Merge</h4><p>Sort by start, walk + merge. The bread and butter. ~50% of problems.</p></div>
+        <div class="cmp" style="border-top:3px solid var(--gn)"><h4 style="color:var(--gn)">② Greedy (Sort by End)</h4><p>Finish earliest first. For optimization: max kept, min removed, min arrows.</p></div>
+        <div class="cmp" style="border-top:3px solid var(--pk)"><h4 style="color:var(--pk)">③ Sweep Line</h4><p>Break into +1/-1 events, sweep. For counting overlaps, peaks, skyline.</p></div>
+        <div class="cmp" style="border-top:3px solid var(--yw)"><h4 style="color:var(--yw)">④ Min-Heap</h4><p>Track end times for resource allocation. "Is any room free?" in O(log n).</p></div>
+        <div class="cmp" style="border-top:3px solid var(--bl)"><h4 style="color:var(--bl)">⑤ Two Pointers</h4><p>Two sorted lists → advance pointer with smaller end. For intersection.</p></div>
+        <div class="cmp" style="border-top:3px solid var(--rd)"><h4 style="color:var(--rd)">⑥ Difference Array</h4><p>O(1) range updates. Prefix sum to reconstruct. Best for bounded integers.</p></div>
+      </div>
+
+      <div class="sub">⚡ 6 Pro Tips for FAANG</div>
+      <div class="box-tip"><strong>1. Always sort first</strong> — state this immediately. 95% of interval problems need it.</div>
+      <div class="box-trick"><strong>2. Clarify interval type</strong> — "Closed [a,b] or half-open [a,b)?" Shows attention to detail.</div>
+      <div class="box-insight"><strong>3. Know multiple approaches</strong> — For Meeting Rooms II, know heap + sweep + two-pointer. Handle follow-ups.</div>
+      <div class="box-warn"><strong>4. Sort by START for merging, END for greedy</strong> — This is the #1 mistake. Never confuse them.</div>
+      <div class="box-tip"><strong>5. "Maximum concurrent" = sweep line</strong> — Peak usage, max overlap, resource capacity → sweep.</div>
+      <div class="box-trick"><strong>6. Bounded integers → difference array</strong> — Coordinates 0-1000? Skip sweep line, use diff array for O(1) updates.</div>
+
+      <div class="sub">📋 Complete LeetCode List</div>
+      <div class="cmp-grid">
+        <div class="cmp"><h4 style="color:var(--gn)">Easier</h4><p>252 Meeting Rooms · 228 Summary Ranges · 1854 Max Population Year</p></div>
+        <div class="cmp"><h4 style="color:var(--yw)">Medium</h4><p>56 Merge · 57 Insert · 253 Meeting II · 435 Non-Overlapping · 452 Balloons · 986 Intersection · 729 Calendar I · 731 Calendar II · 1094 Car Pooling · 1109 Flight Bookings · 1272 Remove · 621 Task Scheduler · 1288 Remove Covered · 2406 Divide Groups · 2402 Meeting III</p></div>
+        <div class="cmp"><h4 style="color:var(--rd)">Harder</h4><p>218 Skyline · 352 Data Stream · 715 Range Module · 732 Calendar III · 759 Employee Free Time · 850 Rectangle Area II · 2276 Count Integers</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+</main>
+
+<footer style="padding:3rem 0;text-align:center;color:var(--txd);font-size:.82rem;border-top:1px solid var(--bdr)">
+  <div class="wrap">
+    <p>Intervals & Their Variations — <strong>Part 2 of 2</strong></p>
+    <p style="margin-top:.5rem">22 Patterns · 45+ Problems · 6 Core Techniques · Python & TypeScript</p>
+    <p style="margin-top:.8rem;font-size:.72rem;color:var(--bdr2)">Built for cracking Google, Meta, Amazon, Apple, Netflix & Microsoft interviews</p>
+  </div>
+</footer>
+
+<script>
+function switchTab(e,id){
+  const tabs=e.target.parentElement;
+  tabs.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  e.target.classList.add('active');
+  let node=tabs.nextElementSibling;
+  while(node&&node.classList.contains('tab-content')){node.classList.remove('active');node=node.nextElementSibling;}
+  document.getElementById(id).classList.add('active');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,41 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="The merge algorithm in one flowchart">
+  After sorting by start, the algorithm is a single-pass loop with one
+  decision per interval — overlap with the last bucket or start a new one.
+  The legend below walks each numbered step.
+</Callout>
+
+## Merge Intervals — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · sort</b><br/>intervals.sort(key=x[0])"]
+      --> I["<b>ii · init</b><br/>merged = [intervals[0]]"]
+      --> L{"<b>iii · next interval?</b><br/>for s, e in intervals[1:]"}
+    L -->|"yes"| C{"<b>iv · overlap?</b><br/>s ≤ merged[-1][1]?"}
+    C -->|"yes"| M["<b>v · extend</b><br/>merged[-1][1] = max(merged[-1][1], e)"]
+    C -->|"no"| N["<b>vi · new bucket</b><br/>merged.append([s, e])"]
+    M --> L
+    N --> L
+    L -->|"done"| R["<b>return</b> merged"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S,I start
+    class L,C decision
+    class M,N,R action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Sort by start',   description: 'Puts overlapping intervals next to each other. This is why the rest of the algorithm is a single linear scan.' },
+  { numeral: 'ii',  name: 'Seed the output', description: '`merged = [intervals[0]]`. The first interval is always the first bucket.' },
+  { numeral: 'iii', name: 'Iterate',         description: 'Walk intervals from index 1 onwards.' },
+  { numeral: 'iv',  name: 'Overlap check',   description: '`s ≤ merged[-1][1]`. `≤` (not `<`) so touching endpoints `[1,2] + [2,3]` merge.' },
+  { numeral: 'v',   name: 'Extend',          description: '`merged[-1][1] = max(merged[-1][1], e)`. The `max` handles containment for free.' },
+  { numeral: 'vi',  name: 'New bucket',      description: 'No overlap — push `[s, e]` as a fresh bucket. Return `merged` when done.' },
+]} />

@@ -1,0 +1,38 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #252 — one-liner.">
+- Given meeting intervals, can one person attend all of them? Return `true` / `false`.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Adjacency after sorting.">
+- After sorting by **start**, overlapping meetings must be adjacent.
+- So the check reduces to: does any meeting start before its predecessor ends?
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="Two lines of logic.">
+```python
+intervals.sort(key=lambda x: x[0])
+for i in range(1, len(intervals)):
+    if intervals[i][0] < intervals[i - 1][1]:
+        return False
+return True
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Sort dominates.">
+- **Time `O(n log n)`** — sort; the scan is O(n).
+- **Space `O(1)`** — in-place sort, no extra structure.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Three to remember.">
+- 0 or 1 meetings → trivially `true`.
+- `[1,2]` + `[2,3]` — half-open: no conflict (`2 < 2` is false). Closed: conflict (`≤`).
+- All meetings at the same time → first pair already conflicts.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Sort · Scan · Stop** — sort, scan consecutive pairs, stop on first overlap.
+</Callout>

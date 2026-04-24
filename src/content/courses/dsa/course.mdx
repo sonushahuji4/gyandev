@@ -1,15 +1,25 @@
 ---
 title: Data Structures & Algorithms
-description: Pattern-first problem solving — two pointers, sliding window, graphs, DP — with every pattern diagrammed.
+description: Pattern-first problem solving — two pointers, sliding window, intervals, graphs, DP — with every pattern diagrammed.
 order: 6
-status: coming-soon
+status: published
 difficulty: advanced
 icon: DSA
-estimatedHours: 26
+estimatedHours: 2
 learningObjectives:
-  - TBD — coming soon
-prerequisites: []
+  - Recognise the six relationships any two intervals can have, and why sorting collapses them from six cases to three.
+  - Memorise the universal overlap formula — `max(start1, start2) ≤ min(end1, end2)` — as the foundation of 80% of interval solutions.
+  - Pick the right sort order (by start vs by end) as the first decision of every interval problem.
+  - Recall the five recurring approaches — sort + linear scan, sweep line, greedy selection, priority queue, two pointers — and when each applies.
+  - Translate pattern recognition shortcuts ("merge overlapping", "how many rooms?", "max events") into the right template.
+  - Walk through eleven canonical interval interview problems with Python and TypeScript solutions, complexity analysis, and edge-case checklists.
+prerequisites:
+  - Comfortable with JavaScript/TypeScript arrays, including `sort`, `push`, destructuring.
+  - Familiarity with Python list comprehensions and `lambda` key functions for `sort`.
+  - Big-O intuition for sorting (`O(n log n)`) and linear scans (`O(n)`).
 updated: 2026-04-21
 ---
 
-Coming soon.
+Pattern-first DSA preparation for FAANG interviews. Each topic starts with a short theory chapter that codifies the mental models and shared tricks, then breaks the topic into one chapter per pattern — every pattern with a problem statement, intuition, visual walkthrough, dual-language solutions, complexity analysis, and an edge-case checklist.
+
+The Intervals topic covers foundational concepts plus eleven canonical problems: Merge Intervals, Insert Interval, Meeting Rooms I & II, Non-Overlapping Intervals, Interval List Intersections, Employee Free Time, Remove Interval, My Calendar I & II, and Data Stream as Disjoint Intervals.

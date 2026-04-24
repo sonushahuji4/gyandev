@@ -1,0 +1,33 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Merge Intervals, then read the gaps">
+  Employee Free Time is Merge Intervals plus one extra walk — the gaps
+  between merged blocks are the answer. The legend below decodes each
+  numbered step.
+</Callout>
+
+## Employee Free Time — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · flatten</b><br/>all = schedule.flat()"]
+      --> T["<b>ii · sort by start</b>"]
+      --> M["<b>iii · merge</b><br/>(standard Merge Intervals)"]
+      --> G["<b>iv · gap walk</b><br/>for i in 1…len(merged)-1:<br/>free.append([merged[i-1][1], merged[i][0]])"]
+      --> R["<b>return</b> free"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S start
+    class T,M,G,R action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Flatten',         description: 'Collapse the per-employee lists into one big list of intervals.' },
+  { numeral: 'ii',  name: 'Sort by start',   description: 'Prep for the merge step — overlaps must be adjacent.' },
+  { numeral: 'iii', name: 'Merge intervals', description: 'Same Merge Intervals template — extend last bucket on overlap, otherwise push a new one.' },
+  { numeral: 'iv',  name: 'Gap walk',        description: 'For consecutive merged intervals, the gap `[prev.end, next.start]` is a free-time window.' },
+]} />

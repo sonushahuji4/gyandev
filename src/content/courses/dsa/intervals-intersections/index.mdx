@@ -1,0 +1,106 @@
+---
+title: "Interval List Intersections"
+description: "Given two sorted, disjoint interval lists, produce their intersection in linear time using two pointers."
+excerpt: "Two pointers; advance the one whose interval ends first."
+course: dsa/course
+order: 7
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - two-pointers
+  - leetcode-986
+---
+
+## LeetCode #986 — Interval List Intersections
+
+**Frequency:** 🔥 High. **Companies:** Google · Meta · Uber.
+
+## Problem Statement
+
+Given two lists of closed, sorted, disjoint intervals, return their intersection.
+
+```text title="Example"
+Input:
+  firstList  = [[0,2],[5,10],[13,23],[24,25]]
+  secondList = [[1,5],[8,12],[15,24],[25,26]]
+Output:
+  [[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]
+```
+
+## Intuition
+
+Two pointers, one per list. At each step: compute intersection of the current pair using `[max(starts), min(ends)]`. If valid → add it. Then advance the pointer whose interval ends first (it can't intersect anything else from the other list).
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="interval_intersections.py"
+def intervalIntersection(A: list, B: list) -> list:
+    result = []
+    i = j = 0
+
+    while i < len(A) and j < len(B):
+        lo = max(A[i][0], B[j][0])
+        hi = min(A[i][1], B[j][1])
+
+        if lo <= hi:
+            result.append([lo, hi])
+
+        # Advance the pointer with the smaller end
+        if A[i][1] < B[j][1]:
+            i += 1
+        else:
+            j += 1
+
+    return result
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="interval_intersections.ts"
+function intervalIntersection(A: number[][], B: number[][]): number[][] {
+    const result: number[][] = [];
+    let i = 0, j = 0;
+
+    while (i < A.length && j < B.length) {
+        const lo = Math.max(A[i][0], B[j][0]);
+        const hi = Math.min(A[i][1], B[j][1]);
+
+        if (lo <= hi) result.push([lo, hi]);
+
+        if (A[i][1] < B[j][1]) i++;
+        else j++;
+    }
+
+    return result;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(m + n)` | Each pointer advances at most m or n times |
+| Space | `O(m + n)` | Output size in worst case |
+
+## Edge Case Thinking
+
+<Callout type="tip" title="Edge cases">
+  - **Either list empty:** Return `[]` — no intersection possible.
+  - **Point intersection `[5,5]`:** Valid! `lo = hi = 5`, and `5 ≤ 5` is true.
+  - **No overlap at all:** `lo > hi` every time, result stays empty.
+</Callout>

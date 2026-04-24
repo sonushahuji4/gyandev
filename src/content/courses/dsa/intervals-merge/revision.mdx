@@ -1,0 +1,42 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #56 — one-liner.">
+- Given a list of intervals with possible overlaps, return the **minimum** non-overlapping set that covers the same ranges.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Sort + one-pass merge.">
+- After sorting by **start**, any overlapping intervals sit next to each other.
+- Maintain a running "last merged" — extend its end if the next interval's start ≤ last end, otherwise start a new bucket.
+- Containment handled for free by `end = max(last.end, current.end)`.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="The six lines that matter.">
+```python
+intervals.sort(key=lambda x: x[0])
+merged = [intervals[0]]
+for s, e in intervals[1:]:
+    if s <= merged[-1][1]:
+        merged[-1][1] = max(merged[-1][1], e)
+    else:
+        merged.append([s, e])
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Sort bound, nothing else.">
+- **Time `O(n log n)`** — sort dominates; the scan is linear.
+- **Space `O(n)`** — output list (input may or may not sort in-place).
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="The ones that trip people up.">
+- Empty input → return `[]` before touching the list.
+- Single interval → trivial passthrough.
+- Touching endpoints `[1,2]` + `[2,3]` → merge because `2 ≤ 2` (note `≤`, not `<`).
+- One interval fully contains another → `max` on end handles it.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Sort · Step · Stretch** — sort by start, step through, stretch the last bucket.
+</Callout>

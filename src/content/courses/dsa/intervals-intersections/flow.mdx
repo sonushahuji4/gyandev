@@ -1,0 +1,46 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Two pointers, one decision per step">
+  Compute the candidate intersection from the pair `A[i]` and `B[j]`; if
+  valid, record it. Then advance the pointer on the interval that ends
+  first — it can't intersect anything else from the other list.
+</Callout>
+
+## Interval List Intersections — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · init</b><br/>i = 0; j = 0; result = []"]
+      --> L{"<b>ii · both in range?</b><br/>i &lt; len(A) and j &lt; len(B)"}
+    L -->|"yes"| X["<b>iii · candidate</b><br/>lo = max(A[i][0], B[j][0])<br/>hi = min(A[i][1], B[j][1])"]
+      --> V{"<b>iv · valid?</b><br/>lo ≤ hi?"}
+    V -->|"yes"| P["<b>v · record</b><br/>result.append([lo, hi])"]
+      --> A{"<b>vi · which ends first?</b>"}
+    V -->|"no"| A
+    A -->|"A[i][1] &lt; B[j][1]"| IA["<b>vii · i++</b>"]
+    A -->|"else"| IJ["<b>viii · j++</b>"]
+    IA --> L
+    IJ --> L
+    L -->|"no"| R["<b>return</b> result"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S start
+    class L,V,A decision
+    class X,P,IA,IJ,R action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Initialise',       description: 'Two pointers at 0, empty result list.' },
+  { numeral: 'ii',   name: 'Loop guard',       description: 'Continue while both lists still have intervals.' },
+  { numeral: 'iii',  name: 'Candidate',        description: '`lo = max(starts)`, `hi = min(ends)` — the overlap formula.' },
+  { numeral: 'iv',   name: 'Validity',         description: '`lo ≤ hi` → real intersection; otherwise the intervals don’t overlap.' },
+  { numeral: 'v',    name: 'Record',           description: 'Push `[lo, hi]` onto the result.' },
+  { numeral: 'vi',   name: 'Which ends first', description: 'The interval with the smaller end time cannot intersect anything else from the other list — drop it.' },
+  { numeral: 'vii',  name: 'Advance A',        description: '`i++` when `A[i][1] < B[j][1]`.' },
+  { numeral: 'viii', name: 'Advance B',        description: '`j++` otherwise (including ties).' },
+]} />

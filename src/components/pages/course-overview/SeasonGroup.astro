@@ -38,20 +38,54 @@ const hoursLabel =
       ? `~${totalMinutes} min`
       : `~${hours} hr${hours === 1 ? '' : 's'}`;
 
-const chapterLabel = chapters.length === 1 ? '1 chapter' : `${chapters.length} chapters`;
+// A group's title/kind conventions are read off the first chapter that
+// declares them. Conceptually they belong to the season, but we author
+// them on chapters so each file stays self-describing.
+const seasonTitle = chapters.find((c) => c.chapter.data.seasonTitle)
+  ?.chapter.data.seasonTitle;
+const hasKindLabels = chapters.some((c) => c.chapter.data.kind);
+
+// Count only pattern chapters for the pattern numbering. Theory chapters
+// are excluded so the numbering tracks the problem-set, not the position.
+const patternTotal = chapters.filter((c) => c.chapter.data.kind === 'pattern').length;
+const countLabel =
+  hasKindLabels && patternTotal > 0
+    ? patternTotal === 1
+      ? '1 pattern'
+      : `${patternTotal} patterns`
+    : chapters.length === 1
+      ? '1 chapter'
+      : `${chapters.length} chapters`;
+
+const effectiveHideHeader = hideHeader && !seasonTitle;
 const headingId = `season-${season}-heading`;
+const headingLabel = seasonTitle ?? `Season ${season}`;
+
+// Walk the group once to compute each row's kind-based lead label. Pattern
+// chapters get `PATTERN N` with N counting only pattern rows; theory
+// chapters get a plain `THEORY` kicker.
+let patternCounter = 0;
+const kindLabels = chapters.map((ref) => {
+  const kind = ref.chapter.data.kind;
+  if (kind === 'pattern') {
+    patternCounter += 1;
+    return `Pattern ${patternCounter}`;
+  }
+  if (kind === 'theory') return 'Theory';
+  return undefined;
+});
 ---
 
 <section
   class="season-group"
-  aria-labelledby={hideHeader ? undefined : headingId}
-  aria-label={hideHeader ? 'Chapters' : undefined}
+  aria-labelledby={effectiveHideHeader ? undefined : headingId}
+  aria-label={effectiveHideHeader ? 'Chapters' : undefined}
 >
-  {!hideHeader && (
+  {!effectiveHideHeader && (
     <header class="season-group__header">
-      <h2 id={headingId} class="season-group__title">Season {season}</h2>
+      <h2 id={headingId} class="season-group__title">{headingLabel}</h2>
       <p class="season-group__meta">
-        <span>{chapterLabel}</span>
+        <span>{countLabel}</span>
         {hoursLabel && (
           <>
             <span aria-hidden="true">·</span>
@@ -71,6 +105,7 @@ const headingId = `season-${season}-heading`;
         courseSlug={courseSlug}
         chapterSlug={ref.slug}
         orderLabel={startOrder + i}
+        kindLabel={kindLabels[i]}
         availability={getChapterAvailability(ref.chapter)}
         status={ref.status}
       />

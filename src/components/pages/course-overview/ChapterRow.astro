@@ -31,6 +31,12 @@ export interface Props {
   chapterSlug: string;
   /** 1-based position used for the zero-padded order label. */
   orderLabel: number;
+  /**
+   * Optional override for the lead-column label. When present, renders in
+   * small-caps sans-serif (`PATTERN 1`, `THEORY`) instead of the classic
+   * italic serif numeral. Used by DSA-style courses with topic grouping.
+   */
+  kindLabel?: string;
   availability: ChapterAvailability;
   /** `'coming-soon'` renders the row grayed + disabled. */
   status: 'published' | 'coming-soon' | 'draft';
@@ -43,6 +49,7 @@ const {
   courseSlug,
   chapterSlug,
   orderLabel,
+  kindLabel,
   availability,
   status,
 } = Astro.props;
@@ -67,8 +74,12 @@ const dotAriaLabel = VIEWS.map(
   data-chapter-slug={chapterSlug}
   aria-disabled={isComingSoon ? 'true' : undefined}
 >
-  <div class="chapter-row__lead">
-    <span class="chapter-row__order" aria-hidden="true">{paddedOrder}</span>
+  <div class:list={['chapter-row__lead', kindLabel && 'chapter-row__lead--kind']}>
+    {kindLabel ? (
+      <span class="chapter-row__kind" aria-hidden="true">{kindLabel}</span>
+    ) : (
+      <span class="chapter-row__order" aria-hidden="true">{paddedOrder}</span>
+    )}
     <span
       class="chapter-row__icon"
       data-status="not-started"
@@ -117,6 +128,9 @@ const dotAriaLabel = VIEWS.map(
     position: relative;
     transition: background-color 160ms ease;
   }
+  .chapter-row:has(.chapter-row__lead--kind) {
+    grid-template-columns: 6.75rem minmax(0, 1fr) auto;
+  }
   .chapter-row:first-child {
     border-top: none;
   }
@@ -140,6 +154,16 @@ const dotAriaLabel = VIEWS.map(
     line-height: 1;
     color: var(--color-text-muted);
     font-variant-numeric: tabular-nums;
+  }
+
+  .chapter-row__kind {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    line-height: 1.15;
+    white-space: nowrap;
   }
 
   .chapter-row__icon {
@@ -228,6 +252,7 @@ const dotAriaLabel = VIEWS.map(
   .chapter-row--coming-soon .chapter-row__title,
   .chapter-row--coming-soon .chapter-row__excerpt,
   .chapter-row--coming-soon .chapter-row__order,
+  .chapter-row--coming-soon .chapter-row__kind,
   .chapter-row--coming-soon .chapter-row__icon {
     color: var(--color-text-muted);
     opacity: 0.75;
@@ -237,6 +262,9 @@ const dotAriaLabel = VIEWS.map(
     .chapter-row {
       grid-template-columns: 3.25rem minmax(0, 1fr);
       gap: 0.5rem 0.875rem;
+    }
+    .chapter-row:has(.chapter-row__lead--kind) {
+      grid-template-columns: 5.5rem minmax(0, 1fr);
     }
     .chapter-row__order {
       font-size: 1.375rem;

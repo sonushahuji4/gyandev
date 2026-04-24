@@ -1,0 +1,48 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Two scans per call">
+  Check against the `overlaps` list first — any overlap there means a
+  triple booking, so reject. Otherwise, walk `bookings` and record each
+  intersection into `overlaps`, then append the new event.
+</Callout>
+
+## My Calendar II — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · book(start, end)</b>"]
+      --> L1{"<b>ii · next overlap [os, oe]?</b>"}
+    L1 -->|"yes"| C1{"<b>iii · would triple?</b><br/>start &lt; oe and end &gt; os?"}
+    C1 -->|"yes"| F["<b>iv · return false</b>"]
+    C1 -->|"no"| L1
+    L1 -->|"done"| L2{"<b>v · next booking [bs, be]?</b>"}
+    L2 -->|"yes"| C2{"<b>vi · overlaps?</b><br/>start &lt; be and end &gt; bs?"}
+    C2 -->|"yes"| R["<b>vii · record double</b><br/>overlaps.append((max, min))"]
+    C2 -->|"no"| L2
+    R --> L2
+    L2 -->|"done"| A["<b>viii · append booking</b>"] --> T["<b>ix · return true</b>"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef ok fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    classDef bad fill:#f5d4cf,stroke:#991b1b,stroke-width:2px,color:#1a1915;
+    class S start
+    class L1,L2,C1,C2 decision
+    class R,A,T ok
+    class F bad
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Entry',               description: 'New booking `(start, end)`.' },
+  { numeral: 'ii',   name: 'Iterate overlaps',    description: 'Loop the list of existing double-booked regions.' },
+  { numeral: 'iii',  name: 'Triple-booking test', description: '`start < oe and end > os` — overlap with a double-booking would mean three active events.' },
+  { numeral: 'iv',   name: 'Reject',              description: 'Return `false` without mutating any state.' },
+  { numeral: 'v',    name: 'Iterate bookings',    description: 'If we didn’t reject, walk the full bookings list.' },
+  { numeral: 'vi',   name: 'Overlaps existing?',  description: 'Standard half-open overlap check.' },
+  { numeral: 'vii',  name: 'Record',              description: 'Append `(max(start, bs), min(end, be))` — the newly-created double-booking region.' },
+  { numeral: 'viii', name: 'Append booking',      description: 'Only now do we actually accept the event.' },
+  { numeral: 'ix',   name: 'Return',              description: 'Signal success with `true`.' },
+]} />

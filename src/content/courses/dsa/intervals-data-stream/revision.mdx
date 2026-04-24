@@ -1,0 +1,43 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #352 — one-liner.">
+- Maintain a list of **disjoint intervals** representing all integers seen so far; support `addNum(value)` and `getIntervals()`.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Binary search + neighbour merge.">
+- Binary-search the insertion point for `value`.
+- Check `merge_l` (`intervals[idx-1].end ≥ value - 1`) and `merge_r` (`intervals[idx].start ≤ value + 1`).
+- Four cases: merge both (pop the right), merge left only, merge right only, or insert a fresh `[value, value]`.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="Four cases in four lines.">
+```python
+idx = bisect_left(intervals, [value, value])
+ml = idx > 0 and intervals[idx-1][1] >= value - 1
+mr = idx < len(intervals) and intervals[idx][0] <= value + 1
+if ml and mr:  # join both
+    intervals[idx-1][1] = max(intervals[idx-1][1], intervals[idx][1])
+    intervals.pop(idx)
+elif ml: intervals[idx-1][1] = max(intervals[idx-1][1], value)
+elif mr: intervals[idx][0]   = min(intervals[idx][0],   value)
+else:    intervals.insert(idx, [value, value])
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Per-op.">
+- **`addNum` `O(n)`** — binary search is `O(log n)`, but list insert/pop is `O(n)`. A balanced BST / SortedList reduces to `O(log n)`.
+- **`getIntervals` `O(n)`** — returns the stored list.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Three to remember.">
+- Duplicate `addNum(5)` → already inside an existing interval, no change.
+- Sequential `1, 2, 3` → each value extends the same interval to `[1, 3]`.
+- Bridging `[1,1]` and `[3,3]` with `addNum(2)` → both merges fire, result `[1, 3]`.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Left · Right · Both · New** — the four outcomes of every `addNum`.
+</Callout>

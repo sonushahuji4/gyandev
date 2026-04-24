@@ -1,0 +1,41 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #1272 — one-liner.">
+- Given a sorted disjoint interval list and a range `[rm_s, rm_e]` to remove, return the remaining intervals.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Each interval produces 0, 1, or 2 remnants.">
+- Non-overlapping with the removal range → keep as-is (0 or 1 remnant, same interval).
+- Overlaps but extends left of the removal → left remnant `[s, rm_s]`.
+- Overlaps but extends right of the removal → right remnant `[rm_e, e]`.
+- An interval fully inside the removal range contributes nothing.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="One pass, two conditional pushes.">
+```python
+for s, e in intervals:
+    if e <= rm_s or s >= rm_e:
+        result.append([s, e])
+    else:
+        if s < rm_s: result.append([s, rm_s])
+        if e > rm_e: result.append([rm_e, e])
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Linear — input already sorted.">
+- **Time `O(n)`** — one pass over the intervals.
+- **Space `O(n)`** — result list.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Three to remember.">
+- Interval entirely before or after removal → no overlap, keep as-is.
+- Interval entirely inside removal → drop it (no remnants).
+- Interval fully contains removal → produces both a left and a right remnant.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Left · Right · Or · Both** — each interval emits a left remnant, a right remnant, both, or nothing.
+</Callout>

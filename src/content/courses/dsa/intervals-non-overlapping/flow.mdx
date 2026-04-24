@@ -1,0 +1,41 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Greedy by earliest finish">
+  Sort by end time, then walk the list with one decision per interval —
+  keep it (and update `last_end`) or remove it (and increment `count`).
+  The legend below decodes each numbered step.
+</Callout>
+
+## Non-Overlapping Intervals — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · sort by end</b><br/>intervals.sort(key=x[1])"]
+      --> I["<b>ii · init</b><br/>count = 0; last_end = intervals[0][1]"]
+      --> L{"<b>iii · next interval?</b>"}
+    L -->|"yes"| C{"<b>iv · overlap?</b><br/>s &lt; last_end?"}
+    C -->|"yes"| R["<b>v · remove</b><br/>count += 1"]
+    C -->|"no"| K["<b>vi · keep</b><br/>last_end = e"]
+    R --> L
+    K --> L
+    L -->|"done"| O["<b>return</b> count"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S,I start
+    class L,C decision
+    class R,K,O action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Sort by end',      description: 'Greedy correctness depends on this — process the earliest-finishing interval first.' },
+  { numeral: 'ii',  name: 'Initialise',       description: '`count = 0`; `last_end` = end of the first (earliest-finishing) interval.' },
+  { numeral: 'iii', name: 'Iterate',          description: 'Walk the remaining intervals from index 1.' },
+  { numeral: 'iv',  name: 'Overlap check',    description: '`s < last_end` — the current interval starts inside the kept one.' },
+  { numeral: 'v',   name: 'Remove',           description: 'Increment `count`; do NOT update `last_end` (we are discarding this interval).' },
+  { numeral: 'vi',  name: 'Keep',             description: 'No overlap — move `last_end` to this interval’s end and continue.' },
+]} />

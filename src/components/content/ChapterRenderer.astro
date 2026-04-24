@@ -17,6 +17,7 @@
  *   - `<Callout>` — tip/warning/insight/quote/mnemonic accent block
  *   - `<RevisionCard>` — bordered card used on Quick Revision view
  *   - `<FlowLegendGrid>` — legend grid below a Mermaid flowchart
+ *   - `<CodeTabs>` — in-body tabs for code variants (e.g. Python / TypeScript)
  *
  * Authors still need an explicit `import` for components that take
  * non-trivial props or live outside the chapter scope; the map handles
@@ -27,6 +28,7 @@ import MermaidCaption from '../pages/chapter/MermaidCaption.astro';
 import Callout from './Callout.astro';
 import RevisionCard from './RevisionCard.astro';
 import FlowLegendGrid from './FlowLegendGrid.astro';
+import CodeTabs from './CodeTabs.astro';
 
 interface Props {
   /** The MDX `<Content />` factory returned by `await render(entry)`. */
@@ -43,6 +45,7 @@ const defaultMap: Record<string, any> = {
   Callout,
   RevisionCard,
   FlowLegendGrid,
+  CodeTabs,
 };
 
 const merged = { ...defaultMap, ...components };

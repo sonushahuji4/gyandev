@@ -1,0 +1,52 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Two algorithms, one answer">
+  Both approaches compute the peak number of simultaneously-active
+  meetings. Min-heap tracks live rooms by their end time; sweep line
+  tracks a running delta of starts and ends. The diagram shows both
+  paths; the legend breaks each numbered step down.
+</Callout>
+
+## Meeting Rooms II — control flow
+
+```mermaid
+flowchart TD
+    S["<b>input</b> intervals"] --> D{"<b>pick approach</b>"}
+
+    D -->|"A: min-heap"| A1["<b>i · sort by start</b>"]
+      --> A2["<b>ii · seed heap</b><br/>heap = [intervals[0][1]]"]
+      --> A3{"<b>iii · next interval?</b>"}
+    A3 -->|"yes"| A4{"<b>iv · room free?</b><br/>s ≥ heap[0]?"}
+    A4 -->|"yes"| A5["<b>v · reuse</b><br/>heapq.heappop(heap)"]
+    A4 -->|"no"| A6["<b>vi · add room</b>"]
+    A5 --> A6
+    A6 --> A7["heapq.heappush(heap, e)"] --> A3
+    A3 -->|"done"| AR["<b>return</b> len(heap)"]
+
+    D -->|"B: sweep line"| B1["<b>vii · events</b><br/>(s,+1), (e,-1) for each"]
+      --> B2["<b>viii · sort events</b><br/>key = (time, delta)"]
+      --> B3["<b>ix · sweep</b><br/>cur += delta; peak = max"]
+      --> BR["<b>return</b> peak"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S,D start
+    class A3,A4 decision
+    class A1,A2,A5,A6,A7,AR,B1,B2,B3,BR action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Sort by start',         description: 'Heap approach: so we process meetings in the order they begin.' },
+  { numeral: 'ii',   name: 'Seed heap',             description: 'Put the first meeting’s end time in as the first active room.' },
+  { numeral: 'iii',  name: 'Iterate',               description: 'For each remaining interval `(s, e)`.' },
+  { numeral: 'iv',   name: 'Room-free check',       description: '`s >= heap[0]`: the earliest-ending active room has already ended, so we can reuse it.' },
+  { numeral: 'v',    name: 'Reuse',                 description: '`heappop(heap)` — free the room.' },
+  { numeral: 'vi',   name: 'Add room',              description: 'If no room is free, the push below simply grows the heap by 1. Either way we push the new end.' },
+  { numeral: 'vii',  name: 'Build events',          description: 'Sweep approach: `(start, +1)` and `(end, -1)` for each meeting.' },
+  { numeral: 'viii', name: 'Sort events',           description: 'By `(time, delta)` — ends (`-1`) tie-break before starts (`+1`) so back-to-back meetings share a room.' },
+  { numeral: 'ix',   name: 'Sweep',                 description: 'Running sum gives active rooms at each moment; track the peak.' },
+]} />

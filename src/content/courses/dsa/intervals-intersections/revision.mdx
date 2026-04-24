@@ -1,0 +1,41 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #986 — one-liner.">
+- Given two **sorted, disjoint** interval lists, return the list of all their pairwise intersections.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Two pointers, advance the earlier end.">
+- Both lists are already sorted and disjoint — no need to re-sort.
+- At each step compute the candidate intersection `[max(starts), min(ends)]`; if `lo ≤ hi`, it's a real intersection.
+- Advance the pointer whose interval ends first — the other list can still yield more intersections with the current interval.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="One while-loop.">
+```python
+i = j = 0
+while i < len(A) and j < len(B):
+    lo = max(A[i][0], B[j][0])
+    hi = min(A[i][1], B[j][1])
+    if lo <= hi: result.append([lo, hi])
+    if A[i][1] < B[j][1]: i += 1
+    else:                 j += 1
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Linear in total size.">
+- **Time `O(m + n)`** — each pointer advances at most `m` or `n` times.
+- **Space `O(m + n)`** — worst-case output size.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Three to remember.">
+- Either list empty → return `[]`.
+- Point intersection `[5, 5]` — valid because `lo = hi = 5` and `5 ≤ 5`.
+- No overlap anywhere → `lo > hi` every step → result stays empty.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Max · Start · Min · End** — the formula, then advance the earlier end.
+</Callout>

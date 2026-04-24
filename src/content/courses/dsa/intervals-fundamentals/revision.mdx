@@ -1,0 +1,51 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="What an interval is" subtitle="The shape of the data.">
+- An interval `[start, end]` is a continuous range — time, space, or number line.
+- Closed `[a, b]` is LeetCode's default; half-open `[a, b)` is the real-world default (Google Calendar, cron).
+- Touching endpoints `[1, 2]` + `[2, 3]` — overlap in closed semantics, adjacent (no overlap) in half-open. Always clarify.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="The universal overlap formula" subtitle="One expression, zero case splits.">
+- Two intervals overlap iff `max(a1, b1) ≤ min(a2, b2)`.
+- Intersection = `[max(a1, b1), min(a2, b2)]`; union = `[min(a1, b1), max(a2, b2)]`.
+- This single formula handles all 6 relationship cases — memorise it.
+- It's the foundation of ~80% of interval solutions.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Sort-first rule" subtitle="The decision that makes or breaks the solution.">
+- **Sort by start** → merge, insert, intersection, conflict detection.
+- **Sort by end** → greedy (max non-overlapping, min removals, min arrows).
+- **Sort `(start↑, end↓)`** → process largest-span first at each start (remove covered).
+- **Event sort** → sweep line for "how many active at this point?".
+- Rule of thumb: "maximize/minimize a count" → sort by end; "merge/combine" → sort by start.
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="After sorting, 6 cases → 3 cases" subtitle="Why the code is so short.">
+- Sorting by start makes "B starts first" impossible, collapsing cases ② and ④.
+- Remaining cases: no overlap (`A.end < B.start`), partial overlap, containment.
+- Partial overlap + containment collapse into one line: `merged_end = max(A.end, B.end)`.
+- Mental model — intervals as blocks on a ruler; walk right, extend or start fresh.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Five recurring approaches" subtitle="Map the problem to one of these.">
+- **Sort + linear scan** — ~50% of interval problems.
+- **Sweep line (events)** — "how many active at any point?".
+- **Greedy selection** — sort by end, pick earliest-finishing.
+- **Priority queue / min-heap** — resource allocation, "is any room free?".
+- **Two pointers** — two already-sorted interval lists (intersections).
+</RevisionCard>
+
+<RevisionCard numeral="vi" title="Universal edge-case checklist" subtitle="Ask these before you code.">
+- Empty input, single interval, all-identical, no-overlap-at-all, one-giant-interval.
+- Touching endpoints — clarify closed vs half-open.
+- Zero-length `[5, 5]` — valid or degenerate?
+- Negative coordinates; integer overflow in `start + end`.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **S**ort, **S**can, **S**titch — three steps that carry most interval problems.
+</Callout>

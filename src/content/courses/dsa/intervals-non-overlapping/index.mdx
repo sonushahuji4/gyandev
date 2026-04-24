@@ -1,0 +1,130 @@
+---
+title: "Non-Overlapping Intervals"
+description: "Return the minimum number of intervals to remove so the rest are non-overlapping — the Activity Selection problem in disguise."
+excerpt: "Sort by end, greedily keep the earliest-finishing interval."
+course: dsa/course
+order: 6
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 6
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - greedy
+  - sorting
+  - leetcode-435
+---
+
+## LeetCode #435 — Minimum Removals to Make Non-Overlapping
+
+**Companies:** Amazon · Google · Microsoft.
+
+## Problem Statement
+
+Given an array of intervals, return the minimum number of intervals you need to remove to make the rest non-overlapping.
+
+```text title="Example 1"
+Input:  [[1,2],[2,3],[3,4],[1,3]]
+Output: 1
+```
+
+```text title="Example 2"
+Input:  [[1,2],[1,2],[1,2]]
+Output: 2
+```
+
+## Intuition — Sort by END (Greedy)
+
+<Callout type="insight" title="Activity Selection in disguise">
+  **This is the Activity Selection Problem in disguise.** By sorting by
+  end time, we greedily keep intervals that finish earliest, leaving
+  maximum room for future intervals. The number of removals = total -
+  max intervals we can keep.
+</Callout>
+
+## Visual Walkthrough
+
+```text
+Input: [[1,2], [2,3], [3,4], [1,3]]
+
+After sort by END: [[1,2], [2,3], [1,3], [3,4]]
+
+Step 1: keep [1,2],  last_end = 2
+Step 2: [2,3] → 2 ≥ 2 → no overlap → KEEP,  last_end = 3
+Step 3: [1,3] → 1 < 3 → overlap   → REMOVE, count = 1
+Step 4: [3,4] → 3 ≥ 3 → no overlap → KEEP
+
+Answer: 1 removal
+```
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="non_overlapping.py"
+def eraseOverlapIntervals(intervals: list[list[int]]) -> int:
+    if not intervals:
+        return 0
+
+    # KEY: Sort by END time for greedy
+    intervals.sort(key=lambda x: x[1])
+
+    count = 0
+    last_end = intervals[0][1]
+
+    for i in range(1, len(intervals)):
+        if intervals[i][0] < last_end:
+            count += 1     # overlap → remove this one
+        else:
+            last_end = intervals[i][1]
+
+    return count
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="non_overlapping.ts"
+function eraseOverlapIntervals(intervals: number[][]): number {
+    if (intervals.length === 0) return 0;
+
+    intervals.sort((a, b) => a[1] - b[1]);
+
+    let count = 0;
+    let lastEnd = intervals[0][1];
+
+    for (let i = 1; i < intervals.length; i++) {
+        if (intervals[i][0] < lastEnd) {
+            count++;
+        } else {
+            lastEnd = intervals[i][1];
+        }
+    }
+
+    return count;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Sorting; linear scan is O(n) |
+| Space | `O(1)` | Only tracking `last_end` and `count` |
+
+## Edge Case Thinking
+
+<Callout type="tip" title="Edge cases">
+  - **Why sort by end, not start?** If you sort by start and see `[1,100]` first, you'd keep it — blocking everything. Sort by end ensures you keep the interval that "gets out of the way" fastest.
+  - **All identical intervals:** `[[1,2],[1,2],[1,2]]` → keep 1, remove 2.
+  - **No overlaps:** `count` stays 0 → return 0.
+</Callout>

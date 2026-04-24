@@ -1,0 +1,50 @@
+---
+readingMinutes: 3
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #253 — one-liner.">
+- Given meeting intervals, return the **minimum number of conference rooms** that can hold them all.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Peak concurrency = answer.">
+- Answer = maximum number of meetings active at any one time.
+- Two canonical ways to compute it: **min-heap of end times** (sorted by start) and **sweep line** of `+1/-1` events.
+- FAANG follow-up: know at least two of the three approaches cold.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution templates" subtitle="Heap and sweep in five lines each.">
+```python
+# A: min-heap
+intervals.sort(key=lambda x: x[0])
+heap = [intervals[0][1]]
+for s, e in intervals[1:]:
+    if s >= heap[0]: heapq.heappop(heap)
+    heapq.heappush(heap, e)
+return len(heap)
+
+# B: sweep line
+events = [(s, 1) for s, _ in intervals] + [(e, -1) for _, e in intervals]
+events.sort(key=lambda x: (x[0], x[1]))
+peak = cur = 0
+for _, d in events:
+    cur += d
+    peak = max(peak, cur)
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Same big-O, different constants.">
+- **Time `O(n log n)`** — sort dominates in both approaches.
+- **Space `O(n)`** — heap (≤ n ends) or events (2n).
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Four to remember.">
+- No meetings → return 0.
+- No overlaps → heap/peak stays at 1.
+- All meetings at the same time → answer = n.
+- Back-to-back `[1,2] + [2,3]` → end (`-1`) sorts before start (`+1`) at time 2, so peak stays at 1 (one room suffices).
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **Peak · is · Rooms** — whatever the peak concurrency is, that's your room count.
+</Callout>

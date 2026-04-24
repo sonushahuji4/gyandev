@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Intervals & Variations — Part 1: Foundations & Core Patterns</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=DM+Sans:wght@400;500;600;700;800&family=Fraunces:wght@700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#050508;--bg2:#0c0c14;--bg3:#111119;--bg4:#16161f;
+  --bdr:#1c1c2a;--bdr2:#26263a;
+  --tx:#c8c8de;--txd:#6a6a88;--txb:#efefff;
+  --ac:#7c6aef;--ac2:#9d8dfa;
+  --cy:#2dd4bf;--pk:#f472b6;--gn:#4ade80;--og:#fb923c;--rd:#f87171;--yw:#fbbf24;--bl:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.78;font-size:15.5px;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(124,106,239,.3);color:#fff}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bdr2);border-radius:4px}
+a{color:var(--ac2);text-decoration:none}a:hover{color:var(--cy)}
+
+/* ── Layout ── */
+.wrap{max-width:1060px;margin:0 auto;padding:0 1.8rem}
+
+/* ── Hero ── */
+.hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding:3rem 1.5rem;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 35% 35%,rgba(124,106,239,.06) 0%,transparent 55%),radial-gradient(ellipse at 65% 65%,rgba(45,212,191,.04) 0%,transparent 55%);pointer-events:none}
+.hero-chip{display:inline-flex;gap:.45rem;padding:.35rem 1rem;background:rgba(124,106,239,.08);border:1px solid rgba(124,106,239,.18);border-radius:99px;font-size:.72rem;font-weight:700;color:var(--ac2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:2rem;position:relative}
+.hero h1{font-family:'Fraunces',serif;font-size:clamp(2.4rem,5.5vw,4.2rem);font-weight:900;color:var(--txb);line-height:1.12;margin-bottom:1.2rem;position:relative}
+.hero h1 em{font-style:normal;background:linear-gradient(135deg,var(--ac),var(--cy),var(--pk));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-sub{font-size:1.08rem;color:var(--txd);max-width:620px;margin-bottom:2.5rem;position:relative}
+.hero-grid{display:flex;gap:1.5rem;flex-wrap:wrap;justify-content:center;position:relative}
+.hero-box{text-align:center;padding:1.1rem 1.8rem;background:var(--bg2);border:1px solid var(--bdr);border-radius:12px}
+.hero-box strong{display:block;font-family:'JetBrains Mono',monospace;font-size:1.7rem;font-weight:700;background:linear-gradient(135deg,var(--ac),var(--cy));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero-box span{font-size:.72rem;color:var(--txd);text-transform:uppercase;letter-spacing:.06em}
+
+/* ── Nav ── */
+.topnav{position:sticky;top:0;z-index:100;background:rgba(5,5,8,.88);backdrop-filter:blur(14px);border-bottom:1px solid var(--bdr);padding:.6rem 0}
+.topnav-inner{display:flex;gap:.2rem;overflow-x:auto;scrollbar-width:none;padding:0 1rem;max-width:1200px;margin:0 auto}
+.topnav-inner::-webkit-scrollbar{display:none}
+.topnav-inner a{flex-shrink:0;padding:.32rem .72rem;font-size:.68rem;font-weight:600;color:var(--txd);border-radius:5px;white-space:nowrap;transition:all .2s}
+.topnav-inner a:hover{background:rgba(124,106,239,.1);color:var(--ac2)}
+
+/* ── Section ── */
+.sec{padding:4.5rem 0;border-bottom:1px solid var(--bdr)}
+.sec:last-child{border-bottom:none}
+.sec-chip{display:inline-flex;align-items:center;gap:.35rem;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--ac2);margin-bottom:.8rem;padding:.28rem .8rem;background:rgba(124,106,239,.07);border:1px solid rgba(124,106,239,.14);border-radius:5px}
+.sec-title{font-family:'Fraunces',serif;font-size:clamp(1.7rem,3.2vw,2.3rem);font-weight:800;color:var(--txb);margin-bottom:.6rem;line-height:1.2}
+.sec-desc{color:var(--txd);font-size:1rem;max-width:680px;margin-bottom:2.5rem}
+
+/* ── Card ── */
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:14px;margin-bottom:2.2rem;overflow:hidden;transition:border-color .3s}
+.card:hover{border-color:var(--bdr2)}
+.card-head{padding:1.8rem 2.2rem 1.3rem;border-bottom:1px solid var(--bdr)}
+.card-num{font-family:'JetBrains Mono',monospace;font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ac2);margin-bottom:.4rem}
+.card-title{font-size:1.35rem;font-weight:800;color:var(--txb);margin-bottom:.3rem}
+.card-lc{font-size:.8rem;color:var(--txd);margin-bottom:.5rem}
+.card-tags{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.6rem}
+.tag{font-size:.64rem;font-weight:600;padding:.18rem .55rem;border-radius:4px;letter-spacing:.03em;background:rgba(124,106,239,.1);color:var(--ac2);border:1px solid rgba(124,106,239,.18)}
+.tag-fire{background:rgba(251,146,60,.1);color:var(--og);border-color:rgba(251,146,60,.18)}
+.card-body{padding:2rem 2.2rem}
+
+/* ── Sub Headings ── */
+.sub{font-size:.95rem;font-weight:700;color:var(--cy);margin:1.6rem 0 .7rem;display:flex;align-items:center;gap:.45rem}
+.sub:first-child{margin-top:0}
+
+/* ── Boxes ── */
+.box-insight{background:rgba(124,106,239,.05);border-left:3px solid var(--ac);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+.box-trick{background:rgba(45,212,191,.05);border-left:3px solid var(--cy);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+.box-warn{background:rgba(248,113,113,.05);border-left:3px solid var(--rd);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+.box-tip{background:rgba(74,222,128,.05);border-left:3px solid var(--gn);padding:.9rem 1.3rem;border-radius:0 8px 8px 0;margin:1rem 0;font-size:.92rem}
+
+/* ── Code ── */
+pre{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:1.4rem;overflow-x:auto;margin:1rem 0;position:relative}
+pre code{font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.7;color:#c9d1d9}
+code{font-family:'JetBrains Mono',monospace;font-size:.84em}
+.il{background:rgba(124,106,239,.1);color:var(--ac2);padding:.14rem .4rem;border-radius:4px;font-size:.8em}
+.kw{color:#ff7b72}.fn{color:#d2a8ff}.st{color:#a5d6ff}.nm{color:#79c0ff}.cm{color:#6e7681;font-style:italic}.vr{color:#ffa657}.cl{color:#f0c674}
+
+/* ── Tab System ── */
+.tabs{display:flex;gap:0;margin:1rem 0 0;border-bottom:1px solid var(--bdr)}
+.tab-btn{padding:.5rem 1.2rem;font-size:.78rem;font-weight:600;font-family:'DM Sans',sans-serif;color:var(--txd);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;position:relative;bottom:-1px}
+.tab-btn:hover{color:var(--txb)}
+.tab-btn.active{color:var(--ac2);border-bottom-color:var(--ac)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* ── Visual Box ── */
+.vis{background:var(--bg);border:1px solid var(--bdr);border-radius:10px;padding:1.4rem;margin:1rem 0;font-family:'JetBrains Mono',monospace;font-size:.8rem;line-height:1.65;color:var(--txd);overflow-x:auto;white-space:pre}
+.vis .h1{color:var(--cy);font-weight:700}
+.vis .h2{color:var(--pk);font-weight:700}
+.vis .h3{color:var(--gn);font-weight:700}
+.vis .h4{color:var(--og);font-weight:700}
+.vis .h5{color:var(--ac2);font-weight:700}
+.vis b{color:var(--txb);font-weight:700}
+
+/* ── IO Box ── */
+.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--bdr);border-radius:10px;overflow:hidden;margin:1rem 0}
+.io-cell{background:var(--bg2);padding:1rem 1.3rem;font-size:.88rem}
+.io-cell.full{grid-column:1/-1}
+.io-label{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--txd);margin-bottom:.4rem}
+.io-val{font-family:'JetBrains Mono',monospace;font-size:.82rem;color:var(--txb)}
+
+/* ── Complexity ── */
+.cx-grid{display:grid;grid-template-columns:auto 1fr 2fr;gap:1px;background:var(--bdr);border-radius:10px;overflow:hidden;margin:1rem 0}
+.cx{background:var(--bg2);padding:.7rem 1rem;font-size:.85rem}
+.cx.hd{background:var(--bg3);font-weight:700;color:var(--txb);font-size:.7rem;text-transform:uppercase;letter-spacing:.06em}
+.cx code{color:var(--cy);font-size:.82rem}
+
+/* ── Relationship Cards ── */
+.rel-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1.2rem;margin:1.5rem 0}
+.rel-card{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:1.4rem;transition:border-color .3s}
+.rel-card:hover{border-color:var(--bdr2)}
+.rel-card h4{font-size:.92rem;font-weight:700;color:var(--txb);margin-bottom:.6rem}
+.rel-card .rel-vis{font-family:'JetBrains Mono',monospace;font-size:.78rem;line-height:1.5;margin:.6rem 0;padding:.8rem;background:var(--bg);border-radius:8px;color:var(--txd);white-space:pre;overflow-x:auto}
+.rel-card .rel-cond{font-size:.82rem;color:var(--txd);margin-top:.5rem}
+.rel-card .rel-cond code{color:var(--cy)}
+
+/* ── Compare Grid ── */
+.cmp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.1rem;margin:1.5rem 0}
+.cmp{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:1.3rem}
+.cmp h4{font-size:.92rem;font-weight:700;margin-bottom:.4rem}
+.cmp p{color:var(--txd);font-size:.86rem}
+
+/* ── Responsive ── */
+@media(max-width:768px){
+  .wrap{padding:0 1rem}
+  .card-head,.card-body{padding:1.3rem}
+  .hero-grid{flex-direction:column;align-items:center}
+  .io-grid{grid-template-columns:1fr}
+  .cx-grid{grid-template-columns:1fr}
+  .rel-grid{grid-template-columns:1fr}
+  pre{padding:1rem}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<header class="hero">
+  <div class="hero-chip">FAANG Interview Mastery — Part 1 of 2</div>
+  <h1>Intervals &<br><em>Their Variations</em></h1>
+  <p class="hero-sub">Foundations, core concepts, and the first 11 essential patterns — with Python & TypeScript, visual walkthroughs, and edge-case thinking for Google, Meta, Amazon, Apple, Netflix & Microsoft.</p>
+  <div class="hero-grid">
+    <div class="hero-box"><strong>22</strong><span>Patterns Total</span></div>
+    <div class="hero-box"><strong>11</strong><span>In This Part</span></div>
+    <div class="hero-box"><strong>6</strong><span>Core Techniques</span></div>
+    <div class="hero-box"><strong>2</strong><span>Languages</span></div>
+  </div>
+</header>
+
+<!-- ═══════════════ NAV ═══════════════ -->
+<nav class="topnav">
+  <div class="topnav-inner">
+    <a href="#foundations">Foundations</a>
+    <a href="#relationships">6 Relationships</a>
+    <a href="#sorting">Sorting</a>
+    <a href="#tips">Tips & Tricks</a>
+    <a href="#p1">P1 Merge</a>
+    <a href="#p2">P2 Insert</a>
+    <a href="#p3">P3 Meeting I</a>
+    <a href="#p4">P4 Meeting II</a>
+    <a href="#p5">P5 Non-Overlap</a>
+    <a href="#p6">P6 Intersection</a>
+    <a href="#p7">P7 Free Time</a>
+    <a href="#p8">P8 Remove</a>
+    <a href="#p9">P9 Calendar I</a>
+    <a href="#p10">P10 Calendar II</a>
+    <a href="#p11">P11 Stream</a>
+  </div>
+</nav>
+
+<main>
+
+<!-- ═══════════════ FOUNDATIONS ═══════════════ -->
+<section class="sec" id="foundations">
+<div class="wrap">
+  <div class="sec-chip">Chapter 01</div>
+  <h2 class="sec-title">Foundational Concepts</h2>
+  <p class="sec-desc">Every interval problem starts here. Master these concepts before touching a single LeetCode problem.</p>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">Foundation</div>
+      <div class="card-title">What is an Interval?</div>
+    </div>
+    <div class="card-body">
+      <p>An interval <code class="il">[start, end]</code> represents a continuous range. In interviews, intervals model time ranges (meetings, schedules), spatial ranges (coordinates, balloons), or abstract number-line ranges.</p>
+
+      <div class="sub">📐 Types of Intervals</div>
+      <div class="vis"><b>Closed    [a, b]</b>   → includes both a and b
+<b>Open      (a, b)</b>   → excludes both a and b
+<b>Half-Open [a, b)</b>   → includes a, excludes b  <span class="h3">← MOST COMMON in real systems</span>
+<b>Half-Open (a, b]</b>   → excludes a, includes b</div>
+
+      <div class="box-tip">
+        <strong>FAANG Reality Check:</strong> LeetCode uses <strong>closed intervals [a, b]</strong>. But real-world systems (Google Calendar, cron jobs, database ranges) use <strong>half-open intervals [a, b)</strong> because they compose cleanly — [9, 10) and [10, 11) are adjacent, not overlapping. Always clarify with your interviewer which type they mean.
+      </div>
+
+      <div class="sub">🔑 The Universal Overlap Formula</div>
+      <p>Two intervals <code class="il">[a1, a2]</code> and <code class="il">[b1, b2]</code> overlap if and only if:</p>
+      <div class="vis"><span class="h1">max(a1, b1) ≤ min(a2, b2)</span>
+
+If true:
+  Intersection = <span class="h2">[max(a1, b1), min(a2, b2)]</span>
+  Union        = <span class="h3">[min(a1, b1), max(a2, b2)]</span>
+
+If false:
+  No overlap — the gap between them is <span class="h4">[min(a2,b2), max(a1,b1)]</span></div>
+
+      <div class="box-insight">
+        <strong>Why this formula matters:</strong> Instead of checking 6 separate cases, this single expression handles ALL overlap scenarios. Memorize <code class="il">max(start1, start2) &lt;= min(end1, end2)</code> — it's the foundation of 80% of interval solutions.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ 6 RELATIONSHIPS ═══════════════ -->
+<section class="sec" id="relationships">
+<div class="wrap">
+  <div class="sec-chip">Chapter 02</div>
+  <h2 class="sec-title">The 6 Interval Relationships</h2>
+  <p class="sec-desc">Every possible arrangement of two intervals falls into one of these six categories. Understanding them intuitively is key to writing clean, bug-free code.</p>
+
+  <div class="rel-grid">
+    <div class="rel-card" style="border-left:3px solid var(--bl)">
+      <h4>① A Entirely Before B</h4>
+      <div class="rel-vis">  A: <span style="color:var(--bl)">■■■■■</span>
+  B:              <span style="color:var(--pk)">■■■■■</span>
+     ───┬───┬─────┬───┬───→
+        A.s  A.e  B.s  B.e</div>
+      <div class="rel-cond">Condition: <code>A.end &lt; B.start</code><br>
+      Result: <strong>No overlap</strong> — both intervals stay separate.<br>
+      <em>Think of it as:</em> A finishes before B even begins.</div>
+    </div>
+
+    <div class="rel-card" style="border-left:3px solid var(--pk)">
+      <h4>② B Entirely Before A</h4>
+      <div class="rel-vis">  A:              <span style="color:var(--bl)">■■■■■</span>
+  B: <span style="color:var(--pk)">■■■■■</span>
+     ───┬───┬─────┬───┬───→
+        B.s  B.e  A.s  A.e</div>
+      <div class="rel-cond">Condition: <code>B.end &lt; A.start</code><br>
+      Result: <strong>No overlap</strong> — mirror of case ①.<br>
+      <em>After sorting by start,</em> this case becomes impossible — A always starts ≤ B.</div>
+    </div>
+
+    <div class="rel-card" style="border-left:3px solid var(--cy)">
+      <h4>③ Partial Overlap (A starts first)</h4>
+      <div class="rel-vis">  A: <span style="color:var(--bl)">■■■■■■■■■</span>
+  B:       <span style="color:var(--pk)">■■■■■■■■■</span>
+           <span style="color:var(--cy)">▓▓▓▓▓</span>  ← intersection
+     ──┬───────┬─────┬────→
+       A.s    B.s   A.e  B.e</div>
+      <div class="rel-cond">Condition: <code>A.start ≤ B.start</code> AND <code>A.end ≥ B.start</code> AND <code>A.end ≤ B.end</code><br>
+      Merged: <code>[A.start, B.end]</code><br>
+      Intersection: <code>[B.start, A.end]</code></div>
+    </div>
+
+    <div class="rel-card" style="border-left:3px solid var(--og)">
+      <h4>④ Partial Overlap (B starts first)</h4>
+      <div class="rel-vis">  A:       <span style="color:var(--bl)">■■■■■■■■■</span>
+  B: <span style="color:var(--pk)">■■■■■■■■■</span>
+           <span style="color:var(--og)">▓▓▓▓▓</span>  ← intersection
+     ──┬───────┬─────┬────→
+       B.s    A.s   B.e  A.e</div>
+      <div class="rel-cond">Condition: <code>B.start ≤ A.start</code> AND <code>B.end ≥ A.start</code> AND <code>B.end ≤ A.end</code><br>
+      Merged: <code>[B.start, A.end]</code><br>
+      <em>After sorting by start,</em> this case also becomes impossible.</div>
+    </div>
+
+    <div class="rel-card" style="border-left:3px solid var(--gn)">
+      <h4>⑤ A Fully Contains B</h4>
+      <div class="rel-vis">  A: <span style="color:var(--bl)">■■■■■■■■■■■■■■■</span>
+  B:      <span style="color:var(--pk)">■■■■■■■</span>
+     ──┬──────────────┬───→
+       A.s    B.s B.e    A.e</div>
+      <div class="rel-cond">Condition: <code>A.start ≤ B.start</code> AND <code>A.end ≥ B.end</code><br>
+      Merged: <code>[A.start, A.end]</code> (A unchanged — it already covers B)<br>
+      <em>Trap:</em> Don't forget to update end as max(A.end, B.end) in code — it handles this naturally.</div>
+    </div>
+
+    <div class="rel-card" style="border-left:3px solid var(--yw)">
+      <h4>⑥ B Fully Contains A</h4>
+      <div class="rel-vis">  A:      <span style="color:var(--bl)">■■■■■■■</span>
+  B: <span style="color:var(--pk)">■■■■■■■■■■■■■■■</span>
+     ──┬──────────────┬───→
+       B.s    A.s A.e    B.e</div>
+      <div class="rel-cond">Condition: <code>B.start ≤ A.start</code> AND <code>B.end ≥ A.end</code><br>
+      Merged: <code>[B.start, B.end]</code><br>
+      <em>After sorting,</em> this becomes: A.start = B.start but B.end &gt; A.end.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="sub">🧠 The Key Insight That Simplifies Everything</div>
+      <div class="box-trick">
+        <strong>After sorting by start time, you reduce 6 cases → 3 cases:</strong><br><br>
+        Since A always starts ≤ B after sorting, cases ② and ④ (B starts first) become impossible. Your code only needs to handle:<br><br>
+        <strong>1. No overlap:</strong> <code class="il">A.end &lt; B.start</code> → keep both separate<br>
+        <strong>2. Partial overlap:</strong> <code class="il">A.end ≥ B.start AND A.end &lt; B.end</code> → merge to [A.start, B.end]<br>
+        <strong>3. Containment:</strong> <code class="il">A.end ≥ B.end</code> → keep A as-is (it already covers B)<br><br>
+        Cases 2 and 3 collapse into a single line: <code class="il">merged_end = max(A.end, B.end)</code>
+      </div>
+
+      <div class="sub">💡 My Mental Model</div>
+      <p>Think of intervals as <strong>blocks on a timeline ruler</strong>. Sorting aligns them left-to-right. Then you just walk right, and for each new block, ask: "does it touch or overlap the last block I placed?" If yes → extend. If no → start a new block. That's it. That single mental model solves Merge Intervals, Employee Free Time, and several others.</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ SORTING STRATEGIES ═══════════════ -->
+<section class="sec" id="sorting">
+<div class="wrap">
+  <div class="sec-chip">Chapter 03</div>
+  <h2 class="sec-title">Sorting Strategies</h2>
+  <p class="sec-desc">The most important decision in any interval problem: how to sort. The wrong sort order = wrong answer.</p>
+
+  <div class="cmp-grid">
+    <div class="cmp" style="border-left:3px solid var(--ac)">
+      <h4 style="color:var(--ac2)">Sort by Start Time</h4>
+      <p><code class="il">sort(key=λ x: x[0])</code></p>
+      <p style="margin-top:.4rem"><strong>Use for:</strong> Merging, inserting, intersection, conflict detection</p>
+      <p><strong>Problems:</strong> #56, #57, #252, #253, #759, #986</p>
+    </div>
+    <div class="cmp" style="border-left:3px solid var(--gn)">
+      <h4 style="color:var(--gn)">Sort by End Time</h4>
+      <p><code class="il">sort(key=λ x: x[1])</code></p>
+      <p style="margin-top:.4rem"><strong>Use for:</strong> Greedy selection — max non-overlapping, min removals, min arrows</p>
+      <p><strong>Problems:</strong> #435, #452, Activity Selection</p>
+    </div>
+    <div class="cmp" style="border-left:3px solid var(--pk)">
+      <h4 style="color:var(--pk)">Sort Start ↑, then End ↓</h4>
+      <p><code class="il">sort(key=λ x: (x[0], -x[1]))</code></p>
+      <p style="margin-top:.4rem"><strong>Use for:</strong> Remove Covered Intervals — process largest-span first at each start</p>
+      <p><strong>Problems:</strong> #1288</p>
+    </div>
+    <div class="cmp" style="border-left:3px solid var(--yw)">
+      <h4 style="color:var(--yw)">Event-Based (Sweep Line)</h4>
+      <p><code class="il">events.sort(key=λ x: (x[0], x[1]))</code></p>
+      <p style="margin-top:.4rem"><strong>Use for:</strong> Counting active intervals at each point, peak usage, skyline</p>
+      <p><strong>Problems:</strong> #253 alt, #732, #1094, #218</p>
+    </div>
+  </div>
+
+  <div class="box-warn">
+    <strong>The #1 Mistake:</strong> Using sort-by-start when the problem needs sort-by-end (or vice versa). Rule of thumb — if the problem says "maximize" or "minimize" a count, you almost certainly need <strong>sort by end</strong> (greedy). If it says "merge" or "combine", you need <strong>sort by start</strong>.
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ TIPS & TRICKS ═══════════════ -->
+<section class="sec" id="tips">
+<div class="wrap">
+  <div class="sec-chip">Chapter 04</div>
+  <h2 class="sec-title">Concepts, Tips & Common Approaches</h2>
+  <p class="sec-desc">Patterns and mental shortcuts that help you solve any interval problem, even ones you've never seen before.</p>
+
+  <div class="card">
+    <div class="card-body">
+      <div class="sub">🧩 The 5 Common Approaches</div>
+
+      <div class="cmp-grid">
+        <div class="cmp" style="border-top:3px solid var(--ac)">
+          <h4 style="color:var(--ac2)">1. Sort + Linear Scan</h4>
+          <p>Sort intervals, then walk through them maintaining the "last" interval. Compare each new interval with the last — merge, extend, or start fresh. Solves ~50% of all interval problems.</p>
+        </div>
+        <div class="cmp" style="border-top:3px solid var(--cy)">
+          <h4 style="color:var(--cy)">2. Sweep Line (Events)</h4>
+          <p>Decompose intervals into start/end events. Sort events. Sweep through maintaining a counter (or heap). Answers questions about "how many overlap at any point?"</p>
+        </div>
+        <div class="cmp" style="border-top:3px solid var(--gn)">
+          <h4 style="color:var(--gn)">3. Greedy Selection</h4>
+          <p>Sort by end time, greedily pick intervals that finish earliest. For optimization: maximize kept intervals, minimize removals, minimize resources.</p>
+        </div>
+        <div class="cmp" style="border-top:3px solid var(--pk)">
+          <h4 style="color:var(--pk)">4. Priority Queue (Heap)</h4>
+          <p>Track active intervals by end time using a min-heap. Enables efficient "is any room free?" checks. Core technique for resource allocation problems.</p>
+        </div>
+        <div class="cmp" style="border-top:3px solid var(--og)">
+          <h4 style="color:var(--og)">5. Two Pointers</h4>
+          <p>When processing two already-sorted interval lists simultaneously. Advance the pointer whose interval ends first. Key for intersection problems.</p>
+        </div>
+      </div>
+
+      <div class="sub">🎯 Pattern Recognition Shortcuts</div>
+      <div class="box-trick">
+        <strong>"Merge overlapping"</strong> → Sort by start + linear scan<br>
+        <strong>"Can attend all?" / "Any conflict?"</strong> → Sort + check consecutive pairs<br>
+        <strong>"How many rooms/resources?"</strong> → Sweep line or min-heap<br>
+        <strong>"Max events to attend"</strong> → Sort by end (greedy)<br>
+        <strong>"Min removals"</strong> → Sort by end (greedy) — answer = n - max_kept<br>
+        <strong>"Intersection of two lists"</strong> → Two pointers<br>
+        <strong>"Free time / gaps"</strong> → Merge all → find gaps between merged<br>
+        <strong>"Range update on array"</strong> → Difference array
+      </div>
+
+      <div class="sub">🛡️ Universal Edge Cases Checklist</div>
+      <div class="box-warn">
+        <strong>Always ask yourself these before coding:</strong><br><br>
+        1. <strong>Empty input?</strong> → Return empty / 0 / true depending on problem<br>
+        2. <strong>Single interval?</strong> → Usually the trivial base case<br>
+        3. <strong>All intervals identical?</strong> → They all merge into one<br>
+        4. <strong>No overlaps at all?</strong> → Output equals input<br>
+        5. <strong>One giant interval covering everything?</strong> → Everything merges into it<br>
+        6. <strong>Touching endpoints [1,2] and [2,3]?</strong> → Overlapping or not? Clarify!<br>
+        7. <strong>Start = End? [5,5]?</strong> → Zero-length interval — valid or degenerate?<br>
+        8. <strong>Negative coordinates?</strong> → Does your solution handle them?<br>
+        9. <strong>Very large values?</strong> → Integer overflow in start + end calculations?
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 1: MERGE INTERVALS ═══════════════ -->
+<section class="sec" id="p1">
+<div class="wrap">
+  <div class="sec-chip">Pattern 01</div>
+  <h2 class="sec-title">Merge Intervals</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #56</div>
+      <div class="card-title">Merge Intervals</div>
+      <div class="card-tags">
+        <span class="tag tag-fire">🔥 Very High Frequency</span>
+        <span class="tag">Google</span><span class="tag">Meta</span><span class="tag">Amazon</span><span class="tag">Microsoft</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given an array of intervals where <code class="il">intervals[i] = [startᵢ, endᵢ]</code>, merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the ranges in the input.</p>
+
+      <div class="io-grid">
+        <div class="io-cell">
+          <div class="io-label">Input</div>
+          <div class="io-val">intervals = [[1,3],[2,6],[8,10],[15,18]]</div>
+        </div>
+        <div class="io-cell">
+          <div class="io-label">Output</div>
+          <div class="io-val">[[1,6],[8,10],[15,18]]</div>
+        </div>
+        <div class="io-cell">
+          <div class="io-label">Input</div>
+          <div class="io-val">intervals = [[1,4],[4,5]]</div>
+        </div>
+        <div class="io-cell">
+          <div class="io-label">Output</div>
+          <div class="io-val">[[1,5]]</div>
+        </div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Sort by start time so overlapping intervals become neighbors. Walk left to right: if the current interval's start ≤ the last merged interval's end, they overlap — extend the end. Otherwise, it's a new group.</p>
+
+      <div class="sub">🎨 Visual Walkthrough</div>
+      <div class="vis">Input: [[1,3], [2,6], [8,10], [15,18]]
+
+After sort by start:  [[1,3], [2,6], [8,10], [15,18]]  (already sorted)
+
+<b>Step 1:</b> merged = [<span class="h1">[1,3]</span>]
+<b>Step 2:</b> [2,6] → 2 ≤ 3? <span class="h3">YES</span> → merge → end = max(3,6) = 6 → [<span class="h1">[1,6]</span>]
+<b>Step 3:</b> [8,10] → 8 ≤ 6? <span class="h2">NO</span> → new group → [<span class="h1">[1,6]</span>, <span class="h5">[8,10]</span>]
+<b>Step 4:</b> [15,18] → 15 ≤ 10? <span class="h2">NO</span> → new group → [<span class="h1">[1,6]</span>, <span class="h5">[8,10]</span>, <span class="h3">[15,18]</span>]
+
+Timeline:
+1──<span class="h1">██████</span>──6     8─<span class="h5">███</span>─10      15─<span class="h3">████</span>─18</div>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p1-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p1-ts')">TypeScript</button>
+      </div>
+      <div id="p1-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">merge</span>(intervals: <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]) -> <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]:
+    <span class="kw">if not</span> intervals:
+        <span class="kw">return</span> []
+
+    intervals.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: x[<span class="nm">0</span>])
+    merged = [intervals[<span class="nm">0</span>]]
+
+    <span class="kw">for</span> start, end <span class="kw">in</span> intervals[<span class="nm">1</span>:]:
+        <span class="kw">if</span> start <= merged[-<span class="nm">1</span>][<span class="nm">1</span>]:
+            merged[-<span class="nm">1</span>][<span class="nm">1</span>] = <span class="fn">max</span>(merged[-<span class="nm">1</span>][<span class="nm">1</span>], end)
+        <span class="kw">else</span>:
+            merged.append([start, end])
+
+    <span class="kw">return</span> merged</code></pre>
+      </div>
+      <div id="p1-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">merge</span>(intervals: <span class="cl">number</span>[][]): <span class="cl">number</span>[][] {
+    <span class="kw">if</span> (intervals.length === <span class="nm">0</span>) <span class="kw">return</span> [];
+
+    intervals.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>]);
+    <span class="kw">const</span> merged: <span class="cl">number</span>[][] = [intervals[<span class="nm">0</span>]];
+
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; intervals.length; i++) {
+        <span class="kw">const</span> last = merged[merged.length - <span class="nm">1</span>];
+        <span class="kw">const</span> [start, end] = intervals[i];
+
+        <span class="kw">if</span> (start &lt;= last[<span class="nm">1</span>]) {
+            last[<span class="nm">1</span>] = Math.max(last[<span class="nm">1</span>], end);
+        } <span class="kw">else</span> {
+            merged.push([start, end]);
+        }
+    }
+
+    <span class="kw">return</span> merged;
+}</code></pre>
+      </div>
+
+      <div class="sub">📈 Complexity</div>
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(n log n)</code></div><div class="cx">Sorting dominates the O(n) linear scan</div>
+        <div class="cx">Space</div><div class="cx"><code>O(n)</code></div><div class="cx">Output can hold all n intervals (no overlaps case)</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>Empty array:</strong> Return []. Always guard this first.<br>
+        <strong>Single interval:</strong> Return it as-is — nothing to merge with.<br>
+        <strong>All overlapping:</strong> e.g. [[1,10],[2,5],[3,7]] → everything merges into [[1,10]]. Your max() in the merge step handles containment automatically.<br>
+        <strong>Touching endpoints:</strong> [1,2] and [2,3] → overlap because 2 ≤ 2. The ≤ (not &lt;) is critical.<br>
+        <strong>Already sorted & non-overlapping:</strong> Output = input. The else branch handles this.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 2: INSERT INTERVAL ═══════════════ -->
+<section class="sec" id="p2">
+<div class="wrap">
+  <div class="sec-chip">Pattern 02</div>
+  <h2 class="sec-title">Insert Interval</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #57</div>
+      <div class="card-title">Insert Interval</div>
+      <div class="card-tags">
+        <span class="tag tag-fire">🔥 High Frequency</span>
+        <span class="tag">Google</span><span class="tag">Meta</span><span class="tag">LinkedIn</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given a sorted list of non-overlapping intervals, insert a new interval. Merge if necessary. Return the result still sorted and non-overlapping.</p>
+
+      <div class="io-grid">
+        <div class="io-cell">
+          <div class="io-label">Input</div>
+          <div class="io-val">intervals = [[1,2],[3,5],[6,7],[8,10],[12,16]]<br>newInterval = [4,8]</div>
+        </div>
+        <div class="io-cell">
+          <div class="io-label">Output</div>
+          <div class="io-val">[[1,2],[3,10],[12,16]]</div>
+        </div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Three-phase sweep: (1) Collect all intervals that end before the new one starts — no overlap, keep as-is. (2) Merge all intervals that overlap with the new one — expand the new interval. (3) Append remaining intervals after the merged zone. No sorting needed since input is pre-sorted!</p>
+
+      <div class="sub">🎨 Visual Walkthrough</div>
+      <div class="vis">intervals: [1,2]  [3,5]  [6,7]  [8,10]  [12,16]
+new:                [<span class="h2">====4========8====</span>]
+
+<b>Phase 1 — Before:</b> [1,2] ends at 2 < 4 → <span class="h3">keep [1,2]</span>
+<b>Phase 2 — Merge:</b>
+  [3,5] starts 3 ≤ 8 → merge → new = [<span class="h1">3</span>, 8]
+  [6,7] starts 6 ≤ 8 → merge → new = [3, 8]
+  [8,10] starts 8 ≤ 8 → merge → new = [3, <span class="h1">10</span>]
+  → <span class="h2">add [3, 10]</span>
+<b>Phase 3 — After:</b> [12,16] → <span class="h3">keep [12,16]</span>
+
+Result: [[1,2], <span class="h2">[3,10]</span>, [12,16]]</div>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p2-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p2-ts')">TypeScript</button>
+      </div>
+      <div id="p2-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">insert</span>(intervals: <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]], newInterval: <span class="cl">list</span>[<span class="cl">int</span>]) -> <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]:
+    result = []
+    i, n = <span class="nm">0</span>, <span class="fn">len</span>(intervals)
+
+    <span class="cm"># Phase 1: intervals entirely before newInterval</span>
+    <span class="kw">while</span> i &lt; n <span class="kw">and</span> intervals[i][<span class="nm">1</span>] &lt; newInterval[<span class="nm">0</span>]:
+        result.append(intervals[i])
+        i += <span class="nm">1</span>
+
+    <span class="cm"># Phase 2: merge overlapping intervals</span>
+    <span class="kw">while</span> i &lt; n <span class="kw">and</span> intervals[i][<span class="nm">0</span>] &lt;= newInterval[<span class="nm">1</span>]:
+        newInterval[<span class="nm">0</span>] = <span class="fn">min</span>(newInterval[<span class="nm">0</span>], intervals[i][<span class="nm">0</span>])
+        newInterval[<span class="nm">1</span>] = <span class="fn">max</span>(newInterval[<span class="nm">1</span>], intervals[i][<span class="nm">1</span>])
+        i += <span class="nm">1</span>
+    result.append(newInterval)
+
+    <span class="cm"># Phase 3: remaining intervals</span>
+    <span class="kw">while</span> i &lt; n:
+        result.append(intervals[i])
+        i += <span class="nm">1</span>
+
+    <span class="kw">return</span> result</code></pre>
+      </div>
+      <div id="p2-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">insert</span>(intervals: <span class="cl">number</span>[][], newInterval: <span class="cl">number</span>[]): <span class="cl">number</span>[][] {
+    <span class="kw">const</span> result: <span class="cl">number</span>[][] = [];
+    <span class="kw">let</span> i = <span class="nm">0</span>;
+    <span class="kw">const</span> n = intervals.length;
+
+    <span class="cm">// Phase 1: before</span>
+    <span class="kw">while</span> (i &lt; n && intervals[i][<span class="nm">1</span>] &lt; newInterval[<span class="nm">0</span>]) {
+        result.push(intervals[i]);
+        i++;
+    }
+
+    <span class="cm">// Phase 2: merge</span>
+    <span class="kw">while</span> (i &lt; n && intervals[i][<span class="nm">0</span>] &lt;= newInterval[<span class="nm">1</span>]) {
+        newInterval[<span class="nm">0</span>] = Math.min(newInterval[<span class="nm">0</span>], intervals[i][<span class="nm">0</span>]);
+        newInterval[<span class="nm">1</span>] = Math.max(newInterval[<span class="nm">1</span>], intervals[i][<span class="nm">1</span>]);
+        i++;
+    }
+    result.push(newInterval);
+
+    <span class="cm">// Phase 3: after</span>
+    <span class="kw">while</span> (i &lt; n) {
+        result.push(intervals[i]);
+        i++;
+    }
+
+    <span class="kw">return</span> result;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(n)</code></div><div class="cx">Single pass — input already sorted, no re-sort needed</div>
+        <div class="cx">Space</div><div class="cx"><code>O(n)</code></div><div class="cx">Output array</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>New interval before everything:</strong> [0,0] into [[1,5]] → Phase 1 does nothing, Phase 2 does nothing, result = [[0,0],[1,5]].<br>
+        <strong>New interval after everything:</strong> Phase 1 adds all, Phase 2 adds new at end.<br>
+        <strong>New interval swallows everything:</strong> Phase 2 merges all existing intervals into one giant merged interval.<br>
+        <strong>Empty intervals list:</strong> Just return [newInterval].
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 3: MEETING ROOMS I ═══════════════ -->
+<section class="sec" id="p3">
+<div class="wrap">
+  <div class="sec-chip">Pattern 03</div>
+  <h2 class="sec-title">Meeting Rooms I — Conflict Detection</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #252</div>
+      <div class="card-title">Can Attend All Meetings?</div>
+      <div class="card-tags"><span class="tag">Amazon</span><span class="tag">Meta</span><span class="tag">Bloomberg</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given an array of meeting time intervals, determine if a person can attend all meetings (i.e., no two meetings overlap).</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[0,30],[5,10],[15,20]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">false</div></div>
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[7,10],[2,4]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">true</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Sort by start time. After sorting, overlapping meetings must be adjacent. So just check each consecutive pair: if any meeting starts before the previous one ends → conflict.</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p3-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p3-ts')">TypeScript</button>
+      </div>
+      <div id="p3-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">canAttendMeetings</span>(intervals: <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]) -> <span class="cl">bool</span>:
+    intervals.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: x[<span class="nm">0</span>])
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1</span>, <span class="fn">len</span>(intervals)):
+        <span class="kw">if</span> intervals[i][<span class="nm">0</span>] &lt; intervals[i - <span class="nm">1</span>][<span class="nm">1</span>]:
+            <span class="kw">return False</span>
+
+    <span class="kw">return True</span></code></pre>
+      </div>
+      <div id="p3-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">canAttendMeetings</span>(intervals: <span class="cl">number</span>[][]): <span class="cl">boolean</span> {
+    intervals.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>]);
+
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; intervals.length; i++) {
+        <span class="kw">if</span> (intervals[i][<span class="nm">0</span>] &lt; intervals[i - <span class="nm">1</span>][<span class="nm">1</span>]) {
+            <span class="kw">return false</span>;
+        }
+    }
+
+    <span class="kw">return true</span>;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(n log n)</code></div><div class="cx">Dominated by sorting; linear scan is O(n)</div>
+        <div class="cx">Space</div><div class="cx"><code>O(1)</code></div><div class="cx">In-place sort, no extra structure</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>0 or 1 meetings:</strong> Always true — no possible conflict.<br>
+        <strong>[1,2] and [2,3]:</strong> Does 2 &lt; 2 fail? No → no conflict. These are back-to-back meetings (half-open semantics). If closed semantics, you'd use ≤ instead.<br>
+        <strong>All same time:</strong> [[1,5],[1,5],[1,5]] → first pair already conflicts → return false.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 4: MEETING ROOMS II ═══════════════ -->
+<section class="sec" id="p4">
+<div class="wrap">
+  <div class="sec-chip">Pattern 04</div>
+  <h2 class="sec-title">Meeting Rooms II — Minimum Rooms</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #253</div>
+      <div class="card-title">Minimum Conference Rooms Required</div>
+      <div class="card-tags">
+        <span class="tag tag-fire">🔥🔥 Very High Frequency</span>
+        <span class="tag">Google</span><span class="tag">Amazon</span><span class="tag">Meta</span><span class="tag">Microsoft</span><span class="tag">Apple</span>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given meeting time intervals, find the minimum number of conference rooms required to hold all meetings.</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[0,30],[5,10],[15,20]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">2</div></div>
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[7,10],[2,4]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">1</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition — Three Solutions (Know ALL for FAANG)</div>
+      <div class="box-insight">
+        FAANG interviewers love follow-ups. They'll ask you to solve it one way, then say "Can you do it differently?" Knowing three approaches signals deep mastery.
+      </div>
+
+      <div class="sub">Solution A: Min-Heap (Most Intuitive)</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p4a-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p4a-ts')">TypeScript</button>
+      </div>
+      <div id="p4a-py" class="tab-content active">
+<pre><code><span class="kw">import</span> heapq
+
+<span class="kw">def</span> <span class="fn">minMeetingRooms</span>(intervals: <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]) -> <span class="cl">int</span>:
+    <span class="kw">if not</span> intervals:
+        <span class="kw">return</span> <span class="nm">0</span>
+
+    intervals.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: x[<span class="nm">0</span>])
+
+    <span class="cm"># Heap stores end times of active rooms</span>
+    heap = [intervals[<span class="nm">0</span>][<span class="nm">1</span>]]
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1</span>, <span class="fn">len</span>(intervals)):
+        <span class="cm"># If earliest-ending room is free, reuse it</span>
+        <span class="kw">if</span> intervals[i][<span class="nm">0</span>] >= heap[<span class="nm">0</span>]:
+            heapq.heappop(heap)
+        <span class="cm"># Assign a room (new or reused)</span>
+        heapq.heappush(heap, intervals[i][<span class="nm">1</span>])
+
+    <span class="kw">return</span> <span class="fn">len</span>(heap)</code></pre>
+      </div>
+      <div id="p4a-ts" class="tab-content">
+<pre><code><span class="cm">// TypeScript needs a MinHeap. Using sorted array for clarity:</span>
+<span class="kw">function</span> <span class="fn">minMeetingRooms</span>(intervals: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    <span class="kw">if</span> (intervals.length === <span class="nm">0</span>) <span class="kw">return</span> <span class="nm">0</span>;
+
+    intervals.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>]);
+    <span class="kw">const</span> endTimes: <span class="cl">number</span>[] = [intervals[<span class="nm">0</span>][<span class="nm">1</span>]];
+
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; intervals.length; i++) {
+        endTimes.sort((a, b) => a - b); <span class="cm">// simulate min-heap</span>
+        <span class="kw">if</span> (intervals[i][<span class="nm">0</span>] >= endTimes[<span class="nm">0</span>]) {
+            endTimes.shift();
+        }
+        endTimes.push(intervals[i][<span class="nm">1</span>]);
+    }
+
+    <span class="kw">return</span> endTimes.length;
+}</code></pre>
+      </div>
+
+      <div class="sub">Solution B: Sweep Line (Most Elegant)</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p4b-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p4b-ts')">TypeScript</button>
+      </div>
+      <div id="p4b-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">minMeetingRooms</span>(intervals: <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]) -> <span class="cl">int</span>:
+    events = []
+    <span class="kw">for</span> start, end <span class="kw">in</span> intervals:
+        events.append((start, <span class="nm">1</span>))    <span class="cm"># meeting starts</span>
+        events.append((end, -<span class="nm">1</span>))     <span class="cm"># meeting ends</span>
+
+    events.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: (x[<span class="nm">0</span>], x[<span class="nm">1</span>]))
+
+    max_rooms = current = <span class="nm">0</span>
+    <span class="kw">for</span> _, delta <span class="kw">in</span> events:
+        current += delta
+        max_rooms = <span class="fn">max</span>(max_rooms, current)
+
+    <span class="kw">return</span> max_rooms</code></pre>
+      </div>
+      <div id="p4b-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">minMeetingRooms</span>(intervals: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    <span class="kw">const</span> events: [<span class="cl">number</span>, <span class="cl">number</span>][] = [];
+    <span class="kw">for</span> (<span class="kw">const</span> [start, end] <span class="kw">of</span> intervals) {
+        events.push([start, <span class="nm">1</span>]);
+        events.push([end, -<span class="nm">1</span>]);
+    }
+
+    events.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>] || a[<span class="nm">1</span>] - b[<span class="nm">1</span>]);
+
+    <span class="kw">let</span> maxRooms = <span class="nm">0</span>, current = <span class="nm">0</span>;
+    <span class="kw">for</span> (<span class="kw">const</span> [, delta] <span class="kw">of</span> events) {
+        current += delta;
+        maxRooms = Math.max(maxRooms, current);
+    }
+
+    <span class="kw">return</span> maxRooms;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(n log n)</code></div><div class="cx">Both approaches: sorting dominates</div>
+        <div class="cx">Space</div><div class="cx"><code>O(n)</code></div><div class="cx">Heap holds at most n end times / 2n events</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>No meetings:</strong> Return 0.<br>
+        <strong>No overlaps at all:</strong> Only 1 room needed — heap never grows beyond 1.<br>
+        <strong>All meetings at same time:</strong> n rooms needed — heap grows to n.<br>
+        <strong>Back-to-back [1,2],[2,3]:</strong> Sweep line — end event (-1) at time 2 processes before start event (+1). So rooms go 1→0→1, peak = 1. Correct! One room suffices.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 5: NON-OVERLAPPING ═══════════════ -->
+<section class="sec" id="p5">
+<div class="wrap">
+  <div class="sec-chip">Pattern 05</div>
+  <h2 class="sec-title">Non-Overlapping Intervals</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #435</div>
+      <div class="card-title">Minimum Removals to Make Non-Overlapping</div>
+      <div class="card-tags"><span class="tag">Amazon</span><span class="tag">Google</span><span class="tag">Microsoft</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given an array of intervals, return the minimum number of intervals you need to remove to make the rest non-overlapping.</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[1,2],[2,3],[3,4],[1,3]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">1</div></div>
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">[[1,2],[1,2],[1,2]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">2</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition — Sort by END (Greedy)</div>
+      <div class="box-insight">
+        <strong>This is the Activity Selection Problem in disguise.</strong> By sorting by end time, we greedily keep intervals that finish earliest, leaving maximum room for future intervals. The number of removals = total - max intervals we can keep.
+      </div>
+
+      <div class="sub">🎨 Visual Walkthrough</div>
+      <div class="vis">Input: [[1,2], [2,3], [3,4], [1,3]]
+
+After sort by <span class="h3">END</span>: [[1,<span class="h3">2</span>], [2,<span class="h3">3</span>], [1,<span class="h3">3</span>], [3,<span class="h3">4</span>]]
+
+Step 1: keep [1,<span class="h1">2</span>],  last_end = 2
+Step 2: [2,3] → 2 ≥ 2 → no overlap → <span class="h3">KEEP</span>,  last_end = 3
+Step 3: [1,3] → 1 < 3 → overlap   → <span class="h2">REMOVE</span>, count = 1
+Step 4: [3,4] → 3 ≥ 3 → no overlap → <span class="h3">KEEP</span>
+
+Answer: <span class="h1">1 removal</span></div>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p5-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p5-ts')">TypeScript</button>
+      </div>
+      <div id="p5-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">eraseOverlapIntervals</span>(intervals: <span class="cl">list</span>[<span class="cl">list</span>[<span class="cl">int</span>]]) -> <span class="cl">int</span>:
+    <span class="kw">if not</span> intervals:
+        <span class="kw">return</span> <span class="nm">0</span>
+
+    <span class="cm"># KEY: Sort by END time for greedy</span>
+    intervals.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: x[<span class="nm">1</span>])
+
+    count = <span class="nm">0</span>
+    last_end = intervals[<span class="nm">0</span>][<span class="nm">1</span>]
+
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1</span>, <span class="fn">len</span>(intervals)):
+        <span class="kw">if</span> intervals[i][<span class="nm">0</span>] &lt; last_end:
+            count += <span class="nm">1</span>     <span class="cm"># overlap → remove this one</span>
+        <span class="kw">else</span>:
+            last_end = intervals[i][<span class="nm">1</span>]
+
+    <span class="kw">return</span> count</code></pre>
+      </div>
+      <div id="p5-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">eraseOverlapIntervals</span>(intervals: <span class="cl">number</span>[][]): <span class="cl">number</span> {
+    <span class="kw">if</span> (intervals.length === <span class="nm">0</span>) <span class="kw">return</span> <span class="nm">0</span>;
+
+    intervals.sort((a, b) => a[<span class="nm">1</span>] - b[<span class="nm">1</span>]);
+
+    <span class="kw">let</span> count = <span class="nm">0</span>;
+    <span class="kw">let</span> lastEnd = intervals[<span class="nm">0</span>][<span class="nm">1</span>];
+
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; intervals.length; i++) {
+        <span class="kw">if</span> (intervals[i][<span class="nm">0</span>] &lt; lastEnd) {
+            count++;
+        } <span class="kw">else</span> {
+            lastEnd = intervals[i][<span class="nm">1</span>];
+        }
+    }
+
+    <span class="kw">return</span> count;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(n log n)</code></div><div class="cx">Sorting; linear scan is O(n)</div>
+        <div class="cx">Space</div><div class="cx"><code>O(1)</code></div><div class="cx">Only tracking last_end and count</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>Why sort by end, not start?</strong> If you sort by start and see [1,100] first, you'd keep it — blocking everything. Sort by end ensures you keep the interval that "gets out of the way" fastest.<br>
+        <strong>All identical intervals:</strong> [[1,2],[1,2],[1,2]] → keep 1, remove 2.<br>
+        <strong>No overlaps:</strong> count stays 0 → return 0.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 6: INTERSECTION ═══════════════ -->
+<section class="sec" id="p6">
+<div class="wrap">
+  <div class="sec-chip">Pattern 06</div>
+  <h2 class="sec-title">Interval List Intersections</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #986</div>
+      <div class="card-title">Interval List Intersections</div>
+      <div class="card-tags"><span class="tag tag-fire">🔥 High Frequency</span><span class="tag">Google</span><span class="tag">Meta</span><span class="tag">Uber</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given two lists of closed, sorted, disjoint intervals, return their intersection.</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">firstList = [[0,2],[5,10],[13,23],[24,25]]<br>secondList = [[1,5],[8,12],[15,24],[25,26]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">[[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Two pointers, one per list. At each step: compute intersection of the current pair using <code class="il">[max(starts), min(ends)]</code>. If valid → add it. Then advance the pointer whose interval ends first (it can't intersect anything else from the other list).</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p6-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p6-ts')">TypeScript</button>
+      </div>
+      <div id="p6-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">intervalIntersection</span>(A: <span class="cl">list</span>, B: <span class="cl">list</span>) -> <span class="cl">list</span>:
+    result = []
+    i = j = <span class="nm">0</span>
+
+    <span class="kw">while</span> i &lt; <span class="fn">len</span>(A) <span class="kw">and</span> j &lt; <span class="fn">len</span>(B):
+        lo = <span class="fn">max</span>(A[i][<span class="nm">0</span>], B[j][<span class="nm">0</span>])
+        hi = <span class="fn">min</span>(A[i][<span class="nm">1</span>], B[j][<span class="nm">1</span>])
+
+        <span class="kw">if</span> lo &lt;= hi:
+            result.append([lo, hi])
+
+        <span class="cm"># Advance the pointer with the smaller end</span>
+        <span class="kw">if</span> A[i][<span class="nm">1</span>] &lt; B[j][<span class="nm">1</span>]:
+            i += <span class="nm">1</span>
+        <span class="kw">else</span>:
+            j += <span class="nm">1</span>
+
+    <span class="kw">return</span> result</code></pre>
+      </div>
+      <div id="p6-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">intervalIntersection</span>(A: <span class="cl">number</span>[][], B: <span class="cl">number</span>[][]): <span class="cl">number</span>[][] {
+    <span class="kw">const</span> result: <span class="cl">number</span>[][] = [];
+    <span class="kw">let</span> i = <span class="nm">0</span>, j = <span class="nm">0</span>;
+
+    <span class="kw">while</span> (i &lt; A.length && j &lt; B.length) {
+        <span class="kw">const</span> lo = Math.max(A[i][<span class="nm">0</span>], B[j][<span class="nm">0</span>]);
+        <span class="kw">const</span> hi = Math.min(A[i][<span class="nm">1</span>], B[j][<span class="nm">1</span>]);
+
+        <span class="kw">if</span> (lo &lt;= hi) result.push([lo, hi]);
+
+        <span class="kw">if</span> (A[i][<span class="nm">1</span>] &lt; B[j][<span class="nm">1</span>]) i++;
+        <span class="kw">else</span> j++;
+    }
+
+    <span class="kw">return</span> result;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(m + n)</code></div><div class="cx">Each pointer advances at most m or n times</div>
+        <div class="cx">Space</div><div class="cx"><code>O(m + n)</code></div><div class="cx">Output size in worst case</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>Either list empty:</strong> Return [] — no intersection possible.<br>
+        <strong>Point intersection [5,5]:</strong> Valid! lo = hi = 5, and 5 ≤ 5 is true.<br>
+        <strong>No overlap at all:</strong> lo > hi every time, result stays empty.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 7: EMPLOYEE FREE TIME ═══════════════ -->
+<section class="sec" id="p7">
+<div class="wrap">
+  <div class="sec-chip">Pattern 07</div>
+  <h2 class="sec-title">Employee Free Time</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #759</div>
+      <div class="card-title">Employee Free Time</div>
+      <div class="card-tags"><span class="tag">Google</span><span class="tag">Uber</span><span class="tag">Airbnb</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given the work schedules of all employees (list of lists of intervals), find the common free time for all employees — gaps when nobody is working.</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">schedule = [[[1,2],[5,6]], [[1,3]], [[4,10]]]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">[[3,4]]</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Flatten all schedules into one list → sort → merge → gaps between merged intervals = free time. It's literally "Merge Intervals" + "find the gaps."</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p7-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p7-ts')">TypeScript</button>
+      </div>
+      <div id="p7-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">employeeFreeTime</span>(schedule):
+    <span class="cm"># Flatten all intervals</span>
+    all_intervals = []
+    <span class="kw">for</span> employee <span class="kw">in</span> schedule:
+        all_intervals.extend(employee)
+
+    all_intervals.sort(<span class="vr">key</span>=<span class="kw">lambda</span> x: x[<span class="nm">0</span>])
+
+    <span class="cm"># Merge</span>
+    merged = [all_intervals[<span class="nm">0</span>]]
+    <span class="kw">for</span> interval <span class="kw">in</span> all_intervals[<span class="nm">1</span>:]:
+        <span class="kw">if</span> interval[<span class="nm">0</span>] &lt;= merged[-<span class="nm">1</span>][<span class="nm">1</span>]:
+            merged[-<span class="nm">1</span>][<span class="nm">1</span>] = <span class="fn">max</span>(merged[-<span class="nm">1</span>][<span class="nm">1</span>], interval[<span class="nm">1</span>])
+        <span class="kw">else</span>:
+            merged.append(interval)
+
+    <span class="cm"># Gaps = free time</span>
+    free = []
+    <span class="kw">for</span> i <span class="kw">in</span> <span class="fn">range</span>(<span class="nm">1</span>, <span class="fn">len</span>(merged)):
+        free.append([merged[i-<span class="nm">1</span>][<span class="nm">1</span>], merged[i][<span class="nm">0</span>]])
+
+    <span class="kw">return</span> free</code></pre>
+      </div>
+      <div id="p7-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">employeeFreeTime</span>(schedule: <span class="cl">number</span>[][][]): <span class="cl">number</span>[][] {
+    <span class="kw">const</span> all: <span class="cl">number</span>[][] = schedule.flat();
+    all.sort((a, b) => a[<span class="nm">0</span>] - b[<span class="nm">0</span>]);
+
+    <span class="kw">const</span> merged: <span class="cl">number</span>[][] = [all[<span class="nm">0</span>]];
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; all.length; i++) {
+        <span class="kw">const</span> last = merged[merged.length - <span class="nm">1</span>];
+        <span class="kw">if</span> (all[i][<span class="nm">0</span>] &lt;= last[<span class="nm">1</span>]) {
+            last[<span class="nm">1</span>] = Math.max(last[<span class="nm">1</span>], all[i][<span class="nm">1</span>]);
+        } <span class="kw">else</span> {
+            merged.push([...all[i]]);
+        }
+    }
+
+    <span class="kw">const</span> free: <span class="cl">number</span>[][] = [];
+    <span class="kw">for</span> (<span class="kw">let</span> i = <span class="nm">1</span>; i &lt; merged.length; i++) {
+        free.push([merged[i - <span class="nm">1</span>][<span class="nm">1</span>], merged[i][<span class="nm">0</span>]]);
+    }
+
+    <span class="kw">return</span> free;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time</div><div class="cx"><code>O(N log N)</code></div><div class="cx">N = total intervals across all employees</div>
+        <div class="cx">Space</div><div class="cx"><code>O(N)</code></div><div class="cx">Flattened + merged arrays</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>Single employee:</strong> Their gaps are the free time. But if we're looking for COMMON free time across ALL employees, a single employee's schedule has no "common" concept — depends on problem semantics.<br>
+        <strong>Everyone busy at all times:</strong> merged = one continuous block → no gaps → return [].<br>
+        <strong>Follow-up:</strong> If schedules are pre-sorted per employee, use a min-heap to merge K sorted lists in O(N log K).
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 8: REMOVE INTERVAL ═══════════════ -->
+<section class="sec" id="p8">
+<div class="wrap">
+  <div class="sec-chip">Pattern 08</div>
+  <h2 class="sec-title">Remove Interval</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #1272</div>
+      <div class="card-title">Remove Interval</div>
+      <div class="card-tags"><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given a sorted set of disjoint intervals and an interval to remove, return the remaining intervals after removal.</p>
+
+      <div class="io-grid">
+        <div class="io-cell"><div class="io-label">Input</div><div class="io-val">intervals = [[0,2],[3,4],[5,7]], toBeRemoved = [1,6]</div></div>
+        <div class="io-cell"><div class="io-label">Output</div><div class="io-val">[[0,1],[6,7]]</div></div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>For each interval, check: does it overlap with the removal range? If no → keep. If yes → keep the parts outside the removal zone (left remnant and/or right remnant).</p>
+
+      <div class="sub">🎨 Visual</div>
+      <div class="vis">Interval:     [<span class="h1">══════════════════════</span>]
+Remove:              [<span class="h2">════════════</span>]
+Left part:    [<span class="h3">══════</span>]
+Right part:                        [<span class="h3">══════</span>]</div>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p8-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p8-ts')">TypeScript</button>
+      </div>
+      <div id="p8-py" class="tab-content active">
+<pre><code><span class="kw">def</span> <span class="fn">removeInterval</span>(intervals, toBeRemoved):
+    result = []
+    rm_s, rm_e = toBeRemoved
+
+    <span class="kw">for</span> s, e <span class="kw">in</span> intervals:
+        <span class="kw">if</span> e &lt;= rm_s <span class="kw">or</span> s >= rm_e:
+            result.append([s, e])       <span class="cm"># no overlap</span>
+        <span class="kw">else</span>:
+            <span class="kw">if</span> s &lt; rm_s:
+                result.append([s, rm_s])  <span class="cm"># left remnant</span>
+            <span class="kw">if</span> e > rm_e:
+                result.append([rm_e, e])  <span class="cm"># right remnant</span>
+
+    <span class="kw">return</span> result</code></pre>
+      </div>
+      <div id="p8-ts" class="tab-content">
+<pre><code><span class="kw">function</span> <span class="fn">removeInterval</span>(intervals: <span class="cl">number</span>[][], toBeRemoved: <span class="cl">number</span>[]): <span class="cl">number</span>[][] {
+    <span class="kw">const</span> result: <span class="cl">number</span>[][] = [];
+    <span class="kw">const</span> [rmS, rmE] = toBeRemoved;
+
+    <span class="kw">for</span> (<span class="kw">const</span> [s, e] <span class="kw">of</span> intervals) {
+        <span class="kw">if</span> (e &lt;= rmS || s >= rmE) {
+            result.push([s, e]);
+        } <span class="kw">else</span> {
+            <span class="kw">if</span> (s &lt; rmS) result.push([s, rmS]);
+            <span class="kw">if</span> (e > rmE) result.push([rmE, e]);
+        }
+    }
+
+    <span class="kw">return</span> result;
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Time</div><div class="cx hd">Space</div><div class="cx hd">Key Insight</div>
+        <div class="cx"><code>O(n)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Single pass — each interval produces 0, 1, or 2 remnants</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 9: MY CALENDAR I ═══════════════ -->
+<section class="sec" id="p9">
+<div class="wrap">
+  <div class="sec-chip">Pattern 09</div>
+  <h2 class="sec-title">My Calendar I</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #729</div>
+      <div class="card-title">My Calendar I — No Double Booking</div>
+      <div class="card-tags"><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Implement a calendar where you can add events. A new event can be added if it doesn't cause a double booking (no overlap with existing events). Events are half-open intervals [start, end).</p>
+
+      <div class="io-grid">
+        <div class="io-cell full">
+          <div class="io-label">Example</div>
+          <div class="io-val">book(10,20) → true,  book(15,25) → false,  book(20,30) → true</div>
+        </div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>For each new booking, check against all existing ones using the overlap formula: <code class="il">start &lt; existing_end AND end > existing_start</code>. If any overlap → reject. Otherwise → add.</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p9-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p9-ts')">TypeScript</button>
+      </div>
+      <div id="p9-py" class="tab-content active">
+<pre><code><span class="kw">class</span> <span class="cl">MyCalendar</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.bookings = []
+
+    <span class="kw">def</span> <span class="fn">book</span>(self, start: <span class="cl">int</span>, end: <span class="cl">int</span>) -> <span class="cl">bool</span>:
+        <span class="kw">for</span> s, e <span class="kw">in</span> self.bookings:
+            <span class="kw">if</span> start &lt; e <span class="kw">and</span> end > s:  <span class="cm"># overlap check</span>
+                <span class="kw">return False</span>
+        self.bookings.append((start, end))
+        <span class="kw">return True</span>
+
+<span class="cm"># book() → O(n) per call.  Optimized: SortedList → O(log n)</span></code></pre>
+      </div>
+      <div id="p9-ts" class="tab-content">
+<pre><code><span class="kw">class</span> <span class="cl">MyCalendar</span> {
+    <span class="kw">private</span> bookings: [<span class="cl">number</span>, <span class="cl">number</span>][] = [];
+
+    book(start: <span class="cl">number</span>, end: <span class="cl">number</span>): <span class="cl">boolean</span> {
+        <span class="kw">for</span> (<span class="kw">const</span> [s, e] <span class="kw">of</span> <span class="kw">this</span>.bookings) {
+            <span class="kw">if</span> (start &lt; e && end > s) <span class="kw">return false</span>;
+        }
+        <span class="kw">this</span>.bookings.push([start, end]);
+        <span class="kw">return true</span>;
+    }
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">Time (per call)</div><div class="cx"><code>O(n)</code></div><div class="cx">Scans all existing bookings</div>
+        <div class="cx">Space</div><div class="cx"><code>O(n)</code></div><div class="cx">Stores all bookings</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>Adjacent events [10,20) and [20,30):</strong> No overlap! 20 &lt; 20 is false. Half-open intervals prevent false conflicts on boundaries.<br>
+        <strong>Optimization path:</strong> Using a balanced BST (e.g. SortedList in Python), you can binary search for the insertion point → O(log n) per call.
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 10: MY CALENDAR II ═══════════════ -->
+<section class="sec" id="p10">
+<div class="wrap">
+  <div class="sec-chip">Pattern 10</div>
+  <h2 class="sec-title">My Calendar II</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #731</div>
+      <div class="card-title">My Calendar II — Allow Double, Block Triple</div>
+      <div class="card-tags"><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Implement a calendar that allows double booking but rejects triple booking.</p>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Maintain two lists: <strong>bookings</strong> (all events) and <strong>overlaps</strong> (double-booked regions). For each new event: if it overlaps any existing double-booking → would cause triple → reject. Otherwise, record any new double-booking regions it creates, then add it.</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p10-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p10-ts')">TypeScript</button>
+      </div>
+      <div id="p10-py" class="tab-content active">
+<pre><code><span class="kw">class</span> <span class="cl">MyCalendarTwo</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.bookings = []
+        self.overlaps = []  <span class="cm"># double-booked regions</span>
+
+    <span class="kw">def</span> <span class="fn">book</span>(self, start: <span class="cl">int</span>, end: <span class="cl">int</span>) -> <span class="cl">bool</span>:
+        <span class="cm"># Check against triple booking</span>
+        <span class="kw">for</span> os, oe <span class="kw">in</span> self.overlaps:
+            <span class="kw">if</span> start &lt; oe <span class="kw">and</span> end > os:
+                <span class="kw">return False</span>
+
+        <span class="cm"># Record new double-bookings</span>
+        <span class="kw">for</span> bs, be <span class="kw">in</span> self.bookings:
+            <span class="kw">if</span> start &lt; be <span class="kw">and</span> end > bs:
+                self.overlaps.append((<span class="fn">max</span>(start, bs), <span class="fn">min</span>(end, be)))
+
+        self.bookings.append((start, end))
+        <span class="kw">return True</span></code></pre>
+      </div>
+      <div id="p10-ts" class="tab-content">
+<pre><code><span class="kw">class</span> <span class="cl">MyCalendarTwo</span> {
+    <span class="kw">private</span> bookings: [<span class="cl">number</span>, <span class="cl">number</span>][] = [];
+    <span class="kw">private</span> overlaps: [<span class="cl">number</span>, <span class="cl">number</span>][] = [];
+
+    book(start: <span class="cl">number</span>, end: <span class="cl">number</span>): <span class="cl">boolean</span> {
+        <span class="kw">for</span> (<span class="kw">const</span> [os, oe] <span class="kw">of</span> <span class="kw">this</span>.overlaps) {
+            <span class="kw">if</span> (start &lt; oe && end > os) <span class="kw">return false</span>;
+        }
+
+        <span class="kw">for</span> (<span class="kw">const</span> [bs, be] <span class="kw">of</span> <span class="kw">this</span>.bookings) {
+            <span class="kw">if</span> (start &lt; be && end > bs) {
+                <span class="kw">this</span>.overlaps.push([Math.max(start, bs), Math.min(end, be)]);
+            }
+        }
+
+        <span class="kw">this</span>.bookings.push([start, end]);
+        <span class="kw">return true</span>;
+    }
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Time (per call)</div><div class="cx hd">Space</div><div class="cx hd">Key Insight</div>
+        <div class="cx"><code>O(n)</code></div><div class="cx"><code>O(n)</code></div><div class="cx">Two-layer tracking: bookings + overlaps</div>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════ PATTERN 11: DATA STREAM ═══════════════ -->
+<section class="sec" id="p11">
+<div class="wrap">
+  <div class="sec-chip">Pattern 11</div>
+  <h2 class="sec-title">Data Stream as Disjoint Intervals</h2>
+
+  <div class="card">
+    <div class="card-head">
+      <div class="card-num">LeetCode #352</div>
+      <div class="card-title">Data Stream as Disjoint Intervals</div>
+      <div class="card-tags"><span class="tag">Google</span></div>
+    </div>
+    <div class="card-body">
+      <div class="sub">📝 Problem Statement</div>
+      <p>Given a stream of integers, maintain a summary of the numbers seen as a list of disjoint intervals. Implement <code class="il">addNum(value)</code> and <code class="il">getIntervals()</code>.</p>
+
+      <div class="io-grid">
+        <div class="io-cell full">
+          <div class="io-label">Example</div>
+          <div class="io-val">addNum(1) → [[1,1]]<br>addNum(3) → [[1,1],[3,3]]<br>addNum(7) → [[1,1],[3,3],[7,7]]<br>addNum(2) → [[1,3],[7,7]]  (1,2,3 merge!)<br>addNum(6) → [[1,3],[6,7]]</div>
+        </div>
+      </div>
+
+      <div class="sub">💡 Intuition</div>
+      <p>Use binary search to find where the new number fits. Check if it can merge with left neighbor (value - 1 ≤ left.end), right neighbor (value + 1 ≥ right.start), or both.</p>
+
+      <div class="sub">🖥️ Solution</div>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event,'p11-py')">Python</button>
+        <button class="tab-btn" onclick="switchTab(event,'p11-ts')">TypeScript</button>
+      </div>
+      <div id="p11-py" class="tab-content active">
+<pre><code><span class="kw">import</span> bisect
+
+<span class="kw">class</span> <span class="cl">SummaryRanges</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(self):
+        self.intervals = []
+
+    <span class="kw">def</span> <span class="fn">addNum</span>(self, value: <span class="cl">int</span>) -> <span class="kw">None</span>:
+        intervals = self.intervals
+        idx = bisect.bisect_left(intervals, [value, value])
+
+        merge_l = idx > <span class="nm">0</span> <span class="kw">and</span> intervals[idx-<span class="nm">1</span>][<span class="nm">1</span>] >= value - <span class="nm">1</span>
+        merge_r = idx &lt; <span class="fn">len</span>(intervals) <span class="kw">and</span> intervals[idx][<span class="nm">0</span>] &lt;= value + <span class="nm">1</span>
+
+        <span class="kw">if</span> merge_l <span class="kw">and</span> merge_r:
+            intervals[idx-<span class="nm">1</span>][<span class="nm">1</span>] = <span class="fn">max</span>(intervals[idx-<span class="nm">1</span>][<span class="nm">1</span>], intervals[idx][<span class="nm">1</span>])
+            intervals.pop(idx)
+        <span class="kw">elif</span> merge_l:
+            intervals[idx-<span class="nm">1</span>][<span class="nm">1</span>] = <span class="fn">max</span>(intervals[idx-<span class="nm">1</span>][<span class="nm">1</span>], value)
+        <span class="kw">elif</span> merge_r:
+            intervals[idx][<span class="nm">0</span>] = <span class="fn">min</span>(intervals[idx][<span class="nm">0</span>], value)
+        <span class="kw">else</span>:
+            intervals.insert(idx, [value, value])
+
+    <span class="kw">def</span> <span class="fn">getIntervals</span>(self):
+        <span class="kw">return</span> self.intervals</code></pre>
+      </div>
+      <div id="p11-ts" class="tab-content">
+<pre><code><span class="kw">class</span> <span class="cl">SummaryRanges</span> {
+    <span class="kw">private</span> intervals: <span class="cl">number</span>[][] = [];
+
+    addNum(value: <span class="cl">number</span>): <span class="cl">void</span> {
+        <span class="kw">const</span> iv = <span class="kw">this</span>.intervals;
+        <span class="cm">// Binary search for insertion point</span>
+        <span class="kw">let</span> lo = <span class="nm">0</span>, hi = iv.length;
+        <span class="kw">while</span> (lo &lt; hi) {
+            <span class="kw">const</span> mid = (lo + hi) >> <span class="nm">1</span>;
+            <span class="kw">if</span> (iv[mid][<span class="nm">0</span>] &lt; value) lo = mid + <span class="nm">1</span>;
+            <span class="kw">else</span> hi = mid;
+        }
+        <span class="kw">const</span> idx = lo;
+
+        <span class="kw">const</span> mergeL = idx > <span class="nm">0</span> && iv[idx - <span class="nm">1</span>][<span class="nm">1</span>] >= value - <span class="nm">1</span>;
+        <span class="kw">const</span> mergeR = idx &lt; iv.length && iv[idx][<span class="nm">0</span>] &lt;= value + <span class="nm">1</span>;
+
+        <span class="kw">if</span> (mergeL && mergeR) {
+            iv[idx - <span class="nm">1</span>][<span class="nm">1</span>] = Math.max(iv[idx - <span class="nm">1</span>][<span class="nm">1</span>], iv[idx][<span class="nm">1</span>]);
+            iv.splice(idx, <span class="nm">1</span>);
+        } <span class="kw">else if</span> (mergeL) {
+            iv[idx - <span class="nm">1</span>][<span class="nm">1</span>] = Math.max(iv[idx - <span class="nm">1</span>][<span class="nm">1</span>], value);
+        } <span class="kw">else if</span> (mergeR) {
+            iv[idx][<span class="nm">0</span>] = Math.min(iv[idx][<span class="nm">0</span>], value);
+        } <span class="kw">else</span> {
+            iv.splice(idx, <span class="nm">0</span>, [value, value]);
+        }
+    }
+
+    getIntervals(): <span class="cl">number</span>[][] {
+        <span class="kw">return</span> <span class="kw">this</span>.intervals;
+    }
+}</code></pre>
+      </div>
+
+      <div class="cx-grid">
+        <div class="cx hd">Metric</div><div class="cx hd">Value</div><div class="cx hd">Reason</div>
+        <div class="cx">addNum</div><div class="cx"><code>O(n)</code></div><div class="cx">Binary search is O(log n) but insert/pop is O(n). With SortedList → O(log n)</div>
+        <div class="cx">getIntervals</div><div class="cx"><code>O(n)</code></div><div class="cx">Returns the stored list</div>
+      </div>
+
+      <div class="sub">🛡️ Edge Case Thinking</div>
+      <div class="box-tip">
+        <strong>Duplicate values:</strong> addNum(5) twice — second call finds 5 already within an existing interval, so nothing changes.<br>
+        <strong>Sequential values:</strong> addNum(1), addNum(2), addNum(3) — each merges with previous → final = [[1,3]].<br>
+        <strong>Bridging gap:</strong> [[1,1],[3,3]] + addNum(2) → merges both neighbors into [[1,3]].
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+</main>
+
+<footer style="padding:3rem 0;text-align:center;color:var(--txd);font-size:.82rem;border-top:1px solid var(--bdr)">
+  <div class="wrap">
+    <p>Intervals & Their Variations — <strong>Part 1 of 2</strong></p>
+    <p style="margin-top:.5rem">Foundations + Patterns 1–11 • Continued in Part 2 →</p>
+  </div>
+</footer>
+
+<script>
+function switchTab(e, id) {
+  const card = e.target.closest('.card-body') || e.target.closest('.card');
+  const parent = card || document.body;
+  const tabGroup = e.target.parentElement;
+  const btns = tabGroup.querySelectorAll('.tab-btn');
+  btns.forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+
+  // Find sibling tab contents
+  let node = tabGroup.nextElementSibling;
+  while (node && node.classList.contains('tab-content')) {
+    node.classList.remove('active');
+    node = node.nextElementSibling;
+  }
+  document.getElementById(id).classList.add('active');
+}
+</script>
+
+</body>
+</html>

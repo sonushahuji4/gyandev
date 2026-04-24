@@ -1,0 +1,41 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="One-picture decision flow">
+  Every interval problem reduces to the same opening move: look at the
+  question wording, pick a sort order, then walk the list with one of five
+  templates. This diagram is that decision flow. The legend below maps
+  each branch to the patterns where it shows up.
+</Callout>
+
+## Picking the right interval template
+
+```mermaid
+flowchart TD
+    S["<b>Problem statement</b><br/>what are you being asked?"]
+      --> Q{"Question shape?"}
+    Q -->|"<b>i</b> · merge / combine overlaps"| A["Sort by <b>start</b><br/>→ linear scan + merge"]
+    Q -->|"<b>ii</b> · conflict? can attend all?"| B["Sort by <b>start</b><br/>→ check consecutive pairs"]
+    Q -->|"<b>iii</b> · how many rooms / resources?"| C["<b>Sweep line</b> or <b>min-heap</b><br/>→ peak concurrency"]
+    Q -->|"<b>iv</b> · max kept / min removals / min arrows"| D["Sort by <b>end</b> (greedy)<br/>→ pick earliest-finishing"]
+    Q -->|"<b>v</b> · intersection of two sorted lists"| E["<b>Two pointers</b><br/>→ advance earlier end"]
+    Q -->|"<b>vi</b> · free time / gaps / range updates"| F["<b>Merge then gaps</b><br/>or difference array"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S start
+    class Q decision
+    class A,B,C,D,E,F action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Merge / combine overlaps',        description: 'Sort by start, walk the list, extend or start a new bucket. Template for Merge Intervals, Insert Interval, Employee Free Time.' },
+  { numeral: 'ii',  name: 'Conflict detection',              description: 'Sort by start; if any `intervals[i].start < intervals[i-1].end`, they overlap. Meeting Rooms I.' },
+  { numeral: 'iii', name: 'How many rooms / resources?',     description: 'Sweep line (`+1` on start, `-1` on end, take peak) or min-heap of end times. Meeting Rooms II.' },
+  { numeral: 'iv',  name: 'Greedy optimisation',             description: 'Sort by end, keep the interval that finishes first. Non-Overlapping Intervals, Min Arrows, Activity Selection.' },
+  { numeral: 'v',   name: 'Two sorted lists intersection',   description: 'Two pointers; at each step compute `[max(starts), min(ends)]` and advance the pointer whose end is smaller. Interval List Intersections.' },
+  { numeral: 'vi',  name: 'Gaps / free time',                description: 'Merge everything, then the gaps between merged intervals are the answer. Employee Free Time.' },
+]} />

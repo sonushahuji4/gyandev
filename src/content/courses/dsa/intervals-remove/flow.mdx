@@ -1,0 +1,45 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Single pass, three cases">
+  Each interval is classified as "no overlap", "left remnant", or "right
+  remnant" — and an interval that straddles the removal range can produce
+  both remnants. The legend below decodes each numbered branch.
+</Callout>
+
+## Remove Interval — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · start</b><br/>result = []; rm_s, rm_e = toBeRemoved"]
+      --> L{"<b>ii · next interval [s, e]?</b>"}
+    L -->|"yes"| C{"<b>iii · no overlap?</b><br/>e ≤ rm_s or s ≥ rm_e"}
+    C -->|"yes"| K["<b>iv · keep [s, e]</b>"]
+    C -->|"no"| LR{"<b>v · left remnant?</b><br/>s &lt; rm_s"}
+    LR -->|"yes"| PL["append [s, rm_s]"]
+    LR -->|"no"| RR{"<b>vi · right remnant?</b><br/>e &gt; rm_e"}
+    PL --> RR
+    RR -->|"yes"| PR["append [rm_e, e]"]
+    RR -->|"no"| L
+    PR --> L
+    K --> L
+    L -->|"done"| O["<b>return</b> result"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S start
+    class L,C,LR,RR decision
+    class K,PL,PR,O action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',   name: 'Start',           description: 'Empty result list; unpack the removal range.' },
+  { numeral: 'ii',  name: 'Iterate',         description: 'Walk each interval `[s, e]`.' },
+  { numeral: 'iii', name: 'No-overlap test', description: '`e ≤ rm_s` (entirely before) OR `s ≥ rm_e` (entirely after).' },
+  { numeral: 'iv',  name: 'Keep',            description: 'Push the interval unchanged.' },
+  { numeral: 'v',   name: 'Left remnant?',   description: '`s < rm_s` — part of the interval is left of the removal zone.' },
+  { numeral: 'vi',  name: 'Right remnant?',  description: '`e > rm_e` — part of the interval is right of the removal zone.' },
+]} />

@@ -16,7 +16,14 @@ export interface Props {
 const { groups, courseSlug } = Astro.props;
 
 const entries = [...groups.entries()];
-const isFlat = entries.length <= 1;
+
+// Single-season courses usually render as a flat list (no header).
+// Courses that declare a `seasonTitle` on any chapter opt in to showing
+// the named header even when they have only one season.
+const hasNamedSeason = entries.some(([, chapters]) =>
+  chapters.some((c) => c.chapter.data.seasonTitle),
+);
+const isFlat = entries.length <= 1 && !hasNamedSeason;
 
 let runningOrder = 1;
 ---

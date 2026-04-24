@@ -1,0 +1,43 @@
+---
+readingMinutes: 1
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Binary-search the slot, then merge with neighbours">
+  Each `addNum(value)` call binary-searches the sorted interval list for
+  its insertion point, then chooses between four outcomes based on
+  whether the new value is adjacent to its left neighbour, its right
+  neighbour, both, or neither.
+</Callout>
+
+## Data Stream — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · addNum(value)</b>"]
+      --> B["<b>ii · idx = bisect_left(intervals, [value, value])</b>"]
+      --> N["<b>iii · merge flags</b><br/>ml = idx&gt;0 and iv[idx-1][1] ≥ value-1<br/>mr = idx&lt;len and iv[idx][0] ≤ value+1"]
+      --> D{"<b>iv · which merge?</b>"}
+    D -->|"both"| M2["<b>v · join</b><br/>iv[idx-1][1] = max(...); iv.pop(idx)"]
+    D -->|"left"| ML["<b>vi · extend left</b><br/>iv[idx-1][1] = max(..., value)"]
+    D -->|"right"| MR["<b>vii · extend right</b><br/>iv[idx][0] = min(..., value)"]
+    D -->|"neither"| IN["<b>viii · insert</b><br/>iv.insert(idx, [value, value])"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S start
+    class D decision
+    class B,N,M2,ML,MR,IN action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Entry',              description: 'New value arrives; the interval list is kept sorted by start.' },
+  { numeral: 'ii',   name: 'Binary search',      description: '`bisect_left` finds the first interval whose start is ≥ value.' },
+  { numeral: 'iii',  name: 'Merge flags',        description: 'Compare `value` against both neighbours; `value-1` and `value+1` are the adjacency probes.' },
+  { numeral: 'iv',   name: 'Four-way switch',    description: 'Pick exactly one branch — left, right, both, or neither.' },
+  { numeral: 'v',    name: 'Join both',          description: 'Extend the left neighbour through the right one, then pop the right.' },
+  { numeral: 'vi',   name: 'Extend left',        description: '`iv[idx-1][1] = max(iv[idx-1][1], value)`.' },
+  { numeral: 'vii',  name: 'Extend right',       description: '`iv[idx][0] = min(iv[idx][0], value)`.' },
+  { numeral: 'viii', name: 'Insert fresh',       description: 'Neither neighbour is adjacent — drop in `[value, value]` at `idx`.' },
+]} />

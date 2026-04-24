@@ -1,0 +1,93 @@
+---
+title: "Meeting Rooms I — Conflict Detection"
+description: "Given meeting time intervals, decide whether one person can attend them all — a consecutive-pair overlap check after sorting by start."
+excerpt: "Sort by start, check consecutive pairs — done."
+course: dsa/course
+order: 4
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: beginner
+type: howto
+readingMinutes: 4
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - sorting
+  - leetcode-252
+---
+
+## LeetCode #252 — Can Attend All Meetings?
+
+**Companies:** Amazon · Meta · Bloomberg.
+
+## Problem Statement
+
+Given an array of meeting time intervals, determine if a person can attend all meetings (i.e., no two meetings overlap).
+
+```text title="Example 1"
+Input:  [[0,30],[5,10],[15,20]]
+Output: false
+```
+
+```text title="Example 2"
+Input:  [[7,10],[2,4]]
+Output: true
+```
+
+## Intuition
+
+Sort by start time. After sorting, overlapping meetings must be adjacent. So just check each consecutive pair: if any meeting starts before the previous one ends → conflict.
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="meeting_rooms_i.py"
+def canAttendMeetings(intervals: list[list[int]]) -> bool:
+    intervals.sort(key=lambda x: x[0])
+
+    for i in range(1, len(intervals)):
+        if intervals[i][0] < intervals[i - 1][1]:
+            return False
+
+    return True
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="meeting_rooms_i.ts"
+function canAttendMeetings(intervals: number[][]): boolean {
+    intervals.sort((a, b) => a[0] - b[0]);
+
+    for (let i = 1; i < intervals.length; i++) {
+        if (intervals[i][0] < intervals[i - 1][1]) {
+            return false;
+        }
+    }
+
+    return true;
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Metric | Value | Reason |
+| --- | --- | --- |
+| Time | `O(n log n)` | Dominated by sorting; linear scan is O(n) |
+| Space | `O(1)` | In-place sort, no extra structure |
+
+## Edge Case Thinking
+
+<Callout type="tip" title="Edge cases">
+  - **0 or 1 meetings:** Always true — no possible conflict.
+  - **`[1,2]` and `[2,3]`:** Does `2 < 2` fail? No → no conflict. These are back-to-back meetings (half-open semantics). If closed semantics, you'd use `≤` instead.
+  - **All same time:** `[[1,5],[1,5],[1,5]]` → first pair already conflicts → return false.
+</Callout>

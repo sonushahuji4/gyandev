@@ -1,0 +1,92 @@
+---
+title: "My Calendar II"
+description: "Accept bookings that allow double-booking but reject any that would cause a triple — maintain both bookings and double-booked regions."
+excerpt: "Two layers: all bookings + known double-booked regions."
+course: dsa/course
+order: 11
+season: 1
+seasonTitle: "Intervals"
+kind: pattern
+difficulty: intermediate
+type: howto
+readingMinutes: 5
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - design
+  - leetcode-731
+---
+
+## LeetCode #731 — My Calendar II (Allow Double, Block Triple)
+
+**Companies:** Google.
+
+## Problem Statement
+
+Implement a calendar that allows double booking but rejects triple booking.
+
+## Intuition
+
+Maintain two lists: **bookings** (all events) and **overlaps** (double-booked regions). For each new event: if it overlaps any existing double-booking → would cause triple → reject. Otherwise, record any new double-booking regions it creates, then add it.
+
+## Solution
+
+<CodeTabs tabs={["Python", "TypeScript"]}>
+<Fragment slot="tab-0">
+
+```python title="my_calendar_ii.py"
+class MyCalendarTwo:
+    def __init__(self):
+        self.bookings = []
+        self.overlaps = []  # double-booked regions
+
+    def book(self, start: int, end: int) -> bool:
+        # Check against triple booking
+        for os, oe in self.overlaps:
+            if start < oe and end > os:
+                return False
+
+        # Record new double-bookings
+        for bs, be in self.bookings:
+            if start < be and end > bs:
+                self.overlaps.append((max(start, bs), min(end, be)))
+
+        self.bookings.append((start, end))
+        return True
+```
+
+</Fragment>
+<Fragment slot="tab-1">
+
+```ts title="my_calendar_ii.ts"
+class MyCalendarTwo {
+    private bookings: [number, number][] = [];
+    private overlaps: [number, number][] = [];
+
+    book(start: number, end: number): boolean {
+        for (const [os, oe] of this.overlaps) {
+            if (start < oe && end > os) return false;
+        }
+
+        for (const [bs, be] of this.bookings) {
+            if (start < be && end > bs) {
+                this.overlaps.push([Math.max(start, bs), Math.min(end, be)]);
+            }
+        }
+
+        this.bookings.push([start, end]);
+        return true;
+    }
+}
+```
+
+</Fragment>
+</CodeTabs>
+
+## Complexity
+
+| Time (per call) | Space | Key Insight |
+| --- | --- | --- |
+| `O(n)` | `O(n)` | Two-layer tracking: bookings + overlaps |

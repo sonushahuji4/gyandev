@@ -1,0 +1,39 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<RevisionCard numeral="i" title="Problem" subtitle="LeetCode #435 — one-liner.">
+- Return the **minimum number of intervals to remove** so the remaining ones don't overlap.
+</RevisionCard>
+
+<RevisionCard numeral="ii" title="Key insight" subtitle="Greedy — sort by end.">
+- Activity Selection in disguise — keep the interval that finishes first, it leaves the most room.
+- Sorting by **end** is the key. Sorting by start loses greedy correctness (`[1,100]` first would block everything).
+- Every time the next interval starts before `last_end`, it's the one to throw away.
+</RevisionCard>
+
+<RevisionCard numeral="iii" title="Solution template" subtitle="Five lines of greedy.">
+```python
+intervals.sort(key=lambda x: x[1])
+count, last_end = 0, intervals[0][1]
+for s, e in intervals[1:]:
+    if s < last_end: count += 1
+    else:            last_end = e
+```
+</RevisionCard>
+
+<RevisionCard numeral="iv" title="Complexity" subtitle="Sort-bound and constant space.">
+- **Time `O(n log n)`** — sort; scan is O(n).
+- **Space `O(1)`** — just `count` and `last_end`.
+</RevisionCard>
+
+<RevisionCard numeral="v" title="Edge cases" subtitle="Three to remember.">
+- Why sort by end? Sort by start picks `[1, 100]` first and blocks everything.
+- All identical intervals → keep 1, remove the rest.
+- No overlaps → return 0.
+</RevisionCard>
+
+<Callout type="mnemonic" title="Mnemonic">
+  **End · Early · Wins** — sort by end, keep earliest finisher.
+</Callout>

@@ -1,0 +1,46 @@
+---
+readingMinutes: 2
+updated: 2026-04-21
+---
+
+<Callout type="insight" title="Three-phase sweep">
+  Because the input list is already sorted and non-overlapping, the
+  algorithm is three consecutive while-loops — one per phase. The legend
+  below walks each numbered step.
+</Callout>
+
+## Insert Interval — control flow
+
+```mermaid
+flowchart TD
+    S["<b>i · start</b><br/>i = 0, result = []"]
+      --> P1{"<b>ii · before?</b><br/>intervals[i][1] < newInterval[0]?"}
+    P1 -->|"yes"| A1["<b>iii · keep</b><br/>result.append(intervals[i]); i++"]
+    A1 --> P1
+    P1 -->|"no"| P2{"<b>iv · overlap?</b><br/>intervals[i][0] ≤ newInterval[1]?"}
+    P2 -->|"yes"| M["<b>v · absorb</b><br/>newInterval[0] = min; newInterval[1] = max; i++"]
+    M --> P2
+    P2 -->|"no"| AP["<b>vi · append new</b><br/>result.append(newInterval)"]
+      --> P3{"<b>vii · after?</b><br/>i &lt; n?"}
+    P3 -->|"yes"| A2["<b>viii · flush</b><br/>result.append(intervals[i]); i++"]
+    A2 --> P3
+    P3 -->|"no"| R["<b>return</b> result"]
+
+    classDef start fill:#f5efe1,stroke:#6a8a4f,stroke-width:2px,color:#1a1915;
+    classDef decision fill:#fdecd3,stroke:#c2410c,stroke-width:2px,color:#1a1915;
+    classDef action fill:#e7efd9,stroke:#587640,stroke-width:2px,color:#1a1915;
+    class S start
+    class P1,P2,P3 decision
+    class A1,M,AP,A2,R action
+```
+
+<FlowLegendGrid items={[
+  { numeral: 'i',    name: 'Start',             description: 'Pointer `i` at 0; empty result list.' },
+  { numeral: 'ii',   name: 'Phase 1 test',      description: 'Interval ends strictly before the new one starts → no overlap.' },
+  { numeral: 'iii',  name: 'Keep (before)',     description: 'Append as-is and advance `i`.' },
+  { numeral: 'iv',   name: 'Phase 2 test',      description: 'Interval starts at or before the new one ends → overlaps the new interval.' },
+  { numeral: 'v',    name: 'Absorb',            description: 'Expand `newInterval`: `min` the start, `max` the end. `i++`.' },
+  { numeral: 'vi',   name: 'Append merged',     description: 'Once the merge loop exits, push the (possibly expanded) `newInterval` once.' },
+  { numeral: 'vii',  name: 'Phase 3 test',      description: 'Any remaining intervals are entirely after the new one.' },
+  { numeral: 'viii', name: 'Flush tail',        description: 'Append the rest in order and return.' },
+]} />

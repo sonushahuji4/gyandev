@@ -1,0 +1,258 @@
+---
+title: "Intervals — Fundamentals"
+description: "Foundational concepts, the six interval relationships, sorting strategies, and the mental shortcuts that unlock every interval problem."
+excerpt: "Core mental models, sorting tricks, and overlap detection logic behind every interval problem."
+course: dsa/course
+order: 1
+season: 1
+seasonTitle: "Intervals"
+kind: theory
+difficulty: intermediate
+type: explanation
+readingMinutes: 12
+updated: 2026-04-21
+status: published
+published: 2026-04-21
+tags:
+  - intervals
+  - sorting
+  - arrays
+  - greedy
+  - sweep-line
+---
+
+## Foundational Concepts
+
+Every interval problem starts here. Master these concepts before touching a single LeetCode problem.
+
+### What is an Interval?
+
+An interval `[start, end]` represents a continuous range. In interviews, intervals model time ranges (meetings, schedules), spatial ranges (coordinates, balloons), or abstract number-line ranges.
+
+### Types of Intervals
+
+```text title="Interval notation"
+Closed    [a, b]   → includes both a and b
+Open      (a, b)   → excludes both a and b
+Half-Open [a, b)   → includes a, excludes b   ← MOST COMMON in real systems
+Half-Open (a, b]   → excludes a, includes b
+```
+
+<Callout type="tip" title="FAANG Reality Check">
+  LeetCode uses **closed intervals [a, b]**. But real-world systems (Google
+  Calendar, cron jobs, database ranges) use **half-open intervals [a, b)**
+  because they compose cleanly — [9, 10) and [10, 11) are adjacent, not
+  overlapping. Always clarify with your interviewer which type they mean.
+</Callout>
+
+### The Universal Overlap Formula
+
+Two intervals `[a1, a2]` and `[b1, b2]` overlap if and only if:
+
+```text title="Overlap formula"
+max(a1, b1) ≤ min(a2, b2)
+
+If true:
+  Intersection = [max(a1, b1), min(a2, b2)]
+  Union        = [min(a1, b1), max(a2, b2)]
+
+If false:
+  No overlap — the gap between them is [min(a2,b2), max(a1,b1)]
+```
+
+<Callout type="insight" title="Why this formula matters">
+  Instead of checking 6 separate cases, this single expression handles ALL
+  overlap scenarios. Memorize `max(start1, start2) <= min(end1, end2)` —
+  it's the foundation of 80% of interval solutions.
+</Callout>
+
+## The 6 Interval Relationships
+
+Every possible arrangement of two intervals falls into one of these six categories. Understanding them intuitively is key to writing clean, bug-free code.
+
+### ① A Entirely Before B
+
+```text
+  A: ■■■■■
+  B:              ■■■■■
+     ───┬───┬─────┬───┬───→
+        A.s  A.e  B.s  B.e
+```
+
+Condition: `A.end < B.start`. Result: **No overlap** — both intervals stay separate. *Think of it as:* A finishes before B even begins.
+
+### ② B Entirely Before A
+
+```text
+  A:              ■■■■■
+  B: ■■■■■
+     ───┬───┬─────┬───┬───→
+        B.s  B.e  A.s  A.e
+```
+
+Condition: `B.end < A.start`. Result: **No overlap** — mirror of case ①. *After sorting by start,* this case becomes impossible — A always starts ≤ B.
+
+### ③ Partial Overlap (A starts first)
+
+```text
+  A: ■■■■■■■■■
+  B:       ■■■■■■■■■
+           ▓▓▓▓▓  ← intersection
+     ──┬───────┬─────┬────→
+       A.s    B.s   A.e  B.e
+```
+
+Condition: `A.start ≤ B.start` AND `A.end ≥ B.start` AND `A.end ≤ B.end`. Merged: `[A.start, B.end]`. Intersection: `[B.start, A.end]`.
+
+### ④ Partial Overlap (B starts first)
+
+```text
+  A:       ■■■■■■■■■
+  B: ■■■■■■■■■
+           ▓▓▓▓▓  ← intersection
+     ──┬───────┬─────┬────→
+       B.s    A.s   B.e  A.e
+```
+
+Condition: `B.start ≤ A.start` AND `B.end ≥ A.start` AND `B.end ≤ A.end`. Merged: `[B.start, A.end]`. *After sorting by start,* this case also becomes impossible.
+
+### ⑤ A Fully Contains B
+
+```text
+  A: ■■■■■■■■■■■■■■■
+  B:      ■■■■■■■
+     ──┬──────────────┬───→
+       A.s    B.s B.e    A.e
+```
+
+Condition: `A.start ≤ B.start` AND `A.end ≥ B.end`. Merged: `[A.start, A.end]` (A unchanged — it already covers B). *Trap:* Don't forget to update end as `max(A.end, B.end)` in code — it handles this naturally.
+
+### ⑥ B Fully Contains A
+
+```text
+  A:      ■■■■■■■
+  B: ■■■■■■■■■■■■■■■
+     ──┬──────────────┬───→
+       B.s    A.s A.e    B.e
+```
+
+Condition: `B.start ≤ A.start` AND `B.end ≥ A.end`. Merged: `[B.start, B.end]`. *After sorting,* this becomes: A.start = B.start but B.end > A.end.
+
+### The Key Insight That Simplifies Everything
+
+<Callout type="tip" title="After sorting by start time, you reduce 6 cases → 3 cases">
+  Since A always starts ≤ B after sorting, cases ② and ④ (B starts first)
+  become impossible. Your code only needs to handle:
+
+  1. **No overlap:** `A.end < B.start` → keep both separate
+  2. **Partial overlap:** `A.end ≥ B.start AND A.end < B.end` → merge to [A.start, B.end]
+  3. **Containment:** `A.end ≥ B.end` → keep A as-is (it already covers B)
+
+  Cases 2 and 3 collapse into a single line: `merged_end = max(A.end, B.end)`.
+</Callout>
+
+### My Mental Model
+
+Think of intervals as **blocks on a timeline ruler**. Sorting aligns them left-to-right. Then you just walk right, and for each new block, ask: "does it touch or overlap the last block I placed?" If yes → extend. If no → start a new block. That's it. That single mental model solves Merge Intervals, Employee Free Time, and several others.
+
+## Sorting Strategies
+
+The most important decision in any interval problem: how to sort. The wrong sort order = wrong answer.
+
+### Sort by Start Time
+
+```text
+sort(key=λ x: x[0])
+```
+
+**Use for:** Merging, inserting, intersection, conflict detection. **Problems:** #56, #57, #252, #253, #759, #986.
+
+### Sort by End Time
+
+```text
+sort(key=λ x: x[1])
+```
+
+**Use for:** Greedy selection — max non-overlapping, min removals, min arrows. **Problems:** #435, #452, Activity Selection.
+
+### Sort Start ↑, then End ↓
+
+```text
+sort(key=λ x: (x[0], -x[1]))
+```
+
+**Use for:** Remove Covered Intervals — process largest-span first at each start. **Problems:** #1288.
+
+### Event-Based (Sweep Line)
+
+```text
+events.sort(key=λ x: (x[0], x[1]))
+```
+
+**Use for:** Counting active intervals at each point, peak usage, skyline. **Problems:** #253 alt, #732, #1094, #218.
+
+<Callout type="warning" title="The #1 Mistake">
+  Using sort-by-start when the problem needs sort-by-end (or vice versa).
+  Rule of thumb — if the problem says "maximize" or "minimize" a count,
+  you almost certainly need **sort by end** (greedy). If it says "merge"
+  or "combine", you need **sort by start**.
+</Callout>
+
+## Concepts, Tips & Common Approaches
+
+Patterns and mental shortcuts that help you solve any interval problem, even ones you've never seen before.
+
+### The 5 Common Approaches
+
+**1. Sort + Linear Scan** — Sort intervals, then walk through them maintaining the "last" interval. Compare each new interval with the last — merge, extend, or start fresh. Solves ~50% of all interval problems.
+
+**2. Sweep Line (Events)** — Decompose intervals into start/end events. Sort events. Sweep through maintaining a counter (or heap). Answers questions about "how many overlap at any point?"
+
+**3. Greedy Selection** — Sort by end time, greedily pick intervals that finish earliest. For optimization: maximize kept intervals, minimize removals, minimize resources.
+
+**4. Priority Queue (Heap)** — Track active intervals by end time using a min-heap. Enables efficient "is any room free?" checks. Core technique for resource allocation problems.
+
+**5. Two Pointers** — When processing two already-sorted interval lists simultaneously. Advance the pointer whose interval ends first. Key for intersection problems.
+
+### Pattern Recognition Shortcuts
+
+<Callout type="tip" title="Quick pattern lookup">
+  - **"Merge overlapping"** → Sort by start + linear scan
+  - **"Can attend all?" / "Any conflict?"** → Sort + check consecutive pairs
+  - **"How many rooms/resources?"** → Sweep line or min-heap
+  - **"Max events to attend"** → Sort by end (greedy)
+  - **"Min removals"** → Sort by end (greedy) — answer = n - max_kept
+  - **"Intersection of two lists"** → Two pointers
+  - **"Free time / gaps"** → Merge all → find gaps between merged
+  - **"Range update on array"** → Difference array
+</Callout>
+
+### Universal Edge Cases Checklist
+
+<Callout type="warning" title="Always ask yourself these before coding">
+  1. **Empty input?** → Return empty / 0 / true depending on problem
+  2. **Single interval?** → Usually the trivial base case
+  3. **All intervals identical?** → They all merge into one
+  4. **No overlaps at all?** → Output equals input
+  5. **One giant interval covering everything?** → Everything merges into it
+  6. **Touching endpoints [1,2] and [2,3]?** → Overlapping or not? Clarify!
+  7. **Start = End? [5,5]?** → Zero-length interval — valid or degenerate?
+  8. **Negative coordinates?** → Does your solution handle them?
+  9. **Very large values?** → Integer overflow in start + end calculations?
+</Callout>
+
+## Pattern Summary — The 11 Interval Problems
+
+| # | Pattern | LC # | Sort By | Approach |
+| --- | --- | --- | --- | --- |
+| 1 | Merge Intervals | #56 | Start | Sort + linear scan |
+| 2 | Insert Interval | #57 | (pre-sorted) | Three-phase sweep |
+| 3 | Meeting Rooms I | #252 | Start | Sort + consecutive pair check |
+| 4 | Meeting Rooms II | #253 | Start / events | Min-heap or sweep line |
+| 5 | Non-Overlapping Intervals | #435 | End | Greedy selection |
+| 6 | Interval List Intersections | #986 | (pre-sorted) | Two pointers |
+| 7 | Employee Free Time | #759 | Start | Merge + find gaps |
+| 8 | Remove Interval | #1272 | (pre-sorted) | Single pass with remnants |
+| 9 | My Calendar I | #729 | — | Overlap check per booking |
+| 10 | My Calendar II | #731 | — | Two-layer tracking |
+| 11 | Data Stream as Disjoint Intervals | #352 | (maintained) | Binary search + merge |
