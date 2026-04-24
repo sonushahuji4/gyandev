@@ -19,25 +19,45 @@ tags:
   - leetcode-986
 ---
 
-## LeetCode #986 — Interval List Intersections
-
-**Frequency:** 🔥 High. **Companies:** Google · Meta · Uber.
-
 ## Problem Statement
 
-Given two lists of closed, sorted, disjoint intervals, return their intersection.
+Given two lists of closed, sorted, disjoint intervals, return their intersection — every range that appears in **both** lists.
 
-```text title="Example"
-Input:
-  firstList  = [[0,2],[5,10],[13,23],[24,25]]
-  secondList = [[1,5],[8,12],[15,24],[25,26]]
-Output:
-  [[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]
+## Input
+
+Two arrays of intervals, each already sorted and pairwise disjoint.
+
+```text title="Example input"
+firstList  = [[0,2],[5,10],[13,23],[24,25]]
+secondList = [[1,5],[8,12],[15,24],[25,26]]
 ```
+
+## Output
+
+A sorted list of the intersecting intervals.
+
+```text title="Expected output"
+[[1,2],[5,5],[8,10],[15,23],[24,24],[25,25]]
+```
+
+## Constraints
+
+- `0 ≤ firstList.length, secondList.length ≤ 1000`
+- `firstList.length + secondList.length ≥ 1`
+- `0 ≤ startᵢ < endᵢ ≤ 10⁹`
+- Each input list is already sorted and contains disjoint intervals.
 
 ## Intuition
 
-Two pointers, one per list. At each step: compute intersection of the current pair using `[max(starts), min(ends)]`. If valid → add it. Then advance the pointer whose interval ends first (it can't intersect anything else from the other list).
+Two pointers — one per list. At each step compute the candidate intersection using `[max(starts), min(ends)]`. If `lo ≤ hi`, add it. Then advance the pointer whose interval **ends first** — it can't intersect anything else from the other list.
+
+```text title="Why advance the smaller-end pointer"
+  A:  [──────]      ← ends earliest, can't match more B's
+  B:     [──────────]
+         ▓▓▓         ← intersection = [max(starts), min(ends)]
+
+  After recording, A moves forward; B still has room to match new A's.
+```
 
 ## Solution
 
@@ -94,13 +114,14 @@ function intervalIntersection(A: number[][], B: number[][]): number[][] {
 
 | Metric | Value | Reason |
 | --- | --- | --- |
-| Time | `O(m + n)` | Each pointer advances at most m or n times |
-| Space | `O(m + n)` | Output size in worst case |
+| Time | `O(m + n)` | Each pointer advances at most `m` or `n` times |
+| Space | `O(m + n)` | Output size in the worst case |
 
 ## Edge Case Thinking
 
-<Callout type="tip" title="Edge cases">
-  - **Either list empty:** Return `[]` — no intersection possible.
-  - **Point intersection `[5,5]`:** Valid! `lo = hi = 5`, and `5 ≤ 5` is true.
-  - **No overlap at all:** `lo > hi` every time, result stays empty.
-</Callout>
+| Scenario | Handling |
+| --- | --- |
+| Either list empty | Return `[]` — no intersection possible. |
+| Point intersection `[5,5]` | Valid! `lo = hi = 5`, and `5 ≤ 5` is true. |
+| No overlap anywhere | `lo > hi` on every iteration; result stays empty. |
+| One list fully inside the other | Two pointers still handle it — just different advance patterns. |

@@ -20,46 +20,54 @@ tags:
   - leetcode-435
 ---
 
-## LeetCode #435 — Minimum Removals to Make Non-Overlapping
-
-**Companies:** Amazon · Google · Microsoft.
-
 ## Problem Statement
 
-Given an array of intervals, return the minimum number of intervals you need to remove to make the rest non-overlapping.
+Given an array of intervals, return the **minimum number of intervals you need to remove** so the remaining set is pairwise non-overlapping.
 
-```text title="Example 1"
-Input:  [[1,2],[2,3],[3,4],[1,3]]
-Output: 1
+## Input
+
+An array of intervals `[[start, end], …]`.
+
+```text title="Example inputs"
+[[1,2],[2,3],[3,4],[1,3]]
+[[1,2],[1,2],[1,2]]
 ```
 
-```text title="Example 2"
-Input:  [[1,2],[1,2],[1,2]]
-Output: 2
+## Output
+
+A single integer — the minimum count of removals required.
+
+```text title="Expected outputs"
+1
+2
 ```
 
-## Intuition — Sort by END (Greedy)
+## Constraints
 
-<Callout type="insight" title="Activity Selection in disguise">
-  **This is the Activity Selection Problem in disguise.** By sorting by
-  end time, we greedily keep intervals that finish earliest, leaving
-  maximum room for future intervals. The number of removals = total -
-  max intervals we can keep.
+- `1 ≤ intervals.length ≤ 10⁵`
+- `intervals[i].length == 2`
+- `-5·10⁴ ≤ startᵢ < endᵢ ≤ 5·10⁴`
+
+## Intuition
+
+This is the **Activity Selection Problem** in disguise. By sorting by **end time**, we greedily keep the interval that finishes earliest — leaving the maximum room for future intervals. The number of removals equals *total* − *max intervals we can keep*.
+
+<Callout type="insight" title="Why sort by END, not start?">
+  If you sort by start and see `[1, 100]` first, a start-based greedy
+  keeps it — blocking everything after it. Sorting by **end** keeps
+  the interval that "gets out of the way" fastest. This insight
+  generalises to every activity-selection problem.
 </Callout>
 
-## Visual Walkthrough
+```text title="Walkthrough — [[1,2],[2,3],[3,4],[1,3]]"
+After sort by END:  [[1,2], [2,3], [1,3], [3,4]]
 
-```text
-Input: [[1,2], [2,3], [3,4], [1,3]]
+Step 1  keep [1,2],   last_end = 2
+Step 2  [2,3] → 2 ≥ 2 → no overlap → KEEP,   last_end = 3
+Step 3  [1,3] → 1 < 3 → overlap    → REMOVE, count = 1
+Step 4  [3,4] → 3 ≥ 3 → no overlap → KEEP
 
-After sort by END: [[1,2], [2,3], [1,3], [3,4]]
-
-Step 1: keep [1,2],  last_end = 2
-Step 2: [2,3] → 2 ≥ 2 → no overlap → KEEP,  last_end = 3
-Step 3: [1,3] → 1 < 3 → overlap   → REMOVE, count = 1
-Step 4: [3,4] → 3 ≥ 3 → no overlap → KEEP
-
-Answer: 1 removal
+Answer:  1 removal
 ```
 
 ## Solution
@@ -118,13 +126,15 @@ function eraseOverlapIntervals(intervals: number[][]): number {
 
 | Metric | Value | Reason |
 | --- | --- | --- |
-| Time | `O(n log n)` | Sorting; linear scan is O(n) |
+| Time | `O(n log n)` | Sorting; the linear scan is `O(n)` |
 | Space | `O(1)` | Only tracking `last_end` and `count` |
 
 ## Edge Case Thinking
 
-<Callout type="tip" title="Edge cases">
-  - **Why sort by end, not start?** If you sort by start and see `[1,100]` first, you'd keep it — blocking everything. Sort by end ensures you keep the interval that "gets out of the way" fastest.
-  - **All identical intervals:** `[[1,2],[1,2],[1,2]]` → keep 1, remove 2.
-  - **No overlaps:** `count` stays 0 → return 0.
-</Callout>
+| Scenario | Handling |
+| --- | --- |
+| No overlaps | `count` stays `0` → return `0`. |
+| All identical intervals `[[1,2],[1,2],[1,2]]` | Keep `1`, remove `n − 1`. |
+| Single interval | Return `0`. |
+| Sort-by-start vs sort-by-end | Sort by start and a long `[1,100]` blocks everyone; sort by end keeps the earliest-finishing one. |
+| Touching endpoints `[1,2]` & `[2,3]` | `2 < 2` is false → no conflict → neither is removed. |

@@ -19,23 +19,51 @@ tags:
   - leetcode-729
 ---
 
-## LeetCode #729 — My Calendar I (No Double Booking)
-
-**Companies:** Google.
-
 ## Problem Statement
 
-Implement a calendar where you can add events. A new event can be added if it doesn't cause a double booking (no overlap with existing events). Events are half-open intervals `[start, end)`.
+Design a calendar class with a single method `book(start, end)`. A new event can be added **only if** it doesn't cause a double booking — i.e. doesn't overlap any previously booked event. Events are **half-open intervals** `[start, end)`.
 
-```text title="Example"
-book(10,20) → true
-book(15,25) → false
-book(20,30) → true
+## Input
+
+Sequential calls to `book(start, end)`, each proposing a new event.
+
+```text title="Example call sequence"
+book(10, 20)
+book(15, 25)
+book(20, 30)
 ```
+
+## Output
+
+Each `book` call returns `true` if the booking was added, `false` if rejected because it would overlap an existing one.
+
+```text title="Expected returns"
+true     # [10,20) — first event, added
+false    # [15,25) — overlaps [10,20), rejected
+true     # [20,30) — touches [10,20) at 20 (half-open), added
+```
+
+## Constraints
+
+- `0 ≤ start < end ≤ 10⁹`
+- At most `1000` calls to `book`.
 
 ## Intuition
 
-For each new booking, check against all existing ones using the overlap formula: `start < existing_end AND end > existing_start`. If any overlap → reject. Otherwise → add.
+For each new booking, scan the existing ones and test for overlap using the universal half-open formula:
+
+```text title="Overlap test (half-open)"
+   start < existing_end   AND   end > existing_start
+```
+
+If any existing booking overlaps → reject. Otherwise, store the booking and return `true`.
+
+<Callout type="insight" title="Why half-open avoids false rejections">
+  `[10, 20)` and `[20, 30)` touch at 20 but don't overlap — the first
+  ends *just before* 20 and the second starts *at* 20. Because the
+  check uses strict `<` on the right side, touching boundaries are
+  correctly allowed.
+</Callout>
 
 ## Solution
 
@@ -82,11 +110,13 @@ class MyCalendar {
 | Metric | Value | Reason |
 | --- | --- | --- |
 | Time (per call) | `O(n)` | Scans all existing bookings |
-| Space | `O(n)` | Stores all bookings |
+| Space | `O(n)` | Stores every accepted booking |
 
 ## Edge Case Thinking
 
-<Callout type="tip" title="Edge cases">
-  - **Adjacent events `[10,20)` and `[20,30)`:** No overlap! `20 < 20` is false. Half-open intervals prevent false conflicts on boundaries.
-  - **Optimization path:** Using a balanced BST (e.g. SortedList in Python), you can binary search for the insertion point → `O(log n)` per call.
-</Callout>
+| Scenario | Handling |
+| --- | --- |
+| Adjacent events `[10,20)` & `[20,30)` | No overlap! `20 < 20` is false. Half-open intervals prevent false conflicts on boundaries. |
+| Book identical event twice | Second call rejected — strict overlap (`start < e AND end > s`) holds for identical intervals. |
+| First call with no existing bookings | Loop doesn't execute → event is accepted. |
+| Optimisation path | Swap the list for a balanced BST (Python's `SortedList`) and binary-search the insertion point → `O(log n)` per call. |

@@ -20,25 +20,57 @@ tags:
   - leetcode-352
 ---
 
-## LeetCode #352 — Data Stream as Disjoint Intervals
-
-**Companies:** Google.
-
 ## Problem Statement
 
-Given a stream of integers, maintain a summary of the numbers seen as a list of disjoint intervals. Implement `addNum(value)` and `getIntervals()`.
+Given a stream of integers, maintain a summary of the numbers seen so far as a list of **disjoint intervals**. Implement:
 
-```text title="Example"
+- `addNum(value)` — record a new value.
+- `getIntervals()` — return the current disjoint interval list in sorted order.
+
+## Input
+
+Sequential calls to `addNum(value)` with integer values, interleaved with calls to `getIntervals()`.
+
+```text title="Example call sequence"
+addNum(1)
+addNum(3)
+addNum(7)
+addNum(2)
+addNum(6)
+```
+
+## Output
+
+Each call to `getIntervals()` returns the current disjoint set of integer ranges.
+
+```text title="Expected interval state after each call"
 addNum(1) → [[1,1]]
 addNum(3) → [[1,1],[3,3]]
 addNum(7) → [[1,1],[3,3],[7,7]]
-addNum(2) → [[1,3],[7,7]]  (1,2,3 merge!)
+addNum(2) → [[1,3],[7,7]]     (1, 2, 3 merge into one range)
 addNum(6) → [[1,3],[6,7]]
 ```
 
+## Constraints
+
+- `0 ≤ value ≤ 10⁴`
+- At most `3·10⁴` calls split between `addNum` and `getIntervals`.
+
 ## Intuition
 
-Use binary search to find where the new number fits. Check if it can merge with left neighbor (`value - 1 ≤ left.end`), right neighbor (`value + 1 ≥ right.start`), or both.
+Use binary search to locate where the new value fits in the sorted interval list, then check up to two neighbours:
+
+- **Merge left** when `value − 1 ≤ left.end` (value extends or sits inside the left interval).
+- **Merge right** when `value + 1 ≥ right.start` (value extends or sits inside the right interval).
+
+Four cases fall out — merge both, merge left only, merge right only, or insert a new singleton `[value, value]`.
+
+```text title="Four cases at a glance"
+Case A — both   [..x] <- value -> [y..]   →  collapse into [.., y..]
+Case B — left   [..x] <- value              →  extend end of left
+Case C — right             value -> [y..]   →  extend start of right
+Case D — none              value            →  insert [value, value]
+```
 
 ## Solution
 
@@ -119,13 +151,15 @@ class SummaryRanges {
 
 | Metric | Value | Reason |
 | --- | --- | --- |
-| addNum | `O(n)` | Binary search is O(log n) but insert/pop is O(n). With SortedList → O(log n) |
-| getIntervals | `O(n)` | Returns the stored list |
+| `addNum` | `O(n)` | Binary search is `O(log n)`, but `insert` / `pop` is `O(n)`. Replace the list with a `SortedList` for `O(log n)` per call. |
+| `getIntervals` | `O(n)` | Returns the stored list directly |
 
 ## Edge Case Thinking
 
-<Callout type="tip" title="Edge cases">
-  - **Duplicate values:** `addNum(5)` twice — second call finds 5 already within an existing interval, so nothing changes.
-  - **Sequential values:** `addNum(1)`, `addNum(2)`, `addNum(3)` — each merges with previous → final = `[[1,3]]`.
-  - **Bridging gap:** `[[1,1],[3,3]]` + `addNum(2)` → merges both neighbors into `[[1,3]]`.
-</Callout>
+| Scenario | Handling |
+| --- | --- |
+| Duplicate values — `addNum(5)` twice | Second call finds 5 already inside an existing interval → no change. |
+| Sequential values — `1, 2, 3` | Each merges with the previous → final state is `[[1,3]]`. |
+| Bridging a gap — state `[[1,1],[3,3]]` + `addNum(2)` | Both neighbours merge into `[[1,3]]`. |
+| Insert at the very start or end | Only one of `merge_l` / `merge_r` is even reachable; the other branch short-circuits safely. |
+| Empty list on first `addNum` | `idx = 0`, both neighbours out of bounds → Case D inserts the singleton. |

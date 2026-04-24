@@ -18,30 +18,49 @@ tags:
   - leetcode-1272
 ---
 
-## LeetCode #1272 — Remove Interval
-
-**Companies:** Google.
-
 ## Problem Statement
 
-Given a sorted set of disjoint intervals and an interval to remove, return the remaining intervals after removal.
+Given a sorted set of disjoint intervals and an interval to remove, return the remaining intervals after the removal — with overlapping portions carved out.
 
-```text title="Example"
-Input:  intervals = [[0,2],[3,4],[5,7]], toBeRemoved = [1,6]
-Output: [[0,1],[6,7]]
+## Input
+
+- `intervals` — a sorted list of disjoint intervals.
+- `toBeRemoved` — a single interval `[start, end]` to carve out.
+
+```text title="Example input"
+intervals   = [[0,2],[3,4],[5,7]]
+toBeRemoved = [1,6]
 ```
+
+## Output
+
+The remaining intervals in sorted order, after `toBeRemoved` has been erased from each overlapping interval.
+
+```text title="Expected output"
+[[0,1],[6,7]]
+```
+
+## Constraints
+
+- `1 ≤ intervals.length ≤ 10⁴`
+- `-10⁹ ≤ startᵢ < endᵢ ≤ 10⁹`
+- `intervals` is sorted by `startᵢ`.
+- `toBeRemoved.length == 2`.
 
 ## Intuition
 
-For each interval, check: does it overlap with the removal range? If no → keep. If yes → keep the parts outside the removal zone (left remnant and/or right remnant).
+Walk through each interval once. For each one, ask: *does it overlap the removal range?*
 
-## Visual
+- **No overlap** → keep it unchanged.
+- **Overlap** → keep whatever sits outside the removal zone: a left remnant and/or a right remnant.
 
-```text
+Every original interval produces **0, 1, or 2** output intervals.
+
+```text title="Left and right remnants"
 Interval:     [══════════════════════]
 Remove:              [════════════]
-Left part:    [══════]
-Right part:                        [══════]
+Left part:    [══════]                       ← kept if s < rm_s
+Right part:                        [══════]  ← kept if e > rm_e
 ```
 
 ## Solution
@@ -92,6 +111,17 @@ function removeInterval(intervals: number[][], toBeRemoved: number[]): number[][
 
 ## Complexity
 
-| Time | Space | Key Insight |
+| Metric | Value | Reason |
 | --- | --- | --- |
-| `O(n)` | `O(n)` | Single pass — each interval produces 0, 1, or 2 remnants |
+| Time | `O(n)` | Single pass — no sorting needed since input is sorted |
+| Space | `O(n)` | Output array (each interval yields 0, 1, or 2 remnants) |
+
+## Edge Case Thinking
+
+| Scenario | Handling |
+| --- | --- |
+| Removal range outside all intervals | Every interval falls into the "no overlap" branch → output equals input. |
+| Removal range covers every interval | Every interval is fully swallowed → `result = []`. |
+| Removal strictly inside one interval | That interval splits into two remnants (left + right). |
+| Touching endpoint `s == rm_e` or `e == rm_s` | `s >= rm_e` / `e <= rm_s` is true → keep as-is (half-open semantics). |
+| Empty `intervals` | Return `[]`. |

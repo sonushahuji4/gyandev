@@ -19,45 +19,58 @@ tags:
   - leetcode-57
 ---
 
-## LeetCode #57 — Insert Interval
-
-**Frequency:** 🔥 High. **Companies:** Google · Meta · LinkedIn.
-
 ## Problem Statement
 
-Given a sorted list of non-overlapping intervals, insert a new interval. Merge if necessary. Return the result still sorted and non-overlapping.
+Given a sorted list of non-overlapping intervals, insert a new interval into the list. Merge if necessary, and return the result still sorted and non-overlapping.
 
-```text title="Example"
-Input:  intervals   = [[1,2],[3,5],[6,7],[8,10],[12,16]]
-        newInterval = [4,8]
-Output: [[1,2],[3,10],[12,16]]
+## Input
+
+- `intervals` — a sorted list of pairwise non-overlapping intervals.
+- `newInterval` — a single interval `[start, end]` to insert.
+
+```text title="Example input"
+intervals   = [[1,2],[3,5],[6,7],[8,10],[12,16]]
+newInterval = [4,8]
 ```
+
+## Output
+
+The resulting list of intervals, still sorted by start and still non-overlapping after the new interval is merged in.
+
+```text title="Expected output"
+[[1,2],[3,10],[12,16]]
+```
+
+## Constraints
+
+- `0 ≤ intervals.length ≤ 10⁴`
+- `intervals[i].length == 2` and `newInterval.length == 2`
+- `0 ≤ startᵢ ≤ endᵢ ≤ 10⁵`
+- `intervals` is sorted by `startᵢ` in ascending order.
 
 ## Intuition
 
-Three-phase sweep:
+Three-phase sweep — the input is already sorted, so a single pass is enough:
 
-1. Collect all intervals that end before the new one starts — no overlap, keep as-is.
-2. Merge all intervals that overlap with the new one — expand the new interval.
-3. Append remaining intervals after the merged zone.
+1. **Before** — collect all intervals that end before `newInterval` starts. No overlap, keep as-is.
+2. **Merge** — for every interval that overlaps `newInterval`, expand `newInterval` to cover it.
+3. **After** — append all remaining intervals untouched.
 
-No sorting needed since input is pre-sorted!
+No sorting needed since the input is pre-sorted.
 
-## Visual Walkthrough
+```text title="Walkthrough — newInterval = [4, 8]"
+intervals:  [1,2]   [3,5]   [6,7]   [8,10]   [12,16]
+new:                  [==== 4 ======== 8 ====]
 
-```text
-intervals: [1,2]  [3,5]  [6,7]  [8,10]  [12,16]
-new:                [====4========8====]
-
-Phase 1 — Before: [1,2] ends at 2 < 4 → keep [1,2]
-Phase 2 — Merge:
-  [3,5]  starts 3 ≤ 8 → merge → new = [3, 8]
-  [6,7]  starts 6 ≤ 8 → merge → new = [3, 8]
-  [8,10] starts 8 ≤ 8 → merge → new = [3, 10]
+Phase 1 (Before):  [1,2] ends at 2 < 4   →  keep [1,2]
+Phase 2 (Merge):
+  [3,5]  → 3 ≤ 8  → merge → new = [3, 8]
+  [6,7]  → 6 ≤ 8  → merge → new = [3, 8]
+  [8,10] → 8 ≤ 8  → merge → new = [3, 10]
   → add [3, 10]
-Phase 3 — After: [12,16] → keep [12,16]
+Phase 3 (After):   [12,16] → keep [12,16]
 
-Result: [[1,2], [3,10], [12,16]]
+Result:  [[1,2], [3,10], [12,16]]
 ```
 
 ## Solution
@@ -130,14 +143,15 @@ function insert(intervals: number[][], newInterval: number[]): number[][] {
 
 | Metric | Value | Reason |
 | --- | --- | --- |
-| Time | `O(n)` | Single pass — input already sorted, no re-sort needed |
+| Time | `O(n)` | Single pass — input is already sorted; no re-sort needed |
 | Space | `O(n)` | Output array |
 
 ## Edge Case Thinking
 
-<Callout type="tip" title="Edge cases">
-  - **New interval before everything:** `[0,0]` into `[[1,5]]` → Phase 1 does nothing, Phase 2 does nothing, result = `[[0,0],[1,5]]`.
-  - **New interval after everything:** Phase 1 adds all, Phase 2 adds new at end.
-  - **New interval swallows everything:** Phase 2 merges all existing intervals into one giant merged interval.
-  - **Empty intervals list:** Just return `[newInterval]`.
-</Callout>
+| Scenario | Handling |
+| --- | --- |
+| `newInterval` before everything | Phase 1 does nothing, Phase 2 does nothing → result is `[newInterval, ...intervals]`. |
+| `newInterval` after everything | Phase 1 adds all, Phase 2 appends `newInterval` at the end. |
+| `newInterval` swallows everything | Phase 2 merges all existing intervals into one giant merged interval. |
+| Empty `intervals` | Return `[newInterval]` directly. |
+| Touching endpoints `[1,2]` & `[2,3]` | They merge because Phase 2 uses `≤`. |
